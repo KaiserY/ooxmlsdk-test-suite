@@ -581,6 +581,19 @@ struct XmlElement {
     children: Vec<XmlNode>,
 }
 
+impl Drop for XmlElement {
+    fn drop(&mut self) {
+        let mut stack = Vec::new();
+        stack.append(&mut self.children);
+
+        while let Some(node) = stack.pop() {
+            if let XmlNode::Element(mut element) = node {
+                stack.append(&mut element.children);
+            }
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum XmlNode {
     Declaration(XmlDeclaration),
@@ -820,39 +833,68 @@ fn normalize_xml_nodes_for_entry(
     options: CanonicalOptions,
     entry_name: &str,
 ) -> Vec<XmlNode> {
-    let nodes = nodes
-        .into_iter()
-        .filter_map(|node| normalize_xml_node_for_entry(node, options, entry_name))
-        .collect();
-    collapse_adjacent_xml_text_nodes(nodes)
+    enum NormalizeTask {
+        Visit(XmlNode),
+        Finish(XmlElement),
+    }
+
+    let mut roots = Vec::with_capacity(nodes.len());
+    let mut child_lists: Vec<Vec<XmlNode>> = Vec::new();
+    let mut tasks = Vec::with_capacity(nodes.len());
+
+    for node in nodes.into_iter().rev() {
+        tasks.push(NormalizeTask::Visit(node));
+    }
+
+    while let Some(task) = tasks.pop() {
+        match task {
+            NormalizeTask::Visit(XmlNode::Element(mut element)) => {
+                let children = std::mem::take(&mut element.children);
+                tasks.push(NormalizeTask::Finish(element));
+                child_lists.push(Vec::with_capacity(children.len()));
+                for child in children.into_iter().rev() {
+                    tasks.push(NormalizeTask::Visit(child));
+                }
+            }
+            NormalizeTask::Visit(node) => {
+                push_normalized_xml_node(&mut roots, &mut child_lists, node);
+            }
+            NormalizeTask::Finish(mut element) => {
+                let children = child_lists
+                    .pop()
+                    .expect("xml normalize child stack should not be empty");
+                element.children = collapse_adjacent_xml_text_nodes(children);
+
+                if options.sort_package_properties
+                    && is_package_properties_sort_root(entry_name, &element.name)
+                {
+                    element.children.sort_by_key(xml_node_structural_sort_key);
+                }
+                if options.sort_all_particle_children && is_all_particle_sort_root(&element.name) {
+                    element.children.sort_by_key(xml_node_structural_sort_key);
+                }
+
+                push_normalized_xml_node(&mut roots, &mut child_lists, XmlNode::Element(element));
+            }
+        }
+    }
+
+    assert!(
+        child_lists.is_empty(),
+        "xml normalize child stack should be empty"
+    );
+    collapse_adjacent_xml_text_nodes(roots)
 }
 
-fn normalize_xml_node_for_entry(
+fn push_normalized_xml_node(
+    roots: &mut Vec<XmlNode>,
+    child_lists: &mut [Vec<XmlNode>],
     node: XmlNode,
-    options: CanonicalOptions,
-    entry_name: &str,
-) -> Option<XmlNode> {
-    match node {
-        XmlNode::Element(mut element) => {
-            element.children = element
-                .children
-                .into_iter()
-                .filter_map(|child| normalize_xml_node_for_entry(child, options, entry_name))
-                .collect();
-            element.children = collapse_adjacent_xml_text_nodes(element.children);
-
-            if options.sort_package_properties
-                && is_package_properties_sort_root(entry_name, &element.name)
-            {
-                element.children.sort_by_key(xml_node_structural_sort_key);
-            }
-            if options.sort_all_particle_children && is_all_particle_sort_root(&element.name) {
-                element.children.sort_by_key(xml_node_structural_sort_key);
-            }
-
-            Some(XmlNode::Element(element))
-        }
-        other => Some(other),
+) {
+    if let Some(children) = child_lists.last_mut() {
+        children.push(node);
+    } else {
+        roots.push(node);
     }
 }
 
@@ -870,141 +912,183 @@ fn collapse_adjacent_xml_text_nodes(nodes: Vec<XmlNode>) -> Vec<XmlNode> {
 }
 
 fn compare_xml_documents(original: &[XmlNode], roundtripped: &[XmlNode]) -> Vec<String> {
+    struct CompareListFrame<'a> {
+        parent_path: String,
+        original: &'a [XmlNode],
+        roundtripped: &'a [XmlNode],
+        original_idx: usize,
+        roundtripped_idx: usize,
+    }
+
+    enum CompareTask<'a> {
+        List(CompareListFrame<'a>),
+        Node {
+            path: String,
+            original: &'a XmlNode,
+            roundtripped: &'a XmlNode,
+        },
+    }
+
     let mut errors = Vec::new();
-    compare_xml_node_lists("$", original, roundtripped, &mut errors);
+    let mut stack = vec![CompareTask::List(CompareListFrame {
+        parent_path: "$".to_string(),
+        original,
+        roundtripped,
+        original_idx: 0,
+        roundtripped_idx: 0,
+    })];
+
+    while let Some(task) = stack.pop() {
+        match task {
+            CompareTask::List(mut frame) => {
+                let mut next_node = None;
+                while frame.original_idx < frame.original.len()
+                    && frame.roundtripped_idx < frame.roundtripped.len()
+                {
+                    match (
+                        &frame.original[frame.original_idx],
+                        &frame.roundtripped[frame.roundtripped_idx],
+                    ) {
+                        (XmlNode::Declaration(decl), node)
+                            if !matches!(node, XmlNode::Declaration(_)) =>
+                        {
+                            errors.push(format!(
+                                "{}: missing XML declaration {} before {}",
+                                xml_child_path(
+                                    &frame.parent_path,
+                                    frame.original,
+                                    frame.original_idx
+                                ),
+                                xml_declaration_summary(*decl),
+                                xml_node_summary(node)
+                            ));
+                            frame.original_idx += 1;
+                        }
+                        (node, XmlNode::Declaration(decl))
+                            if !matches!(node, XmlNode::Declaration(_)) =>
+                        {
+                            errors.push(format!(
+                                "{}: extra XML declaration {} before {}",
+                                xml_child_path(
+                                    &frame.parent_path,
+                                    frame.original,
+                                    frame.original_idx
+                                ),
+                                xml_declaration_summary(*decl),
+                                xml_node_summary(node)
+                            ));
+                            frame.roundtripped_idx += 1;
+                        }
+                        _ => {
+                            let path = xml_child_path(
+                                &frame.parent_path,
+                                frame.original,
+                                frame.original_idx,
+                            );
+                            next_node = Some(CompareTask::Node {
+                                path,
+                                original: &frame.original[frame.original_idx],
+                                roundtripped: &frame.roundtripped[frame.roundtripped_idx],
+                            });
+                            frame.original_idx += 1;
+                            frame.roundtripped_idx += 1;
+                            break;
+                        }
+                    }
+                }
+
+                if let Some(next_node) = next_node {
+                    stack.push(CompareTask::List(frame));
+                    stack.push(next_node);
+                } else {
+                    for node in &frame.original[frame.original_idx..] {
+                        errors.push(format!(
+                            "{}: missing child in roundtripped XML: {}",
+                            frame.parent_path,
+                            xml_node_summary(node)
+                        ));
+                    }
+
+                    for node in &frame.roundtripped[frame.roundtripped_idx..] {
+                        errors.push(format!(
+                            "{}: extra child in roundtripped XML: {}",
+                            frame.parent_path,
+                            xml_node_summary(node)
+                        ));
+                    }
+                }
+            }
+            CompareTask::Node {
+                path,
+                original,
+                roundtripped,
+            } => match (original, roundtripped) {
+                (XmlNode::Declaration(left), XmlNode::Declaration(right)) => {
+                    if left != right {
+                        errors.push(format!(
+                            "{path}: XML declaration mismatch: original {}, roundtripped {}",
+                            xml_declaration_summary(*left),
+                            xml_declaration_summary(*right)
+                        ));
+                    }
+                }
+                (XmlNode::Declaration(left), other) => {
+                    errors.push(format!(
+                        "{path}: missing XML declaration {} before {}",
+                        xml_declaration_summary(*left),
+                        xml_node_summary(other)
+                    ));
+                }
+                (other, XmlNode::Declaration(right)) => {
+                    errors.push(format!(
+                        "{path}: extra XML declaration {} before {}",
+                        xml_declaration_summary(*right),
+                        xml_node_summary(other)
+                    ));
+                }
+                (XmlNode::Text(left), XmlNode::Text(right)) => {
+                    if left != right {
+                        errors.push(format!(
+                            "{path}: text mismatch: original {:?}, roundtripped {:?}",
+                            truncate_for_error(left),
+                            truncate_for_error(right)
+                        ));
+                    }
+                }
+                (XmlNode::Element(left), XmlNode::Element(right)) => {
+                    if left.name != right.name {
+                        push_xml_name_error(&path, "element", &left.name, &right.name, &mut errors);
+                        errors.push(format!(
+                            "{path}: original XML snippet: {}",
+                            xml_element_snippet(left)
+                        ));
+                        errors.push(format!(
+                            "{path}: roundtripped XML snippet: {}",
+                            xml_element_snippet(right)
+                        ));
+                    }
+
+                    compare_xml_attrs(&path, &left.attrs, &right.attrs, &mut errors);
+                    stack.push(CompareTask::List(CompareListFrame {
+                        parent_path: path,
+                        original: &left.children,
+                        roundtripped: &right.children,
+                        original_idx: 0,
+                        roundtripped_idx: 0,
+                    }));
+                }
+                (left, right) => {
+                    errors.push(format!(
+                        "{path}: node kind mismatch: original {}, roundtripped {}",
+                        xml_node_summary(left),
+                        xml_node_summary(right)
+                    ));
+                }
+            },
+        }
+    }
+
     errors
-}
-
-fn compare_xml_node_lists(
-    parent_path: &str,
-    original: &[XmlNode],
-    roundtripped: &[XmlNode],
-    errors: &mut Vec<String>,
-) {
-    let mut original_idx = 0;
-    let mut roundtripped_idx = 0;
-
-    while original_idx < original.len() && roundtripped_idx < roundtripped.len() {
-        match (&original[original_idx], &roundtripped[roundtripped_idx]) {
-            (XmlNode::Declaration(decl), node) if !matches!(node, XmlNode::Declaration(_)) => {
-                errors.push(format!(
-                    "{}: missing XML declaration {} before {}",
-                    xml_child_path(parent_path, original, original_idx),
-                    xml_declaration_summary(*decl),
-                    xml_node_summary(node)
-                ));
-                original_idx += 1;
-            }
-            (node, XmlNode::Declaration(decl)) if !matches!(node, XmlNode::Declaration(_)) => {
-                errors.push(format!(
-                    "{}: extra XML declaration {} before {}",
-                    xml_child_path(parent_path, original, original_idx),
-                    xml_declaration_summary(*decl),
-                    xml_node_summary(node)
-                ));
-                roundtripped_idx += 1;
-            }
-            _ => {
-                let path = xml_child_path(parent_path, original, original_idx);
-                compare_xml_node(
-                    &path,
-                    &original[original_idx],
-                    &roundtripped[roundtripped_idx],
-                    errors,
-                );
-                original_idx += 1;
-                roundtripped_idx += 1;
-            }
-        }
-    }
-
-    for node in &original[original_idx..] {
-        errors.push(format!(
-            "{parent_path}: missing child in roundtripped XML: {}",
-            xml_node_summary(node)
-        ));
-    }
-
-    for node in &roundtripped[roundtripped_idx..] {
-        errors.push(format!(
-            "{parent_path}: extra child in roundtripped XML: {}",
-            xml_node_summary(node)
-        ));
-    }
-}
-
-fn compare_xml_node(
-    path: &str,
-    original: &XmlNode,
-    roundtripped: &XmlNode,
-    errors: &mut Vec<String>,
-) {
-    match (original, roundtripped) {
-        (XmlNode::Declaration(left), XmlNode::Declaration(right)) => {
-            if left != right {
-                errors.push(format!(
-                    "{path}: XML declaration mismatch: original {}, roundtripped {}",
-                    xml_declaration_summary(*left),
-                    xml_declaration_summary(*right)
-                ));
-            }
-        }
-        (XmlNode::Declaration(left), other) => {
-            errors.push(format!(
-                "{path}: missing XML declaration {} before {}",
-                xml_declaration_summary(*left),
-                xml_node_summary(other)
-            ));
-        }
-        (other, XmlNode::Declaration(right)) => {
-            errors.push(format!(
-                "{path}: extra XML declaration {} before {}",
-                xml_declaration_summary(*right),
-                xml_node_summary(other)
-            ));
-        }
-        (XmlNode::Text(left), XmlNode::Text(right)) => {
-            if left != right {
-                errors.push(format!(
-                    "{path}: text mismatch: original {:?}, roundtripped {:?}",
-                    truncate_for_error(left),
-                    truncate_for_error(right)
-                ));
-            }
-        }
-        (XmlNode::Element(left), XmlNode::Element(right)) => {
-            compare_xml_element(path, left, right, errors);
-        }
-        (left, right) => {
-            errors.push(format!(
-                "{path}: node kind mismatch: original {}, roundtripped {}",
-                xml_node_summary(left),
-                xml_node_summary(right)
-            ));
-        }
-    }
-}
-
-fn compare_xml_element(
-    path: &str,
-    original: &XmlElement,
-    roundtripped: &XmlElement,
-    errors: &mut Vec<String>,
-) {
-    if original.name != roundtripped.name {
-        push_xml_name_error(path, "element", &original.name, &roundtripped.name, errors);
-        errors.push(format!(
-            "{path}: original XML snippet: {}",
-            xml_element_snippet(original)
-        ));
-        errors.push(format!(
-            "{path}: roundtripped XML snippet: {}",
-            xml_element_snippet(roundtripped)
-        ));
-    }
-
-    compare_xml_attrs(path, &original.attrs, &roundtripped.attrs, errors);
-    compare_xml_node_lists(path, &original.children, &roundtripped.children, errors);
 }
 
 fn compare_xml_attrs(

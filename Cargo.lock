@@ -91,7 +91,7 @@ dependencies = [
 
 [[package]]
 name = "ooxmlsdk"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "ooxmlsdk-derive",
  "quick-xml",
@@ -114,7 +114,7 @@ dependencies = [
 
 [[package]]
 name = "ooxmlsdk-derive"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "proc-macro2",
  "quote",
