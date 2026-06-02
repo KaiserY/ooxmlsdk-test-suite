@@ -43,15 +43,15 @@ Observed failure categories:
 ## Run Command
 
 ```sh
-cargo test -p ooxmlsdk-roundtrip-tests --test apache_poi_roundtrip -- --ignored --test-threads=1
+cargo test -p ooxmlsdk-roundtrip-tests --test apache_poi_roundtrip -- --ignored
 ```
 
 Useful first-pass filters:
 
 ```sh
-cargo test -p ooxmlsdk-roundtrip-tests --test apache_poi_roundtrip test_data_spreadsheet -- --ignored --test-threads=1
-cargo test -p ooxmlsdk-roundtrip-tests --test apache_poi_roundtrip test_data_slideshow -- --ignored --test-threads=1
-cargo test -p ooxmlsdk-roundtrip-tests --test apache_poi_roundtrip test_data_integration -- --ignored --test-threads=1
+cargo test -p ooxmlsdk-roundtrip-tests --test apache_poi_roundtrip test_data_spreadsheet -- --ignored
+cargo test -p ooxmlsdk-roundtrip-tests --test apache_poi_roundtrip test_data_slideshow -- --ignored
+cargo test -p ooxmlsdk-roundtrip-tests --test apache_poi_roundtrip test_data_integration -- --ignored
 ```
 
 The round-trip check uses the same high-standard comparison model as the

@@ -65,9 +65,9 @@ to a git or registry dependency.
   tests.
 - `cargo test -p ooxmlsdk-corpus-test-support --test float_rules_sync -- --ignored`:
   compare checked-in schema float rules with `ooxmlsdk/data`.
-- `cargo test -p ooxmlsdk-roundtrip-tests --test apache_poi_roundtrip -- --ignored --test-threads=1`:
+- `cargo test -p ooxmlsdk-roundtrip-tests --test apache_poi_roundtrip -- --ignored`:
   run the Apache POI round-trip corpus lane.
-- `cargo test -p ooxmlsdk-roundtrip-tests --test open_xml_sdk_roundtrip -- --ignored --test-threads=1`:
+- `cargo test -p ooxmlsdk-roundtrip-tests --test open_xml_sdk_roundtrip -- --ignored`:
   run the Open-XML-SDK round-trip corpus lane.
 
 Round-trip corpus tests are generated per supported Office package file and are
@@ -99,7 +99,7 @@ comparison, document the difference in `docs/round-trip/`.
 ## Documentation
 
 - Update `corpus/README.md` when adding or removing a corpus.
-- Update `docs/round-trip/README.md` as an index only.
+- Update the round-trip index in `README.md` only.
 - Update the corpus-specific round-trip page, such as
   `docs/round-trip/Open-XML-SDK.md`, after a full corpus run.
 - Do not record local checkout paths or machine-specific paths in docs.

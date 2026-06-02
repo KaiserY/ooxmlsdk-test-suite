@@ -7,3 +7,8 @@ manifest = "corpus/Open-XML-SDK/manifest.toml"
 id = "apache_poi"
 path = "corpus/Apache-POI"
 manifest = "corpus/Apache-POI/manifest.toml"
+
+[[corpus]]
+id = "libreoffice"
+path = "corpus/LibreOffice"
+manifest = "corpus/LibreOffice/manifest.toml"

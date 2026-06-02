@@ -1,0 +1,7 @@
+[corpus]
+id = "libreoffice"
+name = "LibreOffice"
+path = "corpus/LibreOffice"
+license = "MPL-2.0"
+source = "https://github.com/LibreOffice/core"
+default_roundtrip = false

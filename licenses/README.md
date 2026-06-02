@@ -10,4 +10,5 @@ repository. They do not relicense files under `corpus/`.
 | Corpus | License | Files |
 | --- | --- | --- |
 | Apache POI | Apache-2.0 | `licenses/Apache-POI/LICENSE`, `licenses/Apache-POI/NOTICE` |
+| LibreOffice | MPL-2.0 | `licenses/LibreOffice/COPYING.MPL`, `licenses/LibreOffice/COPYING.LGPL`, `licenses/LibreOffice/COPYING` |
 | Open-XML-SDK | MIT | `licenses/Open-XML-SDK/LICENSE`, `licenses/Open-XML-SDK/NOTICE` |

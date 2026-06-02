@@ -21,7 +21,7 @@ corpus manifest and passed its invalid-package expectation.
 ## Last Run
 
 ```sh
-cargo test -p ooxmlsdk-roundtrip-tests --test open_xml_sdk_roundtrip -- --ignored --test-threads=1
+cargo test -p ooxmlsdk-roundtrip-tests --test open_xml_sdk_roundtrip -- --ignored
 ```
 
 Result:
