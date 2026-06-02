@@ -1,0 +1,656 @@
+{
+  "attrs": [
+    {
+      "element": "{http://schemas.microsoft.com/office/drawing/2014/chartex}geoData",
+      "attr": "east",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/drawing/2014/chartex}geoData",
+      "attr": "north",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/drawing/2014/chartex}geoData",
+      "attr": "south",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/drawing/2014/chartex}geoData",
+      "attr": "west",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/drawing/2014/chartex}geoDataPointQuery",
+      "attr": "latitude",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/drawing/2014/chartex}geoDataPointQuery",
+      "attr": "longitude",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/drawing/2014/chartex}geoLocation",
+      "attr": "latitude",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/drawing/2014/chartex}geoLocation",
+      "attr": "longitude",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/drawing/2014/chartex}number",
+      "attr": "val",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/drawing/2014/chartex}offset",
+      "attr": "left",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/drawing/2014/chartex}offset",
+      "attr": "top",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/drawing/2014/chartex}pageMargins",
+      "attr": "b",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/drawing/2014/chartex}pageMargins",
+      "attr": "footer",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/drawing/2014/chartex}pageMargins",
+      "attr": "header",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/drawing/2014/chartex}pageMargins",
+      "attr": "l",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/drawing/2014/chartex}pageMargins",
+      "attr": "r",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/drawing/2014/chartex}pageMargins",
+      "attr": "t",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/drawing/2014/chartex}percent",
+      "attr": "val",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/spreadsheetml/2009/9/main}axisColor",
+      "attr": "tint",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/spreadsheetml/2009/9/main}borderColor",
+      "attr": "tint",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/spreadsheetml/2009/9/main}color",
+      "attr": "tint",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/spreadsheetml/2009/9/main}colorAxis",
+      "attr": "tint",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/spreadsheetml/2009/9/main}colorFirst",
+      "attr": "tint",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/spreadsheetml/2009/9/main}colorHigh",
+      "attr": "tint",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/spreadsheetml/2009/9/main}colorLast",
+      "attr": "tint",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/spreadsheetml/2009/9/main}colorLow",
+      "attr": "tint",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/spreadsheetml/2009/9/main}colorMarkers",
+      "attr": "tint",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/spreadsheetml/2009/9/main}colorNegative",
+      "attr": "tint",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/spreadsheetml/2009/9/main}colorSeries",
+      "attr": "tint",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/spreadsheetml/2009/9/main}fillColor",
+      "attr": "tint",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/spreadsheetml/2009/9/main}negativeBorderColor",
+      "attr": "tint",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/spreadsheetml/2009/9/main}negativeFillColor",
+      "attr": "tint",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/spreadsheetml/2009/9/main}sparklineGroup",
+      "attr": "lineWeight",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/spreadsheetml/2009/9/main}sparklineGroup",
+      "attr": "manualMax",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/spreadsheetml/2009/9/main}sparklineGroup",
+      "attr": "manualMin",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/spreadsheetml/2014/revision}sparklineGroup",
+      "attr": "lineWeight",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/spreadsheetml/2014/revision}sparklineGroup",
+      "attr": "manualMax",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/spreadsheetml/2014/revision}sparklineGroup",
+      "attr": "manualMin",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/spreadsheetml/2017/richdata2}dynamicFilter",
+      "attr": "maxVal",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/spreadsheetml/2017/richdata2}dynamicFilter",
+      "attr": "val",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/spreadsheetml/2017/richdata2}top10",
+      "attr": "filterVal",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/spreadsheetml/2017/richdata2}top10",
+      "attr": "val",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/webextensions/taskpanes/2010/11}taskpane",
+      "attr": "width",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/chart}backward",
+      "attr": "val",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/chart}crossesAt",
+      "attr": "val",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/chart}custUnit",
+      "attr": "val",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/chart}forward",
+      "attr": "val",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/chart}h",
+      "attr": "val",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/chart}intercept",
+      "attr": "val",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/chart}logBase",
+      "attr": "val",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/chart}majorUnit",
+      "attr": "val",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/chart}max",
+      "attr": "val",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/chart}min",
+      "attr": "val",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/chart}minorUnit",
+      "attr": "val",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/chart}pageMargins",
+      "attr": "b",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/chart}pageMargins",
+      "attr": "footer",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/chart}pageMargins",
+      "attr": "header",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/chart}pageMargins",
+      "attr": "l",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/chart}pageMargins",
+      "attr": "r",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/chart}pageMargins",
+      "attr": "t",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/chart}pictureStackUnit",
+      "attr": "val",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/chart}splitPos",
+      "attr": "val",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/chart}val",
+      "attr": "val",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/chart}w",
+      "attr": "val",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/chart}x",
+      "attr": "val",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/chart}y",
+      "attr": "val",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/diagram}adj",
+      "attr": "val",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/diagram}constr",
+      "attr": "fact",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/diagram}constr",
+      "attr": "val",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/diagram}rule",
+      "attr": "fact",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/diagram}rule",
+      "attr": "max",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/diagram}rule",
+      "attr": "val",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/diagram}shape",
+      "attr": "rot",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/presentationml/2006/main}fltVal",
+      "attr": "val",
+      "kind": "single"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}bgColor",
+      "attr": "tint",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}calcPr",
+      "attr": "iterateDelta",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}col",
+      "attr": "width",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}color",
+      "attr": "tint",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}dynamicFilter",
+      "attr": "maxVal",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}dynamicFilter",
+      "attr": "val",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}fgColor",
+      "attr": "tint",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}gradientFill",
+      "attr": "bottom",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}gradientFill",
+      "attr": "degree",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}gradientFill",
+      "attr": "left",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}gradientFill",
+      "attr": "right",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}gradientFill",
+      "attr": "top",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}n",
+      "attr": "v",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}pageMargins",
+      "attr": "bottom",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}pageMargins",
+      "attr": "footer",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}pageMargins",
+      "attr": "header",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}pageMargins",
+      "attr": "left",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}pageMargins",
+      "attr": "right",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}pageMargins",
+      "attr": "top",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}pane",
+      "attr": "xSplit",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}pane",
+      "attr": "ySplit",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}parameter",
+      "attr": "double",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}pivotCacheDefinition",
+      "attr": "refreshedDate",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}rangePr",
+      "attr": "endNum",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}rangePr",
+      "attr": "groupInterval",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}rangePr",
+      "attr": "startNum",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}row",
+      "attr": "ht",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}row",
+      "attr": "{http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac}dyDescent",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}sharedItems",
+      "attr": "maxValue",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}sharedItems",
+      "attr": "minValue",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}sheetFormatPr",
+      "attr": "defaultColWidth",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}sheetFormatPr",
+      "attr": "defaultRowHeight",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}sheetFormatPr",
+      "attr": "{http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac}dyDescent",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}stop",
+      "attr": "position",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}sz",
+      "attr": "val",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}tabColor",
+      "attr": "tint",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}top10",
+      "attr": "filterVal",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}top10",
+      "attr": "val",
+      "kind": "double"
+    },
+    {
+      "element": "{urn:schemas-microsoft-com:office:office}extrusion",
+      "attr": "orientationangle",
+      "kind": "single"
+    },
+    {
+      "element": "{urn:schemas-microsoft-com:office:office}extrusion",
+      "attr": "shininess",
+      "kind": "single"
+    },
+    {
+      "element": "{urn:schemas-microsoft-com:office:office}extrusion",
+      "attr": "skewangle",
+      "kind": "single"
+    },
+    {
+      "element": "{urn:schemas-microsoft-com:vml}arc",
+      "attr": "{urn:schemas-microsoft-com:office:office}hrpct",
+      "kind": "single"
+    },
+    {
+      "element": "{urn:schemas-microsoft-com:vml}curve",
+      "attr": "{urn:schemas-microsoft-com:office:office}hrpct",
+      "kind": "single"
+    },
+    {
+      "element": "{urn:schemas-microsoft-com:vml}group",
+      "attr": "{urn:schemas-microsoft-com:office:office}hrpct",
+      "kind": "single"
+    },
+    {
+      "element": "{urn:schemas-microsoft-com:vml}image",
+      "attr": "{urn:schemas-microsoft-com:office:office}hrpct",
+      "kind": "single"
+    },
+    {
+      "element": "{urn:schemas-microsoft-com:vml}line",
+      "attr": "{urn:schemas-microsoft-com:office:office}hrpct",
+      "kind": "single"
+    },
+    {
+      "element": "{urn:schemas-microsoft-com:vml}oval",
+      "attr": "{urn:schemas-microsoft-com:office:office}hrpct",
+      "kind": "single"
+    },
+    {
+      "element": "{urn:schemas-microsoft-com:vml}polyline",
+      "attr": "{urn:schemas-microsoft-com:office:office}hrpct",
+      "kind": "single"
+    },
+    {
+      "element": "{urn:schemas-microsoft-com:vml}rect",
+      "attr": "{urn:schemas-microsoft-com:office:office}hrpct",
+      "kind": "single"
+    },
+    {
+      "element": "{urn:schemas-microsoft-com:vml}roundrect",
+      "attr": "{urn:schemas-microsoft-com:office:office}hrpct",
+      "kind": "single"
+    },
+    {
+      "element": "{urn:schemas-microsoft-com:vml}shape",
+      "attr": "{urn:schemas-microsoft-com:office:office}hrpct",
+      "kind": "single"
+    },
+    {
+      "element": "{urn:schemas-microsoft-com:vml}shapetype",
+      "attr": "{urn:schemas-microsoft-com:office:office}hrpct",
+      "kind": "single"
+    }
+  ],
+  "texts": [
+    {
+      "element": "{http://schemas.microsoft.com/office/drawing/2012/chartStyle}lineWidthScale",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/drawing/2014/chartex}binSize",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.microsoft.com/office/spreadsheetml/2022/featurepropertybag}d",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes}r4",
+      "kind": "single"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes}r8",
+      "kind": "double"
+    }
+  ]
+}

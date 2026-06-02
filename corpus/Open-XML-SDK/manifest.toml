@@ -1,0 +1,13 @@
+[corpus]
+id = "open_xml_sdk"
+name = "Open-XML-SDK"
+path = "corpus/Open-XML-SDK"
+license = "MIT"
+source = "https://github.com/dotnet/Open-XML-SDK"
+default_roundtrip = false
+
+[[expectation]]
+file = "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/encrypted_pptx.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "encrypted package"

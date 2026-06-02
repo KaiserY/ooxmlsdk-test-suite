@@ -1,0 +1,15 @@
+[package]
+name = "ooxmlsdk-roundtrip-tests"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+build = "build.rs"
+
+[dependencies]
+ooxmlsdk-corpus-test-support = { workspace = true }
+
+[build-dependencies]
+serde = { workspace = true }
+toml = { workspace = true }

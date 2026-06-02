@@ -1,0 +1,4 @@
+[[corpus]]
+id = "open_xml_sdk"
+path = "corpus/Open-XML-SDK"
+manifest = "corpus/Open-XML-SDK/manifest.toml"
