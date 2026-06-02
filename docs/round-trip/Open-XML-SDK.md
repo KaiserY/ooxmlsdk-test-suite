@@ -12,11 +12,11 @@
 
 | Total files | Round-trip candidates | Open-only | Invalid | Known failures | Last run | Passed | Failed |
 | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: |
-| 884 | 883 | 0 | 1 | 0 | 2026-06-02 | 851 | 33 |
+| 884 | 880 | 0 | 4 | 0 | 2026-06-02 | 854 | 30 |
 
 The current scaffold generates one ignored test per supported Office package
-fixture. The encrypted PowerPoint fixture is classified as `invalid` in the
-corpus manifest and passed its invalid-package expectation.
+fixture. Encrypted and intentionally invalid fixtures are classified as
+`invalid` in the corpus manifest and passed their invalid-package expectations.
 
 ## Last Run
 
@@ -27,7 +27,7 @@ cargo test -p ooxmlsdk-roundtrip-tests --test open_xml_sdk_roundtrip -- --ignore
 Result:
 
 ```text
-test result: FAILED. 851 passed; 33 failed; 0 ignored; 0 measured; 0 filtered out; finished in 161.02s
+test result: FAILED. 854 passed; 30 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.17s
 ```
 
 The round-trip check is aligned with the high-standard `doc_samples` comparison

@@ -10,35 +10,35 @@
 
 ## Current Status
 
-| Total files | Round-trip candidates | Open-only | Invalid | Known failures | Last run | Status |
-| ---: | ---: | ---: | ---: | ---: | --- | --- |
-| 677 | 677 | 0 | 0 | 0 | 2026-06-02 | full run aborted |
+| Total files | Round-trip candidates | Open-only | Invalid | Known failures | Last run | Passed | Failed |
+| ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: |
+| 677 | 614 | 0 | 63 | 0 | 2026-06-02 | 628 | 49 |
 
 The current scaffold generates one ignored test per supported Office package
 fixture.
 
-The first full run aborted on
-`Apache-POI/test-data/document/deep_table_cell.docx` with a stack overflow, so
-there is not yet a complete pass/fail total for all 677 files.
+## Last Run
 
-## Initial Results
+```sh
+cargo test -p ooxmlsdk-roundtrip-tests --test apache_poi_roundtrip -- --ignored
+```
 
-| Filter | Files run | Passed | Failed | Notes |
-| --- | ---: | ---: | ---: | --- |
-| `test_data_spreadsheet` | 364 | 316 | 48 | includes malformed, fuzz, chart, drawing, pivot, and xmlbomb failures |
-| `test_data_slideshow` | 96 | 76 | 20 | includes corrupt zip, fuzz, chart axis, and chart extension failures |
-| `test_data_integration` | 27 | 22 | 5 | includes customXml, altChunk, AlternateContent, and diagram namespace failures |
-| Combined completed filters | 487 | 414 | 73 | excludes document corpus after the aborting case and other smaller directories |
+Result:
+
+```text
+test result: FAILED. 628 passed; 49 failed; 0 ignored; 0 measured; 0 filtered out; finished in 122.70s
+```
 
 Observed failure categories:
 
-- corrupt or adversarial packages: `clusterfuzz-*`, `crash-*`,
-  `poc-xmlbomb*`, `xlsx-corrupted.xlsx`
 - unsupported or strict schema cases: `AlternateContent`, negative chart axis
   ids, `ep:Properties`, `xm:macrosheet`
 - round-trip mismatches: chart extension ordering, customXml attribute loss,
   relationship namespace attributes, diagram extension namespaces
-- aborting case: `test-data/document/deep_table_cell.docx`
+
+Invalid-package expectations include encrypted CDFV2 packages, corrupt fuzz
+and crash fixtures, empty or missing-part packages, XML entity expansion
+fixtures, and intentionally invalid OPC compliance cases.
 
 ## Run Command
 

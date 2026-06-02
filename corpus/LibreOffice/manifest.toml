@@ -5,3 +5,141 @@ path = "corpus/LibreOffice"
 license = "MPL-2.0"
 source = "https://github.com/LibreOffice/core"
 default_roundtrip = false
+
+[[expectation]]
+file = "filter/qa/unit/data/empty.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "empty file used for LibreOffice filter detection"
+
+[[expectation]]
+file = "sc/qa/unit/data/xlsm/pass/CVE-2016-0122-1.xlsm"
+test = "roundtrip"
+mode = "invalid"
+reason = "CVE regression fixture is not an OOXML zip package"
+
+[[expectation]]
+file = "sc/qa/unit/data/xlsx/forcepoint107.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt zip package; LibreOffice test expects normal load failure and RepairPackage recovery"
+
+[[expectation]]
+file = "sc/qa/unit/data/xlsx/pass/CVE-2017-0199-1.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "CVE regression fixture is not an OOXML zip package"
+
+[[expectation]]
+file = "sc/qa/unit/data/xlsx/pass/CVE-2017-0199-2.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "CVE regression fixture is not an OOXML zip package"
+
+[[expectation]]
+file = "sc/qa/unit/data/xlsx/tdf131575.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "broken package; LibreOffice test expects normal load failure and RepairPackage recovery"
+
+[[expectation]]
+file = "sd/qa/unit/data/pptx/fail/ofz35597-1.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt oss-fuzz zip package"
+
+[[expectation]]
+file = "sd/qa/unit/data/pptx/fail/ofz46160-1.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt oss-fuzz zip package"
+
+[[expectation]]
+file = "sw/qa/core/data/ooxml/fail/LIBREOFFICE-DBDAZAEC.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt zip package in LibreOffice fail corpus"
+
+[[expectation]]
+file = "sw/qa/core/data/ooxml/fail/EDB-36788-1.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt zip package in LibreOffice fail corpus"
+
+[[expectation]]
+file = "sw/qa/core/data/ooxml/fail/ofz14422-1.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt oss-fuzz zip package in LibreOffice fail corpus"
+
+[[expectation]]
+file = "sw/qa/core/data/ooxml/fail/ofz37458-1.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt oss-fuzz zip package in LibreOffice fail corpus"
+
+[[expectation]]
+file = "sw/qa/core/data/ooxml/fail/ofz4825-1.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt oss-fuzz zip package in LibreOffice fail corpus"
+
+[[expectation]]
+file = "sw/qa/core/data/ooxml/fail/ofz9934-1.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt oss-fuzz zip package in LibreOffice fail corpus"
+
+[[expectation]]
+file = "sw/qa/extras/odfimport/data/tdf76322_columnBreakInHeader.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "ODF package with OOXML extension"
+
+[[expectation]]
+file = "sw/qa/extras/ooxmlexport/data/Encrypted_LO_Standard_abc.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "encrypted CDFV2 package"
+
+[[expectation]]
+file = "sw/qa/extras/ooxmlexport/data/Encrypted_MSO2007_abc.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "encrypted CDFV2 package"
+
+[[expectation]]
+file = "sw/qa/extras/ooxmlexport/data/Encrypted_MSO2010_abc.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "encrypted CDFV2 package"
+
+[[expectation]]
+file = "sw/qa/extras/ooxmlexport/data/Encrypted_MSO2013_abc.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "encrypted CDFV2 package"
+
+[[expectation]]
+file = "sw/qa/extras/ooxmlexport/data/tdf171025_pageAfter.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "ODF package with OOXML extension"
+
+[[expectation]]
+file = "sw/qa/extras/ooxmlexport/data/tdf171038_pageAfter.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "ODF package with OOXML extension"
+
+[[expectation]]
+file = "sw/qa/extras/uiwriter/data/ofz18563.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt oss-fuzz zip package"
+
+[[expectation]]
+file = "sw/qa/extras/uiwriter/data/tdf132596.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "ODF package with OOXML extension"

@@ -5,3 +5,381 @@ path = "corpus/Apache-POI"
 license = "Apache-2.0"
 source = "https://github.com/apache/poi"
 default_roundtrip = false
+
+[[expectation]]
+file = "test-data/document/bug53475-password-is-pass.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "encrypted CDFV2 package"
+
+[[expectation]]
+file = "test-data/document/bug53475-password-is-solrcell.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "encrypted CDFV2 package"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIFuzzer-6709287337197568.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIXWPFFuzzer-4791943399604224.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIXWPFFuzzer-4959857092198400.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIXWPFFuzzer-4961551840247808.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIXWPFFuzzer-5166796835258368.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIXWPFFuzzer-5313273089884160.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIXWPFFuzzer-5564805011079168.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIXWPFFuzzer-5569740188549120.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIXWPFFuzzer-6061520554164224.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIXWPFFuzzer-6120975439364096.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIXWPFFuzzer-6442791109263360.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIXWPFFuzzer-6733884933668864.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/document/cpansearch.perl.org_src_tobyink_acme-rundoc-0.001_word-lib_hello_world.docm"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt zip package"
+
+[[expectation]]
+file = "test-data/document/crash-517626e815e0afa9decd0ebb6d1dee63fb9907dd.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt crash fixture"
+
+[[expectation]]
+file = "test-data/document/ExternalEntityInText.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "external entity expansion fixture"
+
+[[expectation]]
+file = "test-data/document/truncated62886.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "truncated zip package"
+
+[[expectation]]
+file = "test-data/openxml4j/invalid.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "empty invalid package fixture"
+
+[[expectation]]
+file = "test-data/openxml4j/OPCCompliance_CoreProperties_LimitedXSITypeAttribute_PresentWithUnauthorizedValueFAIL.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "intentionally invalid OPC compliance fixture"
+
+[[expectation]]
+file = "test-data/poifs/60320-protected.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "encrypted CDFV2 package"
+
+[[expectation]]
+file = "test-data/poifs/extenxls_pwd123.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "encrypted CDFV2 package"
+
+[[expectation]]
+file = "test-data/poifs/protect.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "encrypted CDFV2 package"
+
+[[expectation]]
+file = "test-data/poifs/protected_agile.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "encrypted CDFV2 package"
+
+[[expectation]]
+file = "test-data/poifs/protected_sha512.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "encrypted CDFV2 package"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIFuzzer-5205835528404992.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIXSLFFuzzer-4838644450394112.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIXSLFFuzzer-4986044400861184.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIXSLFFuzzer-5463285576892416.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIXSLFFuzzer-5471515212382208.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIXSLFFuzzer-5611274456596480.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIXSLFFuzzer-6071540680032256.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIXSLFFuzzer-6254434927378432.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIXSLFFuzzer-6372932378820608.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIXSLFFuzzer-6435650376957952.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/slideshow/crash-57308ca363f5b71763c489d1b432aff009d4bc4f.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt crash fixture"
+
+[[expectation]]
+file = "test-data/slideshow/Divino_Revelado.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/49609.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "missing required package part"
+
+[[expectation]]
+file = "test-data/spreadsheet/54764-2.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "XML entity expansion fixture"
+
+[[expectation]]
+file = "test-data/spreadsheet/54764.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "XML entity expansion fixture"
+
+[[expectation]]
+file = "test-data/spreadsheet/58616.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIFuzzer-5040805309710336.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIXSSFFuzzer-4828727001088000.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIXSSFFuzzer-5089447305609216.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIXSSFFuzzer-5185049589579776.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIXSSFFuzzer-5265527465181184.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIXSSFFuzzer-5937385319563264.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIXSSFFuzzer-6123461607817216.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIXSSFFuzzer-6419366255919104.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIXSSFFuzzer-6448258963341312.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-XLSX2CSVFuzzer-5025401116950528.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-XLSX2CSVFuzzer-5542865479270400.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-XLSX2CSVFuzzer-5636439151607808.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-XLSX2CSVFuzzer-6504225896792064.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-XLSX2CSVFuzzer-6594557414080512.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/crash-274d6342e4842d61be0fb48eaadad6208ae767ae.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt crash fixture"
+
+[[expectation]]
+file = "test-data/spreadsheet/crash-9bf3cd4bd6f50a8a9339d363c2c7af14b536865c.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt crash fixture"
+
+[[expectation]]
+file = "test-data/spreadsheet/deep-data.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/MalformedSSTCount.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "intentionally malformed shared string table fixture"
+
+[[expectation]]
+file = "test-data/spreadsheet/poc-xmlbomb-empty.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "XML entity expansion fixture"
+
+[[expectation]]
+file = "test-data/spreadsheet/poc-xmlbomb.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "XML entity expansion fixture"
+
+[[expectation]]
+file = "test-data/spreadsheet/protected_passtika.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "encrypted CDFV2 package"
+
+[[expectation]]
+file = "test-data/spreadsheet/xlsx-corrupted.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt package relationships"

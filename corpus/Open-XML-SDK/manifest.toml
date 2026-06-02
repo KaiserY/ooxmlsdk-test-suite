@@ -11,3 +11,21 @@ file = "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/encrypted_pptx
 test = "roundtrip"
 mode = "invalid"
 reason = "encrypted package"
+
+[[expectation]]
+file = "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Invalid_Word15Comments.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "intentionally invalid Word 15 comments extension fixture"
+
+[[expectation]]
+file = "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/protected/document with password.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "encrypted CDFV2 package"
+
+[[expectation]]
+file = "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/unable to normalized/document with password.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "encrypted CDFV2 package"
