@@ -59,10 +59,14 @@ to a git or registry dependency.
 - `cargo fmt --all`: format all Rust code.
 - `cargo check --workspace --tests`: compile workspace test targets without
   running tests.
+- `cargo clippy --workspace --tests -- -D warnings`: run Clippy for workspace
+  test targets.
 - `cargo test --workspace`: run default tests. This does not run ignored corpus
   tests.
 - `cargo test -p ooxmlsdk-corpus-test-support --test float_rules_sync -- --ignored`:
   compare checked-in schema float rules with `ooxmlsdk/data`.
+- `cargo test -p ooxmlsdk-roundtrip-tests --test apache_poi_roundtrip -- --ignored --test-threads=1`:
+  run the Apache POI round-trip corpus lane.
 - `cargo test -p ooxmlsdk-roundtrip-tests --test open_xml_sdk_roundtrip -- --ignored --test-threads=1`:
   run the Open-XML-SDK round-trip corpus lane.
 
@@ -83,6 +87,14 @@ normal build or test paths read `../ooxmlsdk/data`; use the ignored
 
 If this workspace intentionally differs from the upstream `doc_samples`
 comparison, document the difference in `docs/round-trip/`.
+
+## Clippy
+
+- Run Clippy before finalizing Rust changes:
+  `cargo clippy --workspace --tests -- -D warnings`.
+- Fix Clippy findings directly. Do not silence findings with `#[allow(...)]`,
+  `#![allow(...)]`, or similar hacks unless the user explicitly asks for a
+  specific exception and the exception is documented with the reason.
 
 ## Documentation
 

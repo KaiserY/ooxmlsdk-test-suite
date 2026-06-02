@@ -2,3 +2,8 @@
 id = "open_xml_sdk"
 path = "corpus/Open-XML-SDK"
 manifest = "corpus/Open-XML-SDK/manifest.toml"
+
+[[corpus]]
+id = "apache_poi"
+path = "corpus/Apache-POI"
+manifest = "corpus/Apache-POI/manifest.toml"

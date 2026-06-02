@@ -12,21 +12,51 @@ fn main() {
         .parent()
         .and_then(Path::parent)
         .expect("test crate should be under crates/");
-    let corpus_dir = workspace_dir.join("corpus/Open-XML-SDK");
     let out_dir = PathBuf::from(env::var("OUT_DIR").expect("missing OUT_DIR"));
-    let out_file = out_dir.join("open_xml_sdk_roundtrip_tests.rs");
 
-    println!("cargo:rerun-if-changed={}", corpus_dir.display());
     println!(
         "cargo:rerun-if-changed={}",
         workspace_dir.join("corpus-manifest.toml").display()
     );
+
+    generate_corpus_tests(
+        workspace_dir,
+        &out_dir,
+        CorpusConfig {
+            dir_name: "Open-XML-SDK",
+            fn_prefix: "open_xml_sdk",
+            out_file: "open_xml_sdk_roundtrip_tests.rs",
+        },
+    );
+    generate_corpus_tests(
+        workspace_dir,
+        &out_dir,
+        CorpusConfig {
+            dir_name: "Apache-POI",
+            fn_prefix: "apache_poi",
+            out_file: "apache_poi_roundtrip_tests.rs",
+        },
+    );
+}
+
+#[derive(Clone, Copy)]
+struct CorpusConfig {
+    dir_name: &'static str,
+    fn_prefix: &'static str,
+    out_file: &'static str,
+}
+
+fn generate_corpus_tests(workspace_dir: &Path, out_dir: &Path, config: CorpusConfig) {
+    let corpus_dir = workspace_dir.join("corpus").join(config.dir_name);
+    let out_file = out_dir.join(config.out_file);
+
+    println!("cargo:rerun-if-changed={}", corpus_dir.display());
     println!(
         "cargo:rerun-if-changed={}",
         corpus_dir.join("manifest.toml").display()
     );
 
-    let expectations = read_expectations(&corpus_dir.join("manifest.toml"), "Open-XML-SDK");
+    let expectations = read_expectations(&corpus_dir.join("manifest.toml"), config.dir_name);
     let mut files = collect_doc_files(&corpus_dir, workspace_dir);
     files.sort();
 
@@ -35,21 +65,31 @@ fn main() {
         let slug = slugify(&file_name);
         match expectations.get(&file_name).copied().unwrap_or(ExpectationMode::RoundTrip) {
       ExpectationMode::RoundTrip => generated.push_str(&format!(
-        "#[test]\n#[ignore = \"corpus round-trip tests are run explicitly\"]\nfn round_trip_open_xml_sdk_{slug}() {{\n  assert_corpus_round_trip({file_name:?});\n}}\n\n"
+        "#[test]\n#[ignore = \"corpus round-trip tests are run explicitly\"]\nfn round_trip_{}_{slug}() {{\n  let path = ooxmlsdk_corpus_test_support::corpus_file_path({file_name:?});\n  ooxmlsdk_corpus_test_support::roundtrip::assert_package_file_round_trip(&path, {file_name:?});\n}}\n\n",
+        config.fn_prefix
       )),
       ExpectationMode::OpenOnly => generated.push_str(&format!(
-        "#[test]\n#[ignore = \"corpus open-only tests are run explicitly\"]\nfn open_only_open_xml_sdk_{slug}() {{\n  assert_corpus_opens({file_name:?});\n}}\n\n"
+        "#[test]\n#[ignore = \"corpus open-only tests are run explicitly\"]\nfn open_only_{}_{slug}() {{\n  let path = ooxmlsdk_corpus_test_support::corpus_file_path({file_name:?});\n  ooxmlsdk_corpus_test_support::roundtrip::assert_package_file_opens(&path, {file_name:?});\n}}\n\n",
+        config.fn_prefix
       )),
       ExpectationMode::Invalid => generated.push_str(&format!(
-        "#[test]\n#[ignore = \"corpus invalid-package tests are run explicitly\"]\nfn invalid_open_xml_sdk_{slug}() {{\n  assert_corpus_invalid({file_name:?});\n}}\n\n"
+        "#[test]\n#[ignore = \"corpus invalid-package tests are run explicitly\"]\nfn invalid_{}_{slug}() {{\n  let path = ooxmlsdk_corpus_test_support::corpus_file_path({file_name:?});\n  ooxmlsdk_corpus_test_support::roundtrip::assert_package_file_invalid(&path, {file_name:?});\n}}\n\n",
+        config.fn_prefix
       )),
       ExpectationMode::KnownFailure => generated.push_str(&format!(
-        "#[test]\n#[ignore = \"known corpus failure\"]\nfn known_failure_open_xml_sdk_{slug}() {{\n  assert_corpus_round_trip({file_name:?});\n}}\n\n"
+        "#[test]\n#[ignore = \"known corpus failure\"]\nfn known_failure_{}_{slug}() {{\n  let path = ooxmlsdk_corpus_test_support::corpus_file_path({file_name:?});\n  ooxmlsdk_corpus_test_support::roundtrip::assert_package_file_round_trip(&path, {file_name:?});\n}}\n\n",
+        config.fn_prefix
       )),
     }
     }
 
-    fs::write(out_file, generated).expect("write generated Open-XML-SDK round-trip tests");
+    fs::write(&out_file, generated).unwrap_or_else(|err| {
+        panic!(
+            "write generated {} round-trip tests {}: {err}",
+            config.dir_name,
+            out_file.display()
+        )
+    });
 }
 
 #[derive(Deserialize)]

@@ -2,5 +2,12 @@
 
 License and notice files for imported corpora live here, grouped by source.
 
-The root `LICENSE` applies to test code in this repository. It does not
-relicense files under `corpus/`.
+The root `LICENSE-APACHE` and `LICENSE-MIT` files apply to test code in this
+repository. They do not relicense files under `corpus/`.
+
+## Imported Corpus Licenses
+
+| Corpus | License | Files |
+| --- | --- | --- |
+| Apache POI | Apache-2.0 | `licenses/Apache-POI/LICENSE`, `licenses/Apache-POI/NOTICE` |
+| Open-XML-SDK | MIT | `licenses/Open-XML-SDK/LICENSE`, `licenses/Open-XML-SDK/NOTICE` |
