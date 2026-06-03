@@ -12,7 +12,7 @@
 
 | Total files | Round-trip candidates | Open-only | Invalid | Known failures | Last run | Passed | Failed |
 | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: |
-| 677 | 614 | 0 | 63 | 0 | 2026-06-02 | 628 | 49 |
+| 677 | 614 | 0 | 63 | 0 | 2026-06-04 | 649 | 28 |
 
 The current scaffold generates one ignored test per supported Office package
 fixture.
@@ -26,7 +26,7 @@ cargo test -p ooxmlsdk-roundtrip-tests --test apache_poi_roundtrip -- --ignored
 Result:
 
 ```text
-test result: FAILED. 628 passed; 49 failed; 0 ignored; 0 measured; 0 filtered out; finished in 122.70s
+test result: FAILED. 649 passed; 28 failed; 0 ignored; 0 measured; 0 filtered out; finished in 115.63s
 ```
 
 Observed failure categories:

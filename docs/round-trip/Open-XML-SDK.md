@@ -12,7 +12,7 @@
 
 | Total files | Round-trip candidates | Open-only | Invalid | Known failures | Last run | Passed | Failed |
 | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: |
-| 884 | 880 | 0 | 4 | 0 | 2026-06-02 | 854 | 30 |
+| 884 | 880 | 0 | 4 | 0 | 2026-06-04 | 884 | 0 |
 
 The current scaffold generates one ignored test per supported Office package
 fixture. Encrypted and intentionally invalid fixtures are classified as
@@ -27,7 +27,7 @@ cargo test -p ooxmlsdk-roundtrip-tests --test open_xml_sdk_roundtrip -- --ignore
 Result:
 
 ```text
-test result: FAILED. 854 passed; 30 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.17s
+test result: ok. 884 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.35s
 ```
 
 The round-trip check is aligned with the high-standard `doc_samples` comparison
