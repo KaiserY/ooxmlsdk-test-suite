@@ -19,6 +19,43 @@ mode = "invalid"
 reason = "intentionally invalid Word 15 comments extension fixture"
 
 [[expectation]]
+file = "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment022.docx"
+test = "roundtrip"
+mode = "open_only"
+reason = "chart series child order does not match the schema sequence"
+
+[[expectation]]
+file = "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment041.docx"
+test = "roundtrip"
+mode = "open_only"
+reason = "document settings child order does not match the schema sequence"
+
+
+[[expectation]]
+file = "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/ForTestCase/Bug242602_SDT - unknown.docx"
+test = "roundtrip"
+mode = "open_only"
+reason = "w14:docId contains invalid leaf-element text that Open XML SDK preserves as shadow inner XML"
+
+[[expectation]]
+file = "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/ParaPr/parabidi.docx"
+test = "roundtrip"
+mode = "open_only"
+reason = "paragraph properties child order does not match the schema sequence"
+
+[[expectation]]
+file = "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/5Errors.docx"
+test = "roundtrip"
+mode = "open_only"
+reason = "intentionally invalid fixture contains duplicate singleton paragraph and run properties"
+
+[[expectation]]
+file = "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/simpleSdt.docx"
+test = "roundtrip"
+mode = "open_only"
+reason = "run contains invalid direct text that Open XML SDK preserves as an OpenXmlMiscNode"
+
+[[expectation]]
 file = "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/protected/document with password.docx"
 test = "roundtrip"
 mode = "invalid"

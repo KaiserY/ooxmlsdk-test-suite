@@ -6,7 +6,6 @@ use std::{
     sync::OnceLock,
 };
 
-use ooxmlsdk::namespaces::XmlKnownRelationshipNamespace;
 use ooxmlsdk::parts::{
     PartRef, presentation_document::PresentationDocument,
     spreadsheet_document::SpreadsheetDocument, wordprocessing_document::WordprocessingDocument,
@@ -654,6 +653,7 @@ struct SchemaFloatTextRule {
 #[derive(Clone, Copy)]
 struct CanonicalOptions {
     normalize_float_lexemes: bool,
+    normalize_measure_lexemes: bool,
     normalize_doc_grid_char_space_overflow: bool,
     sort_package_properties: bool,
     sort_all_particle_children: bool,
@@ -663,6 +663,7 @@ impl CanonicalOptions {
     fn strict() -> Self {
         Self {
             normalize_float_lexemes: false,
+            normalize_measure_lexemes: false,
             normalize_doc_grid_char_space_overflow: false,
             sort_package_properties: false,
             sort_all_particle_children: false,
@@ -672,6 +673,7 @@ impl CanonicalOptions {
     fn relaxed_for_entry(entry_name: &str) -> Self {
         Self {
             normalize_float_lexemes: true,
+            normalize_measure_lexemes: true,
             normalize_doc_grid_char_space_overflow: true,
             sort_package_properties: is_package_properties_entry(entry_name),
             sort_all_particle_children: true,
@@ -682,6 +684,9 @@ impl CanonicalOptions {
         let mut enabled = Vec::new();
         if self.normalize_float_lexemes {
             enabled.push("schema float lexemes");
+        }
+        if self.normalize_measure_lexemes {
+            enabled.push("OOXML measure lexemes");
         }
         if self.normalize_doc_grid_char_space_overflow {
             enabled.push("docGrid charSpace overflow");
@@ -707,6 +712,13 @@ fn canonicalize_xml(
     file_name: &str,
     entry_name: &str,
 ) -> Vec<XmlNode> {
+    let decoded;
+    let xml = if let Some(bytes) = decode_utf16_xml_bytes(xml) {
+        decoded = bytes;
+        decoded.as_slice()
+    } else {
+        xml
+    };
     let mut reader = Reader::from_reader(Cursor::new(xml));
     reader.config_mut().trim_text(false);
     let mut buf = Vec::new();
@@ -826,6 +838,78 @@ fn canonicalize_xml(
         "unterminated xml for {file_name}:{entry_name}"
     );
     normalize_xml_nodes_for_entry(roots, options, entry_name)
+}
+
+fn decode_utf16_xml_bytes(bytes: &[u8]) -> Option<Vec<u8>> {
+    let (little_endian, bytes) = match bytes {
+        [0xFF, 0xFE, rest @ ..] => (true, rest),
+        [0xFE, 0xFF, rest @ ..] => (false, rest),
+        [b'<', 0, b'?', 0, ..] => (true, bytes),
+        [0, b'<', 0, b'?', ..] => (false, bytes),
+        _ => return None,
+    };
+    if bytes.len() % 2 != 0 {
+        return None;
+    }
+
+    let code_units = bytes.chunks_exact(2).map(|chunk| {
+        if little_endian {
+            u16::from_le_bytes([chunk[0], chunk[1]])
+        } else {
+            u16::from_be_bytes([chunk[0], chunk[1]])
+        }
+    });
+    let xml = std::char::decode_utf16(code_units)
+        .collect::<Result<String, _>>()
+        .ok()?;
+    Some(normalize_utf16_xml_decl(xml).into_bytes())
+}
+
+fn normalize_utf16_xml_decl(mut xml: String) -> String {
+    let Some(decl_end) = xml.find("?>").map(|end| end + 2) else {
+        return xml;
+    };
+    if !xml[..decl_end].starts_with("<?xml") {
+        return xml;
+    }
+
+    let Some(encoding_pos) = find_ascii_ignore_case(&xml[..decl_end], "encoding") else {
+        return xml;
+    };
+    let bytes = xml.as_bytes();
+    let mut pos = encoding_pos + "encoding".len();
+    while pos < decl_end && bytes[pos].is_ascii_whitespace() {
+        pos += 1;
+    }
+    if pos >= decl_end || bytes[pos] != b'=' {
+        return xml;
+    }
+    pos += 1;
+    while pos < decl_end && bytes[pos].is_ascii_whitespace() {
+        pos += 1;
+    }
+    if pos >= decl_end || (bytes[pos] != b'"' && bytes[pos] != b'\'') {
+        return xml;
+    }
+
+    let quote = bytes[pos];
+    let value_start = pos + 1;
+    let Some(value_end) = bytes[value_start..decl_end]
+        .iter()
+        .position(|&b| b == quote)
+        .map(|offset| value_start + offset)
+    else {
+        return xml;
+    };
+    xml.replace_range(value_start..value_end, "UTF-8");
+    xml
+}
+
+fn find_ascii_ignore_case(haystack: &str, needle: &str) -> Option<usize> {
+    haystack
+        .as_bytes()
+        .windows(needle.len())
+        .position(|window| window.eq_ignore_ascii_case(needle.as_bytes()))
 }
 
 fn normalize_xml_nodes_for_entry(
@@ -1363,6 +1447,11 @@ fn parse_xml_node(
         } else {
             value
         };
+        let value = if options.normalize_measure_lexemes {
+            normalize_ooxml_measure_attr_lexeme(&expanded_key, &value).unwrap_or(value)
+        } else {
+            value
+        };
         let value = if options.normalize_doc_grid_char_space_overflow {
             normalize_doc_grid_char_space_overflow(&name, &expanded_key, &value).unwrap_or(value)
         } else {
@@ -1406,6 +1495,12 @@ fn should_skip_whitespace_text(stack: &[XmlFrame]) -> bool {
     let Some(frame) = stack.last() else {
         return true;
     };
+
+    if frame.attrs.iter().any(|(name, value)| {
+        name == "{http://www.w3.org/XML/1998/namespace}space" && value == "preserve"
+    }) {
+        return false;
+    }
 
     !matches!(frame.children.last(), Some(XmlNode::Text(_)))
 }
@@ -1498,6 +1593,70 @@ fn normalize_schema_float_lexeme(value: &str, kind: SchemaFloatKind) -> String {
             .map(render_schema_float_f64)
             .unwrap_or_else(|_| value.to_string()),
     }
+}
+
+fn normalize_ooxml_measure_lexeme(value: &str) -> Option<String> {
+    let unit_start = value.len().checked_sub(2)?;
+    let unit = &value[unit_start..];
+    if !matches!(unit, "mm" | "cm" | "in" | "pt" | "pc" | "pi") {
+        return None;
+    }
+
+    normalize_decimal_lexeme(&value[..unit_start]).map(|number| format!("{number}{unit}"))
+}
+
+fn normalize_ooxml_measure_attr_lexeme(attr_name: &str, value: &str) -> Option<String> {
+    const WORDPROCESSINGML_NS: &str =
+        "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+
+    let (attr_ns, attr_local) = split_expanded_name(attr_name);
+    if attr_ns != WORDPROCESSINGML_NS
+        || !matches!(
+            attr_local,
+            "w" | "pos" | "left" | "right" | "top" | "bottom" | "hSpace" | "vSpace"
+        )
+    {
+        return None;
+    }
+
+    normalize_ooxml_measure_lexeme(value)
+}
+
+fn normalize_decimal_lexeme(value: &str) -> Option<String> {
+    let (negative, digits) = value
+        .strip_prefix('-')
+        .map(|digits| (true, digits))
+        .unwrap_or((false, value));
+    let (integer, fraction) = digits
+        .split_once('.')
+        .map_or((digits, None), |(left, right)| (left, Some(right)));
+
+    if integer.is_empty() || !integer.bytes().all(|byte| byte.is_ascii_digit()) {
+        return None;
+    }
+    if let Some(fraction) = fraction
+        && (fraction.is_empty() || !fraction.bytes().all(|byte| byte.is_ascii_digit()))
+    {
+        return None;
+    }
+
+    let integer = integer.trim_start_matches('0');
+    let integer = if integer.is_empty() { "0" } else { integer };
+    let fraction = fraction
+        .map(|value| value.trim_end_matches('0'))
+        .unwrap_or("");
+    let is_zero = integer == "0" && fraction.is_empty();
+
+    let mut normalized = String::new();
+    if negative && !is_zero {
+        normalized.push('-');
+    }
+    normalized.push_str(integer);
+    if !fraction.is_empty() {
+        normalized.push('.');
+        normalized.push_str(fraction);
+    }
+    Some(normalized)
 }
 
 fn normalize_doc_grid_char_space_overflow(
@@ -1603,13 +1762,35 @@ fn normalize_ignorable_prefix_list(value: &str, namespaces: &BTreeMap<String, St
 }
 
 fn normalize_relationship_type_uri(value: &str) -> String {
-    XmlKnownRelationshipNamespace::from_uri(value)
-        .map(|namespace| namespace.uri().to_string())
+    const STRICT_OFFICE_REL_PREFIX: &str =
+        "http://purl.oclc.org/ooxml/officeDocument/relationships/";
+    const TRANSITIONAL_OFFICE_REL_PREFIX: &str =
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/";
+
+    match value {
+        "http://schemas.microsoft.com/office/2006/relationships/officeDocument" => {
+            return "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument".to_string();
+        }
+        "http://schemas.microsoft.com/office/2006/relationships/docPropsApp" => {
+            return "http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties".to_string();
+        }
+        "http://schemas.microsoft.com/package/2005/06/relationships/metadata/core-properties" => {
+            return "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties".to_string();
+        }
+        _ => {}
+    }
+
+    value
+        .strip_prefix(STRICT_OFFICE_REL_PREFIX)
+        .map(|suffix| format!("{TRANSITIONAL_OFFICE_REL_PREFIX}{suffix}"))
         .unwrap_or_else(|| value.to_string())
 }
 
 fn normalize_namespace_uri(value: &str) -> String {
     match value {
+        "http://schemas.microsoft.com/package/2005/06/relationships" => {
+            "http://schemas.openxmlformats.org/package/2006/relationships".to_string()
+        }
         "http://purl.oclc.org/ooxml/descriptions/base" => {
             "http://descriptions.openxmlformats.org/description/base".to_string()
         }
