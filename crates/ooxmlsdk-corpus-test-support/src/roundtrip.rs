@@ -655,6 +655,7 @@ struct CanonicalOptions {
     normalize_float_lexemes: bool,
     normalize_measure_lexemes: bool,
     normalize_doc_grid_char_space_overflow: bool,
+    normalize_header_footer_odd_type: bool,
     sort_package_properties: bool,
     sort_all_particle_children: bool,
 }
@@ -665,6 +666,7 @@ impl CanonicalOptions {
             normalize_float_lexemes: false,
             normalize_measure_lexemes: false,
             normalize_doc_grid_char_space_overflow: false,
+            normalize_header_footer_odd_type: false,
             sort_package_properties: false,
             sort_all_particle_children: false,
         }
@@ -675,6 +677,7 @@ impl CanonicalOptions {
             normalize_float_lexemes: true,
             normalize_measure_lexemes: true,
             normalize_doc_grid_char_space_overflow: true,
+            normalize_header_footer_odd_type: true,
             sort_package_properties: is_package_properties_entry(entry_name),
             sort_all_particle_children: true,
         }
@@ -690,6 +693,9 @@ impl CanonicalOptions {
         }
         if self.normalize_doc_grid_char_space_overflow {
             enabled.push("docGrid charSpace overflow");
+        }
+        if self.normalize_header_footer_odd_type {
+            enabled.push("header/footer odd type");
         }
         if self.sort_package_properties {
             enabled.push("package property order");
@@ -1457,6 +1463,11 @@ fn parse_xml_node(
         } else {
             value
         };
+        let value = if options.normalize_header_footer_odd_type {
+            normalize_header_footer_odd_type(&name, &expanded_key, &value).unwrap_or(value)
+        } else {
+            value
+        };
 
         attrs.push((expanded_key, value));
     }
@@ -1692,6 +1703,28 @@ fn normalize_doc_grid_char_space_overflow(
     }
 
     Some("0".to_string())
+}
+
+fn normalize_header_footer_odd_type(
+    element_name: &str,
+    attr_name: &str,
+    value: &str,
+) -> Option<String> {
+    const WORDPROCESSINGML_NS: &str =
+        "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+
+    let (element_ns, element_local) = split_expanded_name(element_name);
+    let (attr_ns, attr_local) = split_expanded_name(attr_name);
+    if element_ns != WORDPROCESSINGML_NS
+        || !matches!(element_local, "headerReference" | "footerReference")
+        || attr_ns != WORDPROCESSINGML_NS
+        || attr_local != "type"
+        || value != "odd"
+    {
+        return None;
+    }
+
+    Some("default".to_string())
 }
 
 fn render_schema_float_f32(value: f32) -> String {

@@ -13,6 +13,12 @@ mode = "open_only"
 reason = "style definition child order does not match the schema sequence"
 
 [[expectation]]
+file = "test-data/document/Bug51170.docx"
+test = "roundtrip"
+mode = "open_only"
+reason = "compatibility setting child order does not match the schema sequence"
+
+[[expectation]]
 file = "test-data/document/bug53475-password-is-pass.docx"
 test = "roundtrip"
 mode = "invalid"
