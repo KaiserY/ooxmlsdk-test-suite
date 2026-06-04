@@ -1513,11 +1513,22 @@ fn should_skip_whitespace_text(stack: &[XmlFrame]) -> bool {
 
     if frame.attrs.iter().any(|(name, value)| {
         name == "{http://www.w3.org/XML/1998/namespace}space" && value == "preserve"
-    }) {
+    }) && is_text_content_element(&frame.name) {
         return false;
     }
 
     !matches!(frame.children.last(), Some(XmlNode::Text(_)))
+}
+
+fn is_text_content_element(name: &str) -> bool {
+    matches!(
+        xml_local_name(name),
+        "t" | "instrText" | "delText" | "fldSimple" | "templateCode" | "text" | "posText"
+    )
+}
+
+fn xml_local_name(name: &str) -> &str {
+    name.rsplit_once('}').map(|(_, local)| local).unwrap_or(name)
 }
 
 fn push_xml_node(roots: &mut Vec<XmlNode>, stack: &mut [XmlFrame], node: XmlNode) {

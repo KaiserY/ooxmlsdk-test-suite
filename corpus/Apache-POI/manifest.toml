@@ -157,6 +157,12 @@ mode = "invalid"
 reason = "empty invalid package fixture"
 
 [[expectation]]
+file = "test-data/spreadsheet/sample-beta.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "pre-standard Excel beta shared strings use non-OOXML namespace and sstItem elements"
+
+[[expectation]]
 file = "test-data/openxml4j/OPCCompliance_CoreProperties_LimitedXSITypeAttribute_PresentWithUnauthorizedValueFAIL.docx"
 test = "roundtrip"
 mode = "invalid"
@@ -191,6 +197,18 @@ file = "test-data/poifs/protected_sha512.xlsx"
 test = "roundtrip"
 mode = "invalid"
 reason = "encrypted CDFV2 package"
+
+[[expectation]]
+file = "test-data/slideshow/chart-texture-bg.pptx"
+test = "roundtrip"
+mode = "open_only"
+reason = "chart child order places extLst before showDLblsOverMax, which does not match the schema sequence"
+
+[[expectation]]
+file = "test-data/slideshow/chart-picture-bg.pptx"
+test = "roundtrip"
+mode = "open_only"
+reason = "chart child order places extLst before showDLblsOverMax, which does not match the schema sequence"
 
 [[expectation]]
 file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIFuzzer-5205835528404992.pptx"
