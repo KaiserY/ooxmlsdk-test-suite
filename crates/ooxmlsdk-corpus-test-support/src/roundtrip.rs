@@ -343,7 +343,7 @@ fn assert_doc_sample_zip_equivalent(original: &[u8], roundtripped: &[u8], file_n
             continue;
         };
 
-        if is_xml_entry(name) {
+        if is_xml_entry(name) || is_psmdcp_entry(name) {
             errors.extend(xml_equivalence_errors(
                 original_bytes,
                 roundtripped_bytes,
@@ -397,6 +397,10 @@ fn read_zip_entries(bytes: &[u8], file_name: &str) -> BTreeMap<String, Vec<u8>> 
 
 fn is_xml_entry(name: &str) -> bool {
     name == "[Content_Types].xml" || name.ends_with(".xml") || name.ends_with(".rels")
+}
+
+fn is_psmdcp_entry(name: &str) -> bool {
+    name.ends_with(".psmdcp")
 }
 
 fn is_empty_relationships_entry(name: &str, bytes: &[u8]) -> bool {

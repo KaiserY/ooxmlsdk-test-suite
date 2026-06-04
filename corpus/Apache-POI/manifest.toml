@@ -19,6 +19,30 @@ mode = "open_only"
 reason = "compatibility setting child order does not match the schema sequence"
 
 [[expectation]]
+file = "test-data/document/documentProperties.docx"
+test = "roundtrip"
+mode = "open_only"
+reason = "compatibility setting child order does not match the schema sequence"
+
+[[expectation]]
+file = "test-data/document/headerFooter.docx"
+test = "roundtrip"
+mode = "open_only"
+reason = "compatibility setting child order does not match the schema sequence"
+
+[[expectation]]
+file = "test-data/document/heading123.docx"
+test = "roundtrip"
+mode = "open_only"
+reason = "compatibility setting child order does not match the schema sequence"
+
+[[expectation]]
+file = "test-data/document/MultipleBodyBug.docx"
+test = "roundtrip"
+mode = "open_only"
+reason = "document has multiple body elements but the schema allows at most one"
+
+[[expectation]]
 file = "test-data/document/bug53475-password-is-pass.docx"
 test = "roundtrip"
 mode = "invalid"
