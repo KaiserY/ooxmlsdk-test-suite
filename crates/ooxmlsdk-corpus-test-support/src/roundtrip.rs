@@ -319,6 +319,9 @@ fn doc_sample_kind(file_name: &str) -> DocSampleKind {
 fn assert_doc_sample_zip_equivalent(original: &[u8], roundtripped: &[u8], file_name: &str) {
     let original = read_zip_entries(original, file_name);
     let roundtripped = read_zip_entries(roundtripped, file_name);
+    let original = normalize_zip_entries_for_comparison(original, file_name, "original");
+    let roundtripped =
+        normalize_zip_entries_for_comparison(roundtripped, file_name, "roundtripped");
 
     let original_names: Vec<_> = original.keys().collect();
     let mut errors = Vec::new();
@@ -343,7 +346,9 @@ fn assert_doc_sample_zip_equivalent(original: &[u8], roundtripped: &[u8], file_n
             continue;
         };
 
-        if is_xml_entry(name) || is_psmdcp_entry(name) {
+        if should_compare_entry_as_xml(name, original_bytes, roundtripped_bytes)
+            || is_psmdcp_entry(name)
+        {
             errors.extend(xml_equivalence_errors(
                 original_bytes,
                 roundtripped_bytes,
@@ -395,8 +400,66 @@ fn read_zip_entries(bytes: &[u8], file_name: &str) -> BTreeMap<String, Vec<u8>> 
     entries
 }
 
-fn is_xml_entry(name: &str) -> bool {
-    name == "[Content_Types].xml" || name.ends_with(".xml") || name.ends_with(".rels")
+fn normalize_zip_entries_for_comparison(
+    entries: BTreeMap<String, Vec<u8>>,
+    file_name: &str,
+    side: &str,
+) -> BTreeMap<String, Vec<u8>> {
+    let mut normalized = BTreeMap::new();
+    for (name, bytes) in entries {
+        let comparison_name = normalize_relationship_entry_filename_for_comparison(&name)
+            .unwrap_or_else(|| name.clone());
+        if normalized.insert(comparison_name.clone(), bytes).is_some() {
+            panic!(
+                "ambiguous relationship zip entry casing in {side} package for {file_name}: {comparison_name}"
+            );
+        }
+    }
+    normalized
+}
+
+fn normalize_relationship_entry_filename_for_comparison(name: &str) -> Option<String> {
+    if name == "_rels/.rels" || !name.ends_with(".rels") {
+        return None;
+    }
+
+    let (parent_path, file_name) = name.rsplit_once('/')?;
+    if !parent_path.ends_with("/_rels") {
+        return None;
+    }
+
+    let lower_file_name = file_name.to_ascii_lowercase();
+    if file_name == lower_file_name {
+        return None;
+    }
+
+    let mut normalized = String::with_capacity(name.len());
+    normalized.push_str(parent_path);
+    normalized.push('/');
+    normalized.push_str(&lower_file_name);
+    Some(normalized)
+}
+
+fn should_compare_entry_as_xml(name: &str, original: &[u8], roundtripped: &[u8]) -> bool {
+    if name == "[Content_Types].xml" || name.ends_with(".rels") {
+        return true;
+    }
+
+    name.ends_with(".xml") && looks_like_xml_bytes(original) && looks_like_xml_bytes(roundtripped)
+}
+
+fn looks_like_xml_bytes(bytes: &[u8]) -> bool {
+    let bytes = bytes
+        .strip_prefix(b"\xEF\xBB\xBF")
+        .or_else(|| bytes.strip_prefix(b"\xFE\xFF"))
+        .or_else(|| bytes.strip_prefix(b"\xFF\xFE"))
+        .unwrap_or(bytes);
+
+    bytes
+        .iter()
+        .copied()
+        .find(|byte| !byte.is_ascii_whitespace())
+        == Some(b'<')
 }
 
 fn is_psmdcp_entry(name: &str) -> bool {
@@ -660,7 +723,16 @@ struct CanonicalOptions {
     normalize_measure_lexemes: bool,
     normalize_doc_grid_char_space_overflow: bool,
     normalize_header_footer_odd_type: bool,
+    normalize_core_property_dcterms_refinements: bool,
+    ignore_spreadsheet_fills_text_nodes: bool,
     sort_package_properties: bool,
+    sort_word_settings_children: bool,
+    sort_word_document_paragraph_properties_children: bool,
+    sort_word_document_section_properties_children: bool,
+    sort_word_numbering_level_children: bool,
+    sort_word_font_table_font_children: bool,
+    sort_chart_schema_children: bool,
+    normalize_chart_show_dlbls_over_max_extlst_order: bool,
     sort_all_particle_children: bool,
 }
 
@@ -671,7 +743,16 @@ impl CanonicalOptions {
             normalize_measure_lexemes: false,
             normalize_doc_grid_char_space_overflow: false,
             normalize_header_footer_odd_type: false,
+            normalize_core_property_dcterms_refinements: false,
+            ignore_spreadsheet_fills_text_nodes: false,
             sort_package_properties: false,
+            sort_word_settings_children: false,
+            sort_word_document_paragraph_properties_children: false,
+            sort_word_document_section_properties_children: false,
+            sort_word_numbering_level_children: false,
+            sort_word_font_table_font_children: false,
+            sort_chart_schema_children: false,
+            normalize_chart_show_dlbls_over_max_extlst_order: false,
             sort_all_particle_children: false,
         }
     }
@@ -682,7 +763,16 @@ impl CanonicalOptions {
             normalize_measure_lexemes: true,
             normalize_doc_grid_char_space_overflow: true,
             normalize_header_footer_odd_type: true,
+            normalize_core_property_dcterms_refinements: is_package_properties_entry(entry_name),
+            ignore_spreadsheet_fills_text_nodes: is_spreadsheet_styles_entry(entry_name),
             sort_package_properties: is_package_properties_entry(entry_name),
+            sort_word_settings_children: is_word_settings_entry(entry_name),
+            sort_word_document_paragraph_properties_children: is_word_document_entry(entry_name),
+            sort_word_document_section_properties_children: is_word_document_entry(entry_name),
+            sort_word_numbering_level_children: is_word_numbering_entry(entry_name),
+            sort_word_font_table_font_children: is_word_font_table_entry(entry_name),
+            sort_chart_schema_children: is_chart_entry(entry_name),
+            normalize_chart_show_dlbls_over_max_extlst_order: is_chart_entry(entry_name),
             sort_all_particle_children: true,
         }
     }
@@ -701,8 +791,35 @@ impl CanonicalOptions {
         if self.normalize_header_footer_odd_type {
             enabled.push("header/footer odd type");
         }
+        if self.normalize_core_property_dcterms_refinements {
+            enabled.push("core property dcterms refinements");
+        }
+        if self.ignore_spreadsheet_fills_text_nodes {
+            enabled.push("spreadsheet fills text nodes");
+        }
         if self.sort_package_properties {
             enabled.push("package property order");
+        }
+        if self.sort_word_settings_children {
+            enabled.push("word settings child order");
+        }
+        if self.sort_word_document_paragraph_properties_children {
+            enabled.push("word document paragraph properties child order");
+        }
+        if self.sort_word_document_section_properties_children {
+            enabled.push("word document section properties child order");
+        }
+        if self.sort_word_numbering_level_children {
+            enabled.push("word numbering level child order");
+        }
+        if self.sort_word_font_table_font_children {
+            enabled.push("word font table font child order");
+        }
+        if self.sort_chart_schema_children {
+            enabled.push("chart schema child order");
+        }
+        if self.normalize_chart_show_dlbls_over_max_extlst_order {
+            enabled.push("chart showDLblsOverMax/extLst order");
         }
         if self.sort_all_particle_children {
             enabled.push("xsd:all child order");
@@ -959,10 +1076,56 @@ fn normalize_xml_nodes_for_entry(
                     .expect("xml normalize child stack should not be empty");
                 element.children = collapse_adjacent_xml_text_nodes(children);
 
+                if options.normalize_core_property_dcterms_refinements
+                    && is_core_properties_root(&element.name)
+                {
+                    normalize_core_property_dcterms_refinement_children(&mut element.children);
+                }
+                if options.ignore_spreadsheet_fills_text_nodes
+                    && is_spreadsheet_fills_root(&element.name)
+                {
+                    element
+                        .children
+                        .retain(|child| !matches!(child, XmlNode::Text(_)));
+                }
+
                 if options.sort_package_properties
                     && is_package_properties_sort_root(entry_name, &element.name)
                 {
                     element.children.sort_by_key(xml_node_structural_sort_key);
+                }
+                if options.sort_word_settings_children
+                    && is_word_settings_order_relaxed_root(&element.name)
+                {
+                    element.children.sort_by_key(xml_node_structural_sort_key);
+                }
+                if options.sort_word_document_paragraph_properties_children
+                    && is_word_paragraph_properties_order_relaxed_root(&element.name)
+                {
+                    normalize_word_paragraph_properties_child_order(&mut element.children);
+                }
+                if options.sort_word_document_section_properties_children
+                    && is_word_section_properties_order_relaxed_root(&element.name)
+                {
+                    element.children.sort_by_key(xml_node_structural_sort_key);
+                }
+                if options.sort_word_numbering_level_children
+                    && is_word_numbering_level_order_relaxed_root(&element.name)
+                {
+                    element.children.sort_by_key(xml_node_structural_sort_key);
+                }
+                if options.sort_word_font_table_font_children
+                    && is_word_font_table_font_order_relaxed_root(&element.name)
+                {
+                    element.children.sort_by_key(xml_node_structural_sort_key);
+                }
+                if options.sort_chart_schema_children {
+                    normalize_chart_schema_child_order(&element.name, &mut element.children);
+                }
+                if options.normalize_chart_show_dlbls_over_max_extlst_order
+                    && is_chart_order_relaxed_root(&element.name)
+                {
+                    normalize_chart_show_dlbls_over_max_extlst_order(&mut element.children);
                 }
                 if options.sort_all_particle_children && is_all_particle_sort_root(&element.name) {
                     element.children.sort_by_key(xml_node_structural_sort_key);
@@ -1005,6 +1168,215 @@ fn collapse_adjacent_xml_text_nodes(nodes: Vec<XmlNode>) -> Vec<XmlNode> {
     collapsed
 }
 
+fn normalize_core_property_dcterms_refinement_children(children: &mut [XmlNode]) {
+    for child in children {
+        let XmlNode::Element(element) = child else {
+            continue;
+        };
+        if let Some(name) = normalized_core_property_dcterms_refinement_name(&element.name) {
+            element.name = name;
+        }
+    }
+}
+
+fn normalize_chart_show_dlbls_over_max_extlst_order(children: &mut Vec<XmlNode>) {
+    let Some(show_idx) = children
+        .iter()
+        .position(|child| xml_node_name(child) == Some(CHART_SHOW_DLBLS_OVER_MAX_NAME))
+    else {
+        return;
+    };
+    let Some(ext_idx) = children
+        .iter()
+        .position(|child| xml_node_name(child) == Some(CHART_EXT_LST_NAME))
+    else {
+        return;
+    };
+
+    if ext_idx > show_idx {
+        return;
+    }
+
+    let ext_lst = children.remove(ext_idx);
+    let insert_after_show_idx = children
+        .iter()
+        .position(|child| xml_node_name(child) == Some(CHART_SHOW_DLBLS_OVER_MAX_NAME))
+        .expect("showDLblsOverMax should remain after removing chart extLst")
+        + 1;
+    children.insert(insert_after_show_idx, ext_lst);
+}
+
+fn normalize_word_paragraph_properties_child_order(children: &mut [XmlNode]) {
+    children.sort_by_key(|child| {
+        word_paragraph_properties_child_rank(xml_node_name(child)).unwrap_or(u16::MAX)
+    });
+}
+
+fn word_paragraph_properties_child_rank(name: Option<&str>) -> Option<u16> {
+    Some(match name? {
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}pStyle" => 0,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}keepNext" => 1,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}keepLines" => 2,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}pageBreakBefore" => 3,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}framePr" => 4,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}widowControl" => 5,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}numPr" => 6,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}suppressLineNumbers" => 7,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}pBdr" => 8,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}shd" => 9,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tabs" => 10,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}suppressAutoHyphens" => 11,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}kinsoku" => 12,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}wordWrap" => 13,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}overflowPunct" => 14,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}topLinePunct" => 15,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}autoSpaceDE" => 16,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}autoSpaceDN" => 17,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}bidi" => 18,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}adjustRightInd" => 19,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}snapToGrid" => 20,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}spacing" => 21,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}ind" => 22,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}contextualSpacing" => 23,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}mirrorIndents" => 24,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}suppressOverlap" => 25,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}jc" => 26,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}textDirection" => 27,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}textAlignment" => 28,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}textboxTightWrap" => 29,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}outlineLvl" => 30,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}divId" => 31,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}cnfStyle" => 32,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}rPr" => 33,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}sectPr" => 34,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}pPrChange" => 35,
+        _ => return None,
+    })
+}
+
+fn normalize_chart_schema_child_order(parent_name: &str, children: &mut [XmlNode]) {
+    let Some(rank_fn) = chart_child_rank_fn(parent_name) else {
+        return;
+    };
+
+    children.sort_by_key(|child| rank_fn(xml_node_name(child)).unwrap_or(u16::MAX));
+}
+
+fn chart_child_rank_fn(parent_name: &str) -> Option<fn(Option<&str>) -> Option<u16>> {
+    match parent_name {
+        CHART_ROOT_NAME => Some(chart_root_child_rank),
+        CHART_PLOT_AREA_NAME => Some(chart_plot_area_child_rank),
+        CHART_CAT_AXIS_NAME | CHART_VAL_AXIS_NAME | CHART_SER_AXIS_NAME | CHART_DATE_AXIS_NAME => {
+            Some(chart_axis_child_rank)
+        }
+        _ => None,
+    }
+}
+
+fn chart_root_child_rank(name: Option<&str>) -> Option<u16> {
+    match name? {
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}title" => Some(0),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}autoTitleDeleted" => Some(1),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}pivotFmts" => Some(2),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}view3D" => Some(3),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}floor" => Some(4),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}sideWall" => Some(5),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}backWall" => Some(6),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}plotArea" => Some(7),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}legend" => Some(8),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}plotVisOnly" => Some(9),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}dispBlanksAs" => Some(10),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}showDLblsOverMax" => Some(11),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}extLst" => Some(12),
+        _ => None,
+    }
+}
+
+fn chart_plot_area_child_rank(name: Option<&str>) -> Option<u16> {
+    match name? {
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}layout" => Some(0),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}areaChart" => Some(10),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}area3DChart" => Some(11),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}lineChart" => Some(12),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}line3DChart" => Some(13),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}stockChart" => Some(14),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}radarChart" => Some(15),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}scatterChart" => Some(16),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}pieChart" => Some(17),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}pie3DChart" => Some(18),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}doughnutChart" => Some(19),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}barChart" => Some(20),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}bar3DChart" => Some(21),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}ofPieChart" => Some(22),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}surfaceChart" => Some(23),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}surface3DChart" => Some(24),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}bubbleChart" => Some(25),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}valAx" => Some(40),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}catAx" => Some(41),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}dateAx" => Some(42),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}serAx" => Some(43),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}dTable" => Some(50),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}spPr" => Some(51),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}extLst" => Some(52),
+        _ => None,
+    }
+}
+
+fn chart_axis_child_rank(name: Option<&str>) -> Option<u16> {
+    match name? {
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}axId" => Some(0),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}scaling" => Some(1),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}delete" => Some(2),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}axPos" => Some(3),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}majorGridlines" => Some(4),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}minorGridlines" => Some(5),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}title" => Some(6),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}numFmt" => Some(7),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}majorTickMark" => Some(8),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}minorTickMark" => Some(9),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}tickLblPos" => Some(10),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}spPr" => Some(11),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}txPr" => Some(12),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}crossAx" => Some(13),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}crosses" => Some(14),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}crossesAt" => Some(14),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}auto" => Some(20),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}lblAlgn" => Some(21),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}lblOffset" => Some(22),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}tickLblSkip" => Some(23),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}tickMarkSkip" => Some(24),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}noMultiLvlLbl" => Some(25),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}crossBetween" => Some(30),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}majorUnit" => Some(31),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}minorUnit" => Some(32),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}dispUnits" => Some(33),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}baseTimeUnit" => Some(40),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}majorTimeUnit" => Some(41),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}minorTimeUnit" => Some(42),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}extLst" => Some(50),
+        _ => None,
+    }
+}
+
+fn normalized_core_property_dcterms_refinement_name(name: &str) -> Option<String> {
+    const DC_NS: &str = "http://purl.org/dc/elements/1.1/";
+    const DCTERMS_NS: &str = "http://purl.org/dc/terms/";
+
+    let (ns, local) = split_expanded_name(name);
+    if ns != DCTERMS_NS || matches!(local, "created" | "modified") {
+        return None;
+    }
+
+    if matches!(
+        local,
+        "creator" | "description" | "identifier" | "language" | "subject" | "title"
+    ) {
+        Some(format!("{{{DC_NS}}}{local}"))
+    } else {
+        None
+    }
+}
+
 fn compare_xml_documents(original: &[XmlNode], roundtripped: &[XmlNode]) -> Vec<String> {
     struct CompareListFrame<'a> {
         parent_path: String,
@@ -1012,6 +1384,8 @@ fn compare_xml_documents(original: &[XmlNode], roundtripped: &[XmlNode]) -> Vec<
         roundtripped: &'a [XmlNode],
         original_idx: usize,
         roundtripped_idx: usize,
+        original_ordinals: BTreeMap<String, usize>,
+        roundtripped_ordinals: BTreeMap<String, usize>,
     }
 
     enum CompareTask<'a> {
@@ -1030,6 +1404,8 @@ fn compare_xml_documents(original: &[XmlNode], roundtripped: &[XmlNode]) -> Vec<
         roundtripped,
         original_idx: 0,
         roundtripped_idx: 0,
+        original_ordinals: BTreeMap::new(),
+        roundtripped_ordinals: BTreeMap::new(),
     })];
 
     while let Some(task) = stack.pop() {
@@ -1046,13 +1422,13 @@ fn compare_xml_documents(original: &[XmlNode], roundtripped: &[XmlNode]) -> Vec<
                         (XmlNode::Declaration(decl), node)
                             if !matches!(node, XmlNode::Declaration(_)) =>
                         {
+                            let path = next_xml_child_path(
+                                &frame.parent_path,
+                                &mut frame.original_ordinals,
+                                &frame.original[frame.original_idx],
+                            );
                             errors.push(format!(
-                                "{}: missing XML declaration {} before {}",
-                                xml_child_path(
-                                    &frame.parent_path,
-                                    frame.original,
-                                    frame.original_idx
-                                ),
+                                "{path}: missing XML declaration {} before {}",
                                 xml_declaration_summary(*decl),
                                 xml_node_summary(node)
                             ));
@@ -1061,23 +1437,28 @@ fn compare_xml_documents(original: &[XmlNode], roundtripped: &[XmlNode]) -> Vec<
                         (node, XmlNode::Declaration(decl))
                             if !matches!(node, XmlNode::Declaration(_)) =>
                         {
+                            let path = next_xml_child_path(
+                                &frame.parent_path,
+                                &mut frame.roundtripped_ordinals,
+                                &frame.roundtripped[frame.roundtripped_idx],
+                            );
                             errors.push(format!(
-                                "{}: extra XML declaration {} before {}",
-                                xml_child_path(
-                                    &frame.parent_path,
-                                    frame.original,
-                                    frame.original_idx
-                                ),
+                                "{path}: extra XML declaration {} before {}",
                                 xml_declaration_summary(*decl),
                                 xml_node_summary(node)
                             ));
                             frame.roundtripped_idx += 1;
                         }
                         _ => {
-                            let path = xml_child_path(
+                            let path = next_xml_child_path(
                                 &frame.parent_path,
-                                frame.original,
-                                frame.original_idx,
+                                &mut frame.original_ordinals,
+                                &frame.original[frame.original_idx],
+                            );
+                            let _ = next_xml_child_path(
+                                &frame.parent_path,
+                                &mut frame.roundtripped_ordinals,
+                                &frame.roundtripped[frame.roundtripped_idx],
                             );
                             next_node = Some(CompareTask::Node {
                                 path,
@@ -1169,6 +1550,8 @@ fn compare_xml_documents(original: &[XmlNode], roundtripped: &[XmlNode]) -> Vec<
                         roundtripped: &right.children,
                         original_idx: 0,
                         roundtripped_idx: 0,
+                        original_ordinals: BTreeMap::new(),
+                        roundtripped_ordinals: BTreeMap::new(),
                     }));
                 }
                 (left, right) => {
@@ -1263,9 +1646,18 @@ fn push_xml_name_error(
     }
 }
 
-fn xml_child_path(parent_path: &str, siblings: &[XmlNode], idx: usize) -> String {
-    let node = &siblings[idx];
-    let ordinal = xml_child_ordinal(siblings, idx);
+fn next_xml_child_path(
+    parent_path: &str,
+    ordinals: &mut BTreeMap<String, usize>,
+    node: &XmlNode,
+) -> String {
+    let key = xml_child_path_key(node);
+    let ordinal = ordinals.entry(key).or_default();
+    *ordinal += 1;
+    xml_child_path(parent_path, node, *ordinal)
+}
+
+fn xml_child_path(parent_path: &str, node: &XmlNode, ordinal: usize) -> String {
     match node {
         XmlNode::Declaration(_) => format!("{parent_path}/xml-declaration[{ordinal}]"),
         XmlNode::Element(element) => {
@@ -1278,20 +1670,16 @@ fn xml_child_path(parent_path: &str, siblings: &[XmlNode], idx: usize) -> String
     }
 }
 
-fn xml_child_ordinal(siblings: &[XmlNode], idx: usize) -> usize {
-    let node = &siblings[idx];
-    siblings[..=idx]
-        .iter()
-        .filter(|candidate| xml_nodes_share_path_name(candidate, node))
-        .count()
-}
-
-fn xml_nodes_share_path_name(left: &XmlNode, right: &XmlNode) -> bool {
-    match (left, right) {
-        (XmlNode::Declaration(_), XmlNode::Declaration(_)) => true,
-        (XmlNode::Text(_), XmlNode::Text(_)) => true,
-        (XmlNode::Element(left), XmlNode::Element(right)) => left.name == right.name,
-        _ => false,
+fn xml_child_path_key(node: &XmlNode) -> String {
+    match node {
+        XmlNode::Declaration(_) => "xml-declaration".to_string(),
+        XmlNode::Element(element) => {
+            let mut key = String::with_capacity(element.name.len() + 8);
+            key.push_str("element:");
+            key.push_str(&element.name);
+            key
+        }
+        XmlNode::Text(_) => "text".to_string(),
     }
 }
 
@@ -1458,7 +1846,7 @@ fn parse_xml_node(
             value
         };
         let value = if options.normalize_measure_lexemes {
-            normalize_ooxml_measure_attr_lexeme(&expanded_key, &value).unwrap_or(value)
+            normalize_ooxml_measure_attr_lexeme(&name, &expanded_key, &value).unwrap_or(value)
         } else {
             value
         };
@@ -1513,7 +1901,8 @@ fn should_skip_whitespace_text(stack: &[XmlFrame]) -> bool {
 
     if frame.attrs.iter().any(|(name, value)| {
         name == "{http://www.w3.org/XML/1998/namespace}space" && value == "preserve"
-    }) && is_text_content_element(&frame.name) {
+    }) && is_text_content_element(&frame.name)
+    {
         return false;
     }
 
@@ -1528,7 +1917,9 @@ fn is_text_content_element(name: &str) -> bool {
 }
 
 fn xml_local_name(name: &str) -> &str {
-    name.rsplit_once('}').map(|(_, local)| local).unwrap_or(name)
+    name.rsplit_once('}')
+        .map(|(_, local)| local)
+        .unwrap_or(name)
 }
 
 fn push_xml_node(roots: &mut Vec<XmlNode>, stack: &mut [XmlFrame], node: XmlNode) {
@@ -1561,6 +1952,86 @@ fn is_core_properties_root(name: &str) -> bool {
 
 fn is_package_properties_entry(entry_name: &str) -> bool {
     entry_name.starts_with("docProps/") && entry_name.ends_with(".xml")
+}
+
+fn is_spreadsheet_styles_entry(entry_name: &str) -> bool {
+    entry_name == "xl/styles.xml"
+}
+
+fn is_spreadsheet_fills_root(name: &str) -> bool {
+    name == "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}fills"
+}
+
+fn is_word_settings_entry(entry_name: &str) -> bool {
+    entry_name == "word/settings.xml"
+}
+
+fn is_word_document_entry(entry_name: &str) -> bool {
+    entry_name == "word/document.xml"
+}
+
+fn is_word_numbering_entry(entry_name: &str) -> bool {
+    entry_name == "word/numbering.xml"
+}
+
+fn is_word_font_table_entry(entry_name: &str) -> bool {
+    entry_name
+        .strip_prefix("word/fontTable")
+        .is_some_and(|suffix| suffix.ends_with(".xml"))
+}
+
+fn is_word_settings_order_relaxed_root(name: &str) -> bool {
+    matches!(
+        name,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}settings"
+            | "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}compat"
+    )
+}
+
+fn is_word_paragraph_properties_order_relaxed_root(name: &str) -> bool {
+    name == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}pPr"
+}
+
+fn is_word_section_properties_order_relaxed_root(name: &str) -> bool {
+    name == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}sectPr"
+}
+
+fn is_word_numbering_level_order_relaxed_root(name: &str) -> bool {
+    name == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}lvl"
+}
+
+fn is_word_font_table_font_order_relaxed_root(name: &str) -> bool {
+    name == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}font"
+}
+
+const CHART_ROOT_NAME: &str = "{http://schemas.openxmlformats.org/drawingml/2006/chart}chart";
+const CHART_PLOT_AREA_NAME: &str =
+    "{http://schemas.openxmlformats.org/drawingml/2006/chart}plotArea";
+const CHART_CAT_AXIS_NAME: &str = "{http://schemas.openxmlformats.org/drawingml/2006/chart}catAx";
+const CHART_VAL_AXIS_NAME: &str = "{http://schemas.openxmlformats.org/drawingml/2006/chart}valAx";
+const CHART_SER_AXIS_NAME: &str = "{http://schemas.openxmlformats.org/drawingml/2006/chart}serAx";
+const CHART_DATE_AXIS_NAME: &str = "{http://schemas.openxmlformats.org/drawingml/2006/chart}dateAx";
+const CHART_SHOW_DLBLS_OVER_MAX_NAME: &str =
+    "{http://schemas.openxmlformats.org/drawingml/2006/chart}showDLblsOverMax";
+const CHART_EXT_LST_NAME: &str = "{http://schemas.openxmlformats.org/drawingml/2006/chart}extLst";
+
+fn is_chart_entry(entry_name: &str) -> bool {
+    matches!(
+        entry_name.split_once("/charts/chart"),
+        Some((prefix, suffix))
+            if matches!(prefix, "word" | "xl" | "ppt") && suffix.ends_with(".xml")
+    )
+}
+
+fn is_chart_order_relaxed_root(name: &str) -> bool {
+    name == CHART_ROOT_NAME
+}
+
+fn xml_node_name(node: &XmlNode) -> Option<&str> {
+    match node {
+        XmlNode::Element(element) => Some(&element.name),
+        XmlNode::Declaration(_) | XmlNode::Text(_) => None,
+    }
 }
 
 fn is_package_properties_sort_root(entry_name: &str, name: &str) -> bool {
@@ -1631,21 +2102,98 @@ fn normalize_ooxml_measure_lexeme(value: &str) -> Option<String> {
     normalize_decimal_lexeme(&value[..unit_start]).map(|number| format!("{number}{unit}"))
 }
 
-fn normalize_ooxml_measure_attr_lexeme(attr_name: &str, value: &str) -> Option<String> {
+fn normalize_ooxml_measure_attr_lexeme(
+    element_name: &str,
+    attr_name: &str,
+    value: &str,
+) -> Option<String> {
     const WORDPROCESSINGML_NS: &str =
         "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 
+    let (element_ns, element_local) = split_expanded_name(element_name);
     let (attr_ns, attr_local) = split_expanded_name(attr_name);
     if attr_ns != WORDPROCESSINGML_NS
         || !matches!(
             attr_local,
-            "w" | "pos" | "left" | "right" | "top" | "bottom" | "hSpace" | "vSpace"
+            "w" | "pos"
+                | "left"
+                | "right"
+                | "top"
+                | "bottom"
+                | "hSpace"
+                | "vSpace"
+                | "space"
+                | "header"
+                | "footer"
+                | "line"
         )
     {
         return None;
     }
 
-    normalize_ooxml_measure_lexeme(value)
+    normalize_ooxml_measure_lexeme(value).or_else(|| {
+        normalize_word_pg_mar_bare_twips_decimal_lexeme(
+            element_ns,
+            element_local,
+            attr_local,
+            value,
+        )
+    })
+}
+
+fn normalize_word_pg_mar_bare_twips_decimal_lexeme(
+    element_ns: &str,
+    element_local: &str,
+    attr_local: &str,
+    value: &str,
+) -> Option<String> {
+    const WORDPROCESSINGML_NS: &str =
+        "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+
+    if element_ns != WORDPROCESSINGML_NS
+        || element_local != "pgMar"
+        || !matches!(attr_local, "top" | "right" | "bottom" | "left")
+    {
+        return None;
+    }
+
+    round_bare_decimal_lexeme(value)
+}
+
+fn round_bare_decimal_lexeme(value: &str) -> Option<String> {
+    let (negative, digits) = value
+        .strip_prefix('-')
+        .map(|digits| (true, digits))
+        .unwrap_or((false, value));
+    let (integer, fraction) = digits.split_once('.')?;
+    if integer.is_empty()
+        || fraction.is_empty()
+        || !integer.bytes().all(|byte| byte.is_ascii_digit())
+        || !fraction.bytes().all(|byte| byte.is_ascii_digit())
+    {
+        return None;
+    }
+
+    let mut integer_value: i128 = 0;
+    for digit in integer.bytes() {
+        integer_value = integer_value
+            .checked_mul(10)?
+            .checked_add(i128::from(digit - b'0'))?;
+    }
+
+    let mut fraction_value: i128 = 0;
+    let mut fraction_scale: i128 = 1;
+    for digit in fraction.bytes() {
+        fraction_value = fraction_value
+            .checked_mul(10)?
+            .checked_add(i128::from(digit - b'0'))?;
+        fraction_scale = fraction_scale.checked_mul(10)?;
+    }
+
+    let round_up = fraction_value.checked_mul(2)? >= fraction_scale;
+    let rounded = integer_value.checked_add(i128::from(round_up))?;
+    let rounded = if negative { -rounded } else { rounded };
+    Some(rounded.to_string())
 }
 
 fn normalize_decimal_lexeme(value: &str) -> Option<String> {

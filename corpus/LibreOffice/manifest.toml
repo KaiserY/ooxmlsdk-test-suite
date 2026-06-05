@@ -133,13 +133,43 @@ mode = "invalid"
 reason = "ODF package with OOXML extension"
 
 [[expectation]]
+file = "sw/qa/extras/ooxmlexport/data/tdf102466.docx"
+test = "roundtrip"
+mode = "open_only"
+reason = "document contains duplicate singleton run and paragraph properties plus non-schema child order"
+
+[[expectation]]
+file = "package/qa/cppunit/data/dd-stored.docx"
+test = "roundtrip"
+mode = "open_only"
+reason = "package fixture contains non-XML junk .xml entries and style definition child order does not match the schema sequence"
+
+[[expectation]]
+file = "sc/qa/unit/data/xlsx/tdf76115.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "zip entries use backslash path separators; LibreOffice treats normal load as invalid and repair-only"
+
+[[expectation]]
 file = "sw/qa/extras/uiwriter/data/ofz18563.docx"
 test = "roundtrip"
 mode = "invalid"
 reason = "corrupt oss-fuzz zip package"
 
 [[expectation]]
+file = "sw/qa/extras/uiwriter/data/tdf128375.docx"
+test = "roundtrip"
+mode = "open_only"
+reason = "settings.xml contains duplicate w:compat singleton elements; the schema allows only one"
+
+[[expectation]]
 file = "sw/qa/extras/uiwriter/data/tdf132596.docx"
 test = "roundtrip"
 mode = "invalid"
 reason = "ODF package with OOXML extension"
+
+[[expectation]]
+file = "sw/qa/writerfilter/dmapper/data/alt-chunk-header.docx"
+test = "roundtrip"
+mode = "open_only"
+reason = "document body child order places sectPr before altChunk, which does not match the schema sequence"

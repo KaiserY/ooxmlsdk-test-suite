@@ -198,8 +198,17 @@ fn collect_type_float_text(
     {
         return;
     }
-    let Some(type_name) = ty
-        .get("Validators")
+    let Some(kind) = leaf_text_float_kind(ty) else {
+        return;
+    };
+    texts.insert(SchemaFloatTextRule {
+        element: element_name.to_string(),
+        kind,
+    });
+}
+
+fn leaf_text_float_kind(ty: &serde_json::Value) -> Option<SchemaFloatKind> {
+    ty.get("Validators")
         .and_then(serde_json::Value::as_array)
         .and_then(|validators| {
             validators.iter().find_map(|validator| {
@@ -211,22 +220,18 @@ fn collect_type_float_text(
                 validator.get("Type").and_then(serde_json::Value::as_str)
             })
         })
-    else {
-        return;
-    };
-    let Some(kind) = float_kind(type_name) else {
-        return;
-    };
-    texts.insert(SchemaFloatTextRule {
-        element: element_name.to_string(),
-        kind,
-    });
+        .or_else(|| {
+            ty.get("Name")
+                .and_then(serde_json::Value::as_str)
+                .and_then(|name| name.split_once('/').map(|(type_name, _)| type_name))
+        })
+        .and_then(float_kind)
 }
 
 fn float_kind(type_name: &str) -> Option<SchemaFloatKind> {
     Some(match type_name {
         "SingleValue" | "xsd:float" => SchemaFloatKind::Single,
-        "DoubleValue" | "xsd:double" => SchemaFloatKind::Double,
+        "DoubleValue" | "xsd:double" | "cx:CT_NumericValue" => SchemaFloatKind::Double,
         _ => return None,
     })
 }

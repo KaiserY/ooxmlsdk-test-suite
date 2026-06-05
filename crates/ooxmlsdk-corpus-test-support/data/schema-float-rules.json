@@ -641,6 +641,10 @@
       "kind": "double"
     },
     {
+      "element": "{http://schemas.microsoft.com/office/drawing/2014/chartex}pt",
+      "kind": "double"
+    },
+    {
       "element": "{http://schemas.microsoft.com/office/spreadsheetml/2022/featurepropertybag}d",
       "kind": "double"
     },

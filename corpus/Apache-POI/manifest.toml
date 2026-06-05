@@ -211,6 +211,24 @@ mode = "open_only"
 reason = "chart child order places extLst before showDLblsOverMax, which does not match the schema sequence"
 
 [[expectation]]
+file = "test-data/slideshow/chart-slide-bg.pptx"
+test = "roundtrip"
+mode = "open_only"
+reason = "chart child order places extLst before showDLblsOverMax, which does not match the schema sequence"
+
+[[expectation]]
+file = "test-data/spreadsheet/clone_sheet.xlsx"
+test = "roundtrip"
+mode = "open_only"
+reason = "chart title and axis child order does not match the schema sequence"
+
+[[expectation]]
+file = "test-data/spreadsheet/123233_charts.xlsx"
+test = "roundtrip"
+mode = "open_only"
+reason = "chart child order does not match the schema sequence"
+
+[[expectation]]
 file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIFuzzer-5205835528404992.pptx"
 test = "roundtrip"
 mode = "invalid"
