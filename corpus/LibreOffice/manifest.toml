@@ -121,6 +121,12 @@ mode = "invalid"
 reason = "encrypted CDFV2 package"
 
 [[expectation]]
+file = "sw/qa/extras/ooxmlimport/data/math-malformed_xml.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "malformed XML in math text; LibreOffice test expects load failure"
+
+[[expectation]]
 file = "sw/qa/extras/ooxmlexport/data/tdf171025_pageAfter.docx"
 test = "roundtrip"
 mode = "invalid"
@@ -139,10 +145,22 @@ mode = "open_only"
 reason = "document contains duplicate singleton run and paragraph properties plus non-schema child order"
 
 [[expectation]]
+file = "sw/qa/extras/ooxmlexport/data/Tdf147485.docx"
+test = "roundtrip"
+mode = "open_only"
+reason = "paragraph properties contain duplicate singleton w:pBdr elements in non-schema child order"
+
+[[expectation]]
 file = "package/qa/cppunit/data/dd-stored.docx"
 test = "roundtrip"
 mode = "open_only"
 reason = "package fixture contains non-XML junk .xml entries and style definition child order does not match the schema sequence"
+
+[[expectation]]
+file = "package/qa/cppunit/data/dot-slash.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "zip contains ./ path alias duplicate; LibreOffice treats normal load as invalid and repair-only"
 
 [[expectation]]
 file = "sc/qa/unit/data/xlsx/tdf76115.xlsx"
@@ -155,6 +173,12 @@ file = "sw/qa/extras/uiwriter/data/ofz18563.docx"
 test = "roundtrip"
 mode = "invalid"
 reason = "corrupt oss-fuzz zip package"
+
+[[expectation]]
+file = "sw/qa/extras/uiwriter/data/fdo72942.docx"
+test = "roundtrip"
+mode = "open_only"
+reason = "styles.xml contains duplicate singleton w:outlineLvl elements; LibreOffice preserves the semantic outline level, not duplicate XML nodes"
 
 [[expectation]]
 file = "sw/qa/extras/uiwriter/data/tdf128375.docx"
@@ -173,3 +197,9 @@ file = "sw/qa/writerfilter/dmapper/data/alt-chunk-header.docx"
 test = "roundtrip"
 mode = "open_only"
 reason = "document body child order places sectPr before altChunk, which does not match the schema sequence"
+
+[[expectation]]
+file = "sw/qa/extras/ooxmlimport/data/tdf108849.docx"
+test = "roundtrip"
+mode = "open_only"
+reason = "document body contains multiple body-level sectPr elements before later content, which does not match the schema sequence"

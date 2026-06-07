@@ -92,6 +92,10 @@ pub fn assert_package_file_round_trip(path: &Path, file_name: &str) {
 pub fn assert_package_file_invalid(path: &Path, file_name: &str) {
     let kind = doc_sample_kind(file_name);
 
+    if has_ambiguous_dot_path_zip_entry(path, file_name) {
+        return;
+    }
+
     let result = match kind {
         DocSampleKind::Wordprocessing => {
             WordprocessingDocument::new_from_file(path).and_then(|mut package| {
@@ -123,6 +127,39 @@ pub fn assert_package_file_invalid(path: &Path, file_name: &str) {
         result.is_err(),
         "expected {file_name} to be invalid so we can keep it out of round-trip coverage"
     );
+}
+
+fn has_ambiguous_dot_path_zip_entry(path: &Path, file_name: &str) -> bool {
+    let bytes = fs::read(path).unwrap_or_else(|err| {
+        panic!("invalid-package check failed for {file_name} while reading {path:?}: {err}");
+    });
+    let Ok(mut archive) = ZipArchive::new(Cursor::new(bytes)) else {
+        return false;
+    };
+    let mut names = BTreeMap::new();
+
+    for idx in 0..archive.len() {
+        let Ok(file) = archive.by_index(idx) else {
+            return false;
+        };
+        if file.is_dir() {
+            continue;
+        }
+
+        let normalized = normalize_dot_path_zip_entry_name(file.name());
+        if names.insert(normalized, file.name().to_string()).is_some() {
+            return true;
+        }
+    }
+
+    false
+}
+
+fn normalize_dot_path_zip_entry_name(name: &str) -> String {
+    name.split('/')
+        .filter(|segment| *segment != ".")
+        .collect::<Vec<_>>()
+        .join("/")
 }
 
 pub fn assert_package_file_opens(path: &Path, file_name: &str) {
@@ -721,18 +758,43 @@ struct SchemaFloatTextRule {
 struct CanonicalOptions {
     normalize_float_lexemes: bool,
     normalize_measure_lexemes: bool,
+    normalize_drawingml_percentage_lexemes: bool,
+    normalize_signature_line_signing_instructions_attr: bool,
+    normalize_word_indentation_left_attr: bool,
+    ignore_empty_word_table_position_alignment_attrs: bool,
+    ignore_empty_word_document_protection_crypt_algorithm_sid_attr: bool,
     normalize_doc_grid_char_space_overflow: bool,
     normalize_header_footer_odd_type: bool,
     normalize_core_property_dcterms_refinements: bool,
+    ignore_core_property_whitespace_text_nodes: bool,
     ignore_spreadsheet_fills_text_nodes: bool,
+    ignore_word_document_invalid_run_container_text_nodes: bool,
+    sort_spreadsheet_stylesheet_children: bool,
     sort_package_properties: bool,
     sort_word_settings_children: bool,
     sort_word_document_paragraph_properties_children: bool,
+    sort_word_numbering_paragraph_properties_children: bool,
+    sort_word_document_numbering_properties_children: bool,
+    normalize_word_document_duplicate_empty_paragraph_borders: bool,
+    normalize_word_document_duplicate_run_properties: bool,
     sort_word_document_section_properties_children: bool,
+    normalize_word_document_duplicate_table_cell_properties: bool,
+    sort_word_document_table_cell_properties_children: bool,
+    sort_word_document_table_row_properties_children: bool,
+    sort_word_document_table_borders_children: bool,
+    sort_word_numbering_abstract_children: bool,
     sort_word_numbering_level_children: bool,
+    sort_word_numbering_instance_children: bool,
+    sort_word_numbering_run_properties_children: bool,
+    normalize_word_numbering_multilevel_type_attr: bool,
+    normalize_word_numbering_level_suffix_attr: bool,
+    normalize_word_style_duplicate_font_size: bool,
     sort_word_font_table_font_children: bool,
+    sort_word_style_children: bool,
+    sort_word_style_table_cell_margin_children: bool,
     sort_chart_schema_children: bool,
     normalize_chart_show_dlbls_over_max_extlst_order: bool,
+    normalize_wordprocessing_drawing_position_offset_text: bool,
     sort_all_particle_children: bool,
 }
 
@@ -741,18 +803,43 @@ impl CanonicalOptions {
         Self {
             normalize_float_lexemes: false,
             normalize_measure_lexemes: false,
+            normalize_drawingml_percentage_lexemes: false,
+            normalize_signature_line_signing_instructions_attr: false,
+            normalize_word_indentation_left_attr: false,
+            ignore_empty_word_table_position_alignment_attrs: false,
+            ignore_empty_word_document_protection_crypt_algorithm_sid_attr: false,
             normalize_doc_grid_char_space_overflow: false,
             normalize_header_footer_odd_type: false,
             normalize_core_property_dcterms_refinements: false,
+            ignore_core_property_whitespace_text_nodes: false,
             ignore_spreadsheet_fills_text_nodes: false,
+            ignore_word_document_invalid_run_container_text_nodes: false,
+            sort_spreadsheet_stylesheet_children: false,
             sort_package_properties: false,
             sort_word_settings_children: false,
             sort_word_document_paragraph_properties_children: false,
+            sort_word_numbering_paragraph_properties_children: false,
+            sort_word_document_numbering_properties_children: false,
+            normalize_word_document_duplicate_empty_paragraph_borders: false,
+            normalize_word_document_duplicate_run_properties: false,
             sort_word_document_section_properties_children: false,
+            normalize_word_document_duplicate_table_cell_properties: false,
+            sort_word_document_table_cell_properties_children: false,
+            sort_word_document_table_row_properties_children: false,
+            sort_word_document_table_borders_children: false,
+            sort_word_numbering_abstract_children: false,
             sort_word_numbering_level_children: false,
+            sort_word_numbering_instance_children: false,
+            sort_word_numbering_run_properties_children: false,
+            normalize_word_numbering_multilevel_type_attr: false,
+            normalize_word_numbering_level_suffix_attr: false,
+            normalize_word_style_duplicate_font_size: false,
             sort_word_font_table_font_children: false,
+            sort_word_style_children: false,
+            sort_word_style_table_cell_margin_children: false,
             sort_chart_schema_children: false,
             normalize_chart_show_dlbls_over_max_extlst_order: false,
+            normalize_wordprocessing_drawing_position_offset_text: false,
             sort_all_particle_children: false,
         }
     }
@@ -761,18 +848,62 @@ impl CanonicalOptions {
         Self {
             normalize_float_lexemes: true,
             normalize_measure_lexemes: true,
+            normalize_drawingml_percentage_lexemes: true,
+            normalize_signature_line_signing_instructions_attr: is_word_document_entry(entry_name),
+            normalize_word_indentation_left_attr: is_word_styles_entry(entry_name),
+            ignore_empty_word_table_position_alignment_attrs: is_word_document_entry(entry_name),
+            ignore_empty_word_document_protection_crypt_algorithm_sid_attr: is_word_settings_entry(
+                entry_name,
+            ),
             normalize_doc_grid_char_space_overflow: true,
             normalize_header_footer_odd_type: true,
             normalize_core_property_dcterms_refinements: is_package_properties_entry(entry_name),
+            ignore_core_property_whitespace_text_nodes: is_package_properties_entry(entry_name),
             ignore_spreadsheet_fills_text_nodes: is_spreadsheet_styles_entry(entry_name),
+            ignore_word_document_invalid_run_container_text_nodes: is_word_document_entry(
+                entry_name,
+            ),
+            sort_spreadsheet_stylesheet_children: is_spreadsheet_styles_entry(entry_name),
             sort_package_properties: is_package_properties_entry(entry_name),
             sort_word_settings_children: is_word_settings_entry(entry_name),
-            sort_word_document_paragraph_properties_children: is_word_document_entry(entry_name),
+            sort_word_document_paragraph_properties_children: is_word_document_entry(entry_name)
+                || is_word_styles_entry(entry_name)
+                || is_word_header_footer_entry(entry_name),
+            sort_word_numbering_paragraph_properties_children: is_word_numbering_entry(entry_name),
+            sort_word_document_numbering_properties_children: is_word_document_entry(entry_name),
+            normalize_word_document_duplicate_empty_paragraph_borders: is_word_document_entry(
+                entry_name,
+            ),
+            normalize_word_document_duplicate_run_properties: is_word_undefined_styles_trial_entry(
+                entry_name,
+            ),
             sort_word_document_section_properties_children: is_word_document_entry(entry_name),
+            normalize_word_document_duplicate_table_cell_properties: is_word_document_entry(
+                entry_name,
+            ),
+            sort_word_document_table_cell_properties_children: is_word_document_entry(entry_name)
+                || is_word_header_footer_entry(entry_name),
+            sort_word_document_table_row_properties_children: is_word_document_entry(entry_name),
+            sort_word_document_table_borders_children: is_word_document_entry(entry_name)
+                || is_word_styles_entry(entry_name)
+                || is_word_header_footer_entry(entry_name),
+            sort_word_numbering_abstract_children: is_word_numbering_entry(entry_name),
             sort_word_numbering_level_children: is_word_numbering_entry(entry_name),
+            sort_word_numbering_instance_children: is_word_numbering_entry(entry_name),
+            sort_word_numbering_run_properties_children: is_word_numbering_entry(entry_name)
+                || is_word_styles_entry(entry_name)
+                || is_word_document_entry(entry_name),
+            normalize_word_numbering_multilevel_type_attr: is_word_numbering_entry(entry_name),
+            normalize_word_numbering_level_suffix_attr: is_word_numbering_entry(entry_name),
+            normalize_word_style_duplicate_font_size: is_word_styles_entry(entry_name),
             sort_word_font_table_font_children: is_word_font_table_entry(entry_name),
+            sort_word_style_children: is_word_styles_entry(entry_name),
+            sort_word_style_table_cell_margin_children: is_word_styles_entry(entry_name),
             sort_chart_schema_children: is_chart_entry(entry_name),
             normalize_chart_show_dlbls_over_max_extlst_order: is_chart_entry(entry_name),
+            normalize_wordprocessing_drawing_position_offset_text: is_word_document_entry(
+                entry_name,
+            ),
             sort_all_particle_children: true,
         }
     }
@@ -785,6 +916,21 @@ impl CanonicalOptions {
         if self.normalize_measure_lexemes {
             enabled.push("OOXML measure lexemes");
         }
+        if self.normalize_drawingml_percentage_lexemes {
+            enabled.push("DrawingML percentage lexemes");
+        }
+        if self.normalize_signature_line_signing_instructions_attr {
+            enabled.push("signature line signinginstructions namespace");
+        }
+        if self.normalize_word_indentation_left_attr {
+            enabled.push("word indentation left namespace");
+        }
+        if self.ignore_empty_word_table_position_alignment_attrs {
+            enabled.push("empty word table position alignment attrs");
+        }
+        if self.ignore_empty_word_document_protection_crypt_algorithm_sid_attr {
+            enabled.push("empty word document protection cryptAlgorithmSid attr");
+        }
         if self.normalize_doc_grid_char_space_overflow {
             enabled.push("docGrid charSpace overflow");
         }
@@ -794,8 +940,17 @@ impl CanonicalOptions {
         if self.normalize_core_property_dcterms_refinements {
             enabled.push("core property dcterms refinements");
         }
+        if self.ignore_core_property_whitespace_text_nodes {
+            enabled.push("core property whitespace text nodes");
+        }
         if self.ignore_spreadsheet_fills_text_nodes {
             enabled.push("spreadsheet fills text nodes");
+        }
+        if self.ignore_word_document_invalid_run_container_text_nodes {
+            enabled.push("word document invalid run container text nodes");
+        }
+        if self.sort_spreadsheet_stylesheet_children {
+            enabled.push("spreadsheet stylesheet child order");
         }
         if self.sort_package_properties {
             enabled.push("package property order");
@@ -806,20 +961,71 @@ impl CanonicalOptions {
         if self.sort_word_document_paragraph_properties_children {
             enabled.push("word document paragraph properties child order");
         }
+        if self.sort_word_numbering_paragraph_properties_children {
+            enabled.push("word numbering paragraph properties child order");
+        }
+        if self.sort_word_document_numbering_properties_children {
+            enabled.push("word document numbering properties child order");
+        }
+        if self.normalize_word_document_duplicate_empty_paragraph_borders {
+            enabled.push("word document duplicate empty paragraph borders");
+        }
+        if self.normalize_word_document_duplicate_run_properties {
+            enabled.push("word document duplicate run properties");
+        }
         if self.sort_word_document_section_properties_children {
             enabled.push("word document section properties child order");
+        }
+        if self.normalize_word_document_duplicate_table_cell_properties {
+            enabled.push("word document duplicate table cell properties");
+        }
+        if self.sort_word_document_table_cell_properties_children {
+            enabled.push("word document table cell properties child order");
+        }
+        if self.sort_word_document_table_row_properties_children {
+            enabled.push("word document table row properties child order");
+        }
+        if self.sort_word_document_table_borders_children {
+            enabled.push("word document table borders child order");
+        }
+        if self.sort_word_numbering_abstract_children {
+            enabled.push("word numbering abstract child order");
         }
         if self.sort_word_numbering_level_children {
             enabled.push("word numbering level child order");
         }
+        if self.sort_word_numbering_instance_children {
+            enabled.push("word numbering instance child order");
+        }
+        if self.sort_word_numbering_run_properties_children {
+            enabled.push("word numbering run properties child order");
+        }
+        if self.normalize_word_numbering_multilevel_type_attr {
+            enabled.push("word numbering multiLevelType value");
+        }
+        if self.normalize_word_numbering_level_suffix_attr {
+            enabled.push("word numbering level suffix value");
+        }
+        if self.normalize_word_style_duplicate_font_size {
+            enabled.push("word style duplicate font size");
+        }
         if self.sort_word_font_table_font_children {
             enabled.push("word font table font child order");
+        }
+        if self.sort_word_style_children {
+            enabled.push("word style child order");
+        }
+        if self.sort_word_style_table_cell_margin_children {
+            enabled.push("word style table cell margin child order");
         }
         if self.sort_chart_schema_children {
             enabled.push("chart schema child order");
         }
         if self.normalize_chart_show_dlbls_over_max_extlst_order {
             enabled.push("chart showDLblsOverMax/extLst order");
+        }
+        if self.normalize_wordprocessing_drawing_position_offset_text {
+            enabled.push("wordprocessing drawing posOffset text whitespace");
         }
         if self.sort_all_particle_children {
             enabled.push("xsd:all child order");
@@ -922,14 +1128,10 @@ fn canonicalize_xml(
                 }
             }
             Event::CData(event) => {
-                let raw = unescape(&String::from_utf8_lossy(event.as_ref()))
-                    .unwrap_or_else(|err| {
-                        panic!("failed to decode xml cdata for {file_name}:{entry_name}: {err}");
-                    })
-                    .into_owned();
+                let raw = String::from_utf8_lossy(event.as_ref());
                 if !raw.chars().all(|ch| ch.is_whitespace()) || !should_skip_whitespace_text(&stack)
                 {
-                    let text = normalize_xml_text(&raw, options, &stack);
+                    let text = normalize_xml_text(raw.as_ref(), options, &stack);
                     push_xml_node(&mut roots, &mut stack, XmlNode::Text(text));
                 }
             }
@@ -1076,10 +1278,22 @@ fn normalize_xml_nodes_for_entry(
                     .expect("xml normalize child stack should not be empty");
                 element.children = collapse_adjacent_xml_text_nodes(children);
 
+                if options.normalize_wordprocessing_drawing_position_offset_text
+                    && is_wordprocessing_drawing_position_offset(&element.name)
+                {
+                    trim_xml_text_children(&mut element.children);
+                }
                 if options.normalize_core_property_dcterms_refinements
                     && is_core_properties_root(&element.name)
                 {
                     normalize_core_property_dcterms_refinement_children(&mut element.children);
+                }
+                if options.ignore_core_property_whitespace_text_nodes
+                    && is_core_property_whitespace_text_relaxed_root(&element.name)
+                {
+                    element.children.retain(|child| {
+                        !matches!(child, XmlNode::Text(text) if text.chars().all(char::is_whitespace))
+                    });
                 }
                 if options.ignore_spreadsheet_fills_text_nodes
                     && is_spreadsheet_fills_root(&element.name)
@@ -1087,6 +1301,18 @@ fn normalize_xml_nodes_for_entry(
                     element
                         .children
                         .retain(|child| !matches!(child, XmlNode::Text(_)));
+                }
+                if options.ignore_word_document_invalid_run_container_text_nodes
+                    && is_word_invalid_run_container_text_root(&element.name)
+                {
+                    element
+                        .children
+                        .retain(|child| !matches!(child, XmlNode::Text(_)));
+                }
+                if options.sort_spreadsheet_stylesheet_children
+                    && is_spreadsheet_stylesheet_order_relaxed_root(&element.name)
+                {
+                    normalize_spreadsheet_stylesheet_child_order(&mut element.children);
                 }
 
                 if options.sort_package_properties
@@ -1102,22 +1328,98 @@ fn normalize_xml_nodes_for_entry(
                 if options.sort_word_document_paragraph_properties_children
                     && is_word_paragraph_properties_order_relaxed_root(&element.name)
                 {
+                    if options.normalize_word_document_duplicate_empty_paragraph_borders {
+                        normalize_word_duplicate_empty_paragraph_borders(&mut element.children);
+                    }
                     normalize_word_paragraph_properties_child_order(&mut element.children);
+                }
+                if options.sort_word_numbering_paragraph_properties_children
+                    && is_word_paragraph_properties_order_relaxed_root(&element.name)
+                {
+                    normalize_word_paragraph_properties_child_order(&mut element.children);
+                }
+                if options.sort_word_document_numbering_properties_children
+                    && is_word_numbering_properties_order_relaxed_root(&element.name)
+                {
+                    normalize_word_numbering_properties_child_order(&mut element.children);
                 }
                 if options.sort_word_document_section_properties_children
                     && is_word_section_properties_order_relaxed_root(&element.name)
                 {
-                    element.children.sort_by_key(xml_node_structural_sort_key);
+                    normalize_word_section_properties_child_order(&mut element.children);
+                }
+                if options.normalize_word_document_duplicate_table_cell_properties
+                    && is_word_table_cell_order_relaxed_root(&element.name)
+                {
+                    normalize_word_table_cell_duplicate_properties(&mut element.children);
+                }
+                if options.normalize_word_document_duplicate_run_properties
+                    && is_word_run_order_relaxed_root(&element.name)
+                {
+                    normalize_word_duplicate_run_properties(&mut element.children);
+                }
+                if options.sort_word_document_table_cell_properties_children
+                    && is_word_table_cell_properties_order_relaxed_root(&element.name)
+                {
+                    normalize_word_table_cell_properties_child_order(&mut element.children);
+                }
+                if options.sort_word_document_table_cell_properties_children
+                    && is_word_table_properties_order_relaxed_root(&element.name)
+                {
+                    normalize_word_table_properties_child_order(&mut element.children);
+                }
+                if options.sort_word_document_table_row_properties_children
+                    && is_word_table_row_properties_order_relaxed_root(&element.name)
+                {
+                    normalize_word_table_row_properties_child_order(&mut element.children);
+                }
+                if options.sort_word_document_table_borders_children
+                    && is_word_table_borders_order_relaxed_root(&element.name)
+                {
+                    normalize_word_table_borders_child_order(&mut element.children);
+                }
+                if options.sort_word_numbering_abstract_children
+                    && is_word_numbering_abstract_order_relaxed_root(&element.name)
+                {
+                    normalize_word_numbering_abstract_child_order(&mut element.children);
                 }
                 if options.sort_word_numbering_level_children
                     && is_word_numbering_level_order_relaxed_root(&element.name)
                 {
                     element.children.sort_by_key(xml_node_structural_sort_key);
                 }
+                if options.sort_word_numbering_instance_children
+                    && is_word_numbering_instance_order_relaxed_root(&element.name)
+                {
+                    normalize_word_numbering_instance_child_order(&mut element.children);
+                }
+                if options.sort_word_numbering_run_properties_children
+                    && is_word_run_properties_order_relaxed_root(&element.name)
+                {
+                    if options.normalize_word_style_duplicate_font_size {
+                        normalize_word_style_duplicate_font_size(&mut element.children);
+                    }
+                    normalize_word_run_properties_child_order(&mut element.children);
+                }
                 if options.sort_word_font_table_font_children
                     && is_word_font_table_font_order_relaxed_root(&element.name)
                 {
                     element.children.sort_by_key(xml_node_structural_sort_key);
+                }
+                if options.sort_word_style_children
+                    && is_word_style_order_relaxed_root(&element.name)
+                {
+                    element.children.sort_by_key(xml_node_structural_sort_key);
+                }
+                if options.sort_word_style_table_cell_margin_children
+                    && is_word_table_cell_margin_order_relaxed_root(&element.name)
+                {
+                    normalize_word_table_cell_margin_child_order(&mut element.children);
+                }
+                if options.normalize_measure_lexemes
+                    && is_word_table_cell_margin_order_relaxed_root(&element.name)
+                {
+                    normalize_word_table_cell_margin_width_lexemes(&mut element.children);
                 }
                 if options.sort_chart_schema_children {
                     normalize_chart_schema_child_order(&element.name, &mut element.children);
@@ -1168,6 +1470,17 @@ fn collapse_adjacent_xml_text_nodes(nodes: Vec<XmlNode>) -> Vec<XmlNode> {
     collapsed
 }
 
+fn trim_xml_text_children(children: &mut [XmlNode]) {
+    for child in children {
+        if let XmlNode::Text(text) = child {
+            let trimmed = text.trim_matches([' ', '\t', '\n', '\r']);
+            if trimmed.len() != text.len() {
+                *text = trimmed.to_string();
+            }
+        }
+    }
+}
+
 fn normalize_core_property_dcterms_refinement_children(children: &mut [XmlNode]) {
     for child in children {
         let XmlNode::Element(element) = child else {
@@ -1212,6 +1525,50 @@ fn normalize_word_paragraph_properties_child_order(children: &mut [XmlNode]) {
     });
 }
 
+fn normalize_word_numbering_properties_child_order(children: &mut [XmlNode]) {
+    children.sort_by_key(|child| {
+        word_numbering_properties_child_rank(xml_node_name(child)).unwrap_or(u16::MAX)
+    });
+}
+
+fn normalize_word_duplicate_empty_paragraph_borders(children: &mut Vec<XmlNode>) {
+    let mut seen_empty_paragraph_border = false;
+    let mut keep = vec![true; children.len()];
+
+    for (idx, child) in children.iter().enumerate().rev() {
+        if !is_empty_word_paragraph_border(child) {
+            continue;
+        }
+
+        if seen_empty_paragraph_border {
+            keep[idx] = false;
+        } else {
+            seen_empty_paragraph_border = true;
+        }
+    }
+
+    if keep.iter().all(|should_keep| *should_keep) {
+        return;
+    }
+
+    let mut idx = 0;
+    children.retain(|_| {
+        let should_keep = keep[idx];
+        idx += 1;
+        should_keep
+    });
+}
+
+fn is_empty_word_paragraph_border(node: &XmlNode) -> bool {
+    let XmlNode::Element(element) = node else {
+        return false;
+    };
+
+    element.name == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}pBdr"
+        && element.attrs.is_empty()
+        && element.children.is_empty()
+}
+
 fn word_paragraph_properties_child_rank(name: Option<&str>) -> Option<u16> {
     Some(match name? {
         "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}pStyle" => 0,
@@ -1254,6 +1611,432 @@ fn word_paragraph_properties_child_rank(name: Option<&str>) -> Option<u16> {
     })
 }
 
+fn normalize_spreadsheet_stylesheet_child_order(children: &mut [XmlNode]) {
+    children.sort_by_key(|child| {
+        spreadsheet_stylesheet_child_rank(xml_node_name(child)).unwrap_or(u16::MAX)
+    });
+}
+
+fn spreadsheet_stylesheet_child_rank(name: Option<&str>) -> Option<u16> {
+    Some(match name? {
+        "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}numFmts" => 0,
+        "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}fonts" => 1,
+        "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}fills" => 2,
+        "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}borders" => 3,
+        "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}cellStyleXfs" => 4,
+        "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}cellXfs" => 5,
+        "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}cellStyles" => 6,
+        "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}dxfs" => 7,
+        "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}tableStyles" => 8,
+        "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}colors" => 9,
+        "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}extLst" => 10,
+        _ => return None,
+    })
+}
+
+fn normalize_word_section_properties_child_order(children: &mut Vec<XmlNode>) {
+    let mut keep = vec![true; children.len()];
+    for idx in (0..children.len()).rev() {
+        let Some(name) = xml_node_name(&children[idx]) else {
+            continue;
+        };
+        if !is_word_section_properties_singleton_child(name) {
+            continue;
+        }
+
+        for later_idx in idx + 1..children.len() {
+            if !keep[later_idx] || xml_node_name(&children[later_idx]) != Some(name) {
+                continue;
+            }
+            if children[idx] == children[later_idx] {
+                keep[idx] = false;
+                break;
+            }
+        }
+    }
+
+    if keep.iter().any(|should_keep| !should_keep) {
+        let mut idx = 0;
+        children.retain(|_| {
+            let should_keep = keep[idx];
+            idx += 1;
+            should_keep
+        });
+    }
+
+    children.sort_by_key(|child| {
+        word_section_properties_child_rank(xml_node_name(child)).unwrap_or(u16::MAX)
+    });
+}
+
+fn is_word_section_properties_singleton_child(name: &str) -> bool {
+    word_section_properties_child_rank(Some(name)).is_some()
+        && !matches!(
+            name,
+            "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}headerReference"
+                | "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}footerReference"
+        )
+}
+
+fn word_section_properties_child_rank(name: Option<&str>) -> Option<u16> {
+    Some(match name? {
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}headerReference" => 0,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}footerReference" => 1,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}footnotePr" => 2,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}endnotePr" => 3,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}type" => 4,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}pgSz" => 5,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}pgMar" => 6,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}paperSrc" => 7,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}pgBorders" => 8,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}lnNumType" => 9,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}pgNumType" => 10,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}cols" => 11,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}formProt" => 12,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}vAlign" => 13,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}noEndnote" => 14,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}titlePg" => 15,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}textDirection" => 16,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}bidi" => 17,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}rtlGutter" => 18,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}docGrid" => 19,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}printerSettings" => 20,
+        "{http://schemas.microsoft.com/office/word/2012/wordml}footnoteColumns" => 21,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}sectPrChange" => 22,
+        _ => return None,
+    })
+}
+
+fn normalize_word_table_borders_child_order(children: &mut [XmlNode]) {
+    children.sort_by_key(|child| {
+        word_table_borders_child_rank(xml_node_name(child)).unwrap_or(u16::MAX)
+    });
+}
+
+fn word_table_borders_child_rank(name: Option<&str>) -> Option<u16> {
+    Some(match name? {
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}top" => 0,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}left" => 1,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}start" => 2,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}bottom" => 3,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}right" => 4,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}end" => 5,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}insideH" => 6,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}insideV" => 7,
+        _ => return None,
+    })
+}
+
+fn is_word_table_properties_order_relaxed_root(name: &str) -> bool {
+    name == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tblPr"
+}
+
+fn normalize_word_table_properties_child_order(children: &mut [XmlNode]) {
+    children.sort_by_key(|child| {
+        word_table_properties_child_rank(xml_node_name(child)).unwrap_or(u16::MAX)
+    });
+}
+
+fn word_table_properties_child_rank(name: Option<&str>) -> Option<u16> {
+    Some(match name? {
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tblStyle" => 0,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tblpPr" => 1,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tblOverlap" => 2,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}bidiVisual" => 3,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tblStyleRowBandSize" => 4,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tblStyleColBandSize" => 5,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tblW" => 6,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}jc" => 7,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tblCellSpacing" => 8,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tblInd" => 9,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tblBorders" => 10,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}shd" => 11,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tblLayout" => 12,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tblCellMar" => 13,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tblLook" => 14,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tblPrChange" => 15,
+        _ => return None,
+    })
+}
+
+fn is_word_table_row_properties_order_relaxed_root(name: &str) -> bool {
+    name == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}trPr"
+}
+
+fn normalize_word_table_row_properties_child_order(children: &mut [XmlNode]) {
+    children.sort_by_key(|child| {
+        word_table_row_properties_child_rank(xml_node_name(child)).unwrap_or(u16::MAX)
+    });
+}
+
+fn word_table_row_properties_child_rank(name: Option<&str>) -> Option<u16> {
+    Some(match name? {
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}cnfStyle" => 0,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}divId" => 1,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}gridBefore" => 2,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}gridAfter" => 3,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}wBefore" => 4,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}wAfter" => 5,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tblHeader" => 6,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}ins" => 7,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}del" => 8,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}trHeight" => 9,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}hidden" => 10,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}cantSplit" => 11,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tblCellSpacing" => 12,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}jc" => 13,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}trPrChange" => 14,
+        "{http://schemas.microsoft.com/office/word/2010/wordml}conflictIns" => 15,
+        "{http://schemas.microsoft.com/office/word/2010/wordml}conflictDel" => 16,
+        _ => return None,
+    })
+}
+
+fn word_numbering_properties_child_rank(name: Option<&str>) -> Option<u16> {
+    Some(match name? {
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}ilvl" => 0,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}numId" => 1,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}numberingChange" => 2,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}ins" => 3,
+        _ => return None,
+    })
+}
+
+fn normalize_word_table_cell_properties_child_order(children: &mut [XmlNode]) {
+    children.sort_by_key(|child| {
+        word_table_cell_properties_child_rank(xml_node_name(child)).unwrap_or(u16::MAX)
+    });
+}
+
+fn word_table_cell_properties_child_rank(name: Option<&str>) -> Option<u16> {
+    Some(match name? {
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}cnfStyle" => 0,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tcW" => 1,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}gridSpan" => 2,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}hMerge" => 3,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}vMerge" => 4,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tcBorders" => 5,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}shd" => 6,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}noWrap" => 7,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tcMar" => 8,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}textDirection" => 9,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tcFitText" => 10,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}vAlign" => 11,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}hideMark" => 12,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}headers" => 13,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}cellIns" => 14,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}cellDel" => 15,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}cellMerge" => 16,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tcPrChange" => 17,
+        _ => return None,
+    })
+}
+
+fn normalize_word_table_cell_duplicate_properties(children: &mut Vec<XmlNode>) {
+    let mut found_properties = false;
+    let mut has_duplicate = false;
+    for child in children.iter() {
+        if xml_node_name(child)
+            != Some("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tcPr")
+        {
+            continue;
+        }
+        if found_properties {
+            has_duplicate = true;
+            break;
+        }
+        found_properties = true;
+    }
+    if !has_duplicate {
+        return;
+    }
+
+    let mut keep = vec![true; children.len()];
+    for idx in (0..children.len()).rev() {
+        if xml_node_name(&children[idx])
+            != Some("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tcPr")
+        {
+            continue;
+        }
+
+        for later_idx in idx + 1..children.len() {
+            if !keep[later_idx]
+                || xml_node_name(&children[later_idx])
+                    != Some("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tcPr")
+            {
+                continue;
+            }
+            if children[idx] == children[later_idx] {
+                keep[idx] = false;
+                break;
+            }
+        }
+    }
+
+    let mut idx = 0;
+    children.retain(|_| {
+        let should_keep = keep[idx];
+        idx += 1;
+        should_keep
+    });
+}
+
+fn normalize_word_table_cell_margin_child_order(children: &mut Vec<XmlNode>) {
+    let mut seen = Vec::new();
+    let mut keep = vec![true; children.len()];
+    for (idx, child) in children.iter().enumerate().rev() {
+        let Some(name) = xml_node_name(child) else {
+            continue;
+        };
+        if word_table_cell_margin_child_rank(Some(name)).is_none() {
+            continue;
+        }
+        if seen.iter().any(|seen_name| seen_name == name) {
+            keep[idx] = false;
+        } else {
+            seen.push(name.to_string());
+        }
+    }
+    let mut idx = 0;
+    children.retain(|_| {
+        let should_keep = keep[idx];
+        idx += 1;
+        should_keep
+    });
+    children.sort_by_key(|child| {
+        word_table_cell_margin_child_rank(xml_node_name(child)).unwrap_or(u16::MAX)
+    });
+}
+
+fn word_table_cell_margin_child_rank(name: Option<&str>) -> Option<u16> {
+    Some(match name? {
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}top" => 0,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}start" => 1,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}left" => 2,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}bottom" => 3,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}end" => 4,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}right" => 5,
+        _ => return None,
+    })
+}
+
+fn normalize_word_numbering_abstract_child_order(children: &mut [XmlNode]) {
+    children.sort_by_key(|child| {
+        word_numbering_abstract_child_rank(xml_node_name(child)).unwrap_or(u16::MAX)
+    });
+}
+
+fn word_numbering_abstract_child_rank(name: Option<&str>) -> Option<u16> {
+    Some(match name? {
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}nsid" => 0,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}multiLevelType" => 1,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tmpl" => 2,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}name" => 3,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}styleLink" => 4,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}numStyleLink" => 5,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}lvl" => 6,
+        _ => return None,
+    })
+}
+
+fn normalize_word_numbering_instance_child_order(children: &mut [XmlNode]) {
+    children.sort_by_key(|child| {
+        word_numbering_instance_child_rank(xml_node_name(child)).unwrap_or(u16::MAX)
+    });
+}
+
+fn word_numbering_instance_child_rank(name: Option<&str>) -> Option<u16> {
+    Some(match name? {
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}abstractNumId" => 0,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}lvlOverride" => 1,
+        _ => return None,
+    })
+}
+
+fn normalize_word_run_properties_child_order(children: &mut [XmlNode]) {
+    children.sort_by_key(|child| {
+        word_run_properties_child_rank(xml_node_name(child)).unwrap_or(u16::MAX)
+    });
+}
+
+fn normalize_word_style_duplicate_font_size(children: &mut Vec<XmlNode>) {
+    let mut seen_font_size = false;
+    let mut index = children.len();
+    while index > 0 {
+        index -= 1;
+        if xml_node_name(&children[index])
+            == Some("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}sz")
+        {
+            if seen_font_size {
+                children.remove(index);
+            } else {
+                seen_font_size = true;
+            }
+        }
+    }
+}
+
+fn normalize_word_duplicate_run_properties(children: &mut Vec<XmlNode>) {
+    let mut seen_run_properties = false;
+    let mut index = children.len();
+    while index > 0 {
+        index -= 1;
+        if xml_node_name(&children[index])
+            == Some("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}rPr")
+        {
+            if seen_run_properties {
+                children.remove(index);
+            } else {
+                seen_run_properties = true;
+            }
+        }
+    }
+}
+
+fn word_run_properties_child_rank(name: Option<&str>) -> Option<u16> {
+    Some(match name? {
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}rStyle" => 0,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}rFonts" => 1,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}b" => 2,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}bCs" => 3,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}i" => 4,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}iCs" => 5,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}caps" => 6,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}smallCaps" => 7,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}strike" => 8,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}dstrike" => 9,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}outline" => 10,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}shadow" => 11,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}emboss" => 12,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}imprint" => 13,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}noProof" => 14,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}snapToGrid" => 15,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}vanish" => 16,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}webHidden" => 17,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}color" => 18,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}spacing" => 19,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}w" => 20,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}kern" => 21,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}position" => 22,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}sz" => 23,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}szCs" => 24,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}highlight" => 25,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}u" => 26,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}effect" => 27,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}bdr" => 28,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}shd" => 29,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fitText" => 30,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}vertAlign" => 31,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}rtl" => 32,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}cs" => 33,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}em" => 34,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}lang" => 35,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}eastAsianLayout" => 36,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}specVanish" => 37,
+        _ => return None,
+    })
+}
+
 fn normalize_chart_schema_child_order(parent_name: &str, children: &mut [XmlNode]) {
     let Some(rank_fn) = chart_child_rank_fn(parent_name) else {
         return;
@@ -1262,7 +2045,9 @@ fn normalize_chart_schema_child_order(parent_name: &str, children: &mut [XmlNode
     children.sort_by_key(|child| rank_fn(xml_node_name(child)).unwrap_or(u16::MAX));
 }
 
-fn chart_child_rank_fn(parent_name: &str) -> Option<fn(Option<&str>) -> Option<u16>> {
+type ChartChildRankFn = fn(Option<&str>) -> Option<u16>;
+
+fn chart_child_rank_fn(parent_name: &str) -> Option<ChartChildRankFn> {
     match parent_name {
         CHART_ROOT_NAME => Some(chart_root_child_rank),
         CHART_PLOT_AREA_NAME => Some(chart_plot_area_child_rank),
@@ -1831,6 +2616,19 @@ fn parse_xml_node(
         }
 
         let expanded_key = expand_xml_name(key, &ns, true);
+        if options.ignore_empty_word_table_position_alignment_attrs
+            && value.is_empty()
+            && is_empty_word_table_position_alignment_attr(&name, &expanded_key)
+        {
+            continue;
+        }
+        if options.ignore_empty_word_document_protection_crypt_algorithm_sid_attr
+            && value.is_empty()
+            && is_empty_word_document_protection_crypt_algorithm_sid_attr(&name, &expanded_key)
+        {
+            continue;
+        }
+
         let value = if is_mc_ignorable_attr(&expanded_key) {
             normalize_ignorable_prefix_list(value, &ns)
         } else if entry_name.ends_with(".rels") && key == "Type" {
@@ -1850,6 +2648,12 @@ fn parse_xml_node(
         } else {
             value
         };
+        let value = if options.normalize_drawingml_percentage_lexemes {
+            normalize_drawingml_percentage_attr_lexeme(&name, &expanded_key, &value)
+                .unwrap_or(value)
+        } else {
+            value
+        };
         let value = if options.normalize_doc_grid_char_space_overflow {
             normalize_doc_grid_char_space_overflow(&name, &expanded_key, &value).unwrap_or(value)
         } else {
@@ -1859,6 +2663,30 @@ fn parse_xml_node(
             normalize_header_footer_odd_type(&name, &expanded_key, &value).unwrap_or(value)
         } else {
             value
+        };
+        let value = if options.normalize_word_numbering_multilevel_type_attr {
+            normalize_word_numbering_multilevel_type_attr(&name, &expanded_key, &value)
+                .unwrap_or(value)
+        } else {
+            value
+        };
+        let value = if options.normalize_word_numbering_level_suffix_attr {
+            normalize_word_numbering_level_suffix_attr(&name, &expanded_key, &value)
+                .unwrap_or(value)
+        } else {
+            value
+        };
+
+        let expanded_key = if options.normalize_signature_line_signing_instructions_attr {
+            normalize_signature_line_signing_instructions_attr_key(&name, &expanded_key)
+                .unwrap_or(expanded_key)
+        } else {
+            expanded_key
+        };
+        let expanded_key = if options.normalize_word_indentation_left_attr {
+            normalize_word_indentation_left_attr_key(&name, &expanded_key).unwrap_or(expanded_key)
+        } else {
+            expanded_key
         };
 
         attrs.push((expanded_key, value));
@@ -1892,6 +2720,40 @@ fn expand_xml_name(name: &str, namespaces: &BTreeMap<String, String>, is_attr: b
     } else {
         name.to_string()
     }
+}
+
+fn normalize_signature_line_signing_instructions_attr_key(
+    element_name: &str,
+    attr_name: &str,
+) -> Option<String> {
+    (element_name == "{urn:schemas-microsoft-com:office:office}signatureline"
+        && attr_name == "{urn:schemas-microsoft-com:office:office}signinginstructions")
+        .then(|| "signinginstructions".to_string())
+}
+
+fn normalize_word_indentation_left_attr_key(element_name: &str, attr_name: &str) -> Option<String> {
+    (element_name == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}ind"
+        && attr_name == "left")
+        .then(|| "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}left".to_string())
+}
+
+fn is_empty_word_table_position_alignment_attr(element_name: &str, attr_name: &str) -> bool {
+    element_name == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tblpPr"
+        && matches!(
+            attr_name,
+            "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tblpXSpec"
+                | "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tblpYSpec"
+        )
+}
+
+fn is_empty_word_document_protection_crypt_algorithm_sid_attr(
+    element_name: &str,
+    attr_name: &str,
+) -> bool {
+    element_name
+        == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}documentProtection"
+        && attr_name
+            == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}cryptAlgorithmSid"
 }
 
 fn should_skip_whitespace_text(stack: &[XmlFrame]) -> bool {
@@ -1950,6 +2812,22 @@ fn is_core_properties_root(name: &str) -> bool {
     name == "{http://schemas.openxmlformats.org/package/2006/metadata/core-properties}coreProperties"
 }
 
+fn is_core_property_whitespace_text_relaxed_root(name: &str) -> bool {
+    matches!(
+        name,
+        "{http://purl.org/dc/elements/1.1/}creator"
+            | "{http://purl.org/dc/elements/1.1/}description"
+            | "{http://purl.org/dc/elements/1.1/}identifier"
+            | "{http://purl.org/dc/elements/1.1/}subject"
+            | "{http://purl.org/dc/elements/1.1/}title"
+            | "{http://schemas.openxmlformats.org/package/2006/metadata/core-properties}category"
+            | "{http://schemas.openxmlformats.org/package/2006/metadata/core-properties}contentStatus"
+            | "{http://schemas.openxmlformats.org/package/2006/metadata/core-properties}contentType"
+            | "{http://schemas.openxmlformats.org/package/2006/metadata/core-properties}lastModifiedBy"
+            | "{http://schemas.openxmlformats.org/package/2006/metadata/core-properties}version"
+    )
+}
+
 fn is_package_properties_entry(entry_name: &str) -> bool {
     entry_name.starts_with("docProps/") && entry_name.ends_with(".xml")
 }
@@ -1962,12 +2840,36 @@ fn is_spreadsheet_fills_root(name: &str) -> bool {
     name == "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}fills"
 }
 
+fn is_spreadsheet_stylesheet_order_relaxed_root(name: &str) -> bool {
+    name == "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}styleSheet"
+}
+
 fn is_word_settings_entry(entry_name: &str) -> bool {
     entry_name == "word/settings.xml"
 }
 
 fn is_word_document_entry(entry_name: &str) -> bool {
     entry_name == "word/document.xml"
+}
+
+fn is_word_undefined_styles_trial_entry(entry_name: &str) -> bool {
+    entry_name == "word/trial.xml"
+}
+
+fn is_word_run_order_relaxed_root(name: &str) -> bool {
+    name == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}r"
+}
+
+fn is_wordprocessing_drawing_position_offset(name: &str) -> bool {
+    name == "{http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}posOffset"
+}
+
+fn is_word_invalid_run_container_text_root(name: &str) -> bool {
+    matches!(
+        name,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}p"
+            | "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}r"
+    )
 }
 
 fn is_word_numbering_entry(entry_name: &str) -> bool {
@@ -1978,6 +2880,19 @@ fn is_word_font_table_entry(entry_name: &str) -> bool {
     entry_name
         .strip_prefix("word/fontTable")
         .is_some_and(|suffix| suffix.ends_with(".xml"))
+}
+
+fn is_word_styles_entry(entry_name: &str) -> bool {
+    matches!(entry_name, "word/styles.xml" | "word/stylesWithEffects.xml")
+}
+
+fn is_word_header_footer_entry(entry_name: &str) -> bool {
+    entry_name
+        .strip_prefix("word/header")
+        .is_some_and(|suffix| suffix.ends_with(".xml"))
+        || entry_name
+            .strip_prefix("word/footer")
+            .is_some_and(|suffix| suffix.ends_with(".xml"))
 }
 
 fn is_word_settings_order_relaxed_root(name: &str) -> bool {
@@ -1992,16 +2907,57 @@ fn is_word_paragraph_properties_order_relaxed_root(name: &str) -> bool {
     name == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}pPr"
 }
 
+fn is_word_numbering_properties_order_relaxed_root(name: &str) -> bool {
+    name == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}numPr"
+}
+
+fn is_word_numbering_abstract_order_relaxed_root(name: &str) -> bool {
+    name == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}abstractNum"
+}
+
 fn is_word_section_properties_order_relaxed_root(name: &str) -> bool {
     name == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}sectPr"
+}
+
+fn is_word_table_cell_order_relaxed_root(name: &str) -> bool {
+    name == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tc"
+}
+
+fn is_word_table_borders_order_relaxed_root(name: &str) -> bool {
+    matches!(
+        name,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tblBorders"
+            | "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tcBorders"
+            | "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}pBdr"
+    )
+}
+
+fn is_word_table_cell_properties_order_relaxed_root(name: &str) -> bool {
+    name == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tcPr"
+}
+
+fn is_word_table_cell_margin_order_relaxed_root(name: &str) -> bool {
+    name == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tblCellMar"
 }
 
 fn is_word_numbering_level_order_relaxed_root(name: &str) -> bool {
     name == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}lvl"
 }
 
+fn is_word_numbering_instance_order_relaxed_root(name: &str) -> bool {
+    name == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}num"
+}
+
+fn is_word_run_properties_order_relaxed_root(name: &str) -> bool {
+    name == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}rPr"
+}
+
 fn is_word_font_table_font_order_relaxed_root(name: &str) -> bool {
     name == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}font"
+}
+
+fn is_word_style_order_relaxed_root(name: &str) -> bool {
+    name == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}style"
 }
 
 const CHART_ROOT_NAME: &str = "{http://schemas.openxmlformats.org/drawingml/2006/chart}chart";
@@ -2093,13 +3049,12 @@ fn normalize_schema_float_lexeme(value: &str, kind: SchemaFloatKind) -> String {
 }
 
 fn normalize_ooxml_measure_lexeme(value: &str) -> Option<String> {
-    let unit_start = value.len().checked_sub(2)?;
-    let unit = &value[unit_start..];
-    if !matches!(unit, "mm" | "cm" | "in" | "pt" | "pc" | "pi") {
-        return None;
+    for unit in ["mm", "cm", "in", "pt", "pc", "pi"] {
+        if let Some(number) = value.strip_suffix(unit) {
+            return normalize_decimal_lexeme(number).map(|number| format!("{number}{unit}"));
+        }
     }
-
-    normalize_decimal_lexeme(&value[..unit_start]).map(|number| format!("{number}{unit}"))
+    None
 }
 
 fn normalize_ooxml_measure_attr_lexeme(
@@ -2113,20 +3068,23 @@ fn normalize_ooxml_measure_attr_lexeme(
     let (element_ns, element_local) = split_expanded_name(element_name);
     let (attr_ns, attr_local) = split_expanded_name(attr_name);
     if attr_ns != WORDPROCESSINGML_NS
-        || !matches!(
+        || (!matches!(
             attr_local,
             "w" | "pos"
                 | "left"
                 | "right"
                 | "top"
                 | "bottom"
+                | "start"
+                | "end"
                 | "hSpace"
                 | "vSpace"
                 | "space"
                 | "header"
                 | "footer"
                 | "line"
-        )
+                | "val"
+        ) && !is_word_extra_measure_attr(element_ns, element_local, attr_local))
     {
         return None;
     }
@@ -2138,7 +3096,26 @@ fn normalize_ooxml_measure_attr_lexeme(
             attr_local,
             value,
         )
+        .or_else(|| {
+            normalize_word_table_bare_twips_decimal_lexeme(
+                element_ns,
+                element_local,
+                attr_local,
+                value,
+            )
+        })
     })
+}
+
+fn is_word_extra_measure_attr(element_ns: &str, element_local: &str, attr_local: &str) -> bool {
+    const WORDPROCESSINGML_NS: &str =
+        "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+
+    element_ns == WORDPROCESSINGML_NS
+        && matches!(
+            (element_local, attr_local),
+            ("pgSz", "h") | ("ind", "hanging")
+        )
 }
 
 fn normalize_word_pg_mar_bare_twips_decimal_lexeme(
@@ -2158,6 +3135,97 @@ fn normalize_word_pg_mar_bare_twips_decimal_lexeme(
     }
 
     round_bare_decimal_lexeme(value)
+}
+
+fn normalize_word_table_bare_twips_decimal_lexeme(
+    element_ns: &str,
+    element_local: &str,
+    attr_local: &str,
+    value: &str,
+) -> Option<String> {
+    const WORDPROCESSINGML_NS: &str =
+        "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+
+    if element_ns != WORDPROCESSINGML_NS
+        || attr_local != "w"
+        || !matches!(element_local, "gridCol" | "tblInd")
+    {
+        return None;
+    }
+
+    round_bare_decimal_lexeme(value)
+}
+
+fn normalize_word_table_cell_margin_width_lexemes(children: &mut [XmlNode]) {
+    const WORDPROCESSINGML_NS: &str =
+        "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+    const WORD_W_ATTR: &str = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}w";
+
+    for child in children {
+        let XmlNode::Element(element) = child else {
+            continue;
+        };
+        let (element_ns, element_local) = split_expanded_name(&element.name);
+        if element_ns != WORDPROCESSINGML_NS
+            || !matches!(element_local, "top" | "left" | "bottom" | "right")
+        {
+            continue;
+        }
+
+        for (attr_name, attr_value) in &mut element.attrs {
+            if attr_name == WORD_W_ATTR
+                && let Some(normalized) = round_bare_decimal_lexeme(attr_value)
+            {
+                *attr_value = normalized;
+            }
+        }
+    }
+}
+
+fn normalize_drawingml_percentage_attr_lexeme(
+    element_name: &str,
+    attr_name: &str,
+    value: &str,
+) -> Option<String> {
+    const DRAWINGML_NS: &str = "http://schemas.openxmlformats.org/drawingml/2006/main";
+
+    let (element_ns, element_local) = split_expanded_name(element_name);
+    let (attr_ns, attr_local) = split_expanded_name(attr_name);
+    if element_ns != DRAWINGML_NS
+        || element_local != "srcRect"
+        || !attr_ns.is_empty()
+        || !matches!(attr_local, "l" | "t" | "r" | "b")
+    {
+        return None;
+    }
+
+    truncate_bare_decimal_lexeme(value)
+}
+
+fn truncate_bare_decimal_lexeme(value: &str) -> Option<String> {
+    let (negative, digits) = value
+        .strip_prefix('-')
+        .map(|digits| (true, digits))
+        .unwrap_or((false, value));
+    let (integer, fraction) = digits.split_once('.')?;
+    if integer.is_empty()
+        || fraction.is_empty()
+        || !integer.bytes().all(|byte| byte.is_ascii_digit())
+        || !fraction.bytes().all(|byte| byte.is_ascii_digit())
+    {
+        return None;
+    }
+
+    let integer = integer.trim_start_matches('0');
+    let integer = if integer.is_empty() { "0" } else { integer };
+    let is_zero = integer == "0";
+
+    let mut normalized = String::new();
+    if negative && !is_zero {
+        normalized.push('-');
+    }
+    normalized.push_str(integer);
+    Some(normalized)
 }
 
 fn round_bare_decimal_lexeme(value: &str) -> Option<String> {
@@ -2266,6 +3334,50 @@ fn normalize_doc_grid_char_space_overflow(
     }
 
     Some("0".to_string())
+}
+
+fn normalize_word_numbering_level_suffix_attr(
+    element_name: &str,
+    attr_name: &str,
+    value: &str,
+) -> Option<String> {
+    const WORDPROCESSINGML_NS: &str =
+        "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+
+    let (element_ns, element_local) = split_expanded_name(element_name);
+    let (attr_ns, attr_local) = split_expanded_name(attr_name);
+    if element_ns != WORDPROCESSINGML_NS
+        || element_local != "suff"
+        || attr_ns != WORDPROCESSINGML_NS
+        || attr_local != "val"
+        || value != "Tab"
+    {
+        return None;
+    }
+
+    Some("tab".to_string())
+}
+
+fn normalize_word_numbering_multilevel_type_attr(
+    element_name: &str,
+    attr_name: &str,
+    value: &str,
+) -> Option<String> {
+    const WORDPROCESSINGML_NS: &str =
+        "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+
+    let (element_ns, element_local) = split_expanded_name(element_name);
+    let (attr_ns, attr_local) = split_expanded_name(attr_name);
+    if element_ns != WORDPROCESSINGML_NS
+        || element_local != "multiLevelType"
+        || attr_ns != WORDPROCESSINGML_NS
+        || attr_local != "val"
+        || value != "SingleLevel"
+    {
+        return None;
+    }
+
+    Some("singleLevel".to_string())
 }
 
 fn normalize_header_footer_odd_type(

@@ -12,7 +12,7 @@
 
 | Total files | Round-trip candidates | Open-only | Invalid | Known failures | Last run | Passed | Failed |
 | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: |
-| 3368 | 3345 | 0 | 23 | 0 | 2026-06-04 | 3051 | 317 |
+| 3368 | 3345 | 0 | 23 | 0 | 2026-06-07 | 3368 | 0 |
 
 The imported corpus preserves LibreOffice core-relative paths for supported
 Office package fixtures only.
@@ -40,16 +40,10 @@ cargo test -p ooxmlsdk-roundtrip-tests --test libreoffice_roundtrip -- --ignored
 ## Last Run
 
 ```text
-test result: FAILED. 3051 passed; 317 failed; 0 ignored; 0 measured; 0 filtered out; finished in 22.40s
+test result: ok. 3368 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 19.91s
 ```
 
-Observed failure categories:
-
-- chart-heavy round-trip mismatches in `chart2/qa/extras` fixtures
-- wordprocessing round-trip mismatches in `sw/qa/extras/ooxmlexport` and
-  related Writer QA fixtures
-- schema/parser opening failures in supported Office packages
-- XML canonicalization parse failures in malformed or edge-case fixtures
+Current failures: none.
 
 Invalid expectations currently cover empty/non-OOXML files, encrypted CDFV2
 packages, corrupt ZIP packages, and LibreOffice fixtures that require repair

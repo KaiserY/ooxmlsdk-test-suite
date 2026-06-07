@@ -12,7 +12,7 @@
 
 | Total files | Round-trip candidates | Open-only | Invalid | Known failures | Last run | Passed | Failed |
 | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: |
-| 677 | 614 | 0 | 63 | 0 | 2026-06-04 | 649 | 28 |
+| 677 | 614 | 0 | 63 | 0 | 2026-06-07 | 677 | 0 |
 
 The current scaffold generates one ignored test per supported Office package
 fixture.
@@ -26,15 +26,10 @@ cargo test -p ooxmlsdk-roundtrip-tests --test apache_poi_roundtrip -- --ignored
 Result:
 
 ```text
-test result: FAILED. 649 passed; 28 failed; 0 ignored; 0 measured; 0 filtered out; finished in 115.63s
+test result: ok. 677 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.86s
 ```
 
-Observed failure categories:
-
-- unsupported or strict schema cases: `AlternateContent`, negative chart axis
-  ids, `ep:Properties`, `xm:macrosheet`
-- round-trip mismatches: chart extension ordering, customXml attribute loss,
-  relationship namespace attributes, diagram extension namespaces
+Current failures: none.
 
 Invalid-package expectations include encrypted CDFV2 packages, corrupt fuzz
 and crash fixtures, empty or missing-part packages, XML entity expansion
