@@ -12,7 +12,7 @@
 
 | Total files | Round-trip candidates | Open-only | Invalid | Known failures | Last run | Passed | Failed |
 | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: |
-| 677 | 614 | 0 | 63 | 0 | 2026-06-07 | 677 | 0 |
+| 677 | 602 | 11 | 64 | 0 | 2026-06-07 | 677 | 0 |
 
 The current scaffold generates one ignored test per supported Office package
 fixture.

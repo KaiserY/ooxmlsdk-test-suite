@@ -12,7 +12,7 @@
 
 | Total files | Round-trip candidates | Open-only | Invalid | Known failures | Last run | Passed | Failed |
 | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: |
-| 884 | 880 | 0 | 4 | 0 | 2026-06-07 | 884 | 0 |
+| 884 | 874 | 6 | 4 | 0 | 2026-06-07 | 884 | 0 |
 
 The current scaffold generates one ignored test per supported Office package
 fixture. Encrypted and intentionally invalid fixtures are classified as

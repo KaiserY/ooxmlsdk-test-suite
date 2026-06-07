@@ -12,7 +12,7 @@
 
 | Total files | Round-trip candidates | Open-only | Invalid | Known failures | Last run | Passed | Failed |
 | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: |
-| 3368 | 3345 | 0 | 23 | 0 | 2026-06-07 | 3368 | 0 |
+| 3368 | 3335 | 7 | 26 | 0 | 2026-06-07 | 3368 | 0 |
 
 The imported corpus preserves LibreOffice core-relative paths for supported
 Office package fixtures only.
