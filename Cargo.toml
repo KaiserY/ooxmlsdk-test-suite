@@ -1,6 +1,7 @@
 [workspace]
 resolver = "3"
 members = [
+  "crates/ooxmlsdk-bench",
   "crates/ooxmlsdk-corpus-test-support",
   "crates/ooxmlsdk-roundtrip-tests",
 ]
@@ -15,8 +16,13 @@ license = "MIT OR Apache-2.0"
 [workspace.dependencies]
 ooxmlsdk = { path = "../ooxmlsdk/crates/ooxmlsdk", default-features = false }
 ooxmlsdk-corpus-test-support = { path = "crates/ooxmlsdk-corpus-test-support" }
+criterion = "0.7.0"
 quick-xml = "0.40.1"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.150"
 toml = "0.9.8"
 zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
+
+[profile.bench]
+# Enough for cargo-flamegraph/perf symbolization without full debug-info bloat.
+debug = "line-tables-only"

@@ -1,0 +1,30 @@
+[package]
+name = "ooxmlsdk-bench"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+ooxmlsdk = { workspace = true, features = ["parts"] }
+ooxmlsdk-corpus-test-support = { workspace = true }
+
+[dev-dependencies]
+criterion = { workspace = true }
+
+[[bench]]
+name = "package_word"
+harness = false
+
+[[bench]]
+name = "package_sheet"
+harness = false
+
+[[bench]]
+name = "package_slides"
+harness = false
+
+[[bench]]
+name = "xml"
+harness = false

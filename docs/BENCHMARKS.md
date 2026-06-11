@@ -1,0 +1,119 @@
+# Benchmarks
+
+The benchmark harness lives in `crates/ooxmlsdk-bench` and uses Criterion. It is
+separate from corpus round-trip tests and split by document family so focused
+runs do not require the full package/XML suite.
+
+## Running
+
+Run only the area being investigated:
+
+```bash
+cargo bench -p ooxmlsdk-bench --bench package_word
+cargo bench -p ooxmlsdk-bench --bench package_sheet
+cargo bench -p ooxmlsdk-bench --bench package_slides
+cargo bench -p ooxmlsdk-bench --bench xml
+```
+
+Criterion output is written under `target/criterion/`.
+
+The bench profile keeps line-table debug information for `cargo-flamegraph` and
+`perf` without enabling LTO. Full LTO was tested and rejected because the final
+`xml` bench binary link/codegen for generated `ooxmlsdk` schemas used about 14
+GiB RSS and did not complete promptly.
+
+```toml
+[profile.bench]
+debug = "line-tables-only"
+```
+
+## Coverage
+
+Package benchmarks run these operations for each fixture:
+
+- `read`: open package from an in-memory cursor.
+- `write`: save an already parsed package to an in-memory cursor.
+- `round_trip`: open, save, and reopen the saved package.
+
+XML benchmarks run these operations for typed root elements:
+
+- `read/slice`: parse from `&str`.
+- `read/stream_cursor`: parse from `Cursor<&[u8]>`.
+- `read/stream_bufreader`: parse from `BufReader<Cursor<&[u8]>>`.
+- `write/parsed`: serialize an already parsed value.
+- `round_trip/slice`: parse and serialize.
+
+Package fixtures come from the checked-in Open XML SDK corpus under
+`corpus/Open-XML-SDK/`. `complex0.docx` is included because upstream Open XML SDK
+uses `TestAssets.TestFiles.Complex0docx` in its BenchmarkDotNet package and
+validation benchmarks.
+
+XML fixtures live under `fixtures/perf/xml/`. Small XML fixtures are copied from
+local `ooxmlsdk` regression samples. `wordprocessing_document_complex0.xml` is
+extracted from `word/document.xml` in `complex0.docx`.
+
+## Run history
+
+### 2026-06-11 XML run with profiler symbols
+
+Command:
+
+```bash
+cargo bench -p ooxmlsdk-bench --bench xml
+```
+
+XML results:
+
+| Benchmark | Read slice | Read cursor | Read bufreader | Write | Round-trip |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `xml/word/document_hello_world` | 3.6074 us | 4.0765 us | 4.2495 us | 789.57 ns | 4.5367 us |
+| `xml/word/document_complex0` | 1.5727 ms | 1.9167 ms | 1.9543 ms | 289.73 us | 1.9448 ms |
+| `xml/sheet/workbook` | 1.4797 us | 1.8234 us | 1.8988 us | 481.59 ns | 2.0975 us |
+| `xml/slides/presentation` | 9.6096 us | 12.419 us | 12.893 us | 3.1002 us | 13.363 us |
+
+### 2026-06-11 XML split run
+
+Command:
+
+```bash
+cargo bench -p ooxmlsdk-bench --bench xml
+```
+
+XML results:
+
+| Benchmark | Read slice | Read cursor | Read bufreader | Write | Round-trip |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `xml/word/document_hello_world` | 3.6753 us | 4.2857 us | 4.3978 us | 755.92 ns | 4.7228 us |
+| `xml/word/document_complex0` | 1.6037 ms | 1.9253 ms | 1.9827 ms | 289.57 us | 2.0195 ms |
+| `xml/sheet/workbook` | 1.5585 us | 1.8854 us | 1.9145 us | 467.43 ns | 2.1756 us |
+| `xml/slides/presentation` | 9.8961 us | 12.363 us | 12.507 us | 2.9631 us | 13.352 us |
+
+### 2026-06-11 full run before target split
+
+Command used before the original full `perf` target was split:
+
+```bash
+cargo bench -p ooxmlsdk-bench --bench perf
+```
+
+Package results:
+
+| Benchmark | Read | Write | Round-trip |
+| --- | ---: | ---: | ---: |
+| `package/word/hello_world` | 325.48 us | 541.45 us | 1.3688 ms |
+| `package/word/comments` | 305.06 us | 510.33 us | 1.2407 ms |
+| `package/word/complex0_upstream_benchmark` | 3.0494 ms | 6.7030 ms | 12.811 ms |
+| `package/sheet/basic` | 969.33 us | 1.4388 ms | 3.5541 ms |
+| `package/sheet/complex01` | 937.60 us | 2.2658 ms | 4.5012 ms |
+| `package/sheet/performance_eng` | 16.861 ms | 17.537 ms | 50.283 ms |
+| `package/slides/basic` | 3.9674 ms | 17.513 ms | 25.298 ms |
+| `package/slides/performance_typical` | 2.8674 ms | 22.711 ms | 28.597 ms |
+
+XML results:
+
+| Benchmark | Read slice | Read cursor | Read bufreader | Write | Round-trip |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `xml/word/document_hello_world` | 3.4799 us | 4.2921 us | 4.3082 us | 823.37 ns | 4.7346 us |
+| `xml/word/document_complex0` | 1.5756 ms | 1.9286 ms | 1.9396 ms | 314.39 us | 1.9490 ms |
+| `xml/sheet/workbook` | 1.5363 us | 1.7929 us | 1.8738 us | 498.11 ns | 2.0870 us |
+| `xml/slides/presentation` | 9.3485 us | 11.600 us | 11.960 us | 3.0586 us | 12.940 us |
