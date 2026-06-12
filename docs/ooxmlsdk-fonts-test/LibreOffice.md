@@ -6,6 +6,45 @@ Use it as the checklist for translating tests into `ooxmlsdk-fonts`,
 All listed rows are intended to migrate eventually; target only records where
 the migrated coverage should land first.
 
+## Migration Rule
+
+A row counts as migrated only when the test exercises behavior owned by
+`ooxmlsdk-fonts`, `ooxmlsdk-layout`, or `ooxmlsdk-pdf`.
+
+Valid migrated coverage includes:
+
+- font matching, aliasing, substitution, charset/pitch/style ranking, fallback,
+  shaping, metrics, or usage collection through `ooxmlsdk-fonts`
+- OOXML font request/theme/script mapping that feeds layout
+- package import or fixture-backed layout/PDF output that feeds those APIs and
+  asserts the resolved behavior
+
+Raw ZIP/XML containment checks are source evidence only. Keep those fixture
+paths in this document, but do not add them to `ooxmlsdk-fonts-test` unless the
+test also proves imported or rendered font behavior.
+
+## Current Scope
+
+The current `ooxmlsdk-fonts-test` migration is intentionally behavior-first:
+
+- `font_backend.rs` covers the LibreOffice VCL font model equivalents that
+  already fit `ooxmlsdk-fonts`: normalized lookup, semicolon family tokens,
+  aliasing, charset/pitch/symbol matching, style ranking, substitution,
+  fallback slicing and filtering, metrics, shaping, safe breaks, TTF face
+  metadata, coverage, variation axes, OpenType feature tags, face data, and usage
+  collection. It also covers the shared font capabilities migrated from
+  `ooxmlsdk-pdf`: Office alias/fallback policy, character spacing,
+  small-caps shaping, script/bidi run splitting, embedding policy, glyph
+  bounds, CJK/Arabic justification metadata, private-use symbol fallback
+  ownership, Mongolian NNBSP fallback clustering, font feature parsing, and font
+  variation parsing/serialization.
+- `layout_ooxml_fonts.rs` covers the OOXML-to-layout boundary: script-specific
+  DOCX font families, theme fallback, common-character inheritance, and PPTX/XLSX
+  font requests reaching shaped layout runs.
+- Fixture-backed LibreOffice DOCX/XLSX/PPTX/PDF rows remain in the table as
+  source evidence. They should migrate only when the test can assert imported
+  layout/PDF font behavior instead of raw XML presence.
+
 ## Legend
 
 | Field | Meaning |
@@ -48,7 +87,7 @@ the migrated coverage should land first.
 | bidi strong run splitting | `../core/vcl/qa/cppunit/text.cxx::testImplLayoutArgsBiDiStrong` | synthetic | `ooxmlsdk-fonts` unit |
 | bidi RTL run splitting | `../core/vcl/qa/cppunit/text.cxx::testImplLayoutArgsBiDiRtl` | synthetic | `ooxmlsdk-fonts` unit |
 | right-align bidi run splitting | `../core/vcl/qa/cppunit/text.cxx::testImplLayoutArgsRightAlign` | synthetic | `ooxmlsdk-fonts` unit |
-| script scanner embedded RTL/LTR cases | `../core/i18nutil/qa/cppunit/test_scriptchangescanner.cxx` | synthetic | `ooxmlsdk-fonts` unit |
+| script scanner embedded RTL/LTR cases, including Mongolian NNBSP ownership | `../core/i18nutil/qa/cppunit/test_scriptchangescanner.cxx` | synthetic | `ooxmlsdk-fonts` unit |
 | bidi mark run ownership | `../core/i18nutil/qa/cppunit/test_scriptchangescanner.cxx` | synthetic | `ooxmlsdk-fonts` unit |
 | manual kashida positions | `../core/i18nutil/qa/cppunit/test_kashida.cxx` | synthetic | `ooxmlsdk-fonts` unit |
 | kashida justification data | `../core/vcl/qa/cppunit/justificationdata.cxx` | synthetic | `ooxmlsdk-fonts` unit |
@@ -64,9 +103,9 @@ the migrated coverage should land first.
 | Ahem fixture metrics/coverage | `../core/vcl/qa/cppunit/font/data/Ahem.ttf` | `../core/vcl/qa/cppunit/font/data/Ahem.ttf` | test-suite fixture + `ooxmlsdk-fonts` unit |
 | variable font axes | `../core/vcl/qa/cppunit/FontVariationTest.cxx` | `../core/vcl/qa/cppunit/data/Fraunces-VariableFont_opsz,wght.ttf` | test-suite fixture + `ooxmlsdk-fonts` unit |
 | toolkit variable font service, variable/non-variable/unknown font | `../core/toolkit/qa/cppunit/FontVariations.cxx` | bundled-font dependent | `ooxmlsdk-fonts` unit |
-| font variation parsing/equality/settings | `../core/vcl/qa/cppunit/complextext.cxx` | synthetic | `ooxmlsdk-fonts` unit |
+| font variation parsing/equality/settings | `../core/vcl/qa/cppunit/complextext.cxx` | synthetic | `ooxmlsdk-fonts` unit + `ooxmlsdk-fonts-test` |
 | Graphite font features | `../core/vcl/qa/cppunit/FontFeatureTest.cxx::testGetFontFeaturesGraphite` | fixture/system-dependent split | `ooxmlsdk-fonts` unit |
-| OpenType font features | `../core/vcl/qa/cppunit/FontFeatureTest.cxx::testGetFontFeaturesOpenType` | fixture/system-dependent split | `ooxmlsdk-fonts` unit |
+| OpenType font features and font-name feature parser | `../core/vcl/qa/cppunit/FontFeatureTest.cxx` | fixture/system-dependent split + synthetic parser cases | `ooxmlsdk-fonts` unit + `ooxmlsdk-fonts-test` |
 | OpenType enum features | `../core/vcl/qa/cppunit/FontFeatureTest.cxx::testGetFontFeaturesOpenTypeEnum` | fixture/system-dependent split | `ooxmlsdk-fonts` unit |
 | cached glyph behavior | `../core/vcl/qa/cppunit/complextext.cxx` | system-dependent | `ooxmlsdk-fonts` unit |
 
@@ -98,7 +137,7 @@ the migrated coverage should land first.
 | --- | --- | --- | --- |
 | numbering font | `../core/sw/qa/extras/ooxmlexport/ooxmlexport.cxx::testNumberingFont` | `corpus/LibreOffice/sw/qa/extras/ooxmlexport/data/numbering-font.docx` | test-suite |
 | symbol Chicago list | `../core/sw/qa/extras/ooxmlexport/ooxmlexport.cxx::testOoxmlSymbolChicagoList` | `corpus/LibreOffice/sw/qa/extras/ooxmlexport/data/symbol_chicago_list.docx` | test-suite |
-| symbol content control | `../core/sw/qa/extras/ooxmlexport/ooxmlexport27.cxx::testCool15788_symbolContentControl` | `corpus/LibreOffice/sw/qa/extras/ooxmlexport/data/Cool15788_symbolContentControl.docx` | test-suite |
+| symbol content control / PUA symbol text ownership | `../core/sw/qa/extras/ooxmlexport/ooxmlexport27.cxx::testCool15788_symbolContentControl` | `corpus/LibreOffice/sw/qa/extras/ooxmlexport/data/Cool15788_symbolContentControl.docx` | `ooxmlsdk-fonts-test` for PUA fallback behavior; fixture import later in test-suite |
 | group shape theme font | `../core/sw/qa/extras/ooxmlexport/ooxmlexport7.cxx::testGroupshapeThemeFont` | `corpus/LibreOffice/sw/qa/extras/ooxmlexport/data/groupshape-theme-font.docx` | test-suite |
 | DML group shape run fonts | `../core/sw/qa/extras/ooxmlexport/ooxmlexport10.cxx::testDMLGroupShapeRunFonts` | `corpus/LibreOffice/sw/qa/extras/ooxmlexport/data/dml-groupshape-runfonts.docx` | test-suite |
 | empty font name | `../core/sw/qa/extras/ooxmlexport/ooxmlexport3.cxx::testFontNameIsEmpty` | `corpus/LibreOffice/sw/qa/extras/ooxmlexport/data/font-name-is-empty.docx` | test-suite |
