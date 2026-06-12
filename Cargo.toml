@@ -3,6 +3,7 @@ resolver = "3"
 members = [
   "crates/ooxmlsdk-bench",
   "crates/ooxmlsdk-corpus-test-support",
+  "crates/ooxmlsdk-fonts-test",
   "crates/ooxmlsdk-roundtrip-tests",
 ]
 
@@ -15,6 +16,8 @@ license = "MIT OR Apache-2.0"
 
 [workspace.dependencies]
 ooxmlsdk = { path = "../ooxmlsdk/crates/ooxmlsdk", default-features = false }
+ooxmlsdk-fonts = { path = "../ooxmlsdk/crates/ooxmlsdk-fonts" }
+ooxmlsdk-layout = { path = "../ooxmlsdk/crates/ooxmlsdk-layout" }
 ooxmlsdk-corpus-test-support = { path = "crates/ooxmlsdk-corpus-test-support" }
 criterion = "0.7.0"
 quick-xml = "0.40.1"

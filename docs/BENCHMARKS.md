@@ -27,6 +27,92 @@ GiB RSS and did not complete promptly.
 debug = "line-tables-only"
 ```
 
+## Flamegraph
+
+For profiling a focused Criterion benchmark, build the bench binary first and
+record the bench executable directly. Prefer the `perf` + Inferno flow below
+over `cargo flamegraph`: recording the bench binary directly avoids sampling
+Cargo and reduces Criterion helper noise. Use frame pointers and disable perf
+child process inheritance so report helpers such as `gnuplot` are not sampled.
+
+```bash
+RUSTFLAGS="-C force-frame-pointers=yes" \
+  cargo bench -p ooxmlsdk-bench --bench xml --no-run
+
+BIN=$(find target/release/deps -maxdepth 1 -type f -executable -name 'xml-*' | sort | tail -n 1)
+
+perf record \
+  --no-inherit \
+  --delay 3000 \
+  -F 997 \
+  -g \
+  --call-graph fp \
+  -o perf-xml-word-complex0-read-fp.data \
+  -- "$BIN" \
+  --bench \
+  --profile-time 60 \
+  --noplot \
+  xml/word/document_complex0/read/slice
+
+perf script -i perf-xml-word-complex0-read-fp.data \
+  | inferno-collapse-perf \
+  | inferno-flamegraph \
+      --title "xml word complex0 read slice fp" \
+      > flamegraph-xml-word-complex0-read-fp.svg
+```
+
+Generate folded stacks when comparing hotspots. The SVG is useful for browsing,
+but inclusive frames near the root can hide the actionable self-cost. Start with
+leaf cost and then inspect inclusive stacks for the selected function.
+
+```bash
+perf script -i perf-xml-word-complex0-read-fp.data \
+  | inferno-collapse-perf \
+  > folded-xml-word-complex0-read-fp.txt
+
+python3 - <<'PY'
+from collections import Counter
+from pathlib import Path
+
+folded = Path('folded-xml-word-complex0-read-fp.txt')
+inclusive = Counter()
+leaf = Counter()
+total = 0
+
+for line in folded.read_text(errors='replace').splitlines():
+    if not line:
+        continue
+    stack, count = line.rsplit(' ', 1)
+    count = int(count)
+    frames = stack.split(';')
+    total += count
+    leaf[frames[-1]] += count
+    for frame in set(frames):
+        inclusive[frame] += count
+
+print('leaf')
+for frame, count in leaf.most_common(40):
+    print(f'{count / total * 100:6.2f}% {frame}')
+
+print('inclusive')
+for frame, count in inclusive.most_common(40):
+    print(f'{count / total * 100:6.2f}% {frame}')
+PY
+```
+
+Notes:
+
+- Prefer `--call-graph fp` here; `--call-graph dwarf` produced cleaner process
+  selection but lost useful Rust caller stacks in this benchmark.
+- Keep `--no-inherit`; without it, `gnuplot` can dominate the profile even when
+  the bench executable is invoked directly.
+- Keep `--delay`; it skips process startup and dynamic linker samples.
+- Treat the SVG root and Criterion frames as navigation context, not as the
+  optimization target. Use folded-stack leaf cost to decide what to optimize.
+- If the resulting SVG does not contain `read_inner`, `quick_xml`, and
+  `ooxmlsdk::common::xml` frames, rebuild the bench with the `RUSTFLAGS` above
+  before recording again.
+
 ## Coverage
 
 Package benchmarks run these operations for each fixture:
@@ -35,13 +121,14 @@ Package benchmarks run these operations for each fixture:
 - `write`: save an already parsed package to an in-memory cursor.
 - `round_trip`: open, save, and reopen the saved package.
 
-XML benchmarks run these operations for typed root elements:
+Typed XML benchmarks run these operations for typed root elements:
 
 - `read/slice`: parse from `&str`.
 - `read/stream_cursor`: parse from `Cursor<&[u8]>`.
 - `read/stream_bufreader`: parse from `BufReader<Cursor<&[u8]>>`.
 - `write/parsed`: serialize an already parsed value.
 - `round_trip/slice`: parse and serialize.
+
 
 Package fixtures come from the checked-in Open XML SDK corpus under
 `corpus/Open-XML-SDK/`. `complex0.docx` is included because upstream Open XML SDK
