@@ -16,10 +16,32 @@ Current baseline:
 | --- | ---: | ---: | ---: | ---: | ---: |
 | LibreOffice functions FODS | 507 | 52,191 | 17,095 | 4,133 | 30,963 |
 
+Additional non-FODS migration baseline:
+
+| Group | Source | Migrated Rust tests | Verification | Notes |
+| --- | --- | ---: | --- | --- |
+| Synthetic address/evaluator/shared formula | `ucalc_formula.cxx`, `ucalc_formula2.cxx`, `ucalc_sharedformula.cxx`, `subsequent_export_test3.cxx` | 24 | not run in bulk-migration pass | Public evaluator/address/shared-formula APIs cover these cases; assertions preserve LO expected values. |
+| XLSX formula import metadata/cache | `subsequent_filters_test*.cxx`, `subsequent_export_test*.cxx` | 21 | not run in bulk-migration pass | Includes `functions-excel-2010.xlsx` row whitelist and fixture-backed display/cache assertions; failing assertions are intentionally preserved as formula-model/import gaps. |
+
 The corpus runner compares `ooxmlsdk-formula` evaluation results with the cached
 formula values stored in the upstream FODS files. Failures are intentionally not
 fixed in this migration pass; they are the follow-up bug backlog for
 `ooxmlsdk-formula`.
+
+The current bulk-migration pass intentionally does not run `cargo test`,
+`cargo check`, or `cargo clippy`; the goal is to move upstream assertions first
+and measure failures after the migration surface is broad enough.
+
+Current API-blocked non-FODS groups:
+
+| Group | Blocker |
+| --- | --- |
+| Token compiler/stringify/equality | No public token compiler/stringifier API equivalent to LO `ScCompiler`/`ScTokenArray` yet. |
+| Structural reference updates | No public model for insert/delete/move/undo/sheet-copy/name-update reference rewriting yet. |
+| Formula listeners/dependency edit state | Current dependency graph is import/evaluation metadata, not LO listener lifecycle state. |
+| Spill/dynamic-array edit behavior | Import metadata is exposed, but blocker clearing/auto-resolve/edit-time matrix state is not modeled yet. |
+| ODS/XLS/XLSB fixture-backed formula import/export | Test-suite currently has OOXML package API and FODS fixture reader only; no ODS/XLS/BIFF fixture reader. |
+| Export XML preservation checks | Belongs to package/export round-trip testing once formula metadata APIs are complete. |
 
 Only SpreadsheetML/Calc formula behavior belongs here: formula text, addresses,
 shared formulas, array/dynamic-array formulas, data tables, names, external

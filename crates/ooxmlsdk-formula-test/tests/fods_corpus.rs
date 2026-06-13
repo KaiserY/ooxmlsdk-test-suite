@@ -1,4 +1,7 @@
-use std::path::{Path, PathBuf};
+use std::{
+    collections::BTreeMap,
+    path::{Path, PathBuf},
+};
 
 use ooxmlsdk_corpus_test_support::{workspace_relative_path, workspace_root};
 use ooxmlsdk_formula::{CellAddress, FormulaValue};
@@ -33,11 +36,15 @@ fn libreoffice_function_fods_corpus_matches_cached_results() {
                 }
                 Some(actual) => {
                     summary.failed += 1;
+                    summary.push_mismatch(file_group(&root, &file), formula_key(&case.formula));
                     summary.push_failure(format_failure(&file, &case, Some(&actual)));
                 }
                 None => {
                     summary.unsupported += 1;
-                    summary.push_failure(format_failure(&file, &case, None));
+                    let key = formula_key(&case.formula);
+                    let failure = format_failure(&file, &case, None);
+                    summary.push_unsupported(file_group(&root, &file), key, failure.clone());
+                    summary.push_failure(failure);
                 }
             }
         }
@@ -56,6 +63,11 @@ struct CorpusSummary {
     failed: usize,
     unsupported: usize,
     samples: Vec<String>,
+    unsupported_by_formula: BTreeMap<String, usize>,
+    unsupported_sample_by_formula: BTreeMap<String, String>,
+    mismatch_by_formula: BTreeMap<String, usize>,
+    unsupported_by_group: BTreeMap<String, usize>,
+    mismatch_by_group: BTreeMap<String, usize>,
 }
 
 impl CorpusSummary {
@@ -63,6 +75,22 @@ impl CorpusSummary {
         if self.samples.len() < 50 {
             self.samples.push(failure);
         }
+    }
+
+    fn push_unsupported(&mut self, group: String, formula: String, sample: String) {
+        *self.unsupported_by_group.entry(group).or_default() += 1;
+        *self
+            .unsupported_by_formula
+            .entry(formula.clone())
+            .or_default() += 1;
+        self.unsupported_sample_by_formula
+            .entry(formula)
+            .or_insert(sample);
+    }
+
+    fn push_mismatch(&mut self, group: String, formula: String) {
+        *self.mismatch_by_group.entry(group).or_default() += 1;
+        *self.mismatch_by_formula.entry(formula).or_default() += 1;
     }
 }
 
@@ -73,10 +101,92 @@ impl std::fmt::Display for CorpusSummary {
             "LibreOffice FODS formula corpus: files={}, formulas={}, passed={}, failed={}, unsupported={}",
             self.files, self.formulas, self.passed, self.failed, self.unsupported
         )?;
+        write_top_counts(f, "unsupported by formula", &self.unsupported_by_formula)?;
+        write_top_samples(
+            f,
+            "unsupported sample by formula",
+            &self.unsupported_by_formula,
+            &self.unsupported_sample_by_formula,
+        )?;
+        write_top_counts(f, "mismatch by formula", &self.mismatch_by_formula)?;
+        write_top_counts(f, "unsupported by group", &self.unsupported_by_group)?;
+        write_top_counts(f, "mismatch by group", &self.mismatch_by_group)?;
         for sample in &self.samples {
             writeln!(f, "{sample}")?;
         }
         Ok(())
+    }
+}
+
+fn write_top_samples(
+    f: &mut std::fmt::Formatter<'_>,
+    label: &str,
+    counts: &BTreeMap<String, usize>,
+    samples: &BTreeMap<String, String>,
+) -> std::fmt::Result {
+    let mut items = counts.iter().collect::<Vec<_>>();
+    items.sort_by(|(left_key, left_count), (right_key, right_count)| {
+        right_count
+            .cmp(left_count)
+            .then_with(|| left_key.cmp(right_key))
+    });
+    writeln!(f, "{label}:")?;
+    for (key, _) in items.into_iter().take(10) {
+        if let Some(sample) = samples.get(key) {
+            writeln!(f, "  {key}: {sample}")?;
+        }
+    }
+    Ok(())
+}
+
+fn write_top_counts(
+    f: &mut std::fmt::Formatter<'_>,
+    label: &str,
+    counts: &BTreeMap<String, usize>,
+) -> std::fmt::Result {
+    let mut items = counts.iter().collect::<Vec<_>>();
+    items.sort_by(|(left_key, left_count), (right_key, right_count)| {
+        right_count
+            .cmp(left_count)
+            .then_with(|| left_key.cmp(right_key))
+    });
+    writeln!(f, "{label}:")?;
+    for (key, count) in items.into_iter().take(30) {
+        writeln!(f, "  {count:>6} {key}")?;
+    }
+    Ok(())
+}
+
+fn file_group(root: &Path, file: &Path) -> String {
+    file.strip_prefix(root)
+        .ok()
+        .and_then(|path| path.iter().next())
+        .and_then(|part| part.to_str())
+        .unwrap_or("unknown")
+        .to_string()
+}
+
+fn formula_key(formula: &str) -> String {
+    let text = formula
+        .trim()
+        .strip_prefix("of:=")
+        .or_else(|| formula.trim().strip_prefix('='))
+        .unwrap_or(formula.trim());
+    let text = text.strip_prefix("ORG.LIBREOFFICE.").unwrap_or(text);
+    let mut name = String::new();
+    for ch in text.chars() {
+        if ch.is_ascii_alphanumeric() || ch == '.' || ch == '_' {
+            name.push(ch.to_ascii_uppercase());
+        } else if ch == '(' && !name.is_empty() {
+            return name;
+        } else if !name.is_empty() {
+            break;
+        }
+    }
+    if name.is_empty() {
+        "expression".to_string()
+    } else {
+        name
     }
 }
 

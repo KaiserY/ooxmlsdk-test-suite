@@ -7,8 +7,8 @@ use std::{
 };
 
 use ooxmlsdk_formula::{
-    CellAddress, FormulaErrorValue, FormulaEvaluationBook, FormulaGrammar, FormulaValue,
-    SheetBinding, SheetId,
+    CellAddress, CellRange, FormulaErrorValue, FormulaEvaluationBook, FormulaGrammar, FormulaKind,
+    FormulaText, FormulaValue, SheetBinding, SheetId, normalize_formula_text,
 };
 use quick_xml::{Reader, XmlVersion, events::Event};
 
@@ -27,6 +27,8 @@ pub struct FodsSheet {
 pub struct FodsCell {
     pub address: CellAddress,
     pub formula: Option<String>,
+    pub matrix_columns: u32,
+    pub matrix_rows: u32,
     pub cached_value: FormulaValue<'static>,
 }
 
@@ -51,15 +53,52 @@ impl FodsWorkbook {
             })
             .collect();
         let mut cells = BTreeMap::new();
+        let mut formulas = BTreeMap::new();
         for (index, sheet) in self.sheets.iter().enumerate() {
             let sheet_id = SheetId(index as u32 + 1);
             for cell in &sheet.cells {
                 cells.insert((sheet_id, cell.address), cell.cached_value.clone());
+                if let Some(formula) = &cell.formula {
+                    let normalized = normalize_formula_text(formula, FormulaGrammar::OpenFormula);
+                    let matrix_columns = cell.matrix_columns.max(1);
+                    let matrix_rows = cell.matrix_rows.max(1);
+                    let reference = CellRange::new(
+                        cell.address,
+                        CellAddress {
+                            column: cell.address.column + matrix_columns - 1,
+                            row: cell.address.row + matrix_rows - 1,
+                        },
+                    );
+                    let formula_text = FormulaText {
+                        text: Cow::Owned(normalized.into_owned()),
+                        kind: if matrix_columns > 1 || matrix_rows > 1 {
+                            FormulaKind::Array
+                        } else {
+                            FormulaKind::Normal
+                        },
+                        reference: (matrix_columns > 1 || matrix_rows > 1).then_some(reference),
+                    };
+                    for row_offset in 0..matrix_rows {
+                        for column_offset in 0..matrix_columns {
+                            formulas.insert(
+                                (
+                                    sheet_id,
+                                    CellAddress {
+                                        column: cell.address.column + column_offset,
+                                        row: cell.address.row + row_offset,
+                                    },
+                                ),
+                                formula_text.clone(),
+                            );
+                        }
+                    }
+                }
             }
         }
         FormulaEvaluationBook {
             sheet_names,
             cells,
+            formulas,
             ..FormulaEvaluationBook::default()
         }
     }
@@ -137,6 +176,12 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
                     repeat: attr_value(&event, b"number-columns-repeated")
                         .and_then(|value| value.parse::<u32>().ok())
                         .unwrap_or(1),
+                    matrix_columns: attr_value(&event, b"number-matrix-columns-spanned")
+                        .and_then(|value| value.parse::<u32>().ok())
+                        .unwrap_or(1),
+                    matrix_rows: attr_value(&event, b"number-matrix-rows-spanned")
+                        .and_then(|value| value.parse::<u32>().ok())
+                        .unwrap_or(1),
                     formula: attr_value(&event, b"formula"),
                     cached_value: cached_value_from_attrs(&event),
                     text: String::new(),
@@ -159,6 +204,8 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
                                 row: cell.address.row,
                             },
                             formula: cell.formula.clone(),
+                            matrix_columns: cell.matrix_columns,
+                            matrix_rows: cell.matrix_rows,
                             cached_value: if matches!(cell.cached_value, FormulaValue::Blank)
                                 && !cell.text.is_empty()
                             {
@@ -178,6 +225,12 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
                         .unwrap_or(1)
                         .max(1);
                     let formula = attr_value(&event, b"formula");
+                    let matrix_columns = attr_value(&event, b"number-matrix-columns-spanned")
+                        .and_then(|value| value.parse::<u32>().ok())
+                        .unwrap_or(1);
+                    let matrix_rows = attr_value(&event, b"number-matrix-rows-spanned")
+                        .and_then(|value| value.parse::<u32>().ok())
+                        .unwrap_or(1);
                     let cached_value = cached_value_from_attrs(&event);
                     for offset in 0..repeat {
                         sheet.cells.push(FodsCell {
@@ -186,6 +239,8 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
                                 row,
                             },
                             formula: formula.clone(),
+                            matrix_columns,
+                            matrix_rows,
                             cached_value: cached_value.clone(),
                         });
                     }
@@ -206,6 +261,8 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
 struct PendingCell {
     address: CellAddress,
     repeat: u32,
+    matrix_columns: u32,
+    matrix_rows: u32,
     formula: Option<String>,
     cached_value: FormulaValue<'static>,
     text: String,
