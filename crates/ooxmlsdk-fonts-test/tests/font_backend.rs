@@ -995,7 +995,7 @@ fn registered_memory_face_data_is_available_for_renderers() {
     registry.register_face(
         FontSource::Memory {
             id: Cow::Borrowed("memory-face"),
-            data: Cow::Borrowed(&[0, 1, 2, 3]),
+            data: [0, 1, 2, 3].as_slice().into(),
         },
         FontFaceInfo::synthetic("memory-face", "Memory Face"),
     );
@@ -1323,7 +1323,7 @@ fn registered_face_data_preserves_style_source_and_face_index() {
     registry.register_face(
         FontSource::EmbeddedOoxml {
             id: Cow::Borrowed("embedded-face"),
-            data: Cow::Borrowed(&[9, 8, 7]),
+            data: [9, 8, 7].as_slice().into(),
         },
         face,
     );
