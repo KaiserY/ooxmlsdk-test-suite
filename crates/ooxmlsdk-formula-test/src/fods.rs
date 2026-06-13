@@ -283,8 +283,60 @@ fn cached_value_from_attrs(event: &quick_xml::events::BytesStart<'_>) -> Formula
         Some("string") => attr_value(event, b"string-value")
             .map(|value| FormulaValue::String(Cow::Owned(value)))
             .unwrap_or_default(),
+        Some("date") => attr_value(event, b"date-value")
+            .and_then(|value| date_value_serial(&value))
+            .map(FormulaValue::Number)
+            .unwrap_or_default(),
         _ => FormulaValue::Blank,
     }
+}
+
+fn date_value_serial(value: &str) -> Option<f64> {
+    let (date, time) = value.split_once('T').unwrap_or((value, ""));
+    let mut parts = date.split('-');
+    let year = parts.next()?.parse::<i32>().ok()?;
+    let month = parts.next()?.parse::<i32>().ok()?;
+    let day = parts.next()?.parse::<i32>().ok()?;
+    let mut serial = date_serial(year, month, day)?;
+    if !time.is_empty() {
+        let mut parts = time.split(':');
+        let hour = parts.next()?.parse::<f64>().ok()?;
+        let minute = parts.next()?.parse::<f64>().ok()?;
+        let second = parts
+            .next()
+            .and_then(|value| value.parse::<f64>().ok())
+            .unwrap_or(0.0);
+        serial += (hour * 3600.0 + minute * 60.0 + second) / 86_400.0;
+    }
+    Some(serial)
+}
+
+fn date_serial(year: i32, month: i32, day: i32) -> Option<f64> {
+    let month_index = month - 1;
+    let normalized_year = year + month_index.div_euclid(12);
+    let normalized_month = month_index.rem_euclid(12) + 1;
+    let days = days_from_civil(normalized_year, normalized_month, 1)? + i64::from(day - 1);
+    let base = days_from_civil(1899, 12, 31)?;
+    let mut serial = days - base;
+    let leap_bug_start = days_from_civil(1900, 3, 1)?;
+    if days >= leap_bug_start {
+        serial += 1;
+    }
+    Some(serial as f64)
+}
+
+fn days_from_civil(year: i32, month: i32, day: i32) -> Option<i64> {
+    if !(1..=12).contains(&month) || !(1..=31).contains(&day) {
+        return None;
+    }
+    let year = i64::from(year - i32::from(month <= 2));
+    let era = year.div_euclid(400);
+    let yoe = year - era * 400;
+    let month = i64::from(month);
+    let day = i64::from(day);
+    let doy = (153 * (month + if month > 2 { -3 } else { 9 }) + 2) / 5 + day - 1;
+    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    Some(era * 146_097 + doe - 719_468)
 }
 
 fn attr_value(event: &quick_xml::events::BytesStart<'_>, local: &[u8]) -> Option<String> {
