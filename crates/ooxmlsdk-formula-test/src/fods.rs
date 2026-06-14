@@ -7,9 +7,11 @@ use std::{
 };
 
 use ooxmlsdk_formula::{
-    CellAddress, CellRange, DefinedNameKey, FormulaErrorValue, FormulaEvaluationBook,
-    FormulaGrammar, FormulaKind, FormulaParseContext, FormulaText, FormulaValue, ParsedFormula,
-    SheetBinding, SheetId, normalize_formula_text, parse_formula_with_context,
+    AddressFlags, CellAddress, CellRange, DefinedNameKey, FormulaErrorValue, FormulaEvaluationBook,
+    FormulaGrammar, FormulaKind, FormulaParseContext, FormulaPivotField,
+    FormulaPivotFieldOrientation, FormulaPivotFunction, FormulaPivotTable, FormulaRowState,
+    FormulaText, FormulaValue, ParsedFormula, QualifiedRange, SheetBinding, SheetId, SheetName,
+    normalize_formula_text, parse_formula_with_context,
 };
 use quick_xml::{Reader, XmlVersion, events::Event};
 
@@ -17,12 +19,14 @@ use quick_xml::{Reader, XmlVersion, events::Event};
 pub struct FodsWorkbook {
     pub sheets: Vec<FodsSheet>,
     pub named_ranges: Vec<FodsNamedRange>,
+    pub pivot_tables: Vec<FormulaPivotTable<'static>>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct FodsSheet {
     pub name: String,
     pub cells: Vec<FodsCell>,
+    pub row_states: Vec<(u32, FormulaRowState)>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -120,6 +124,18 @@ impl FodsWorkbook {
             sheet_names,
             cells,
             formulas,
+            row_states: self
+                .sheets
+                .iter()
+                .enumerate()
+                .flat_map(|(index, sheet)| {
+                    let sheet_id = SheetId(index as u32 + 1);
+                    sheet
+                        .row_states
+                        .iter()
+                        .map(move |(row, state)| ((sheet_id, *row), *state))
+                })
+                .collect(),
             defined_names: self
                 .named_ranges
                 .iter()
@@ -138,6 +154,7 @@ impl FodsWorkbook {
                     )
                 })
                 .collect(),
+            pivot_tables: self.pivot_tables.clone(),
             ..FormulaEvaluationBook::default()
         }
     }
@@ -204,6 +221,7 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
     let mut row_start_cell = 0usize;
     let mut column = 0u32;
     let mut current_cell: Option<PendingCell> = None;
+    let mut current_pivot: Option<FormulaPivotTable<'static>> = None;
 
     loop {
         match reader.read_event_into(&mut buf) {
@@ -211,9 +229,62 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
                 current_sheet = Some(FodsSheet {
                     name: attr_value(&event, b"name").unwrap_or_default(),
                     cells: Vec::new(),
+                    row_states: Vec::new(),
                 });
                 row = 0;
                 column = 0;
+            }
+            Ok(Event::Start(event)) if local_name(event.name().as_ref()) == b"data-pilot-table" => {
+                if let Some(target) = attr_value(&event, b"target-range-address")
+                    && let Some(target) = parse_fods_qualified_range(&workbook, "", &target)
+                {
+                    current_pivot = Some(FormulaPivotTable {
+                        name: attr_value(&event, b"name").map(Cow::Owned),
+                        target,
+                        source: QualifiedRange {
+                            sheet: SheetId(0),
+                            sheet_name: None,
+                            range: CellRange::new(CellAddress::default(), CellAddress::default()),
+                            start_flags: AddressFlags::default(),
+                            end_flags: AddressFlags::default(),
+                        },
+                        fields: Vec::new(),
+                    });
+                }
+            }
+            Ok(Event::End(event)) if local_name(event.name().as_ref()) == b"data-pilot-table" => {
+                if let Some(pivot) = current_pivot.take()
+                    && pivot.source.sheet != SheetId(0)
+                {
+                    workbook.pivot_tables.push(pivot);
+                }
+            }
+            Ok(Event::Empty(event))
+                if local_name(event.name().as_ref()) == b"source-cell-range" =>
+            {
+                if let (Some(pivot), Some(source)) = (
+                    &mut current_pivot,
+                    attr_value(&event, b"cell-range-address"),
+                ) && let Some(source) = parse_fods_qualified_range(&workbook, "", &source)
+                {
+                    pivot.source = source;
+                }
+            }
+            Ok(Event::Start(event)) | Ok(Event::Empty(event))
+                if local_name(event.name().as_ref()) == b"data-pilot-field" =>
+            {
+                if let Some(pivot) = &mut current_pivot
+                    && let Some(name) = attr_value(&event, b"source-field-name")
+                    && !name.is_empty()
+                {
+                    pivot.fields.push(FormulaPivotField {
+                        name: Cow::Owned(name),
+                        orientation: pivot_orientation(
+                            attr_value(&event, b"orientation").as_deref(),
+                        ),
+                        function: pivot_function(attr_value(&event, b"function").as_deref()),
+                    });
+                }
             }
             Ok(Event::End(event)) if local_name(event.name().as_ref()) == b"table" => {
                 if let Some(sheet) = current_sheet.take() {
@@ -226,6 +297,19 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
                     .and_then(|value| value.parse::<u32>().ok())
                     .unwrap_or(1)
                     .max(1);
+                if attr_value(&event, b"visibility").as_deref() == Some("collapse")
+                    && let Some(sheet) = &mut current_sheet
+                {
+                    for offset in 0..row_repeat {
+                        sheet.row_states.push((
+                            row + offset,
+                            FormulaRowState {
+                                hidden: true,
+                                filtered: false,
+                            },
+                        ));
+                    }
+                }
                 row_start_cell = current_sheet
                     .as_ref()
                     .map(|sheet| sheet.cells.len())
@@ -252,10 +336,24 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
                 row += row_repeat;
             }
             Ok(Event::Empty(event)) if local_name(event.name().as_ref()) == b"table-row" => {
-                row += attr_value(&event, b"number-rows-repeated")
+                let repeat = attr_value(&event, b"number-rows-repeated")
                     .and_then(|value| value.parse::<u32>().ok())
                     .unwrap_or(1)
                     .max(1);
+                if attr_value(&event, b"visibility").as_deref() == Some("collapse")
+                    && let Some(sheet) = &mut current_sheet
+                {
+                    for offset in 0..repeat {
+                        sheet.row_states.push((
+                            row + offset,
+                            FormulaRowState {
+                                hidden: true,
+                                filtered: false,
+                            },
+                        ));
+                    }
+                }
+                row += repeat;
             }
             Ok(Event::Start(event)) if local_name(event.name().as_ref()) == b"table-cell" => {
                 current_cell = Some(PendingCell {
@@ -278,7 +376,18 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
                 if let Some(cell) = &mut current_cell
                     && let Ok(text) = event.decode()
                 {
-                    cell.text.push_str(&text);
+                    if !text.trim().is_empty() {
+                        cell.text.push_str(&text);
+                    }
+                }
+            }
+            Ok(Event::Empty(event)) if local_name(event.name().as_ref()) == b"s" => {
+                if let Some(cell) = &mut current_cell {
+                    let count = attr_value(&event, b"c")
+                        .and_then(|value| value.parse::<usize>().ok())
+                        .unwrap_or(1)
+                        .max(1);
+                    cell.text.extend(std::iter::repeat_n(' ', count));
                 }
             }
             Ok(Event::End(event)) if local_name(event.name().as_ref()) == b"table-cell" => {
@@ -382,7 +491,14 @@ fn cached_value_from_attrs(event: &quick_xml::events::BytesStart<'_>) -> Formula
             .map(FormulaValue::Number)
             .unwrap_or_default(),
         Some("boolean") => attr_value(event, b"boolean-value")
-            .map(|value| FormulaValue::Boolean(value == "true"))
+            .map(|value| match value.as_str() {
+                "true" => FormulaValue::Boolean(true),
+                "false" => FormulaValue::Boolean(false),
+                _ => value
+                    .parse::<f64>()
+                    .map(FormulaValue::Number)
+                    .unwrap_or_default(),
+            })
             .unwrap_or_default(),
         Some("string") => attr_value(event, b"string-value")
             .map(|value| FormulaValue::String(Cow::Owned(value)))
@@ -416,6 +532,72 @@ fn normalize_fods_named_range_address(address: &str) -> String {
         normalized.replace_range(dot..=dot, "!");
     }
     normalized
+}
+
+fn parse_fods_qualified_range(
+    workbook: &FodsWorkbook,
+    current_sheet: &str,
+    address: &str,
+) -> Option<QualifiedRange<'static>> {
+    let (start, end) = address.split_once(':').unwrap_or((address, address));
+    let (sheet_name, start_reference) = split_fods_address_part(start)?;
+    let (_, end_reference) = split_fods_address_part(end)?;
+    let sheet_name = sheet_name.trim_matches('\'');
+    let sheet = workbook
+        .sheets
+        .iter()
+        .position(|sheet| sheet.name == sheet_name)
+        .map(|index| SheetId(index as u32 + 1))
+        .or_else(|| {
+            (current_sheet == sheet_name).then_some(SheetId(workbook.sheets.len() as u32 + 1))
+        })?;
+    let reference = format!(
+        "{}:{}",
+        start_reference.trim_start_matches('$'),
+        end_reference.trim_start_matches('$')
+    );
+    let range = CellRange::parse_a1(&reference).ok()?;
+    Some(QualifiedRange {
+        sheet,
+        sheet_name: Some(SheetName(Cow::Owned(sheet_name.to_string()))),
+        range,
+        start_flags: AddressFlags::default(),
+        end_flags: AddressFlags::default(),
+    })
+}
+
+fn split_fods_address_part(part: &str) -> Option<(&str, String)> {
+    let part = part.trim_start_matches('$');
+    let mut in_quote = false;
+    for (index, ch) in part.char_indices() {
+        if ch == '\'' {
+            in_quote = !in_quote;
+        } else if ch == '.' && !in_quote {
+            return Some((&part[..index], part[index + 1..].replace('$', "")));
+        }
+    }
+    None
+}
+
+fn pivot_orientation(value: Option<&str>) -> FormulaPivotFieldOrientation {
+    match value {
+        Some("row") => FormulaPivotFieldOrientation::Row,
+        Some("column") => FormulaPivotFieldOrientation::Column,
+        Some("page") => FormulaPivotFieldOrientation::Page,
+        Some("data") => FormulaPivotFieldOrientation::Data,
+        _ => FormulaPivotFieldOrientation::Hidden,
+    }
+}
+
+fn pivot_function(value: Option<&str>) -> FormulaPivotFunction {
+    match value {
+        Some("sum") => FormulaPivotFunction::Sum,
+        Some("count") | Some("countnums") => FormulaPivotFunction::Count,
+        Some("average") => FormulaPivotFunction::Average,
+        Some("max") => FormulaPivotFunction::Max,
+        Some("min") => FormulaPivotFunction::Min,
+        _ => FormulaPivotFunction::Auto,
+    }
 }
 
 fn date_value_serial(value: &str) -> Option<f64> {
