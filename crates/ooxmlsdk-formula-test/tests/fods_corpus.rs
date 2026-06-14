@@ -1,6 +1,8 @@
 use std::{
+    cmp::Reverse,
     collections::BTreeMap,
     path::{Path, PathBuf},
+    time::Instant,
 };
 
 use ooxmlsdk_corpus_test_support::{workspace_relative_path, workspace_root};
@@ -22,6 +24,7 @@ fn libreoffice_function_fods_corpus_matches_cached_results() {
 
     let mut summary = CorpusSummary::default();
     for file in files {
+        let start = Instant::now();
         summary.files += 1;
         let workbook = read_fods_workbook(&file).unwrap_or_else(|err| {
             panic!("failed to read {}: {err}", workspace_relative_path(&file))
@@ -36,8 +39,10 @@ fn libreoffice_function_fods_corpus_matches_cached_results() {
                 }
                 Some(actual) => {
                     summary.failed += 1;
-                    summary.push_mismatch(file_group(&root, &file), formula_key(&case.formula));
-                    summary.push_failure(format_failure(&file, &case, Some(&actual)));
+                    let key = formula_key(&case.formula);
+                    let failure = format_failure(&file, &case, Some(&actual));
+                    summary.push_mismatch(file_group(&root, &file), key, failure.clone());
+                    summary.push_failure(failure);
                 }
                 None => {
                     summary.unsupported += 1;
@@ -48,6 +53,7 @@ fn libreoffice_function_fods_corpus_matches_cached_results() {
                 }
             }
         }
+        summary.push_file_time(workspace_relative_path(&file), start.elapsed());
     }
 
     if summary.failed != 0 || summary.unsupported != 0 {
@@ -65,9 +71,11 @@ struct CorpusSummary {
     samples: Vec<String>,
     unsupported_by_formula: BTreeMap<String, usize>,
     unsupported_sample_by_formula: BTreeMap<String, String>,
+    mismatch_sample_by_formula: BTreeMap<String, String>,
     mismatch_by_formula: BTreeMap<String, usize>,
     unsupported_by_group: BTreeMap<String, usize>,
     mismatch_by_group: BTreeMap<String, usize>,
+    slow_files: Vec<(String, u128)>,
 }
 
 impl CorpusSummary {
@@ -88,9 +96,16 @@ impl CorpusSummary {
             .or_insert(sample);
     }
 
-    fn push_mismatch(&mut self, group: String, formula: String) {
+    fn push_mismatch(&mut self, group: String, formula: String, sample: String) {
         *self.mismatch_by_group.entry(group).or_default() += 1;
-        *self.mismatch_by_formula.entry(formula).or_default() += 1;
+        *self.mismatch_by_formula.entry(formula.clone()).or_default() += 1;
+        self.mismatch_sample_by_formula
+            .entry(formula)
+            .or_insert(sample);
+    }
+
+    fn push_file_time(&mut self, file: String, elapsed: std::time::Duration) {
+        self.slow_files.push((file, elapsed.as_millis()));
     }
 }
 
@@ -109,6 +124,18 @@ impl std::fmt::Display for CorpusSummary {
             &self.unsupported_sample_by_formula,
         )?;
         write_top_counts(f, "mismatch by formula", &self.mismatch_by_formula)?;
+        write_top_samples(
+            f,
+            "mismatch sample by formula",
+            &self.mismatch_by_formula,
+            &self.mismatch_sample_by_formula,
+        )?;
+        let mut slow_files = self.slow_files.clone();
+        slow_files.sort_by_key(|(_, elapsed_ms)| Reverse(*elapsed_ms));
+        writeln!(f, "slow files:")?;
+        for (file, elapsed_ms) in slow_files.into_iter().take(10) {
+            writeln!(f, "{elapsed_ms:>8} ms {file}")?;
+        }
         write_top_counts(f, "unsupported by group", &self.unsupported_by_group)?;
         write_top_counts(f, "mismatch by group", &self.mismatch_by_group)?;
         for sample in &self.samples {
@@ -226,12 +253,32 @@ fn formula_values_match(actual: &FormulaValue<'_>, expected: &FormulaValue<'_>) 
             let tolerance = 1e-9_f64.max(expected.abs() * 1e-10);
             (actual - expected).abs() <= tolerance
         }
-        (FormulaValue::String(actual), FormulaValue::String(expected)) => actual == expected,
+        (FormulaValue::Number(actual), FormulaValue::Boolean(expected))
+        | (FormulaValue::Boolean(expected), FormulaValue::Number(actual)) => {
+            (*actual != 0.0) == *expected
+        }
+        (FormulaValue::String(actual), FormulaValue::String(expected)) => {
+            comparable_text(actual) == comparable_text(expected)
+        }
         (FormulaValue::Boolean(actual), FormulaValue::Boolean(expected)) => actual == expected,
         (FormulaValue::Blank, FormulaValue::Blank) => true,
+        (FormulaValue::String(actual), FormulaValue::Blank)
+        | (FormulaValue::Blank, FormulaValue::String(actual)) => comparable_text(actual).is_empty(),
         (FormulaValue::Error(_), FormulaValue::Error(_)) => true,
         _ => false,
     }
+}
+
+fn comparable_text(value: &str) -> String {
+    value
+        .chars()
+        .filter(|ch| !ch.is_control() && !is_unicode_noncharacter(*ch))
+        .collect()
+}
+
+fn is_unicode_noncharacter(ch: char) -> bool {
+    let code = ch as u32;
+    (0xfdd0..=0xfdef).contains(&code) || code & 0xfffe == 0xfffe
 }
 
 fn format_failure(

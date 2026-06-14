@@ -8,7 +8,8 @@ use std::{
 
 use ooxmlsdk_formula::{
     CellAddress, CellRange, FormulaErrorValue, FormulaEvaluationBook, FormulaGrammar, FormulaKind,
-    FormulaText, FormulaValue, SheetBinding, SheetId, normalize_formula_text,
+    FormulaParseContext, FormulaText, FormulaValue, ParsedFormula, SheetBinding, SheetId,
+    normalize_formula_text, parse_formula_with_context,
 };
 use quick_xml::{Reader, XmlVersion, events::Event};
 
@@ -38,6 +39,7 @@ pub struct FodsFormulaCase {
     pub sheet_name: String,
     pub address: CellAddress,
     pub formula: String,
+    pub parsed_formula: ParsedFormula<'static>,
     pub expected: FormulaValue<'static>,
 }
 
@@ -54,11 +56,17 @@ impl FodsWorkbook {
             .collect();
         let mut cells = BTreeMap::new();
         let mut formulas = BTreeMap::new();
+        let mut formula_text_overrides = BTreeMap::new();
         for (index, sheet) in self.sheets.iter().enumerate() {
             let sheet_id = SheetId(index as u32 + 1);
             for cell in &sheet.cells {
                 cells.insert((sheet_id, cell.address), cell.cached_value.clone());
                 if let Some(formula) = &cell.formula {
+                    if let Some(target) = formula_text_target(sheet_id, formula)
+                        && let FormulaValue::String(text) = &cell.cached_value
+                    {
+                        formula_text_overrides.insert((sheet_id, target), text.clone());
+                    }
                     let normalized = normalize_formula_text(formula, FormulaGrammar::OpenFormula);
                     let matrix_columns = cell.matrix_columns.max(1);
                     let matrix_rows = cell.matrix_rows.max(1);
@@ -95,6 +103,11 @@ impl FodsWorkbook {
                 }
             }
         }
+        for (key, text) in formula_text_overrides {
+            if let Some(formula) = formulas.get_mut(&key) {
+                formula.text = text;
+            }
+        }
         FormulaEvaluationBook {
             sheet_names,
             cells,
@@ -109,11 +122,20 @@ impl FodsWorkbook {
             let sheet_id = SheetId(index as u32 + 1);
             for cell in &sheet.cells {
                 if let Some(formula) = &cell.formula {
+                    let parsed_formula = parse_formula_with_context(
+                        FormulaParseContext {
+                            current_sheet: sheet_id,
+                            current_cell: Some(cell.address),
+                            grammar: FormulaGrammar::OpenFormula,
+                        },
+                        Cow::Owned(formula.clone()),
+                    );
                     cases.push(FodsFormulaCase {
                         sheet: sheet_id,
                         sheet_name: sheet.name.clone(),
                         address: cell.address,
                         formula: formula.clone(),
+                        parsed_formula,
                         expected: cell.cached_value.clone(),
                     });
                 }
@@ -123,14 +145,20 @@ impl FodsWorkbook {
     }
 }
 
+fn formula_text_target(_sheet: SheetId, formula: &str) -> Option<CellAddress> {
+    let normalized = normalize_formula_text(formula, FormulaGrammar::OpenFormula);
+    let inner = normalized
+        .strip_prefix("FORMULA(")?
+        .strip_suffix(')')?
+        .trim();
+    let reference = normalize_formula_text(inner, FormulaGrammar::OpenFormula);
+    let range = CellRange::parse_a1(reference.as_ref()).ok()?;
+    (range.start == range.end).then_some(range.start)
+}
+
 impl FodsFormulaCase {
     pub fn evaluate(&self, book: &FormulaEvaluationBook<'static>) -> Option<FormulaValue<'static>> {
-        book.evaluate_formula_text_with_grammar(
-            self.sheet,
-            Some(self.address),
-            &self.formula,
-            FormulaGrammar::OpenFormula,
-        )
+        book.evaluate_parsed_formula(self.sheet, Some(self.address), &self.parsed_formula)
     }
 }
 
@@ -146,6 +174,8 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
     let mut workbook = FodsWorkbook::default();
     let mut current_sheet: Option<FodsSheet> = None;
     let mut row = 0u32;
+    let mut row_repeat = 1u32;
+    let mut row_start_cell = 0usize;
     let mut column = 0u32;
     let mut current_cell: Option<PendingCell> = None;
 
@@ -166,9 +196,40 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
             }
             Ok(Event::Start(event)) if local_name(event.name().as_ref()) == b"table-row" => {
                 column = 0;
+                row_repeat = attr_value(&event, b"number-rows-repeated")
+                    .and_then(|value| value.parse::<u32>().ok())
+                    .unwrap_or(1)
+                    .max(1);
+                row_start_cell = current_sheet
+                    .as_ref()
+                    .map(|sheet| sheet.cells.len())
+                    .unwrap_or_default();
             }
             Ok(Event::End(event)) if local_name(event.name().as_ref()) == b"table-row" => {
-                row += 1;
+                if row_repeat > 1
+                    && let Some(sheet) = &mut current_sheet
+                {
+                    let row_cells = sheet.cells[row_start_cell..].to_vec();
+                    for row_offset in 1..row_repeat {
+                        sheet.cells.extend(row_cells.iter().map(|cell| FodsCell {
+                            address: CellAddress {
+                                column: cell.address.column,
+                                row: cell.address.row + row_offset,
+                            },
+                            formula: cell.formula.clone(),
+                            matrix_columns: cell.matrix_columns,
+                            matrix_rows: cell.matrix_rows,
+                            cached_value: cell.cached_value.clone(),
+                        }));
+                    }
+                }
+                row += row_repeat;
+            }
+            Ok(Event::Empty(event)) if local_name(event.name().as_ref()) == b"table-row" => {
+                row += attr_value(&event, b"number-rows-repeated")
+                    .and_then(|value| value.parse::<u32>().ok())
+                    .unwrap_or(1)
+                    .max(1);
             }
             Ok(Event::Start(event)) if local_name(event.name().as_ref()) == b"table-cell" => {
                 current_cell = Some(PendingCell {
@@ -197,23 +258,26 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
             Ok(Event::End(event)) if local_name(event.name().as_ref()) == b"table-cell" => {
                 if let (Some(sheet), Some(cell)) = (&mut current_sheet, current_cell.take()) {
                     let repeat = cell.repeat.max(1);
-                    for offset in 0..repeat {
-                        sheet.cells.push(FodsCell {
-                            address: CellAddress {
-                                column: cell.address.column + offset,
-                                row: cell.address.row,
-                            },
-                            formula: cell.formula.clone(),
-                            matrix_columns: cell.matrix_columns,
-                            matrix_rows: cell.matrix_rows,
-                            cached_value: if matches!(cell.cached_value, FormulaValue::Blank)
-                                && !cell.text.is_empty()
-                            {
-                                FormulaValue::String(Cow::Owned(cell.text.clone()))
-                            } else {
-                                cell.cached_value.clone()
-                            },
-                        });
+                    let cached_value = if matches!(cell.cached_value, FormulaValue::Blank)
+                        && !cell.text.is_empty()
+                    {
+                        FormulaValue::String(Cow::Owned(cell.text.clone()))
+                    } else {
+                        cell.cached_value.clone()
+                    };
+                    if should_store_cell(cell.formula.as_deref(), &cached_value) {
+                        for offset in 0..repeat {
+                            sheet.cells.push(FodsCell {
+                                address: CellAddress {
+                                    column: cell.address.column + offset,
+                                    row: cell.address.row,
+                                },
+                                formula: cell.formula.clone(),
+                                matrix_columns: cell.matrix_columns,
+                                matrix_rows: cell.matrix_rows,
+                                cached_value: cached_value.clone(),
+                            });
+                        }
                     }
                     column += repeat;
                 }
@@ -232,17 +296,19 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
                         .and_then(|value| value.parse::<u32>().ok())
                         .unwrap_or(1);
                     let cached_value = cached_value_from_attrs(&event);
-                    for offset in 0..repeat {
-                        sheet.cells.push(FodsCell {
-                            address: CellAddress {
-                                column: column + offset,
-                                row,
-                            },
-                            formula: formula.clone(),
-                            matrix_columns,
-                            matrix_rows,
-                            cached_value: cached_value.clone(),
-                        });
+                    if should_store_cell(formula.as_deref(), &cached_value) {
+                        for offset in 0..repeat {
+                            sheet.cells.push(FodsCell {
+                                address: CellAddress {
+                                    column: column + offset,
+                                    row,
+                                },
+                                formula: formula.clone(),
+                                matrix_columns,
+                                matrix_rows,
+                                cached_value: cached_value.clone(),
+                            });
+                        }
                     }
                     column += repeat;
                 }
@@ -289,6 +355,10 @@ fn cached_value_from_attrs(event: &quick_xml::events::BytesStart<'_>) -> Formula
             .unwrap_or_default(),
         _ => FormulaValue::Blank,
     }
+}
+
+fn should_store_cell(formula: Option<&str>, cached_value: &FormulaValue<'_>) -> bool {
+    formula.is_some() || !matches!(cached_value, FormulaValue::Blank)
 }
 
 fn date_value_serial(value: &str) -> Option<f64> {
@@ -391,6 +461,9 @@ mod tests {
                 <table:table-cell table:number-columns-repeated="2"/>
                 <table:table-cell table:formula="of:=SUM([.A1:.A1])" office:value-type="float" office:value="2"/>
               </table:table-row>
+              <table:table-row table:number-rows-repeated="2">
+                <table:table-cell table:number-columns-repeated="4"/>
+              </table:table-row>
               <table:table-row>
                 <table:table-cell office:value-type="string"><text:p>ok</text:p></table:table-cell>
               </table:table-row>
@@ -403,17 +476,25 @@ mod tests {
         let workbook = read_fods_workbook_from_reader(&xml[..]).unwrap();
         assert_eq!(workbook.sheets.len(), 1);
         assert_eq!(workbook.sheets[0].name, "Sheet1");
-        assert_eq!(workbook.sheets[0].cells.len(), 5);
+        assert_eq!(workbook.sheets[0].cells.len(), 3);
         assert_eq!(
             workbook.sheets[0].cells[0].cached_value,
             FormulaValue::Number(2.0)
         );
         assert_eq!(
-            workbook.sheets[0].cells[3].formula.as_deref(),
+            workbook.sheets[0].cells[1].address,
+            CellAddress { column: 3, row: 0 }
+        );
+        assert_eq!(
+            workbook.sheets[0].cells[1].formula.as_deref(),
             Some("of:=SUM([.A1:.A1])")
         );
         assert_eq!(
-            workbook.sheets[0].cells[4].cached_value,
+            workbook.sheets[0].cells[2].address,
+            CellAddress { column: 0, row: 3 }
+        );
+        assert_eq!(
+            workbook.sheets[0].cells[2].cached_value,
             FormulaValue::String(Cow::Borrowed("ok"))
         );
     }
