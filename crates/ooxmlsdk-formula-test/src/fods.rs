@@ -7,21 +7,29 @@ use std::{
 };
 
 use ooxmlsdk_formula::{
-    CellAddress, CellRange, FormulaErrorValue, FormulaEvaluationBook, FormulaGrammar, FormulaKind,
-    FormulaParseContext, FormulaText, FormulaValue, ParsedFormula, SheetBinding, SheetId,
-    normalize_formula_text, parse_formula_with_context,
+    CellAddress, CellRange, DefinedNameKey, FormulaErrorValue, FormulaEvaluationBook,
+    FormulaGrammar, FormulaKind, FormulaParseContext, FormulaText, FormulaValue, ParsedFormula,
+    SheetBinding, SheetId, normalize_formula_text, parse_formula_with_context,
 };
 use quick_xml::{Reader, XmlVersion, events::Event};
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct FodsWorkbook {
     pub sheets: Vec<FodsSheet>,
+    pub named_ranges: Vec<FodsNamedRange>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct FodsSheet {
     pub name: String,
     pub cells: Vec<FodsCell>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct FodsNamedRange {
+    pub name: String,
+    pub sheet_name: Option<String>,
+    pub formula: String,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -112,6 +120,24 @@ impl FodsWorkbook {
             sheet_names,
             cells,
             formulas,
+            defined_names: self
+                .named_ranges
+                .iter()
+                .map(|range| {
+                    (
+                        DefinedNameKey {
+                            sheet: range.sheet_name.as_deref().and_then(|sheet_name| {
+                                self.sheets
+                                    .iter()
+                                    .position(|sheet| sheet.name == sheet_name)
+                                    .map(|index| SheetId(index as u32 + 1))
+                            }),
+                            name_upper: range.name.to_ascii_uppercase(),
+                        },
+                        Cow::Owned(range.formula.clone()),
+                    )
+                })
+                .collect(),
             ..FormulaEvaluationBook::default()
         }
     }
@@ -313,6 +339,18 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
                     column += repeat;
                 }
             }
+            Ok(Event::Empty(event)) if local_name(event.name().as_ref()) == b"named-range" => {
+                if let (Some(name), Some(address)) = (
+                    attr_value(&event, b"name"),
+                    attr_value(&event, b"cell-range-address"),
+                ) {
+                    workbook.named_ranges.push(FodsNamedRange {
+                        name,
+                        sheet_name: fods_named_range_sheet_name(&address),
+                        formula: normalize_fods_named_range_address(&address),
+                    });
+                }
+            }
             Ok(Event::Eof) => break,
             Err(err) => return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, err)),
             _ => {}
@@ -353,12 +391,31 @@ fn cached_value_from_attrs(event: &quick_xml::events::BytesStart<'_>) -> Formula
             .and_then(|value| date_value_serial(&value))
             .map(FormulaValue::Number)
             .unwrap_or_default(),
+        Some("time") => attr_value(event, b"time-value")
+            .and_then(|value| time_value_serial(&value))
+            .map(FormulaValue::Number)
+            .unwrap_or_default(),
         _ => FormulaValue::Blank,
     }
 }
 
 fn should_store_cell(formula: Option<&str>, cached_value: &FormulaValue<'_>) -> bool {
     formula.is_some() || !matches!(cached_value, FormulaValue::Blank)
+}
+
+fn fods_named_range_sheet_name(address: &str) -> Option<String> {
+    address
+        .trim_start_matches('$')
+        .split_once('.')
+        .map(|(sheet, _)| sheet.trim_matches('\'').to_string())
+}
+
+fn normalize_fods_named_range_address(address: &str) -> String {
+    let mut normalized = address.trim_start_matches('$').replace(":.", ":");
+    if let Some(dot) = normalized.find('.') {
+        normalized.replace_range(dot..=dot, "!");
+    }
+    normalized
 }
 
 fn date_value_serial(value: &str) -> Option<f64> {
@@ -379,6 +436,25 @@ fn date_value_serial(value: &str) -> Option<f64> {
         serial += (hour * 3600.0 + minute * 60.0 + second) / 86_400.0;
     }
     Some(serial)
+}
+
+fn time_value_serial(value: &str) -> Option<f64> {
+    let mut rest = value.strip_prefix("PT")?;
+    let mut seconds = 0.0;
+    while !rest.is_empty() {
+        let unit_pos = rest.find(|ch: char| ch.is_ascii_alphabetic())?;
+        let (number, tail) = rest.split_at(unit_pos);
+        let unit = tail.chars().next()?;
+        let amount = number.parse::<f64>().ok()?;
+        seconds += match unit {
+            'H' => amount * 3600.0,
+            'M' => amount * 60.0,
+            'S' => amount,
+            _ => return None,
+        };
+        rest = &tail[unit.len_utf8()..];
+    }
+    Some(seconds / 86_400.0)
 }
 
 fn date_serial(year: i32, month: i32, day: i32) -> Option<f64> {
