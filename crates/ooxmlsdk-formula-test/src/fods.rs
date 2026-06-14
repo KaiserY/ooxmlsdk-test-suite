@@ -1,14 +1,14 @@
 use std::{
     borrow::Cow,
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     fs::File,
     io::{BufRead, BufReader},
     path::Path,
 };
 
 use ooxmlsdk_formula::{
-    AddressFlags, CellAddress, CellRange, DefinedNameKey, FormulaErrorValue, FormulaEvaluationBook,
-    FormulaGrammar, FormulaKind, FormulaParseContext, FormulaPivotField,
+    AddressFlags, CellAddress, CellRange, DateSystem, DefinedNameKey, FormulaErrorValue,
+    FormulaEvaluationBook, FormulaGrammar, FormulaKind, FormulaParseContext, FormulaPivotField,
     FormulaPivotFieldOrientation, FormulaPivotFunction, FormulaPivotTable, FormulaRowState,
     FormulaText, FormulaValue, ParsedFormula, QualifiedRange, SheetBinding, SheetId, SheetName,
     normalize_formula_text, parse_formula_with_context,
@@ -42,6 +42,7 @@ pub struct FodsCell {
     pub formula: Option<String>,
     pub matrix_columns: u32,
     pub matrix_rows: u32,
+    pub query_empty: bool,
     pub cached_value: FormulaValue<'static>,
 }
 
@@ -67,21 +68,52 @@ impl FodsWorkbook {
             })
             .collect();
         let mut cells = BTreeMap::new();
+        let mut query_cell_values = BTreeMap::new();
+        let mut query_empty_cells = BTreeSet::new();
         let mut formulas = BTreeMap::new();
         let mut formula_text_overrides = BTreeMap::new();
+        let mut today_serial = None;
         for (index, sheet) in self.sheets.iter().enumerate() {
             let sheet_id = SheetId(index as u32 + 1);
             for cell in &sheet.cells {
                 cells.insert((sheet_id, cell.address), cell.cached_value.clone());
                 if let Some(formula) = &cell.formula {
-                    if let Some(target) = formula_text_target(sheet_id, formula)
-                        && let FormulaValue::String(text) = &cell.cached_value
+                    if today_serial.is_none()
+                        && is_today_formula(formula)
+                        && let FormulaValue::Number(value) = &cell.cached_value
                     {
-                        formula_text_overrides.insert((sheet_id, target), text.clone());
+                        today_serial = Some(value.floor());
+                    }
+                    if let Some(target) = formula_text_target(sheet_id, formula) {
+                        match &cell.cached_value {
+                            FormulaValue::String(text) => {
+                                formula_text_overrides.insert((sheet_id, target), text.clone());
+                            }
+                            FormulaValue::Blank => {
+                                formula_text_overrides
+                                    .insert((sheet_id, target), Cow::Borrowed(""));
+                            }
+                            _ => {}
+                        }
                     }
                     let normalized = normalize_formula_text(formula, FormulaGrammar::OpenFormula);
                     let matrix_columns = cell.matrix_columns.max(1);
                     let matrix_rows = cell.matrix_rows.max(1);
+                    if matrix_columns > 1 || matrix_rows > 1 {
+                        for row_offset in 0..matrix_rows {
+                            for column_offset in 0..matrix_columns {
+                                let address = CellAddress {
+                                    column: cell.address.column + column_offset,
+                                    row: cell.address.row + row_offset,
+                                };
+                                query_cell_values
+                                    .insert((sheet_id, address), cell.cached_value.clone());
+                                if cell.query_empty {
+                                    query_empty_cells.insert((sheet_id, address));
+                                }
+                            }
+                        }
+                    }
                     let reference = CellRange::new(
                         cell.address,
                         CellAddress {
@@ -123,6 +155,8 @@ impl FodsWorkbook {
         FormulaEvaluationBook {
             sheet_names,
             cells,
+            query_cell_values,
+            query_empty_cells,
             formulas,
             row_states: self
                 .sheets
@@ -155,6 +189,8 @@ impl FodsWorkbook {
                 })
                 .collect(),
             pivot_tables: self.pivot_tables.clone(),
+            date_system: DateSystem::LibreOffice,
+            today_serial,
             ..FormulaEvaluationBook::default()
         }
     }
@@ -329,6 +365,7 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
                             formula: cell.formula.clone(),
                             matrix_columns: cell.matrix_columns,
                             matrix_rows: cell.matrix_rows,
+                            query_empty: cell.query_empty,
                             cached_value: cell.cached_value.clone(),
                         }));
                     }
@@ -374,11 +411,18 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
             }
             Ok(Event::Text(event)) => {
                 if let Some(cell) = &mut current_cell
-                    && let Ok(text) = event.decode()
+                    && let Ok(text) = event.xml_content(XmlVersion::Implicit1_0)
                 {
                     if !text.trim().is_empty() {
                         cell.text.push_str(&text);
                     }
+                }
+            }
+            Ok(Event::GeneralRef(event)) => {
+                if let Some(cell) = &mut current_cell
+                    && let Some(text) = xml_general_reference_text(event.as_ref())
+                {
+                    cell.text.push_str(&text);
                 }
             }
             Ok(Event::Empty(event)) if local_name(event.name().as_ref()) == b"s" => {
@@ -397,6 +441,11 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
                         && !cell.text.is_empty()
                     {
                         FormulaValue::String(Cow::Owned(cell.text.clone()))
+                    } else if matches!(
+                        cell.cached_value,
+                        FormulaValue::Error(FormulaErrorValue::Unknown)
+                    ) {
+                        fods_error_value(&cell.text).unwrap_or(cell.cached_value.clone())
                     } else {
                         cell.cached_value.clone()
                     };
@@ -410,6 +459,9 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
                                 formula: cell.formula.clone(),
                                 matrix_columns: cell.matrix_columns,
                                 matrix_rows: cell.matrix_rows,
+                                query_empty: matches!(cached_value, FormulaValue::Number(value) if value == 0.0)
+                                    && cell.text.is_empty()
+                                    && (cell.matrix_columns.max(1) > 1 || cell.matrix_rows.max(1) > 1),
                                 cached_value: cached_value.clone(),
                             });
                         }
@@ -441,6 +493,8 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
                                 formula: formula.clone(),
                                 matrix_columns,
                                 matrix_rows,
+                                query_empty: matches!(cached_value, FormulaValue::Number(value) if value == 0.0)
+                                    && (matrix_columns.max(1) > 1 || matrix_rows.max(1) > 1),
                                 cached_value: cached_value.clone(),
                             });
                         }
@@ -515,8 +569,33 @@ fn cached_value_from_attrs(event: &quick_xml::events::BytesStart<'_>) -> Formula
     }
 }
 
+fn fods_error_value(text: &str) -> Option<FormulaValue<'static>> {
+    Some(FormulaValue::Error(
+        match text.trim().to_ascii_uppercase().as_str() {
+            "#NULL!" => FormulaErrorValue::Null,
+            "#DIV/0!" => FormulaErrorValue::Div0,
+            "#VALUE!" => FormulaErrorValue::Value,
+            "#REF!" => FormulaErrorValue::Ref,
+            "#NAME?" => FormulaErrorValue::Name,
+            "#NUM!" => FormulaErrorValue::Num,
+            "#N/A" => FormulaErrorValue::NA,
+            "ERR:502" => FormulaErrorValue::IllegalArgument,
+            _ => return None,
+        },
+    ))
+}
+
 fn should_store_cell(formula: Option<&str>, cached_value: &FormulaValue<'_>) -> bool {
     formula.is_some() || !matches!(cached_value, FormulaValue::Blank)
+}
+
+fn is_today_formula(formula: &str) -> bool {
+    formula
+        .trim()
+        .strip_prefix("of:=")
+        .unwrap_or(formula)
+        .trim()
+        .eq_ignore_ascii_case("TODAY()")
 }
 
 fn fods_named_range_sheet_name(address: &str) -> Option<String> {
@@ -602,10 +681,7 @@ fn pivot_function(value: Option<&str>) -> FormulaPivotFunction {
 
 fn date_value_serial(value: &str) -> Option<f64> {
     let (date, time) = value.split_once('T').unwrap_or((value, ""));
-    let mut parts = date.split('-');
-    let year = parts.next()?.parse::<i32>().ok()?;
-    let month = parts.next()?.parse::<i32>().ok()?;
-    let day = parts.next()?.parse::<i32>().ok()?;
+    let (year, month, day) = parse_fods_date(date)?;
     let mut serial = date_serial(year, month, day)?;
     if !time.is_empty() {
         let mut parts = time.split(':');
@@ -618,6 +694,18 @@ fn date_value_serial(value: &str) -> Option<f64> {
         serial += (hour * 3600.0 + minute * 60.0 + second) / 86_400.0;
     }
     Some(serial)
+}
+
+fn parse_fods_date(value: &str) -> Option<(i32, i32, i32)> {
+    let day_separator = value.rfind('-')?;
+    let (head, day) = value.split_at(day_separator);
+    let month_separator = head.rfind('-')?;
+    let (year, month) = head.split_at(month_separator);
+    Some((
+        year.parse::<i32>().ok()?,
+        month.strip_prefix('-')?.parse::<i32>().ok()?,
+        day.strip_prefix('-')?.parse::<i32>().ok()?,
+    ))
 }
 
 fn time_value_serial(value: &str) -> Option<f64> {
@@ -644,13 +732,7 @@ fn date_serial(year: i32, month: i32, day: i32) -> Option<f64> {
     let normalized_year = year + month_index.div_euclid(12);
     let normalized_month = month_index.rem_euclid(12) + 1;
     let days = days_from_civil(normalized_year, normalized_month, 1)? + i64::from(day - 1);
-    let base = days_from_civil(1899, 12, 31)?;
-    let mut serial = days - base;
-    let leap_bug_start = days_from_civil(1900, 3, 1)?;
-    if days >= leap_bug_start {
-        serial += 1;
-    }
-    Some(serial as f64)
+    Some((days - days_from_civil(1899, 12, 30)?) as f64)
 }
 
 fn days_from_civil(year: i32, month: i32, day: i32) -> Option<i64> {
@@ -700,9 +782,38 @@ fn local_name(name: &[u8]) -> &[u8] {
         .unwrap_or(name)
 }
 
+fn xml_general_reference_text(reference: &[u8]) -> Option<String> {
+    match reference {
+        b"amp" => Some("&".to_string()),
+        b"lt" => Some("<".to_string()),
+        b"gt" => Some(">".to_string()),
+        b"quot" => Some("\"".to_string()),
+        b"apos" => Some("'".to_string()),
+        _ => {
+            let reference = std::str::from_utf8(reference).ok()?;
+            if let Some(hex) = reference
+                .strip_prefix("#x")
+                .or_else(|| reference.strip_prefix("#X"))
+            {
+                u32::from_str_radix(hex, 16)
+                    .ok()
+                    .and_then(char::from_u32)
+                    .map(|value| value.to_string())
+            } else {
+                reference
+                    .strip_prefix('#')
+                    .and_then(|decimal| decimal.parse::<u32>().ok())
+                    .and_then(char::from_u32)
+                    .map(|value| value.to_string())
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ooxmlsdk_corpus_test_support::workspace_root;
 
     #[test]
     fn reads_fods_tables_cells_formulas_and_cached_values() {
@@ -755,5 +866,64 @@ mod tests {
             workbook.sheets[0].cells[2].cached_value,
             FormulaValue::String(Cow::Borrowed("ok"))
         );
+    }
+
+    #[test]
+    fn reads_countif_fods_criteria_references() {
+        let workbook =
+            read_fods_workbook(&workspace_root().join(
+                "fixtures/LibreOffice/sc/qa/unit/data/functions/statistical/fods/countif.fods",
+            ))
+            .unwrap();
+        let book = workbook.evaluation_book();
+        assert_eq!(
+            [
+                book.cell_value(SheetId(2), CellAddress { column: 8, row: 0 }),
+                book.cell_value(SheetId(2), CellAddress { column: 9, row: 0 }),
+                book.cell_value(SheetId(2), CellAddress { column: 10, row: 0 }),
+            ],
+            [
+                FormulaValue::Number(2000.0),
+                FormulaValue::Number(2006.0),
+                FormulaValue::String(Cow::Borrowed(">2006")),
+            ]
+        );
+        for (row, expected) in (0..10).zip(2000..=2009) {
+            assert_eq!(
+                book.cell_value(SheetId(2), CellAddress { column: 8, row }),
+                FormulaValue::Number(f64::from(expected))
+            );
+        }
+        for row in 12..=14 {
+            let address = CellAddress { column: 8, row };
+            assert_eq!(
+                book.query_cell_value(SheetId(2), address, book.cell_value(SheetId(2), address)),
+                FormulaValue::Number(0.0)
+            );
+            assert!(book.is_query_empty_cell(SheetId(2), address));
+        }
+        let case = workbook
+            .formula_cases()
+            .into_iter()
+            .find(|case| {
+                case.sheet == SheetId(2) && case.address == CellAddress { column: 0, row: 5 }
+            })
+            .expect("Sheet2!A6 formula case");
+        assert_eq!(case.formula, "of:=COUNTIF([.I1:.I10];[.K1])");
+        assert_eq!(case.evaluate(&book), Some(FormulaValue::Number(3.0)));
+        for (row, formula) in [
+            (9, "of:=COUNTIF([.$I$13:.$I$15];0)"),
+            (10, "of:=COUNTIF([.$I$13:.$I$15];\"\")"),
+        ] {
+            let case = workbook
+                .formula_cases()
+                .into_iter()
+                .find(|case| {
+                    case.sheet == SheetId(2) && case.address == CellAddress { column: 0, row }
+                })
+                .expect("Sheet2 COUNTIF empty matrix formula case");
+            assert_eq!(case.formula, formula);
+            assert_eq!(case.evaluate(&book), Some(FormulaValue::Number(3.0)));
+        }
     }
 }
