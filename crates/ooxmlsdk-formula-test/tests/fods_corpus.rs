@@ -368,7 +368,10 @@ fn function_test_row_values_match(
     actual: &FormulaValue<'_>,
     book: &FormulaEvaluationBook<'static>,
 ) -> bool {
-    if !value_gets_as_true(&case.expected) || !matches!(actual, FormulaValue::Boolean(false)) {
+    if !value_gets_as_true(&case.expected) {
+        return false;
+    }
+    if !matches!(actual, FormulaValue::Boolean(false)) {
         return false;
     }
     let expected = book.cell_value(
@@ -385,7 +388,22 @@ fn function_test_row_values_match(
             row: case.address.row,
         },
     );
-    formula_values_match(&result, &expected, &case.formula)
+    formula_values_match(
+        &visible_cell_value(&result),
+        &visible_cell_value(&expected),
+        &case.formula,
+    )
+}
+
+fn visible_cell_value<'a>(value: &'a FormulaValue<'a>) -> FormulaValue<'a> {
+    match value {
+        FormulaValue::Matrix(rows) => rows
+            .first()
+            .and_then(|row| row.first())
+            .cloned()
+            .unwrap_or(FormulaValue::Blank),
+        value => value.clone(),
+    }
 }
 
 fn value_gets_as_true(value: &FormulaValue<'_>) -> bool {

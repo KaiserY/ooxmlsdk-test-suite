@@ -101,6 +101,11 @@ impl FodsWorkbook {
                     {
                         today_serial = Some(value.floor());
                     }
+                    if formula_references_blank_cell(self, index, cell) {
+                        query_cell_values
+                            .insert((sheet_id, cell.address), FormulaValue::Number(0.0));
+                        query_empty_cells.insert((sheet_id, cell.address));
+                    }
                     if let Some(target) = formula_text_target(sheet_id, formula) {
                         match &cell.cached_value {
                             FormulaValue::String(text) => {
@@ -258,7 +263,14 @@ impl FodsWorkbook {
                     changed = true;
                     book.cells.insert((sheet, address), value.clone());
                 }
-                book.query_cell_values.insert((sheet, address), value);
+                if book.is_query_empty_cell(sheet, address) && matches!(value, FormulaValue::Blank)
+                {
+                    book.query_cell_values
+                        .entry((sheet, address))
+                        .or_insert(FormulaValue::Number(0.0));
+                } else {
+                    book.query_cell_values.insert((sheet, address), value);
+                }
             }
             if !changed {
                 break;
@@ -984,6 +996,19 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
                     });
                 }
             }
+            Ok(Event::Empty(event)) if local_name(event.name().as_ref()) == b"database-range" => {
+                if let (Some(name), Some(address)) = (
+                    attr_value(&event, b"name"),
+                    attr_value(&event, b"target-range-address"),
+                ) && let Some(formula) = normalize_fods_database_range_address(&address)
+                {
+                    workbook.named_ranges.push(FodsNamedRange {
+                        name,
+                        sheet_name: None,
+                        formula,
+                    });
+                }
+            }
             Ok(Event::Eof) => break,
             Err(err) => return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, err)),
             _ => {}
@@ -1051,6 +1076,8 @@ fn fods_error_value(text: &str) -> Option<FormulaValue<'static>> {
             "#NUM!" => FormulaErrorValue::Num,
             "#N/A" => FormulaErrorValue::NA,
             "ERR:502" => FormulaErrorValue::IllegalArgument,
+            "ERR:511" => FormulaErrorValue::Parameter,
+            "ERR:504" | "ERR:508" => FormulaErrorValue::Unknown,
             _ => return None,
         },
     ))
@@ -1108,6 +1135,91 @@ fn is_today_formula(formula: &str) -> bool {
         .eq_ignore_ascii_case("TODAY()")
 }
 
+fn formula_references_blank_cell(
+    workbook: &FodsWorkbook,
+    current_sheet_index: usize,
+    cell: &FodsCell,
+) -> bool {
+    let Some(formula) = &cell.formula else {
+        return false;
+    };
+    let Some((sheet_name, address)) = direct_formula_reference(formula) else {
+        return false;
+    };
+    let Some(sheet_index) =
+        resolve_formula_reference_sheet(workbook, current_sheet_index, sheet_name)
+    else {
+        return false;
+    };
+    let mut visited = BTreeSet::new();
+    referenced_cell_is_query_empty(workbook, sheet_index, address, &mut visited)
+}
+
+fn referenced_cell_is_query_empty(
+    workbook: &FodsWorkbook,
+    sheet_index: usize,
+    address: CellAddress,
+    visited: &mut BTreeSet<(usize, CellAddress)>,
+) -> bool {
+    if !visited.insert((sheet_index, address)) {
+        return false;
+    }
+    let Some(sheet) = workbook.sheets.get(sheet_index) else {
+        return false;
+    };
+    let Some(cell) = sheet.cells.iter().find(|cell| cell.address == address) else {
+        return true;
+    };
+    if cell.query_empty || matches!(cell.cached_value, FormulaValue::Blank) {
+        return true;
+    }
+    let Some(formula) = &cell.formula else {
+        return false;
+    };
+    let Some((sheet_name, address)) = direct_formula_reference(formula) else {
+        return false;
+    };
+    let Some(sheet_index) = resolve_formula_reference_sheet(workbook, sheet_index, sheet_name)
+    else {
+        return false;
+    };
+    referenced_cell_is_query_empty(workbook, sheet_index, address, visited)
+}
+
+fn direct_formula_reference(formula: &str) -> Option<(Option<String>, CellAddress)> {
+    let normalized = normalize_formula_text(formula, FormulaGrammar::OpenFormula);
+    let reference = normalized.trim();
+    if reference.is_empty() || reference.contains(':') {
+        return None;
+    }
+    let (sheet_name, cell_reference) = reference
+        .rsplit_once('!')
+        .map(|(sheet, reference)| (Some(sheet_name_from_formula_reference(sheet)), reference))
+        .unwrap_or((None, reference));
+    let cell_reference = cell_reference.replace('$', "");
+    let address = CellAddress::parse_a1(&cell_reference).ok()?;
+    Some((sheet_name, address))
+}
+
+fn sheet_name_from_formula_reference(sheet: &str) -> String {
+    sheet
+        .trim()
+        .trim_matches('\'')
+        .replace("''", "'")
+        .to_string()
+}
+
+fn resolve_formula_reference_sheet(
+    workbook: &FodsWorkbook,
+    current_sheet_index: usize,
+    sheet_name: Option<String>,
+) -> Option<usize> {
+    sheet_name
+        .as_deref()
+        .map(|name| workbook.sheets.iter().position(|sheet| sheet.name == name))
+        .unwrap_or(Some(current_sheet_index))
+}
+
 fn normalize_fods_named_range_address(address: &str) -> String {
     let mut normalized = address.trim_start_matches('$').replace(":.", ":");
     if let Some(dot) = normalized.find('.') {
@@ -1115,6 +1227,19 @@ fn normalize_fods_named_range_address(address: &str) -> String {
     }
     normalized.retain(|ch| ch != '$');
     normalized
+}
+
+fn normalize_fods_database_range_address(address: &str) -> Option<String> {
+    let (start, end) = address.split_once(':').unwrap_or((address, address));
+    let (start_sheet, start_reference) = split_fods_address_part(start)?;
+    let (end_sheet, end_reference) = split_fods_address_part(end)?;
+    let start_sheet = start_sheet.trim_start_matches('$');
+    let end_sheet = end_sheet.trim_start_matches('$');
+    Some(if start_sheet == end_sheet {
+        format!("{start_sheet}!{start_reference}:{end_reference}")
+    } else {
+        format!("{start_sheet}!{start_reference}:{end_sheet}!{end_reference}")
+    })
 }
 
 fn parse_fods_qualified_range(
@@ -1570,6 +1695,46 @@ mod tests {
         assert_eq!(
             hard_recalc_book.cell_value(SheetId(2), CellAddress { column: 2, row: 17 }),
             FormulaValue::Boolean(true)
+        );
+    }
+
+    #[test]
+    fn imports_direct_blank_reference_formula_cells_as_query_empty() {
+        let workbook = read_fods_workbook(
+            &workspace_root()
+                .join("fixtures/LibreOffice/sc/qa/unit/data/functions/database/fods/dsum.fods"),
+        )
+        .unwrap();
+        let book = workbook.hard_recalc_book();
+        assert_eq!(
+            book.defined_names
+                .get(&DefinedNameKey {
+                    sheet: None,
+                    name_upper: "DATA".to_string()
+                })
+                .map(|value| value.as_ref()),
+            Some("AOO109200!B6:D9")
+        );
+        let criterion = CellAddress {
+            column: 16,
+            row: 14,
+        };
+        assert_eq!(
+            book.query_cell_value(
+                SheetId(2),
+                criterion,
+                book.cell_value(SheetId(2), criterion)
+            ),
+            FormulaValue::Number(0.0)
+        );
+        assert!(book.is_query_empty_cell(SheetId(2), criterion));
+        assert_eq!(
+            book.cell_value(SheetId(2), CellAddress { column: 0, row: 15 }),
+            FormulaValue::Number(2.0)
+        );
+        assert_eq!(
+            book.cell_value(SheetId(2), CellAddress { column: 0, row: 11 }),
+            FormulaValue::Number(104.0)
         );
     }
 
