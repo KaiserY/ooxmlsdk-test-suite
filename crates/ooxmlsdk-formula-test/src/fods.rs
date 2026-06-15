@@ -10,8 +10,8 @@ use ooxmlsdk_formula::{
     AddressFlags, CellAddress, CellRange, DateSystem, DefinedNameKey, FormulaErrorValue,
     FormulaEvaluationBook, FormulaGrammar, FormulaKind, FormulaParseContext, FormulaPivotField,
     FormulaPivotFieldOrientation, FormulaPivotFunction, FormulaPivotTable, FormulaRowState,
-    FormulaText, FormulaValue, ParsedFormula, QualifiedRange, SheetBinding, SheetId, SheetName,
-    normalize_formula_text, parse_formula_with_context,
+    FormulaSearchType, FormulaText, FormulaValue, ParsedFormula, QualifiedRange, SheetBinding,
+    SheetId, SheetName, normalize_formula_text, parse_formula_with_context,
 };
 use quick_xml::{Reader, XmlVersion, events::Event};
 
@@ -20,6 +20,7 @@ pub struct FodsWorkbook {
     pub sheets: Vec<FodsSheet>,
     pub named_ranges: Vec<FodsNamedRange>,
     pub pivot_tables: Vec<FormulaPivotTable<'static>>,
+    pub formula_search_type: FormulaSearchType,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -190,6 +191,7 @@ impl FodsWorkbook {
                 .collect(),
             pivot_tables: self.pivot_tables.clone(),
             date_system: DateSystem::LibreOffice,
+            formula_search_type: self.formula_search_type,
             today_serial,
             ..FormulaEvaluationBook::default()
         }
@@ -248,7 +250,7 @@ pub fn read_fods_workbook(path: &Path) -> std::io::Result<FodsWorkbook> {
 
 pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<FodsWorkbook> {
     let mut reader = Reader::from_reader(reader);
-    reader.config_mut().trim_text(true);
+    reader.config_mut().trim_text(false);
     let mut buf = Vec::new();
     let mut workbook = FodsWorkbook::default();
     let mut current_sheet: Option<FodsSheet> = None;
@@ -257,7 +259,9 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
     let mut row_start_cell = 0usize;
     let mut column = 0u32;
     let mut current_cell: Option<PendingCell> = None;
+    let mut current_covered_cell_repeat: Option<u32> = None;
     let mut current_pivot: Option<FormulaPivotTable<'static>> = None;
+    let mut in_text_p = false;
 
     loop {
         match reader.read_event_into(&mut buf) {
@@ -269,6 +273,13 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
                 });
                 row = 0;
                 column = 0;
+            }
+            Ok(Event::Start(event)) | Ok(Event::Empty(event))
+                if local_name(event.name().as_ref()) == b"calculation-settings" =>
+            {
+                if let Some(search_type) = formula_search_type_from_attrs(&event) {
+                    workbook.formula_search_type = search_type;
+                }
             }
             Ok(Event::Start(event)) if local_name(event.name().as_ref()) == b"data-pilot-table" => {
                 if let Some(target) = attr_value(&event, b"target-range-address")
@@ -409,24 +420,35 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
                     text: String::new(),
                 });
             }
+            Ok(Event::Start(event)) if local_name(event.name().as_ref()) == b"p" => {
+                in_text_p = true;
+            }
+            Ok(Event::End(event)) if local_name(event.name().as_ref()) == b"p" => {
+                in_text_p = false;
+            }
+            Ok(Event::Start(event))
+                if local_name(event.name().as_ref()) == b"covered-table-cell" =>
+            {
+                current_covered_cell_repeat = Some(cell_repeat(&event));
+            }
             Ok(Event::Text(event)) => {
-                if let Some(cell) = &mut current_cell
+                if in_text_p
+                    && let Some(cell) = &mut current_cell
                     && let Ok(text) = event.xml_content(XmlVersion::Implicit1_0)
                 {
-                    if !text.trim().is_empty() {
-                        cell.text.push_str(&text);
-                    }
+                    cell.text.push_str(&text);
                 }
             }
             Ok(Event::GeneralRef(event)) => {
-                if let Some(cell) = &mut current_cell
+                if in_text_p
+                    && let Some(cell) = &mut current_cell
                     && let Some(text) = xml_general_reference_text(event.as_ref())
                 {
                     cell.text.push_str(&text);
                 }
             }
             Ok(Event::Empty(event)) if local_name(event.name().as_ref()) == b"s" => {
-                if let Some(cell) = &mut current_cell {
+                if in_text_p && let Some(cell) = &mut current_cell {
                     let count = attr_value(&event, b"c")
                         .and_then(|value| value.parse::<usize>().ok())
                         .unwrap_or(1)
@@ -441,6 +463,10 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
                         && !cell.text.is_empty()
                     {
                         FormulaValue::String(Cow::Owned(cell.text.clone()))
+                    } else if matches!(cell.cached_value, FormulaValue::Blank)
+                        && cell.formula.is_some()
+                    {
+                        FormulaValue::String(Cow::Borrowed(""))
                     } else if matches!(
                         cell.cached_value,
                         FormulaValue::Error(FormulaErrorValue::Unknown)
@@ -469,12 +495,12 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
                     column += repeat;
                 }
             }
+            Ok(Event::End(event)) if local_name(event.name().as_ref()) == b"covered-table-cell" => {
+                column += current_covered_cell_repeat.take().unwrap_or(1);
+            }
             Ok(Event::Empty(event)) if local_name(event.name().as_ref()) == b"table-cell" => {
                 if let Some(sheet) = &mut current_sheet {
-                    let repeat = attr_value(&event, b"number-columns-repeated")
-                        .and_then(|value| value.parse::<u32>().ok())
-                        .unwrap_or(1)
-                        .max(1);
+                    let repeat = cell_repeat(&event);
                     let formula = attr_value(&event, b"formula");
                     let matrix_columns = attr_value(&event, b"number-matrix-columns-spanned")
                         .and_then(|value| value.parse::<u32>().ok())
@@ -502,6 +528,11 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
                     column += repeat;
                 }
             }
+            Ok(Event::Empty(event))
+                if local_name(event.name().as_ref()) == b"covered-table-cell" =>
+            {
+                column += cell_repeat(&event);
+            }
             Ok(Event::Empty(event)) if local_name(event.name().as_ref()) == b"named-range" => {
                 if let (Some(name), Some(address)) = (
                     attr_value(&event, b"name"),
@@ -509,7 +540,7 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
                 ) {
                     workbook.named_ranges.push(FodsNamedRange {
                         name,
-                        sheet_name: fods_named_range_sheet_name(&address),
+                        sheet_name: None,
                         formula: normalize_fods_named_range_address(&address),
                     });
                 }
@@ -589,6 +620,40 @@ fn should_store_cell(formula: Option<&str>, cached_value: &FormulaValue<'_>) -> 
     formula.is_some() || !matches!(cached_value, FormulaValue::Blank)
 }
 
+fn formula_search_type_from_attrs(
+    event: &quick_xml::events::BytesStart<'_>,
+) -> Option<FormulaSearchType> {
+    let mut search_type = FormulaSearchType::Regex;
+    let regex = attr_value(event, b"use-regular-expressions").and_then(|value| parse_bool(&value));
+    let wildcards = attr_value(event, b"use-wildcards").and_then(|value| parse_bool(&value));
+    if let Some(regex) = regex {
+        if !regex && search_type == FormulaSearchType::Regex {
+            search_type = FormulaSearchType::Normal;
+        }
+    }
+    if let Some(wildcards) = wildcards {
+        if wildcards {
+            search_type = FormulaSearchType::Wildcard;
+        }
+    }
+    Some(search_type)
+}
+
+fn parse_bool(value: &str) -> Option<bool> {
+    match value {
+        "true" | "1" => Some(true),
+        "false" | "0" => Some(false),
+        _ => None,
+    }
+}
+
+fn cell_repeat(event: &quick_xml::events::BytesStart<'_>) -> u32 {
+    attr_value(event, b"number-columns-repeated")
+        .and_then(|value| value.parse::<u32>().ok())
+        .unwrap_or(1)
+        .max(1)
+}
+
 fn is_today_formula(formula: &str) -> bool {
     formula
         .trim()
@@ -596,13 +661,6 @@ fn is_today_formula(formula: &str) -> bool {
         .unwrap_or(formula)
         .trim()
         .eq_ignore_ascii_case("TODAY()")
-}
-
-fn fods_named_range_sheet_name(address: &str) -> Option<String> {
-    address
-        .trim_start_matches('$')
-        .split_once('.')
-        .map(|(sheet, _)| sheet.trim_matches('\'').to_string())
 }
 
 fn normalize_fods_named_range_address(address: &str) -> String {
@@ -816,6 +874,45 @@ mod tests {
     use ooxmlsdk_corpus_test_support::workspace_root;
 
     #[test]
+    fn reads_libreoffice_calculation_search_settings() {
+        for (settings, expected) in [
+            ("", FormulaSearchType::Wildcard),
+            (
+                r#"<table:calculation-settings table:automatic-find-labels="false"/>"#,
+                FormulaSearchType::Regex,
+            ),
+            (
+                r#"<table:calculation-settings table:use-regular-expressions="false"/>"#,
+                FormulaSearchType::Normal,
+            ),
+            (
+                r#"<table:calculation-settings table:use-regular-expressions="false" table:use-wildcards="true"/>"#,
+                FormulaSearchType::Wildcard,
+            ),
+        ] {
+            let xml = format!(
+                r#"
+      <office:document xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
+          xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0">
+        <office:body>
+          <office:spreadsheet>
+            {settings}
+            <table:table table:name="Sheet1"/>
+          </office:spreadsheet>
+        </office:body>
+      </office:document>
+    "#
+            );
+            let workbook = read_fods_workbook_from_reader(xml.as_bytes()).unwrap();
+            assert_eq!(
+                workbook.formula_search_type, expected,
+                "settings={settings}"
+            );
+            assert_eq!(workbook.evaluation_book().formula_search_type, expected);
+        }
+    }
+
+    #[test]
     fn reads_fods_tables_cells_formulas_and_cached_values() {
         let xml = br#"
       <office:document xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
@@ -829,6 +926,9 @@ mod tests {
                 <table:table-cell office:value-type="float" office:value="2"/>
                 <table:table-cell table:number-columns-repeated="2"/>
                 <table:table-cell table:formula="of:=SUM([.A1:.A1])" office:value-type="float" office:value="2"/>
+                <table:table-cell table:formula="of:=&quot;&quot;"><text:p/></table:table-cell>
+                <table:covered-table-cell table:number-columns-repeated="2"/>
+                <table:table-cell office:value-type="float" office:value="5"/>
               </table:table-row>
               <table:table-row table:number-rows-repeated="2">
                 <table:table-cell table:number-columns-repeated="4"/>
@@ -845,7 +945,7 @@ mod tests {
         let workbook = read_fods_workbook_from_reader(&xml[..]).unwrap();
         assert_eq!(workbook.sheets.len(), 1);
         assert_eq!(workbook.sheets[0].name, "Sheet1");
-        assert_eq!(workbook.sheets[0].cells.len(), 3);
+        assert_eq!(workbook.sheets[0].cells.len(), 5);
         assert_eq!(
             workbook.sheets[0].cells[0].cached_value,
             FormulaValue::Number(2.0)
@@ -860,10 +960,26 @@ mod tests {
         );
         assert_eq!(
             workbook.sheets[0].cells[2].address,
-            CellAddress { column: 0, row: 3 }
+            CellAddress { column: 4, row: 0 }
         );
         assert_eq!(
             workbook.sheets[0].cells[2].cached_value,
+            FormulaValue::String(Cow::Borrowed(""))
+        );
+        assert_eq!(
+            workbook.sheets[0].cells[3].address,
+            CellAddress { column: 7, row: 0 }
+        );
+        assert_eq!(
+            workbook.sheets[0].cells[3].cached_value,
+            FormulaValue::Number(5.0)
+        );
+        assert_eq!(
+            workbook.sheets[0].cells[4].address,
+            CellAddress { column: 0, row: 3 }
+        );
+        assert_eq!(
+            workbook.sheets[0].cells[4].cached_value,
             FormulaValue::String(Cow::Borrowed("ok"))
         );
     }
@@ -924,6 +1040,26 @@ mod tests {
                 .expect("Sheet2 COUNTIF empty matrix formula case");
             assert_eq!(case.formula, formula);
             assert_eq!(case.evaluate(&book), Some(FormulaValue::Number(3.0)));
+        }
+    }
+
+    #[test]
+    fn evaluates_dsum_named_criteria_like_libreoffice() {
+        let workbook = read_fods_workbook(
+            &workspace_root()
+                .join("fixtures/LibreOffice/sc/qa/unit/data/functions/database/fods/dsum.fods"),
+        )
+        .unwrap();
+        let book = workbook.evaluation_book();
+        for (row, expected) in [(5, 75.0), (6, 97.0)] {
+            let case = workbook
+                .formula_cases()
+                .into_iter()
+                .find(|case| {
+                    case.sheet == SheetId(2) && case.address == CellAddress { column: 0, row }
+                })
+                .expect("Sheet2 DSUM formula case");
+            assert_eq!(case.evaluate(&book), Some(FormulaValue::Number(expected)));
         }
     }
 }

@@ -1,4 +1,5 @@
 use std::{
+    borrow::Cow,
     cmp::Reverse,
     collections::BTreeMap,
     path::{Path, PathBuf},
@@ -6,7 +7,7 @@ use std::{
 };
 
 use ooxmlsdk_corpus_test_support::{workspace_relative_path, workspace_root};
-use ooxmlsdk_formula::{CellAddress, FormulaValue};
+use ooxmlsdk_formula::{CellAddress, FormulaSearchType, FormulaValue};
 use ooxmlsdk_formula_test::fods::{FodsFormulaCase, read_fods_workbook};
 
 #[test]
@@ -29,12 +30,19 @@ fn libreoffice_function_fods_corpus_matches_cached_results() {
         let workbook = read_fods_workbook(&file).unwrap_or_else(|err| {
             panic!("failed to read {}: {err}", workspace_relative_path(&file))
         });
+        assert_eq!(
+            workbook.formula_search_type,
+            expected_lo_formula_search_type(&file),
+            "FODS calculation-settings search mode drifted from LibreOffice XML import semantics for {}",
+            workspace_relative_path(&file)
+        );
+        summary.push_reader_search_type(workbook.formula_search_type);
         let book = workbook.evaluation_book();
         let cases = workbook.formula_cases();
         summary.formulas += cases.len();
         for case in cases {
             match case.evaluate(&book) {
-                Some(actual) if formula_values_match(&actual, &case.expected) => {
+                Some(actual) if formula_values_match(&actual, &case.expected, &case.formula) => {
                     summary.passed += 1;
                 }
                 Some(actual) => {
@@ -61,6 +69,26 @@ fn libreoffice_function_fods_corpus_matches_cached_results() {
     }
 }
 
+#[test]
+fn libreoffice_fods_reader_search_settings_match_raw_xml() {
+    // Source: LibreOffice ScXMLCalculationSettingsContext initializes the XML
+    // calculation settings context as Regex, then applies use-regular-expressions
+    // and use-wildcards attributes. Without a calculation-settings element, the
+    // document options default to Wildcard.
+    let root = workspace_root().join("fixtures/LibreOffice/sc/qa/unit/data/functions");
+    for file in fods_files(&root) {
+        let workbook = read_fods_workbook(&file).unwrap_or_else(|err| {
+            panic!("failed to read {}: {err}", workspace_relative_path(&file))
+        });
+        assert_eq!(
+            workbook.formula_search_type,
+            expected_lo_formula_search_type(&file),
+            "{}",
+            workspace_relative_path(&file)
+        );
+    }
+}
+
 #[derive(Default)]
 struct CorpusSummary {
     files: usize,
@@ -75,6 +103,7 @@ struct CorpusSummary {
     mismatch_by_formula: BTreeMap<String, usize>,
     unsupported_by_group: BTreeMap<String, usize>,
     mismatch_by_group: BTreeMap<String, usize>,
+    reader_search_types: BTreeMap<String, usize>,
     slow_files: Vec<(String, u128)>,
 }
 
@@ -107,6 +136,13 @@ impl CorpusSummary {
     fn push_file_time(&mut self, file: String, elapsed: std::time::Duration) {
         self.slow_files.push((file, elapsed.as_millis()));
     }
+
+    fn push_reader_search_type(&mut self, search_type: FormulaSearchType) {
+        *self
+            .reader_search_types
+            .entry(format!("{search_type:?}"))
+            .or_default() += 1;
+    }
 }
 
 impl std::fmt::Display for CorpusSummary {
@@ -138,11 +174,53 @@ impl std::fmt::Display for CorpusSummary {
         }
         write_top_counts(f, "unsupported by group", &self.unsupported_by_group)?;
         write_top_counts(f, "mismatch by group", &self.mismatch_by_group)?;
+        write_top_counts(f, "reader formula search type", &self.reader_search_types)?;
         for sample in &self.samples {
             writeln!(f, "{sample}")?;
         }
         Ok(())
     }
+}
+
+fn expected_lo_formula_search_type(file: &Path) -> FormulaSearchType {
+    let text = std::fs::read_to_string(file)
+        .unwrap_or_else(|err| panic!("failed to read {}: {err}", workspace_relative_path(file)));
+    let Some(settings) = first_start_tag(&text, "table:calculation-settings") else {
+        return FormulaSearchType::Wildcard;
+    };
+    let mut search_type = FormulaSearchType::Regex;
+    if attr_bool(settings, "table:use-regular-expressions") == Some(false)
+        && search_type == FormulaSearchType::Regex
+    {
+        search_type = FormulaSearchType::Normal;
+    }
+    if attr_bool(settings, "table:use-wildcards") == Some(true) {
+        search_type = FormulaSearchType::Wildcard;
+    }
+    search_type
+}
+
+fn first_start_tag<'a>(text: &'a str, name: &str) -> Option<&'a str> {
+    let start = text.find(&format!("<{name}"))?;
+    let rest = &text[start..];
+    let end = rest.find('>')?;
+    Some(&rest[..=end])
+}
+
+fn attr_bool(tag: &str, name: &str) -> Option<bool> {
+    let value = attr_value(tag, name)?;
+    match value {
+        "true" | "1" => Some(true),
+        "false" | "0" => Some(false),
+        _ => None,
+    }
+}
+
+fn attr_value<'a>(tag: &'a str, name: &str) -> Option<&'a str> {
+    let start = tag.find(&format!("{name}=\""))? + name.len() + 2;
+    let rest = &tag[start..];
+    let end = rest.find('"')?;
+    Some(&rest[..end])
 }
 
 fn write_top_samples(
@@ -247,7 +325,11 @@ fn collect_fods_files(path: &Path, files: &mut Vec<PathBuf>) {
     }
 }
 
-fn formula_values_match(actual: &FormulaValue<'_>, expected: &FormulaValue<'_>) -> bool {
+fn formula_values_match(
+    actual: &FormulaValue<'_>,
+    expected: &FormulaValue<'_>,
+    formula: &str,
+) -> bool {
     match (actual, expected) {
         (FormulaValue::Number(actual), FormulaValue::Number(expected)) => {
             let tolerance = 1e-9_f64.max(expected.abs() * 1e-10);
@@ -258,7 +340,12 @@ fn formula_values_match(actual: &FormulaValue<'_>, expected: &FormulaValue<'_>) 
             (*actual != 0.0) == *expected
         }
         (FormulaValue::String(actual), FormulaValue::String(expected)) => {
-            comparable_text(actual) == comparable_text(expected)
+            let actual = comparable_text(actual);
+            let expected = comparable_text(expected);
+            actual == expected
+                || (formula_key(formula).starts_with("IM")
+                    && normalize_fods_numeric_text(&actual)
+                        == normalize_fods_numeric_text(&expected))
         }
         (FormulaValue::Boolean(actual), FormulaValue::Boolean(expected)) => actual == expected,
         (FormulaValue::Blank, FormulaValue::Blank) => true,
@@ -270,10 +357,96 @@ fn formula_values_match(actual: &FormulaValue<'_>, expected: &FormulaValue<'_>) 
 }
 
 fn comparable_text(value: &str) -> String {
-    value
+    normalize_fods_cached_text(value)
         .chars()
         .filter(|ch| !ch.is_control() && !is_unicode_noncharacter(*ch))
         .collect()
+}
+
+fn normalize_fods_numeric_text(value: &str) -> Cow<'_, str> {
+    if !value.chars().all(|ch| {
+        ch.is_ascii_digit()
+            || matches!(
+                ch,
+                '+' | '-' | ',' | '.' | 'e' | 'E' | 'i' | 'j' | 'I' | 'J' | ' '
+            )
+    }) {
+        return Cow::Borrowed(value);
+    }
+    let mut output = value.replace(',', ".");
+    output = normalize_exponent_zeros(&output);
+    if output == value {
+        Cow::Borrowed(value)
+    } else {
+        Cow::Owned(output)
+    }
+}
+
+fn normalize_exponent_zeros(value: &str) -> String {
+    let mut output = String::with_capacity(value.len());
+    let mut chars = value.chars().peekable();
+    while let Some(ch) = chars.next() {
+        output.push(ch);
+        if ch != 'e' && ch != 'E' {
+            continue;
+        }
+        if let Some(sign @ ('+' | '-')) = chars.peek().copied() {
+            output.push(sign);
+            chars.next();
+        }
+        let mut stripped_zero = false;
+        while matches!(chars.peek(), Some('0')) {
+            stripped_zero = true;
+            chars.next();
+        }
+        if stripped_zero && !matches!(chars.peek(), Some('0'..='9')) {
+            output.push('0');
+        }
+    }
+    output
+}
+
+fn normalize_fods_cached_text(value: &str) -> Cow<'_, str> {
+    let Some(bytes) = value.chars().map(latin1_byte).collect::<Option<Vec<_>>>() else {
+        return Cow::Borrowed(value);
+    };
+    match String::from_utf8(bytes) {
+        Ok(decoded) if decoded != value => Cow::Owned(decoded),
+        _ => Cow::Borrowed(value),
+    }
+}
+
+fn latin1_byte(ch: char) -> Option<u8> {
+    match ch {
+        '\u{20ac}' => Some(0x80),
+        '\u{201a}' => Some(0x82),
+        '\u{0192}' => Some(0x83),
+        '\u{201e}' => Some(0x84),
+        '\u{2026}' => Some(0x85),
+        '\u{2020}' => Some(0x86),
+        '\u{2021}' => Some(0x87),
+        '\u{02c6}' => Some(0x88),
+        '\u{2030}' => Some(0x89),
+        '\u{0160}' => Some(0x8a),
+        '\u{2039}' => Some(0x8b),
+        '\u{0152}' => Some(0x8c),
+        '\u{017d}' => Some(0x8e),
+        '\u{2018}' => Some(0x91),
+        '\u{2019}' => Some(0x92),
+        '\u{201c}' => Some(0x93),
+        '\u{201d}' => Some(0x94),
+        '\u{2022}' => Some(0x95),
+        '\u{2013}' => Some(0x96),
+        '\u{2014}' => Some(0x97),
+        '\u{02dc}' => Some(0x98),
+        '\u{2122}' => Some(0x99),
+        '\u{0161}' => Some(0x9a),
+        '\u{203a}' => Some(0x9b),
+        '\u{0153}' => Some(0x9c),
+        '\u{017e}' => Some(0x9e),
+        '\u{0178}' => Some(0x9f),
+        _ => (ch as u32 <= u8::MAX as u32).then_some(ch as u8),
+    }
 }
 
 fn is_unicode_noncharacter(ch: char) -> bool {

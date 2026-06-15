@@ -675,6 +675,7 @@ fn evaluates_matrix_operator_cases() {
 
     assert_number(&book, "SUMPRODUCT((A1:A4)*B1+D1)", 16.0);
     assert_number(&book, "SUMPRODUCT((A1:A4)*B1-D2)", 4.0);
+    assert_number(&book, "MAX(IF(A1:A4=2,B1:B4,0))", 2.0);
 
     for (formula, expected) in [
         ("SUMPRODUCT({1;2;4}+8)", 31.0),
