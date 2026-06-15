@@ -7,7 +7,10 @@ use std::{
 };
 
 use ooxmlsdk_corpus_test_support::{workspace_relative_path, workspace_root};
-use ooxmlsdk_formula::{CellAddress, FormulaSearchType, FormulaValue};
+use ooxmlsdk_formula::{
+    CellAddress, FormulaEvaluationBook, FormulaGrammar, FormulaSearchType, FormulaValue,
+    normalize_formula_text,
+};
 use ooxmlsdk_formula_test::fods::{FodsFormulaCase, read_fods_workbook};
 
 #[test]
@@ -57,14 +60,14 @@ fn libreoffice_function_fods_corpus_matches_functions_test_load() {
                 Some(actual) => {
                     summary.failed += 1;
                     let key = formula_key(&case.formula);
-                    let failure = format_failure(&file, &case, Some(&actual));
+                    let failure = format_failure(&file, &case, Some(&actual), &book);
                     summary.push_mismatch(file_group(&root, &file), key, failure.clone());
                     summary.push_failure(failure);
                 }
                 None => {
                     summary.unsupported += 1;
                     let key = formula_key(&case.formula);
-                    let failure = format_failure(&file, &case, None);
+                    let failure = format_failure(&file, &case, None, &book);
                     summary.push_unsupported(file_group(&root, &file), key, failure.clone());
                     summary.push_failure(failure);
                 }
@@ -473,16 +476,114 @@ fn format_failure(
     file: &Path,
     case: &FodsFormulaCase,
     actual: Option<&FormulaValue<'_>>,
+    book: &FormulaEvaluationBook<'static>,
 ) -> String {
     format!(
-        "{} {}!{} formula={} expected={:?} actual={:?}",
+        "{} {}!{} formula={} expected={:?} actual={:?}{}",
         workspace_relative_path(file),
         case.sheet_name,
         a1(case.address),
         case.formula,
         case.expected,
-        actual
+        actual,
+        failure_diagnostics(case, book)
     )
+}
+
+fn failure_diagnostics(case: &FodsFormulaCase, book: &FormulaEvaluationBook<'static>) -> String {
+    let mut parts = Vec::new();
+    let row = case.address.row;
+    let row_values = (0..12)
+        .map(|column| {
+            let address = CellAddress { column, row };
+            format!("{}={:?}", a1(address), book.cell_value(case.sheet, address))
+        })
+        .collect::<Vec<_>>()
+        .join(", ");
+    parts.push(format!(" row[{row_values}]"));
+
+    if let Some(range) = case.array_reference {
+        let target_values = case
+            .array_expected
+            .iter()
+            .take(16)
+            .map(|(address, expected)| {
+                format!(
+                    "{} expected={:?} actual={:?}",
+                    a1(*address),
+                    expected,
+                    book.cell_value(case.sheet, *address)
+                )
+            })
+            .collect::<Vec<_>>();
+        parts.push(format!(
+            " array_target[{}:{} => {}]",
+            a1(range.start),
+            a1(range.end),
+            target_values.join(", ")
+        ));
+    }
+
+    let refs = referenced_cells(&case.formula)
+        .into_iter()
+        .filter(|address| address.row < 1_048_576 && address.column < 16_384)
+        .take(16)
+        .map(|address| format!("{}={:?}", a1(address), book.cell_value(case.sheet, address)))
+        .collect::<Vec<_>>();
+    if !refs.is_empty() {
+        parts.push(format!(" refs[{}]", refs.join(", ")));
+    }
+
+    if parts.is_empty() {
+        String::new()
+    } else {
+        format!(" diagnostics:{}", parts.join(""))
+    }
+}
+
+fn referenced_cells(formula: &str) -> Vec<CellAddress> {
+    let normalized = normalize_formula_text(formula, FormulaGrammar::OpenFormula);
+    let mut refs = Vec::new();
+    let mut token = String::new();
+    for ch in normalized.chars().chain(std::iter::once(' ')) {
+        if ch.is_ascii_alphanumeric() || matches!(ch, '$' | '!' | ':' | '.') {
+            token.push(ch);
+            continue;
+        }
+        push_referenced_cells_from_token(&token, &mut refs);
+        token.clear();
+    }
+    refs.sort_by_key(|address| (address.row, address.column));
+    refs.dedup();
+    refs
+}
+
+fn push_referenced_cells_from_token(token: &str, refs: &mut Vec<CellAddress>) {
+    let token = token
+        .rsplit_once('!')
+        .map(|(_, reference)| reference)
+        .unwrap_or(token)
+        .trim_matches('$');
+    if token.is_empty() {
+        return;
+    }
+    let (start, end) = token.split_once(':').unwrap_or((token, token));
+    if let Some(address) = parse_debug_cell_address(start) {
+        refs.push(address);
+    }
+    if end != start
+        && let Some(address) = parse_debug_cell_address(end)
+    {
+        refs.push(address);
+    }
+}
+
+fn parse_debug_cell_address(text: &str) -> Option<CellAddress> {
+    let clean = text.replace('$', "");
+    if clean.is_empty() || !clean.chars().next()?.is_ascii_alphabetic() {
+        return None;
+    }
+    CellAddress::parse_a1(&clean).ok()
 }
 
 fn a1(address: CellAddress) -> String {

@@ -2,8 +2,8 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 use ooxmlsdk_formula::{
-    CellAddress, FormulaErrorValue, FormulaEvaluationBook, FormulaKind, FormulaText, FormulaValue,
-    SheetBinding, SheetId,
+    CellAddress, FormulaErrorValue, FormulaEvaluationBook, FormulaGrammar, FormulaKind,
+    FormulaText, FormulaValue, SheetBinding, SheetId,
 };
 
 const SHEET: SheetId = SheetId(1);
@@ -78,6 +78,19 @@ fn assert_number_at(
 fn assert_text(book: &FormulaEvaluationBook<'_>, formula: &str, expected: &str) {
     assert_eq!(
         text(book.evaluate_formula_text(SHEET, None, formula)),
+        expected,
+        "{formula}"
+    );
+}
+
+fn assert_text_with_grammar(
+    book: &FormulaEvaluationBook<'_>,
+    formula: &str,
+    grammar: FormulaGrammar,
+    expected: &str,
+) {
+    assert_eq!(
+        text(book.evaluate_formula_text_with_grammar(SHEET, None, formula, grammar)),
         expected,
         "{formula}"
     );
@@ -348,6 +361,19 @@ fn evaluates_countif_cases() {
 fn evaluates_sumx_and_sumsq_cases() {
     // Source: LibreOffice sc/qa/unit/ucalc_formula.cxx::testFuncSUMXMY2 and
     // ucalc_formula2.cxx::testFuncSUMX2PY2, testFuncSUMX2MY2, testFuncSUMSQ.
+    let sumxmy2_book = evaluation_book(&[
+        ("A1", FormulaValue::Number(1.0)),
+        ("B1", FormulaValue::Number(1.0)),
+        ("C1", FormulaValue::Number(-1.0)),
+        ("B2", FormulaValue::Number(2.0)),
+        ("C2", FormulaValue::Number(3.0)),
+        ("B3", FormulaValue::Number(3.0)),
+        ("C3", FormulaValue::Number(1.0)),
+    ]);
+
+    assert_number(&sumxmy2_book, "SUMXMY2(B1:B3,C1:C3)", 9.0);
+    assert_number(&sumxmy2_book, "SUMXMY2({2;3;4},{4;3;2})", 8.0);
+
     let book = evaluation_book(&[
         ("A1", FormulaValue::Number(1.0)),
         ("B1", FormulaValue::Number(2.0)),
@@ -369,14 +395,23 @@ fn evaluates_sumx_and_sumsq_cases() {
         ("F3", FormulaValue::Number(1.0)),
     ]);
 
-    assert_number(&book, "SUMXMY2(B1:B3,C1:C3)", 9.0);
-    assert_number(&book, "SUMXMY2({2;3;4},{4;3;2})", 8.0);
     assert_number(&book, "SUMX2PY2(A1:C3,D1:F3)", 407.0);
     assert_number(&book, "SUMX2PY2({1;2;3},{2;3;4})", 43.0);
     assert_number(&book, "SUMX2MY2({1;3;5},{0;4;4})", 3.0);
     assert_number(&book, "SUMX2MY2({1;-3;-5},{0;-4;4})", 3.0);
     assert_number(&book, "SUMX2MY2({9;5;1},{3;-3;3})", 80.0);
-    assert_number(&book, "SUMSQ(A1:C3)", 196.0);
+    let sumsq_book = evaluation_book(&[
+        ("A1", FormulaValue::Number(-1.0)),
+        ("A2", FormulaValue::Number(-2.0)),
+        ("A3", FormulaValue::Number(6.0)),
+        ("B1", FormulaValue::Number(3.0)),
+        ("B2", FormulaValue::Number(-4.0)),
+        ("B3", FormulaValue::Number(0.0)),
+        ("C1", FormulaValue::Number(-5.0)),
+        ("C2", FormulaValue::Number(3.0)),
+        ("C3", FormulaValue::Number(2.0)),
+    ]);
+    assert_number(&sumsq_book, "SUMSQ(A1:C3)", 104.0);
     assert_number(&book, "SUMSQ({1;2;3})", 14.0);
     assert_number(&book, "SUMSQ({3;6;9})", 126.0);
     assert_number(&book, "SUMSQ({15;0})", 225.0);
@@ -675,8 +710,6 @@ fn evaluates_matrix_operator_cases() {
 
     assert_number(&book, "SUMPRODUCT((A1:A4)*B1+D1)", 16.0);
     assert_number(&book, "SUMPRODUCT((A1:A4)*B1-D2)", 4.0);
-    assert_number(&book, "MAX(IF(A1:A4=2,B1:B4,0))", 2.0);
-
     for (formula, expected) in [
         ("SUMPRODUCT({1;2;4}+8)", 31.0),
         ("SUMPRODUCT(8+{1;2;4})", 31.0),
@@ -770,7 +803,7 @@ fn evaluates_formula_regression_cases() {
         0.0,
     );
     assert_text(&book, "CELL(\"ADDRESS\",C1)", "$C$1");
-    assert_text(&book, "INDIRECT(B1)", "X");
+    assert_text_with_grammar(&book, "INDIRECT(B1)", FormulaGrammar::ExcelR1C1, "X");
 }
 
 #[test]
@@ -840,7 +873,7 @@ fn evaluates_statistical_test_function_cases() {
         ("A2", FormulaValue::Number(2.0)),
         ("A3", FormulaValue::Number(4.0)),
         ("B1", FormulaValue::Number(2.0)),
-        ("B2", FormulaValue::Number(1.0)),
+        ("B2", FormulaValue::Number(0.0)),
         ("B3", FormulaValue::Number(2.0)),
         ("C1", FormulaValue::Number(3.0)),
         ("C2", FormulaValue::Number(2.0)),

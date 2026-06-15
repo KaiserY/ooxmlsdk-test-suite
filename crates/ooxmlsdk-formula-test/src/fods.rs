@@ -54,6 +54,8 @@ pub struct FodsFormulaCase {
     pub address: CellAddress,
     pub formula: String,
     pub parsed_formula: ParsedFormula<'static>,
+    pub array_reference: Option<CellRange>,
+    pub array_expected: Vec<(CellAddress, FormulaValue<'static>)>,
     pub expected: FormulaValue<'static>,
     read_cell_value: bool,
 }
@@ -108,8 +110,12 @@ impl FodsWorkbook {
                                     column: cell.address.column + column_offset,
                                     row: cell.address.row + row_offset,
                                 };
-                                query_cell_values
-                                    .insert((sheet_id, address), cell.cached_value.clone());
+                                query_cell_values.insert(
+                                    (sheet_id, address),
+                                    sheet
+                                        .cached_value_at(address)
+                                        .unwrap_or_else(|| cell.cached_value.clone()),
+                                );
                                 if cell.query_empty {
                                     query_empty_cells.insert((sheet_id, address));
                                 }
@@ -210,7 +216,16 @@ impl FodsWorkbook {
         for _ in 0..MAX_RECALC_PASSES {
             let mut updates = Vec::new();
             for target in &targets {
-                if let Some(value) = book.evaluate_parsed_formula(
+                if let Some(range) = target.reference {
+                    if let Some(value) = book.evaluate_parsed_formula_raw(
+                        target.sheet,
+                        Some(target.address),
+                        &target.parsed_formula,
+                        target.array_context,
+                    ) {
+                        updates.extend(book.array_recalc_updates(target.sheet, range, &value));
+                    }
+                } else if let Some(value) = book.evaluate_parsed_formula(
                     target.sheet,
                     Some(target.address),
                     &target.parsed_formula,
@@ -246,9 +261,11 @@ impl FodsWorkbook {
         book: &FormulaEvaluationBook<'static>,
     ) -> Option<Vec<FodsFormulaCase>> {
         // Source: LibreOffice sc/qa/unit/functions_test.cxx FunctionsTest::load.
-        // The authoritative assertion is Sheet1.B3 after DoHardRecalc(). If it
-        // fails, LO scans sheets 2..N and reports rows whose "Correct" column
-        // has data and whose GetValue() is not approximately 1.
+        // LO's authoritative assertion is Sheet1.B3 after DoHardRecalc(). If it
+        // fails, LO diagnoses rows using sheets whose first row has the
+        // Expected/Correct/FunctionString layout. This harness uses that same
+        // layout to extract comparable row cases; sheets without that layout are
+        // auxiliary data, not FunctionsTest rows.
         let summary_address = CellAddress { column: 1, row: 2 };
         let summary_sheet = self.sheets.first()?;
         let summary_cell = summary_sheet
@@ -268,6 +285,7 @@ impl FodsWorkbook {
         let mut summary_case = formula_case_for_cell(
             SheetId(1),
             &summary_sheet.name,
+            summary_sheet,
             summary_cell,
             FormulaValue::Number(1.0),
         );
@@ -277,12 +295,15 @@ impl FodsWorkbook {
         }
 
         for (index, sheet) in self.sheets.iter().enumerate().skip(1) {
-            let layout = sheet.function_test_layout().unwrap_or_else(|| {
-                panic!(
-                    "LibreOffice FunctionsTest layout columns not found on sheet {}",
-                    sheet.name
-                )
-            });
+            let Some(layout) = sheet.function_test_layout() else {
+                if sheet.has_function_test_header_marker() {
+                    panic!(
+                        "LibreOffice FunctionsTest layout columns not found on sheet {}",
+                        sheet.name
+                    );
+                }
+                continue;
+            };
             let sheet_id = SheetId(index as u32 + 1);
             let max_row = sheet
                 .cells
@@ -304,6 +325,7 @@ impl FodsWorkbook {
                     let mut case = formula_case_for_cell(
                         sheet_id,
                         &sheet.name,
+                        sheet,
                         cell,
                         FormulaValue::Number(1.0),
                     );
@@ -329,6 +351,7 @@ impl FodsWorkbook {
                     targets.push(formula_case_for_cell(
                         sheet_id,
                         &sheet.name,
+                        sheet,
                         cell,
                         cell.cached_value.clone(),
                     ));
@@ -338,7 +361,7 @@ impl FodsWorkbook {
         targets
     }
 
-    fn recalc_targets(&self) -> Vec<FodsFormulaCase> {
+    fn recalc_targets(&self) -> Vec<FodsRecalcTarget> {
         let mut targets = Vec::new();
         for (index, sheet) in self.sheets.iter().enumerate() {
             let sheet_id = SheetId(index as u32 + 1);
@@ -346,34 +369,106 @@ impl FodsWorkbook {
                 let Some(formula) = &cell.formula else {
                     continue;
                 };
-                for row_offset in 0..cell.matrix_rows.max(1) {
-                    for column_offset in 0..cell.matrix_columns.max(1) {
-                        targets.push(formula_case_for_address(
-                            sheet_id,
-                            &sheet.name,
-                            CellAddress {
-                                column: cell.address.column + column_offset,
-                                row: cell.address.row + row_offset,
-                            },
-                            formula,
-                            cell.cached_value.clone(),
-                        ));
-                    }
-                }
+                let matrix_columns = cell.matrix_columns.max(1);
+                let matrix_rows = cell.matrix_rows.max(1);
+                let reference = (matrix_columns > 1 || matrix_rows > 1).then_some(CellRange::new(
+                    cell.address,
+                    CellAddress {
+                        column: cell.address.column + matrix_columns - 1,
+                        row: cell.address.row + matrix_rows - 1,
+                    },
+                ));
+                targets.push(formula_recalc_target(
+                    sheet_id,
+                    cell.address,
+                    formula,
+                    reference,
+                ));
             }
         }
         targets
     }
 }
 
+#[derive(Clone, Debug)]
+struct FodsRecalcTarget {
+    sheet: SheetId,
+    address: CellAddress,
+    parsed_formula: ParsedFormula<'static>,
+    reference: Option<CellRange>,
+    array_context: bool,
+}
+
+fn formula_recalc_target(
+    sheet_id: SheetId,
+    address: CellAddress,
+    formula: &str,
+    reference: Option<CellRange>,
+) -> FodsRecalcTarget {
+    let parsed_formula = parse_formula_with_context(
+        FormulaParseContext {
+            current_sheet: sheet_id,
+            current_cell: Some(address),
+            grammar: FormulaGrammar::OpenFormula,
+        },
+        Cow::Owned(formula.to_string()),
+    );
+    FodsRecalcTarget {
+        sheet: sheet_id,
+        address,
+        parsed_formula,
+        reference,
+        array_context: reference.is_some(),
+    }
+}
+
 fn formula_case_for_cell(
     sheet_id: SheetId,
     sheet_name: &str,
+    sheet: &FodsSheet,
     cell: &FodsCell,
     expected: FormulaValue<'static>,
 ) -> FodsFormulaCase {
     let formula = cell.formula.clone().expect("formula cell");
-    formula_case_for_address(sheet_id, sheet_name, cell.address, &formula, expected)
+    let matrix_columns = cell.matrix_columns.max(1);
+    let matrix_rows = cell.matrix_rows.max(1);
+    let array_reference = (matrix_columns > 1 || matrix_rows > 1).then_some(CellRange::new(
+        cell.address,
+        CellAddress {
+            column: cell.address.column + matrix_columns - 1,
+            row: cell.address.row + matrix_rows - 1,
+        },
+    ));
+    let array_expected = array_reference
+        .map(|range| {
+            let start_row = range.start.row.min(range.end.row);
+            let end_row = range.start.row.max(range.end.row);
+            let start_column = range.start.column.min(range.end.column);
+            let end_column = range.start.column.max(range.end.column);
+            let mut values = Vec::new();
+            for row in start_row..=end_row {
+                for column in start_column..=end_column {
+                    let address = CellAddress { column, row };
+                    values.push((
+                        address,
+                        sheet
+                            .cached_value_at(address)
+                            .unwrap_or_else(|| FormulaValue::Blank),
+                    ));
+                }
+            }
+            values
+        })
+        .unwrap_or_default();
+    formula_case_for_address(
+        sheet_id,
+        sheet_name,
+        cell.address,
+        &formula,
+        array_reference,
+        array_expected,
+        expected,
+    )
 }
 
 fn formula_case_for_address(
@@ -381,6 +476,8 @@ fn formula_case_for_address(
     sheet_name: &str,
     address: CellAddress,
     formula: &str,
+    array_reference: Option<CellRange>,
+    array_expected: Vec<(CellAddress, FormulaValue<'static>)>,
     expected: FormulaValue<'static>,
 ) -> FodsFormulaCase {
     let parsed_formula = parse_formula_with_context(
@@ -397,6 +494,8 @@ fn formula_case_for_address(
         address,
         formula: formula.to_string(),
         parsed_formula,
+        array_reference,
+        array_expected,
         expected,
         read_cell_value: false,
     }
@@ -464,6 +563,17 @@ impl FodsSheet {
         })
     }
 
+    fn has_function_test_header_marker(&self) -> bool {
+        self.cells.iter().any(|cell| {
+            cell.address.row == 0
+                && matches!(
+                    &cell.cached_value,
+                    FormulaValue::String(text)
+                        if matches!(text.as_ref(), "Expected" | "Correct" | "FunctionString")
+                )
+        })
+    }
+
     fn function_string(&self, row: u32, column: u32) -> Option<String> {
         self.cells.iter().find_map(|cell| {
             if cell.address.row == row
@@ -475,6 +585,13 @@ impl FodsSheet {
                 None
             }
         })
+    }
+
+    fn cached_value_at(&self, address: CellAddress) -> Option<FormulaValue<'static>> {
+        self.cells
+            .iter()
+            .find(|cell| cell.address == address)
+            .map(|cell| cell.cached_value.clone())
     }
 }
 
@@ -493,6 +610,18 @@ impl FodsFormulaCase {
     pub fn evaluate(&self, book: &FormulaEvaluationBook<'static>) -> Option<FormulaValue<'static>> {
         if self.read_cell_value {
             return Some(book.cell_value(self.sheet, self.address));
+        }
+        if let Some(range) = self.array_reference {
+            let value = book.evaluate_parsed_formula_raw(
+                self.sheet,
+                Some(self.address),
+                &self.parsed_formula,
+                true,
+            )?;
+            return book
+                .array_recalc_updates(self.sheet, range, &value)
+                .into_iter()
+                .find_map(|(_, address, value)| (address == self.address).then_some(value));
         }
         book.evaluate_parsed_formula(self.sheet, Some(self.address), &self.parsed_formula)
     }
@@ -673,9 +802,16 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
                     formula: attr_value(&event, b"formula"),
                     cached_value: cached_value_from_attrs(&event),
                     text: String::new(),
+                    text_paragraphs: 0,
                 });
             }
             Ok(Event::Start(event)) if local_name(event.name().as_ref()) == b"p" => {
+                if let Some(cell) = &mut current_cell {
+                    if cell.text_paragraphs > 0 {
+                        cell.text.push('\n');
+                    }
+                    cell.text_paragraphs += 1;
+                }
                 in_text_p = true;
             }
             Ok(Event::End(event)) if local_name(event.name().as_ref()) == b"p" => {
@@ -819,6 +955,7 @@ struct PendingCell {
     formula: Option<String>,
     cached_value: FormulaValue<'static>,
     text: String,
+    text_paragraphs: usize,
 }
 
 fn cached_value_from_attrs(event: &quick_xml::events::BytesStart<'_>) -> FormulaValue<'static> {
@@ -923,6 +1060,7 @@ fn normalize_fods_named_range_address(address: &str) -> String {
     if let Some(dot) = normalized.find('.') {
         normalized.replace_range(dot..=dot, "!");
     }
+    normalized.retain(|ch| ch != '$');
     normalized
 }
 
@@ -1347,6 +1485,159 @@ mod tests {
                 .expect("Sheet2 COUNTIF empty matrix formula case");
             assert_eq!(case.formula, formula);
             assert_eq!(case.evaluate(&book), Some(FormulaValue::Number(3.0)));
+        }
+
+        let hard_recalc_book = workbook.hard_recalc_book();
+        assert_eq!(
+            [
+                hard_recalc_book.cell_value(SheetId(2), CellAddress { column: 8, row: 16 }),
+                hard_recalc_book.cell_value(SheetId(2), CellAddress { column: 9, row: 16 }),
+                hard_recalc_book.cell_value(SheetId(2), CellAddress { column: 8, row: 17 }),
+                hard_recalc_book.cell_value(SheetId(2), CellAddress { column: 9, row: 17 }),
+                hard_recalc_book.cell_value(SheetId(2), CellAddress { column: 8, row: 18 }),
+                hard_recalc_book.cell_value(SheetId(2), CellAddress { column: 9, row: 18 }),
+            ],
+            [
+                FormulaValue::Number(2.0),
+                FormulaValue::Number(2.0),
+                FormulaValue::Number(3.5),
+                FormulaValue::Number(3.5),
+                FormulaValue::Number(4.0),
+                FormulaValue::Number(4.0),
+            ]
+        );
+        assert_eq!(
+            hard_recalc_book.cell_value(SheetId(2), CellAddress { column: 9, row: 20 }),
+            FormulaValue::Number(3.5)
+        );
+        assert_eq!(
+            hard_recalc_book.cell_value(SheetId(2), CellAddress { column: 0, row: 17 }),
+            FormulaValue::Number(2.0)
+        );
+        assert_eq!(
+            hard_recalc_book.cell_value(SheetId(2), CellAddress { column: 2, row: 17 }),
+            FormulaValue::Boolean(true)
+        );
+    }
+
+    #[test]
+    fn imports_matrix_reference_cells_with_formula_text_like_libreoffice() {
+        let workbook = read_fods_workbook(
+            &workspace_root()
+                .join("fixtures/LibreOffice/sc/qa/unit/data/functions/array/fods/logest.fods"),
+        )
+        .unwrap();
+        let book = workbook.evaluation_book();
+        let origin = CellAddress {
+            column: 10,
+            row: 16,
+        };
+        let covered = CellAddress {
+            column: 11,
+            row: 16,
+        };
+        let formula = book
+            .formulas
+            .get(&(SheetId(2), origin))
+            .expect("LOGEST matrix origin formula");
+        assert_eq!(formula.kind, FormulaKind::Array);
+        assert_eq!(
+            formula.reference,
+            Some(CellRange::new(
+                origin,
+                CellAddress {
+                    column: 11,
+                    row: 20
+                }
+            ))
+        );
+        assert!(
+            book.formulas.contains_key(&(SheetId(2), covered)),
+            "LibreOffice imports matrix covered cells as formula reference cells for FORMULA()"
+        );
+        assert_eq!(
+            book.query_cell_value(SheetId(2), origin, FormulaValue::Blank),
+            FormulaValue::Number(1.04333180072885)
+        );
+        assert_eq!(
+            book.query_cell_value(SheetId(2), covered, FormulaValue::Blank),
+            FormulaValue::Number(82.5576827252648),
+            "matrix target cells must keep their own LibreOffice cached values, not the anchor value"
+        );
+        let case = workbook
+            .cached_formula_cases()
+            .into_iter()
+            .find(|case| case.sheet == SheetId(2) && case.address == origin)
+            .expect("LOGEST matrix origin formula case");
+        assert_eq!(
+            case.array_reference,
+            Some(CellRange::new(
+                origin,
+                CellAddress {
+                    column: 11,
+                    row: 20
+                }
+            ))
+        );
+        assert!(
+            case.array_expected
+                .contains(&(covered, FormulaValue::Number(82.5576827252648)))
+        );
+    }
+
+    #[test]
+    fn imports_fods_named_range_addresses_as_parseable_a1_ranges() {
+        let workbook =
+            read_fods_workbook(&workspace_root().join(
+                "fixtures/LibreOffice/sc/qa/unit/data/functions/spreadsheet/fods/vlookup.fods",
+            ))
+            .unwrap();
+        let book = workbook.evaluation_book();
+        assert_eq!(
+            book.defined_names
+                .values()
+                .filter(|formula| formula.contains('$'))
+                .count(),
+            0,
+            "FODS named-range formulas must be normalized to parser-compatible A1 syntax"
+        );
+        assert!(
+            book.defined_names
+                .values()
+                .any(|formula| formula == "Sheet2!AF2:AF5")
+        );
+        assert!(
+            book.defined_names
+                .values()
+                .any(|formula| formula == "Sheet2!AC2:AD5")
+        );
+        let ah2 = workbook
+            .cached_formula_cases()
+            .into_iter()
+            .find(|case| {
+                case.sheet == SheetId(2) && case.address == CellAddress { column: 33, row: 1 }
+            })
+            .expect("Sheet2!AH2 VLOOKUP named-range formula");
+        assert_eq!(
+            ah2.evaluate(&book),
+            Some(FormulaValue::String(Cow::Borrowed("cherry")))
+        );
+    }
+
+    #[test]
+    fn hard_recalc_logest_weighted_sum_like_libreoffice() {
+        let workbook = read_fods_workbook(
+            &workspace_root()
+                .join("fixtures/LibreOffice/sc/qa/unit/data/functions/array/fods/logest.fods"),
+        )
+        .unwrap();
+        let book = workbook.hard_recalc_book();
+        match book.cell_value(SheetId(2), CellAddress { column: 0, row: 16 }) {
+            FormulaValue::Number(value) => assert!(
+                (value - 2672.41129180003).abs() < 1.0e-9,
+                "expected 2672.41129180003, got {value}"
+            ),
+            value => panic!("unexpected LOGEST weighted sum value: {value:?}"),
         }
     }
 
