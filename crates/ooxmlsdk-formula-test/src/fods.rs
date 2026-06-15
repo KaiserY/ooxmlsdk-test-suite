@@ -55,6 +55,7 @@ pub struct FodsFormulaCase {
     pub formula: String,
     pub parsed_formula: ParsedFormula<'static>,
     pub expected: FormulaValue<'static>,
+    read_cell_value: bool,
 }
 
 impl FodsWorkbook {
@@ -197,32 +198,283 @@ impl FodsWorkbook {
         }
     }
 
+    pub fn hard_recalc_book(&self) -> FormulaEvaluationBook<'static> {
+        // Source: LibreOffice sc/qa/unit/functions_test.cxx FunctionsTest::load
+        // calls DoHardRecalc() before reading Sheet1.B3 and the per-row
+        // "Correct" cells. FormulaEvaluationBook stores values eagerly, so
+        // rebuild those eager values by repeatedly evaluating every formula cell.
+        const MAX_RECALC_PASSES: usize = 12;
+
+        let mut book = self.evaluation_book();
+        let targets = self.recalc_targets();
+        for _ in 0..MAX_RECALC_PASSES {
+            let mut updates = Vec::new();
+            for target in &targets {
+                if let Some(value) = book.evaluate_parsed_formula(
+                    target.sheet,
+                    Some(target.address),
+                    &target.parsed_formula,
+                ) {
+                    updates.push((target.sheet, target.address, value));
+                }
+            }
+            let mut changed = false;
+            for (sheet, address, value) in updates {
+                if book.cell_value(sheet, address) != value {
+                    changed = true;
+                    book.cells.insert((sheet, address), value.clone());
+                }
+                book.query_cell_values.insert((sheet, address), value);
+            }
+            if !changed {
+                break;
+            }
+        }
+        book
+    }
+
     pub fn formula_cases(&self) -> Vec<FodsFormulaCase> {
-        let mut cases = Vec::new();
-        for (index, sheet) in self.sheets.iter().enumerate() {
+        self.formula_targets()
+    }
+
+    pub fn cached_formula_cases(&self) -> Vec<FodsFormulaCase> {
+        self.formula_targets()
+    }
+
+    pub fn libreoffice_function_test_cases(
+        &self,
+        book: &FormulaEvaluationBook<'static>,
+    ) -> Option<Vec<FodsFormulaCase>> {
+        // Source: LibreOffice sc/qa/unit/functions_test.cxx FunctionsTest::load.
+        // The authoritative assertion is Sheet1.B3 after DoHardRecalc(). If it
+        // fails, LO scans sheets 2..N and reports rows whose "Correct" column
+        // has data and whose GetValue() is not approximately 1.
+        let summary_address = CellAddress { column: 1, row: 2 };
+        let summary_sheet = self.sheets.first()?;
+        let summary_cell = summary_sheet
+            .cells
+            .iter()
+            .find(|cell| cell.address == summary_address && cell.formula.is_some())?;
+        if !self
+            .sheets
+            .iter()
+            .enumerate()
+            .skip(1)
+            .any(|(_, sheet)| sheet.function_test_layout().is_some())
+        {
+            return None;
+        }
+
+        let mut summary_case = formula_case_for_cell(
+            SheetId(1),
+            &summary_sheet.name,
+            summary_cell,
+            FormulaValue::Number(1.0),
+        );
+        summary_case.read_cell_value = true;
+        if value_gets_as_one(&book.cell_value(SheetId(1), summary_address)) {
+            return Some(vec![summary_case]);
+        }
+
+        for (index, sheet) in self.sheets.iter().enumerate().skip(1) {
+            let layout = sheet.function_test_layout().unwrap_or_else(|| {
+                panic!(
+                    "LibreOffice FunctionsTest layout columns not found on sheet {}",
+                    sheet.name
+                )
+            });
             let sheet_id = SheetId(index as u32 + 1);
-            for cell in &sheet.cells {
-                if let Some(formula) = &cell.formula {
-                    let parsed_formula = parse_formula_with_context(
-                        FormulaParseContext {
-                            current_sheet: sheet_id,
-                            current_cell: Some(cell.address),
-                            grammar: FormulaGrammar::OpenFormula,
-                        },
-                        Cow::Owned(formula.clone()),
+            let max_row = sheet
+                .cells
+                .iter()
+                .filter(|cell| cell.address.column == layout.correct_column)
+                .map(|cell| cell.address.row)
+                .max()
+                .unwrap_or(0);
+            for row in 1..=max_row {
+                let Some(cell) = sheet.cells.iter().find(|cell| {
+                    cell.address.column == layout.correct_column && cell.address.row == row
+                }) else {
+                    continue;
+                };
+                if value_gets_as_one(&book.cell_value(sheet_id, cell.address)) {
+                    continue;
+                }
+                if cell.formula.is_some() {
+                    let mut case = formula_case_for_cell(
+                        sheet_id,
+                        &sheet.name,
+                        cell,
+                        FormulaValue::Number(1.0),
                     );
-                    cases.push(FodsFormulaCase {
-                        sheet: sheet_id,
-                        sheet_name: sheet.name.clone(),
-                        address: cell.address,
-                        formula: formula.clone(),
-                        parsed_formula,
-                        expected: cell.cached_value.clone(),
-                    });
+                    if let Some(function_string) =
+                        sheet.function_string(row, layout.function_string_column)
+                    {
+                        case.formula = function_string;
+                    }
+                    case.read_cell_value = true;
+                    return Some(vec![case]);
                 }
             }
         }
-        cases
+        Some(vec![summary_case])
+    }
+
+    fn formula_targets(&self) -> Vec<FodsFormulaCase> {
+        let mut targets = Vec::new();
+        for (index, sheet) in self.sheets.iter().enumerate() {
+            let sheet_id = SheetId(index as u32 + 1);
+            for cell in &sheet.cells {
+                if cell.formula.is_some() {
+                    targets.push(formula_case_for_cell(
+                        sheet_id,
+                        &sheet.name,
+                        cell,
+                        cell.cached_value.clone(),
+                    ));
+                }
+            }
+        }
+        targets
+    }
+
+    fn recalc_targets(&self) -> Vec<FodsFormulaCase> {
+        let mut targets = Vec::new();
+        for (index, sheet) in self.sheets.iter().enumerate() {
+            let sheet_id = SheetId(index as u32 + 1);
+            for cell in &sheet.cells {
+                let Some(formula) = &cell.formula else {
+                    continue;
+                };
+                for row_offset in 0..cell.matrix_rows.max(1) {
+                    for column_offset in 0..cell.matrix_columns.max(1) {
+                        targets.push(formula_case_for_address(
+                            sheet_id,
+                            &sheet.name,
+                            CellAddress {
+                                column: cell.address.column + column_offset,
+                                row: cell.address.row + row_offset,
+                            },
+                            formula,
+                            cell.cached_value.clone(),
+                        ));
+                    }
+                }
+            }
+        }
+        targets
+    }
+}
+
+fn formula_case_for_cell(
+    sheet_id: SheetId,
+    sheet_name: &str,
+    cell: &FodsCell,
+    expected: FormulaValue<'static>,
+) -> FodsFormulaCase {
+    let formula = cell.formula.clone().expect("formula cell");
+    formula_case_for_address(sheet_id, sheet_name, cell.address, &formula, expected)
+}
+
+fn formula_case_for_address(
+    sheet_id: SheetId,
+    sheet_name: &str,
+    address: CellAddress,
+    formula: &str,
+    expected: FormulaValue<'static>,
+) -> FodsFormulaCase {
+    let parsed_formula = parse_formula_with_context(
+        FormulaParseContext {
+            current_sheet: sheet_id,
+            current_cell: Some(address),
+            grammar: FormulaGrammar::OpenFormula,
+        },
+        Cow::Owned(formula.to_string()),
+    );
+    FodsFormulaCase {
+        sheet: sheet_id,
+        sheet_name: sheet_name.to_string(),
+        address,
+        formula: formula.to_string(),
+        parsed_formula,
+        expected,
+        read_cell_value: false,
+    }
+}
+
+fn value_gets_as_one(value: &FormulaValue<'_>) -> bool {
+    match value {
+        FormulaValue::Number(value) => (value - 1.0).abs() <= 1e-14,
+        FormulaValue::Boolean(value) => *value,
+        _ => false,
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+struct FunctionTestLayout {
+    correct_column: u32,
+    function_string_column: u32,
+}
+
+impl FodsSheet {
+    fn function_test_layout(&self) -> Option<FunctionTestLayout> {
+        let mut expected_column = 0;
+        let mut correct_column = 0;
+        let mut function_string_column = 0;
+        let max_column = self
+            .cells
+            .iter()
+            .filter(|cell| cell.address.row == 0)
+            .map(|cell| cell.address.column)
+            .max()
+            .unwrap_or(0);
+        for column in 0..=max_column {
+            match self.header_text_at(column).as_deref() {
+                Some("Expected") => expected_column = column,
+                Some("Correct") => correct_column = column,
+                Some("FunctionString") => {
+                    function_string_column = column;
+                    break;
+                }
+                _ => {}
+            }
+        }
+        if expected_column == 0
+            || correct_column != expected_column.saturating_mul(2)
+            || function_string_column <= correct_column
+        {
+            return None;
+        }
+        Some(FunctionTestLayout {
+            correct_column,
+            function_string_column,
+        })
+    }
+
+    fn header_text_at(&self, column: u32) -> Option<String> {
+        self.cells.iter().find_map(|cell| {
+            if cell.address.row == 0
+                && cell.address.column == column
+                && let FormulaValue::String(text) = &cell.cached_value
+            {
+                Some(text.to_string())
+            } else {
+                None
+            }
+        })
+    }
+
+    fn function_string(&self, row: u32, column: u32) -> Option<String> {
+        self.cells.iter().find_map(|cell| {
+            if cell.address.row == row
+                && cell.address.column == column
+                && let FormulaValue::String(text) = &cell.cached_value
+            {
+                Some(text.to_string())
+            } else {
+                None
+            }
+        })
     }
 }
 
@@ -239,6 +491,9 @@ fn formula_text_target(_sheet: SheetId, formula: &str) -> Option<CellAddress> {
 
 impl FodsFormulaCase {
     pub fn evaluate(&self, book: &FormulaEvaluationBook<'static>) -> Option<FormulaValue<'static>> {
+        if self.read_cell_value {
+            return Some(book.cell_value(self.sheet, self.address));
+        }
         book.evaluate_parsed_formula(self.sheet, Some(self.address), &self.parsed_formula)
     }
 }
@@ -985,6 +1240,58 @@ mod tests {
     }
 
     #[test]
+    fn libreoffice_function_test_cases_follow_sheet1_b3_after_hard_recalc() {
+        // Source: LibreOffice sc/qa/unit/functions_test.cxx FunctionsTest::load
+        // runs DoHardRecalc(), then validates Sheet1.B3. The stale cached
+        // Function/Correct values below mirror rows such as WEEKS A12/C12.
+        let xml = br#"
+      <office:document xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
+          xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0"
+          xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0"
+          office:mimetype="application/vnd.oasis.opendocument.spreadsheet">
+        <office:body>
+          <office:spreadsheet>
+            <table:table table:name="Sheet1">
+              <table:table-row/>
+              <table:table-row/>
+              <table:table-row>
+                <table:table-cell/>
+                <table:table-cell table:formula="of:=AND([Sheet2.C2:.C2])" office:value-type="boolean" office:boolean-value="false"/>
+              </table:table-row>
+            </table:table>
+            <table:table table:name="Sheet2">
+              <table:table-row>
+                <table:table-cell office:value-type="string" office:string-value="Function"/>
+                <table:table-cell office:value-type="string" office:string-value="Expected"/>
+                <table:table-cell office:value-type="string" office:string-value="Correct"/>
+                <table:table-cell office:value-type="string" office:string-value="FunctionString"/>
+              </table:table-row>
+              <table:table-row>
+                <table:table-cell table:formula="of:=1" office:value-type="float" office:value="0"/>
+                <table:table-cell office:value-type="float" office:value="1"/>
+                <table:table-cell table:formula="of:=[.A2]=[.B2]" office:value-type="boolean" office:boolean-value="false"/>
+                <table:table-cell office:value-type="string" office:string-value="=1"/>
+              </table:table-row>
+            </table:table>
+          </office:spreadsheet>
+        </office:body>
+      </office:document>
+    "#;
+        let workbook = read_fods_workbook_from_reader(&xml[..]).unwrap();
+        let book = workbook.hard_recalc_book();
+        let cases = workbook.libreoffice_function_test_cases(&book).unwrap();
+        assert_eq!(cases.len(), 1);
+        assert_eq!(cases[0].address, CellAddress { column: 1, row: 2 });
+        assert_eq!(cases[0].expected, FormulaValue::Number(1.0));
+        assert_eq!(cases[0].evaluate(&book), Some(FormulaValue::Boolean(true)));
+        assert_eq!(
+            workbook.cached_formula_cases().len(),
+            3,
+            "raw cached mode still exposes all formula cells"
+        );
+    }
+
+    #[test]
     fn reads_countif_fods_criteria_references() {
         let workbook =
             read_fods_workbook(&workspace_root().join(
@@ -1019,7 +1326,7 @@ mod tests {
             assert!(book.is_query_empty_cell(SheetId(2), address));
         }
         let case = workbook
-            .formula_cases()
+            .cached_formula_cases()
             .into_iter()
             .find(|case| {
                 case.sheet == SheetId(2) && case.address == CellAddress { column: 0, row: 5 }
@@ -1032,7 +1339,7 @@ mod tests {
             (10, "of:=COUNTIF([.$I$13:.$I$15];\"\")"),
         ] {
             let case = workbook
-                .formula_cases()
+                .cached_formula_cases()
                 .into_iter()
                 .find(|case| {
                     case.sheet == SheetId(2) && case.address == CellAddress { column: 0, row }
@@ -1053,7 +1360,7 @@ mod tests {
         let book = workbook.evaluation_book();
         for (row, expected) in [(5, 75.0), (6, 97.0)] {
             let case = workbook
-                .formula_cases()
+                .cached_formula_cases()
                 .into_iter()
                 .find(|case| {
                     case.sheet == SheetId(2) && case.address == CellAddress { column: 0, row }

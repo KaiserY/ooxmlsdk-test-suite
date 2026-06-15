@@ -11,10 +11,12 @@ use ooxmlsdk_formula::{CellAddress, FormulaSearchType, FormulaValue};
 use ooxmlsdk_formula_test::fods::{FodsFormulaCase, read_fods_workbook};
 
 #[test]
-fn libreoffice_function_fods_corpus_matches_cached_results() {
+fn libreoffice_function_fods_corpus_matches_functions_test_load() {
     // Source: LibreOffice sc/qa/unit/functions_*.cxx recursiveScan(test::pass)
-    // over sc/qa/unit/data/functions/**/fods/*.fods. The expected values are
-    // the cached formula results stored in the upstream FODS fixtures.
+    // over sc/qa/unit/data/functions/**/fods/*.fods. Function-test workbooks
+    // follow FunctionsTest::load: hard-recalculate, assert Sheet1.B3, then
+    // scan the Correct column only to diagnose failures. Other sheets compare
+    // against upstream cached results.
     let root = workspace_root().join("fixtures/LibreOffice/sc/qa/unit/data/functions");
     let files = fods_files(&root);
     assert_eq!(
@@ -37,9 +39,16 @@ fn libreoffice_function_fods_corpus_matches_cached_results() {
             workspace_relative_path(&file)
         );
         summary.push_reader_search_type(workbook.formula_search_type);
-        let book = workbook.evaluation_book();
-        let cases = workbook.formula_cases();
-        summary.formulas += cases.len();
+        summary.raw_formula_cells += workbook.cached_formula_cases().len();
+        let raw_book = workbook.evaluation_book();
+        let hard_recalc_book = workbook.hard_recalc_book();
+        let (book, cases) =
+            if let Some(cases) = workbook.libreoffice_function_test_cases(&hard_recalc_book) {
+                (hard_recalc_book, cases)
+            } else {
+                (raw_book, workbook.formula_cases())
+            };
+        summary.assertions += cases.len();
         for case in cases {
             match case.evaluate(&book) {
                 Some(actual) if formula_values_match(&actual, &case.expected, &case.formula) => {
@@ -92,7 +101,8 @@ fn libreoffice_fods_reader_search_settings_match_raw_xml() {
 #[derive(Default)]
 struct CorpusSummary {
     files: usize,
-    formulas: usize,
+    raw_formula_cells: usize,
+    assertions: usize,
     passed: usize,
     failed: usize,
     unsupported: usize,
@@ -149,8 +159,13 @@ impl std::fmt::Display for CorpusSummary {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(
             f,
-            "LibreOffice FODS formula corpus: files={}, formulas={}, passed={}, failed={}, unsupported={}",
-            self.files, self.formulas, self.passed, self.failed, self.unsupported
+            "LibreOffice FODS formula corpus: files={}, raw_formula_cells={}, assertions={}, passed={}, failed={}, unsupported={}",
+            self.files,
+            self.raw_formula_cells,
+            self.assertions,
+            self.passed,
+            self.failed,
+            self.unsupported
         )?;
         write_top_counts(f, "unsupported by formula", &self.unsupported_by_formula)?;
         write_top_samples(
