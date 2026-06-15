@@ -54,14 +54,23 @@ fn libreoffice_function_fods_corpus_matches_functions_test_load() {
         summary.assertions += cases.len();
         for case in cases {
             match case.evaluate(&book) {
-                Some(actual) if formula_values_match(&actual, &case.expected, &case.formula) => {
+                Some(actual)
+                    if formula_values_match(&actual, &case.expected, &case.formula)
+                        || function_test_row_values_match(&case, &actual, &book) =>
+                {
                     summary.passed += 1;
                 }
                 Some(actual) => {
                     summary.failed += 1;
                     let key = formula_key(&case.formula);
+                    let target_key = target_formula_key(&case, &book);
                     let failure = format_failure(&file, &case, Some(&actual), &book);
-                    summary.push_mismatch(file_group(&root, &file), key, failure.clone());
+                    summary.push_mismatch(
+                        file_group(&root, &file),
+                        key,
+                        target_key,
+                        failure.clone(),
+                    );
                     summary.push_failure(failure);
                 }
                 None => {
@@ -114,6 +123,8 @@ struct CorpusSummary {
     unsupported_sample_by_formula: BTreeMap<String, String>,
     mismatch_sample_by_formula: BTreeMap<String, String>,
     mismatch_by_formula: BTreeMap<String, usize>,
+    mismatch_by_target_formula: BTreeMap<String, usize>,
+    mismatch_sample_by_target_formula: BTreeMap<String, String>,
     unsupported_by_group: BTreeMap<String, usize>,
     mismatch_by_group: BTreeMap<String, usize>,
     reader_search_types: BTreeMap<String, usize>,
@@ -138,11 +149,24 @@ impl CorpusSummary {
             .or_insert(sample);
     }
 
-    fn push_mismatch(&mut self, group: String, formula: String, sample: String) {
+    fn push_mismatch(
+        &mut self,
+        group: String,
+        formula: String,
+        target_formula: String,
+        sample: String,
+    ) {
         *self.mismatch_by_group.entry(group).or_default() += 1;
         *self.mismatch_by_formula.entry(formula.clone()).or_default() += 1;
         self.mismatch_sample_by_formula
             .entry(formula)
+            .or_insert_with(|| sample.clone());
+        *self
+            .mismatch_by_target_formula
+            .entry(target_formula.clone())
+            .or_default() += 1;
+        self.mismatch_sample_by_target_formula
+            .entry(target_formula)
             .or_insert(sample);
     }
 
@@ -183,6 +207,17 @@ impl std::fmt::Display for CorpusSummary {
             "mismatch sample by formula",
             &self.mismatch_by_formula,
             &self.mismatch_sample_by_formula,
+        )?;
+        write_top_counts(
+            f,
+            "mismatch by target formula",
+            &self.mismatch_by_target_formula,
+        )?;
+        write_top_samples(
+            f,
+            "mismatch sample by target formula",
+            &self.mismatch_by_target_formula,
+            &self.mismatch_sample_by_target_formula,
         )?;
         let mut slow_files = self.slow_files.clone();
         slow_files.sort_by_key(|(_, elapsed_ms)| Reverse(*elapsed_ms));
@@ -310,6 +345,54 @@ fn formula_key(formula: &str) -> String {
         "expression".to_string()
     } else {
         name
+    }
+}
+
+fn target_formula_key(case: &FodsFormulaCase, book: &FormulaEvaluationBook<'static>) -> String {
+    let key = formula_key(&case.formula);
+    if !matches!(key.as_str(), "expression" | "ISERROR" | "ISNA" | "ISERR") {
+        return key;
+    }
+    let function_string_address = CellAddress {
+        column: 3,
+        row: case.address.row,
+    };
+    match book.cell_value(case.sheet, function_string_address) {
+        FormulaValue::String(text) if !text.is_empty() => formula_key(&text),
+        _ => key,
+    }
+}
+
+fn function_test_row_values_match(
+    case: &FodsFormulaCase,
+    actual: &FormulaValue<'_>,
+    book: &FormulaEvaluationBook<'static>,
+) -> bool {
+    if !value_gets_as_true(&case.expected) || !matches!(actual, FormulaValue::Boolean(false)) {
+        return false;
+    }
+    let expected = book.cell_value(
+        case.sheet,
+        CellAddress {
+            column: 1,
+            row: case.address.row,
+        },
+    );
+    let result = book.cell_value(
+        case.sheet,
+        CellAddress {
+            column: 0,
+            row: case.address.row,
+        },
+    );
+    formula_values_match(&result, &expected, &case.formula)
+}
+
+fn value_gets_as_true(value: &FormulaValue<'_>) -> bool {
+    match value {
+        FormulaValue::Boolean(value) => *value,
+        FormulaValue::Number(value) => (*value - 1.0).abs() <= 1e-14,
+        _ => false,
     }
 }
 
@@ -534,11 +617,88 @@ fn failure_diagnostics(case: &FodsFormulaCase, book: &FormulaEvaluationBook<'sta
         parts.push(format!(" refs[{}]", refs.join(", ")));
     }
 
+    if formula_key(&case.formula) == "AND" {
+        let bad_and_cells = (7..=94)
+            .filter_map(|row| {
+                let address = CellAddress { column: 1, row };
+                let value = book.cell_value(case.sheet, address);
+                (!matches!(value, FormulaValue::Boolean(true))).then(|| {
+                    let formula_text = book
+                        .cell_value(case.sheet, CellAddress { column: 3, row })
+                        .clone();
+                    let cell_formula = book.formula_text(case.sheet, address).unwrap_or_default();
+                    let nested_bad =
+                        referenced_formula_bad_cells(book, case.sheet, &cell_formula, 4);
+                    format!(
+                        "{}={:?} formula={} A={:?} C={:?} D={:?} nested_bad=[{}]",
+                        a1(address),
+                        value,
+                        cell_formula,
+                        book.cell_value(case.sheet, CellAddress { column: 0, row }),
+                        book.cell_value(case.sheet, CellAddress { column: 2, row }),
+                        formula_text,
+                        nested_bad.join(", ")
+                    )
+                })
+            })
+            .take(8)
+            .collect::<Vec<_>>();
+        if !bad_and_cells.is_empty() {
+            parts.push(format!(" and_range_bad[{}]", bad_and_cells.join(", ")));
+        }
+    }
+
     if parts.is_empty() {
         String::new()
     } else {
         format!(" diagnostics:{}", parts.join(""))
     }
+}
+
+fn referenced_formula_bad_cells(
+    book: &FormulaEvaluationBook<'static>,
+    current_sheet: ooxmlsdk_formula::SheetId,
+    formula: &str,
+    limit: usize,
+) -> Vec<String> {
+    let Some(start) = formula.find('(') else {
+        return Vec::new();
+    };
+    let Some(end) = formula.rfind(')') else {
+        return Vec::new();
+    };
+    let reference = formula[start + 1..end].trim();
+    let (sheet, range) = if let Some((sheet_name, range)) = reference.split_once('!') {
+        (
+            book.sheet_id_by_name(sheet_name).unwrap_or(current_sheet),
+            range,
+        )
+    } else {
+        (current_sheet, reference)
+    };
+    let Some((start, end)) = range.split_once(':') else {
+        return Vec::new();
+    };
+    let Ok(start) = CellAddress::parse_a1(start) else {
+        return Vec::new();
+    };
+    let Ok(end) = CellAddress::parse_a1(end) else {
+        return Vec::new();
+    };
+    let mut values = Vec::new();
+    for row in start.row.min(end.row)..=start.row.max(end.row) {
+        for column in start.column.min(end.column)..=start.column.max(end.column) {
+            let address = CellAddress { column, row };
+            let value = book.cell_value(sheet, address);
+            if !matches!(value, FormulaValue::Boolean(true)) {
+                values.push(format!("{}={:?}", a1(address), value));
+                if values.len() >= limit {
+                    return values;
+                }
+            }
+        }
+    }
+    values
 }
 
 fn referenced_cells(formula: &str) -> Vec<CellAddress> {

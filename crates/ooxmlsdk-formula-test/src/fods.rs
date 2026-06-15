@@ -15,12 +15,25 @@ use ooxmlsdk_formula::{
 };
 use quick_xml::{Reader, XmlVersion, events::Event};
 
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct FodsWorkbook {
     pub sheets: Vec<FodsSheet>,
     pub named_ranges: Vec<FodsNamedRange>,
     pub pivot_tables: Vec<FormulaPivotTable<'static>>,
     pub formula_search_type: FormulaSearchType,
+    pub formula_match_whole_cell: bool,
+}
+
+impl Default for FodsWorkbook {
+    fn default() -> Self {
+        Self {
+            sheets: Vec::new(),
+            named_ranges: Vec::new(),
+            pivot_tables: Vec::new(),
+            formula_search_type: FormulaSearchType::default(),
+            formula_match_whole_cell: true,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -199,6 +212,7 @@ impl FodsWorkbook {
             pivot_tables: self.pivot_tables.clone(),
             date_system: DateSystem::LibreOffice,
             formula_search_type: self.formula_search_type,
+            formula_match_whole_cell: self.formula_match_whole_cell,
             today_serial,
             ..FormulaEvaluationBook::default()
         }
@@ -223,7 +237,12 @@ impl FodsWorkbook {
                         &target.parsed_formula,
                         target.array_context,
                     ) {
-                        updates.extend(book.array_recalc_updates(target.sheet, range, &value));
+                        updates.extend(fods_array_recalc_updates(
+                            &book,
+                            target.sheet,
+                            range,
+                            &value,
+                        ));
                     }
                 } else if let Some(value) = book.evaluate_parsed_formula(
                     target.sheet,
@@ -275,9 +294,7 @@ impl FodsWorkbook {
         if !self
             .sheets
             .iter()
-            .enumerate()
-            .skip(1)
-            .any(|(_, sheet)| sheet.function_test_layout().is_some())
+            .any(|sheet| sheet.function_test_layout().is_some())
         {
             return None;
         }
@@ -294,7 +311,7 @@ impl FodsWorkbook {
             return Some(vec![summary_case]);
         }
 
-        for (index, sheet) in self.sheets.iter().enumerate().skip(1) {
+        for (index, sheet) in self.sheets.iter().enumerate() {
             let Some(layout) = sheet.function_test_layout() else {
                 if sheet.has_function_test_header_marker() {
                     panic!(
@@ -388,6 +405,37 @@ impl FodsWorkbook {
         }
         targets
     }
+}
+
+fn fods_array_recalc_updates<'doc>(
+    book: &FormulaEvaluationBook<'doc>,
+    sheet: SheetId,
+    target: CellRange,
+    value: &FormulaValue<'doc>,
+) -> Vec<(SheetId, CellAddress, FormulaValue<'doc>)> {
+    let mut updates = Vec::new();
+    let start_row = target.start.row.min(target.end.row);
+    let end_row = target.start.row.max(target.end.row);
+    let start_column = target.start.column.min(target.end.column);
+    let end_column = target.start.column.max(target.end.column);
+    for row in start_row..=end_row {
+        for column in start_column..=end_column {
+            let row_offset = (row - start_row) as usize;
+            let column_offset = (column - start_column) as usize;
+            let address = CellAddress { column, row };
+            let item = match value {
+                FormulaValue::Matrix(rows) => rows
+                    .get(row_offset)
+                    .and_then(|row| row.get(column_offset))
+                    .cloned()
+                    .unwrap_or_else(|| book.cell_value(sheet, address)),
+                value if row == start_row && column == start_column => value.clone(),
+                _ => book.cell_value(sheet, address),
+            };
+            updates.push((sheet, address, item));
+        }
+    }
+    updates
 }
 
 #[derive(Clone, Debug)]
@@ -538,10 +586,7 @@ impl FodsSheet {
                 _ => {}
             }
         }
-        if expected_column == 0
-            || correct_column != expected_column.saturating_mul(2)
-            || function_string_column <= correct_column
-        {
+        if expected_column == 0 || correct_column == 0 || function_string_column <= correct_column {
             return None;
         }
         Some(FunctionTestLayout {
@@ -663,6 +708,9 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
             {
                 if let Some(search_type) = formula_search_type_from_attrs(&event) {
                     workbook.formula_search_type = search_type;
+                }
+                if let Some(match_whole_cell) = formula_match_whole_cell_from_attrs(&event) {
+                    workbook.formula_match_whole_cell = match_whole_cell;
                 }
             }
             Ok(Event::Start(event)) if local_name(event.name().as_ref()) == b"data-pilot-table" => {
@@ -1029,6 +1077,11 @@ fn formula_search_type_from_attrs(
         }
     }
     Some(search_type)
+}
+
+fn formula_match_whole_cell_from_attrs(event: &quick_xml::events::BytesStart<'_>) -> Option<bool> {
+    attr_value(event, b"search-criteria-must-apply-to-whole-cell")
+        .and_then(|value| parse_bool(&value))
 }
 
 fn parse_bool(value: &str) -> Option<bool> {
@@ -1639,6 +1692,23 @@ mod tests {
             ),
             value => panic!("unexpected LOGEST weighted sum value: {value:?}"),
         }
+    }
+
+    #[test]
+    fn hard_recalc_preserves_imported_matrix_cells_when_result_is_shorter_than_declared_range() {
+        let workbook = read_fods_workbook(&workspace_root().join(
+            "fixtures/LibreOffice/sc/qa/unit/data/functions/statistical/fods/beta.dist.fods",
+        ))
+        .unwrap();
+        let book = workbook.hard_recalc_book();
+        assert_eq!(
+            book.cell_value(SheetId(2), CellAddress { column: 0, row: 26 }),
+            FormulaValue::Number(0.685470581054688)
+        );
+        assert_eq!(
+            book.cell_value(SheetId(2), CellAddress { column: 2, row: 26 }),
+            FormulaValue::Boolean(true)
+        );
     }
 
     #[test]
