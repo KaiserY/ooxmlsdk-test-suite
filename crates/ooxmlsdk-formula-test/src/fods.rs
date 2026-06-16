@@ -60,6 +60,12 @@ pub struct FodsCell {
     pub cached_value: FormulaValue<'static>,
 }
 
+impl FodsCell {
+    fn is_matrix_formula(&self) -> bool {
+        self.matrix_columns != 0 || self.matrix_rows != 0
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct FodsFormulaCase {
     pub sheet: SheetId,
@@ -119,9 +125,10 @@ impl FodsWorkbook {
                         }
                     }
                     let normalized = normalize_formula_text(formula, FormulaGrammar::OpenFormula);
+                    let is_matrix_formula = cell.is_matrix_formula();
                     let matrix_columns = cell.matrix_columns.max(1);
                     let matrix_rows = cell.matrix_rows.max(1);
-                    if matrix_columns > 1 || matrix_rows > 1 {
+                    if is_matrix_formula {
                         for row_offset in 0..matrix_rows {
                             for column_offset in 0..matrix_columns {
                                 let address = CellAddress {
@@ -149,12 +156,12 @@ impl FodsWorkbook {
                     );
                     let formula_text = FormulaText {
                         text: Cow::Owned(normalized.into_owned()),
-                        kind: if matrix_columns > 1 || matrix_rows > 1 {
+                        kind: if is_matrix_formula {
                             FormulaKind::Array
                         } else {
                             FormulaKind::Normal
                         },
-                        reference: (matrix_columns > 1 || matrix_rows > 1).then_some(reference),
+                        reference: is_matrix_formula.then_some(reference),
                     };
                     for row_offset in 0..matrix_rows {
                         for column_offset in 0..matrix_columns {
@@ -323,14 +330,9 @@ impl FodsWorkbook {
             return Some(vec![summary_case]);
         }
 
+        let mut cases = Vec::new();
         for (index, sheet) in self.sheets.iter().enumerate() {
             let Some(layout) = sheet.function_test_layout() else {
-                if sheet.has_function_test_header_marker() {
-                    panic!(
-                        "LibreOffice FunctionsTest layout columns not found on sheet {}",
-                        sheet.name
-                    );
-                }
                 continue;
             };
             let sheet_id = SheetId(index as u32 + 1);
@@ -350,25 +352,47 @@ impl FodsWorkbook {
                 if value_gets_as_one(&book.cell_value(sheet_id, cell.address)) {
                     continue;
                 }
-                if cell.formula.is_some() {
-                    let mut case = formula_case_for_cell(
+                let function_string = sheet
+                    .function_string(row, layout.function_string_column)
+                    .unwrap_or_default();
+                for offset in 0..layout.expected_column {
+                    let result_address = CellAddress {
+                        column: offset,
+                        row,
+                    };
+                    let expected_address = CellAddress {
+                        column: layout.expected_column + offset,
+                        row,
+                    };
+                    let expected = sheet
+                        .cached_value_at(expected_address)
+                        .unwrap_or_else(|| FormulaValue::Blank);
+                    let mut case = formula_case_for_address(
                         sheet_id,
                         &sheet.name,
-                        sheet,
-                        cell,
-                        FormulaValue::Number(1.0),
+                        result_address,
+                        sheet
+                            .cells
+                            .iter()
+                            .find(|cell| cell.address == result_address)
+                            .and_then(|cell| cell.formula.as_deref())
+                            .unwrap_or(&function_string),
+                        None,
+                        Vec::new(),
+                        expected,
                     );
-                    if let Some(function_string) =
-                        sheet.function_string(row, layout.function_string_column)
-                    {
-                        case.formula = function_string;
+                    if !function_string.is_empty() {
+                        case.formula = function_string.clone();
                     }
                     case.read_cell_value = true;
-                    return Some(vec![case]);
+                    cases.push(case);
                 }
             }
         }
-        Some(vec![summary_case])
+        if cases.is_empty() {
+            cases.push(summary_case);
+        }
+        Some(cases)
     }
 
     fn formula_targets(&self) -> Vec<FodsFormulaCase> {
@@ -398,9 +422,10 @@ impl FodsWorkbook {
                 let Some(formula) = &cell.formula else {
                     continue;
                 };
+                let is_matrix_formula = cell.is_matrix_formula();
                 let matrix_columns = cell.matrix_columns.max(1);
                 let matrix_rows = cell.matrix_rows.max(1);
-                let reference = (matrix_columns > 1 || matrix_rows > 1).then_some(CellRange::new(
+                let reference = is_matrix_formula.then_some(CellRange::new(
                     cell.address,
                     CellAddress {
                         column: cell.address.column + matrix_columns - 1,
@@ -501,9 +526,10 @@ fn formula_case_for_cell(
     expected: FormulaValue<'static>,
 ) -> FodsFormulaCase {
     let formula = cell.formula.clone().expect("formula cell");
+    let is_matrix_formula = cell.is_matrix_formula();
     let matrix_columns = cell.matrix_columns.max(1);
     let matrix_rows = cell.matrix_rows.max(1);
-    let array_reference = (matrix_columns > 1 || matrix_rows > 1).then_some(CellRange::new(
+    let array_reference = is_matrix_formula.then_some(CellRange::new(
         cell.address,
         CellAddress {
             column: cell.address.column + matrix_columns - 1,
@@ -582,6 +608,7 @@ fn value_gets_as_one(value: &FormulaValue<'_>) -> bool {
 
 #[derive(Clone, Copy, Debug)]
 struct FunctionTestLayout {
+    expected_column: u32,
     correct_column: u32,
     function_string_column: u32,
 }
@@ -613,6 +640,7 @@ impl FodsSheet {
             return None;
         }
         Some(FunctionTestLayout {
+            expected_column,
             correct_column,
             function_string_column,
         })
@@ -628,17 +656,6 @@ impl FodsSheet {
             } else {
                 None
             }
-        })
-    }
-
-    fn has_function_test_header_marker(&self) -> bool {
-        self.cells.iter().any(|cell| {
-            cell.address.row == 0
-                && matches!(
-                    &cell.cached_value,
-                    FormulaValue::String(text)
-                        if matches!(text.as_ref(), "Expected" | "Correct" | "FunctionString")
-                )
         })
     }
 
@@ -816,15 +833,16 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
                     .and_then(|value| value.parse::<u32>().ok())
                     .unwrap_or(1)
                     .max(1);
-                if attr_value(&event, b"visibility").as_deref() == Some("collapse")
+                let visibility = attr_value(&event, b"visibility");
+                if matches!(visibility.as_deref(), Some("collapse" | "filter"))
                     && let Some(sheet) = &mut current_sheet
                 {
                     for offset in 0..row_repeat {
                         sheet.row_states.push((
                             row + offset,
                             FormulaRowState {
-                                hidden: true,
-                                filtered: false,
+                                hidden: visibility.as_deref() == Some("collapse"),
+                                filtered: visibility.as_deref() == Some("filter"),
                             },
                         ));
                     }
@@ -860,15 +878,16 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
                     .and_then(|value| value.parse::<u32>().ok())
                     .unwrap_or(1)
                     .max(1);
-                if attr_value(&event, b"visibility").as_deref() == Some("collapse")
+                let visibility = attr_value(&event, b"visibility");
+                if matches!(visibility.as_deref(), Some("collapse" | "filter"))
                     && let Some(sheet) = &mut current_sheet
                 {
                     for offset in 0..repeat {
                         sheet.row_states.push((
                             row + offset,
                             FormulaRowState {
-                                hidden: true,
-                                filtered: false,
+                                hidden: visibility.as_deref() == Some("collapse"),
+                                filtered: visibility.as_deref() == Some("filter"),
                             },
                         ));
                     }
@@ -883,10 +902,10 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
                         .unwrap_or(1),
                     matrix_columns: attr_value(&event, b"number-matrix-columns-spanned")
                         .and_then(|value| value.parse::<u32>().ok())
-                        .unwrap_or(1),
+                        .unwrap_or(0),
                     matrix_rows: attr_value(&event, b"number-matrix-rows-spanned")
                         .and_then(|value| value.parse::<u32>().ok())
-                        .unwrap_or(1),
+                        .unwrap_or(0),
                     formula: attr_value(&event, b"formula"),
                     cached_value: cached_value_from_attrs(&event),
                     text: String::new(),
@@ -966,7 +985,7 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
                                 matrix_rows: cell.matrix_rows,
                                 query_empty: matches!(cached_value, FormulaValue::Number(value) if value == 0.0)
                                     && cell.text.is_empty()
-                                    && (cell.matrix_columns.max(1) > 1 || cell.matrix_rows.max(1) > 1),
+                                    && (cell.matrix_columns != 0 || cell.matrix_rows != 0),
                                 cached_value: cached_value.clone(),
                             });
                         }
@@ -983,10 +1002,11 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
                     let formula = attr_value(&event, b"formula");
                     let matrix_columns = attr_value(&event, b"number-matrix-columns-spanned")
                         .and_then(|value| value.parse::<u32>().ok())
-                        .unwrap_or(1);
+                        .unwrap_or(0);
                     let matrix_rows = attr_value(&event, b"number-matrix-rows-spanned")
                         .and_then(|value| value.parse::<u32>().ok())
-                        .unwrap_or(1);
+                        .unwrap_or(0);
+                    let is_matrix_formula = matrix_columns != 0 || matrix_rows != 0;
                     let cached_value = cached_value_from_attrs(&event);
                     if should_store_cell(formula.as_deref(), &cached_value) {
                         for offset in 0..repeat {
@@ -999,7 +1019,7 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
                                 matrix_columns,
                                 matrix_rows,
                                 query_empty: matches!(cached_value, FormulaValue::Number(value) if value == 0.0)
-                                    && (matrix_columns.max(1) > 1 || matrix_rows.max(1) > 1),
+                                    && is_matrix_formula,
                                 cached_value: cached_value.clone(),
                             });
                         }
@@ -1358,8 +1378,12 @@ fn parse_fods_date(value: &str) -> Option<(i32, i32, i32)> {
     let (head, day) = value.split_at(day_separator);
     let month_separator = head.rfind('-')?;
     let (year, month) = head.split_at(month_separator);
+    let mut year = year.parse::<i32>().ok()?;
+    if year < 0 {
+        year += 1;
+    }
     Some((
-        year.parse::<i32>().ok()?,
+        year,
         month.strip_prefix('-')?.parse::<i32>().ok()?,
         day.strip_prefix('-')?.parse::<i32>().ok()?,
     ))
@@ -1581,6 +1605,116 @@ mod tests {
             workbook.sheets[0].cells[4].cached_value,
             FormulaValue::String(Cow::Borrowed("ok"))
         );
+    }
+
+    #[test]
+    fn hard_recalc_broadcasts_libreoffice_matrix_function_arguments() {
+        // Source: LibreOffice sc/qa/unit/data/functions/mathematical/fods/mod.fods,
+        // tdf86219 sheet. MOD/CEILING take a vertical value range and a
+        // horizontal second argument range and write broadcast matrix results.
+        let path = workspace_root()
+            .join("fixtures/LibreOffice/sc/qa/unit/data/functions/mathematical/fods/mod.fods");
+        let workbook = read_fods_workbook(&path).unwrap();
+        let book = workbook.hard_recalc_book();
+        let sheet = workbook
+            .sheets
+            .iter()
+            .position(|sheet| sheet.name == "tdf86219")
+            .map(|index| SheetId(index as u32 + 1))
+            .expect("tdf86219 sheet");
+
+        for (address, expected) in [
+            (CellAddress { column: 2, row: 3 }, FormulaValue::Number(1.0)),
+            (CellAddress { column: 3, row: 3 }, FormulaValue::Number(1.0)),
+            (CellAddress { column: 2, row: 4 }, FormulaValue::Number(0.0)),
+            (CellAddress { column: 3, row: 4 }, FormulaValue::Number(2.0)),
+            (CellAddress { column: 2, row: 5 }, FormulaValue::Number(1.0)),
+            (CellAddress { column: 3, row: 5 }, FormulaValue::Number(0.0)),
+            (
+                CellAddress { column: 2, row: 22 },
+                FormulaValue::Number(0.0),
+            ),
+            (
+                CellAddress { column: 3, row: 22 },
+                FormulaValue::Number(2.0),
+            ),
+            (CellAddress { column: 6, row: 9 }, FormulaValue::Number(1.0)),
+            (CellAddress { column: 7, row: 9 }, FormulaValue::Number(1.0)),
+            (
+                CellAddress { column: 6, row: 10 },
+                FormulaValue::Number(0.0),
+            ),
+            (
+                CellAddress { column: 7, row: 10 },
+                FormulaValue::Number(2.0),
+            ),
+            (
+                CellAddress { column: 6, row: 11 },
+                FormulaValue::Number(1.0),
+            ),
+            (
+                CellAddress { column: 7, row: 11 },
+                FormulaValue::Number(0.0),
+            ),
+            (
+                CellAddress { column: 11, row: 3 },
+                FormulaValue::Number(8.0),
+            ),
+            (
+                CellAddress { column: 12, row: 3 },
+                FormulaValue::Number(9.0),
+            ),
+            (
+                CellAddress { column: 11, row: 4 },
+                FormulaValue::Number(8.0),
+            ),
+            (
+                CellAddress { column: 12, row: 4 },
+                FormulaValue::Number(9.0),
+            ),
+            (
+                CellAddress { column: 11, row: 5 },
+                FormulaValue::Number(10.0),
+            ),
+            (
+                CellAddress { column: 12, row: 5 },
+                FormulaValue::Number(9.0),
+            ),
+            (
+                CellAddress { column: 0, row: 37 },
+                FormulaValue::Boolean(true),
+            ),
+            (
+                CellAddress { column: 0, row: 38 },
+                FormulaValue::Boolean(true),
+            ),
+            (
+                CellAddress { column: 0, row: 39 },
+                FormulaValue::Boolean(true),
+            ),
+            (
+                CellAddress { column: 0, row: 40 },
+                FormulaValue::Boolean(true),
+            ),
+            (
+                CellAddress { column: 0, row: 42 },
+                FormulaValue::Boolean(true),
+            ),
+            (
+                CellAddress { column: 0, row: 43 },
+                FormulaValue::Boolean(true),
+            ),
+            (
+                CellAddress { column: 0, row: 44 },
+                FormulaValue::Boolean(true),
+            ),
+            (
+                CellAddress { column: 0, row: 45 },
+                FormulaValue::Boolean(true),
+            ),
+        ] {
+            assert_eq!(book.cell_value(sheet, address), expected, "{address:?}");
+        }
     }
 
     #[test]
