@@ -54,10 +54,7 @@ fn libreoffice_function_fods_corpus_matches_functions_test_load() {
         summary.assertions += cases.len();
         for case in cases {
             match case.evaluate(&book) {
-                Some(actual)
-                    if formula_values_match(&actual, &case.expected, &case.formula)
-                        || function_test_row_values_match(&case, &actual, &book) =>
-                {
+                Some(actual) if formula_values_match(&actual, &case.expected, &case.formula) => {
                     summary.passed += 1;
                 }
                 Some(actual) => {
@@ -360,57 +357,6 @@ fn target_formula_key(case: &FodsFormulaCase, book: &FormulaEvaluationBook<'stat
     match book.cell_value(case.sheet, function_string_address) {
         FormulaValue::String(text) if !text.is_empty() => formula_key(&text),
         _ => key,
-    }
-}
-
-fn function_test_row_values_match(
-    case: &FodsFormulaCase,
-    actual: &FormulaValue<'_>,
-    book: &FormulaEvaluationBook<'static>,
-) -> bool {
-    if !value_gets_as_true(&case.expected) {
-        return false;
-    }
-    if !matches!(actual, FormulaValue::Boolean(false)) {
-        return false;
-    }
-    let expected = book.cell_value(
-        case.sheet,
-        CellAddress {
-            column: 1,
-            row: case.address.row,
-        },
-    );
-    let result = book.cell_value(
-        case.sheet,
-        CellAddress {
-            column: 0,
-            row: case.address.row,
-        },
-    );
-    formula_values_match(
-        &visible_cell_value(&result),
-        &visible_cell_value(&expected),
-        &case.formula,
-    )
-}
-
-fn visible_cell_value<'a>(value: &'a FormulaValue<'a>) -> FormulaValue<'a> {
-    match value {
-        FormulaValue::Matrix(rows) => rows
-            .first()
-            .and_then(|row| row.first())
-            .cloned()
-            .unwrap_or(FormulaValue::Blank),
-        value => value.clone(),
-    }
-}
-
-fn value_gets_as_true(value: &FormulaValue<'_>) -> bool {
-    match value {
-        FormulaValue::Boolean(value) => *value,
-        FormulaValue::Number(value) => (*value - 1.0).abs() <= 1e-14,
-        _ => false,
     }
 }
 
