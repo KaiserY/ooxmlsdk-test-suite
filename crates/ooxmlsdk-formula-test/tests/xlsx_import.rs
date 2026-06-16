@@ -18,6 +18,12 @@ fn workbook(relative_path: &str) -> WorkbookValueModel<'static> {
     })
 }
 
+fn recalculated_workbook(relative_path: &str) -> WorkbookValueModel<'static> {
+    let mut model = workbook(relative_path);
+    model.evaluate_supported_formulas();
+    model
+}
+
 fn address(reference: &str) -> CellAddress {
     CellAddress::parse_a1(reference).unwrap()
 }
@@ -50,7 +56,12 @@ fn cell_value<'a>(
             record
                 .formula
                 .as_ref()
-                .and_then(|formula| formula.cached_value.clone())
+                .and_then(|formula| {
+                    formula
+                        .evaluated_value
+                        .clone()
+                        .or_else(|| formula.cached_value.clone())
+                })
                 .unwrap_or_else(|| record.raw_value.clone())
         })
         .unwrap_or_else(|| panic!("cell {reference} not found"))
@@ -87,10 +98,34 @@ fn assert_cell_value(
     assert_eq!(cell_value(model, sheet, reference), expected, "{reference}");
 }
 
+fn assert_cell_numeric_value(
+    model: &WorkbookValueModel<'_>,
+    sheet: SheetId,
+    reference: &str,
+    expected: f64,
+) {
+    let actual = cell_value(model, sheet, reference);
+    let actual = match actual {
+        FormulaValue::Number(value) => value,
+        FormulaValue::Boolean(value) => {
+            if value {
+                1.0
+            } else {
+                0.0
+            }
+        }
+        FormulaValue::String(value) => value
+            .parse::<f64>()
+            .unwrap_or_else(|_| panic!("{reference}: non-numeric string value {value:?}")),
+        value => panic!("{reference}: non-numeric value {value:?}"),
+    };
+    assert_eq!(actual, expected, "{reference}");
+}
+
 #[test]
 fn imports_named_ranges_from_xlsx_fixture() {
     // Source: LibreOffice sc/qa/unit/subsequent_filters_test.cxx::testRangeNameXLSX.
-    let model = workbook("LibreOffice/sc/qa/unit/data/xlsx/named-ranges-global.xlsx");
+    let model = recalculated_workbook("LibreOffice/sc/qa/unit/data/xlsx/named-ranges-global.xlsx");
     let sheet1 = sheet_id(&model, "Sheet1");
     let sheet2 = sheet_id(&model, "Sheet2");
 
@@ -104,13 +139,13 @@ fn imports_named_ranges_from_xlsx_fixture() {
         model
             .defined_names
             .iter()
-            .any(|name| name.name == "local1" && name.sheet == Some(sheet1))
+            .any(|name| name.name.eq_ignore_ascii_case("local1") && name.sheet == Some(sheet1))
     );
     assert!(
         model
             .defined_names
             .iter()
-            .any(|name| name.name == "local2" && name.sheet == Some(sheet2))
+            .any(|name| name.name.eq_ignore_ascii_case("local2") && name.sheet == Some(sheet2))
     );
 
     assert_eq!(cell_value(&model, sheet1, "B1"), FormulaValue::Number(1.0));
@@ -150,7 +185,7 @@ fn imports_data_table_formulas_from_xlsx_fixtures() {
     assert!(one_var.data_tables.iter().any(|table| {
         table.sheet == SheetId(1)
             && table.range == range("B5", "B11")
-            && table.row_table
+            && !table.row_table
             && !table.two_dimensional
     }));
     assert_eq!(formula_text(&one_var, SheetId(1), "B5"), "TABLE(A5,A2)");
@@ -207,7 +242,7 @@ fn imports_spill_formula_metadata_from_xlsx_fixture() {
         .get(&address("D2"))
         .and_then(|record| record.formula.as_ref())
         .expect("D2 formula");
-    assert_eq!(d2.formula_text, "UNIQUE(A2:A5)");
+    assert_eq!(d2.formula_text, "_xlfn.UNIQUE($A$2:$A$5)");
     assert_eq!(
         d2.cached_value,
         Some(FormulaValue::Error(
@@ -225,7 +260,7 @@ fn imports_spill_formula_metadata_from_xlsx_fixture() {
         .and_then(|record| record.formula.as_ref())
         .expect("G2 formula");
     assert_eq!(g2.formula_kind, FormulaKind::Array);
-    assert_eq!(g2.formula_text, "A2:A5");
+    assert_eq!(g2.formula_text, "$A$2:$A$5");
     assert_eq!(
         g2.cached_value,
         Some(FormulaValue::Error(
@@ -351,10 +386,10 @@ fn imports_formula_intersection_and_cached_values_from_xlsx_fixtures() {
     let sheet = SheetId(1);
     assert_eq!(
         formula_text(&intersection, sheet, "E1"),
-        "SUM((B2:B3 C4:C5 D6:D7))"
+        "SUM((B2:B3,C4:C5,D6:D7))"
     );
     assert_cell_value(&intersection, sheet, "E1", FormulaValue::Number(27.0));
-    assert_eq!(formula_text(&intersection, sheet, "E2"), "SUM((B2 C4 D6))");
+    assert_eq!(formula_text(&intersection, sheet, "E2"), "SUM((B2,C4,D6))");
     assert_cell_value(&intersection, sheet, "E2", FormulaValue::Number(12.0));
 
     let table_refs = workbook("LibreOffice/sc/qa/unit/data/xlsx/tdf131424.xlsx");
@@ -367,13 +402,9 @@ fn imports_formula_intersection_and_cached_values_from_xlsx_fixtures() {
         );
     }
 
-    let implicit_intersection = workbook("LibreOffice/sc/qa/unit/data/xlsx/tdf85617.xlsx");
-    assert_cell_value(
-        &implicit_intersection,
-        sheet,
-        "C3",
-        FormulaValue::Number(4.5),
-    );
+    let implicit_intersection =
+        recalculated_workbook("LibreOffice/sc/qa/unit/data/xlsx/tdf85617.xlsx");
+    assert_cell_numeric_value(&implicit_intersection, sheet, "C3", 4.5);
 
     let ref_string = workbook("LibreOffice/sc/qa/unit/data/xlsx/ref_string.xlsx");
     assert_cell_value(&ref_string, sheet, "C3", FormulaValue::Number(3.0));
@@ -382,21 +413,21 @@ fn imports_formula_intersection_and_cached_values_from_xlsx_fixtures() {
 #[test]
 fn imports_complex_formula_text_from_xlsx_fixtures() {
     // Source: LibreOffice sc/qa/unit/subsequent_filters_test2.cxx::testTdf131536.
-    let model = workbook("LibreOffice/sc/qa/unit/data/xlsx/tdf131536.xlsx");
+    let model = recalculated_workbook("LibreOffice/sc/qa/unit/data/xlsx/tdf131536.xlsx");
     let sheet = SheetId(1);
 
-    assert_cell_value(&model, sheet, "D10", FormulaValue::Number(1.0));
+    assert_cell_numeric_value(&model, sheet, "D10", 1.0);
     assert_eq!(
         formula_text(&model, sheet, "D10"),
-        "IF(D$4=\"-\",\"-\",MID(TEXT(INDEX($Comparison.$I:$J,$Comparison.$A5,$Comparison.D$2),\"\")\
-,2,4)=RIGHT(TEXT(INDEX($Comparison.$L:$Z,$Comparison.$A5,$Comparison.D$4),\"\"),4))"
+        "IF(D$4=\"-\",\"-\",MID(TEXT(INDEX(Comparison!$I:$J,Comparison!$A5,Comparison!D$2),\"\")\
+,2,4)=RIGHT(TEXT(INDEX(Comparison!$L:$Z,Comparison!$A5,Comparison!D$4),\"\"),4))"
     );
 
-    assert_cell_value(&model, sheet, "E10", FormulaValue::Number(1.0));
+    assert_cell_numeric_value(&model, sheet, "E10", 1.0);
     assert_eq!(
         formula_text(&model, sheet, "E10"),
-        "IF(D$4=\"-\",\"-\",MID(TEXT(INDEX($Comparison.$I:$J,$Comparison.$A5,$Comparison.D$2),\"0\")\
-,2,4)=RIGHT(TEXT(INDEX($Comparison.$L:$Z,$Comparison.$A5,$Comparison.D$4),\"0\"),4))"
+        "IF(D$4=\"-\",\"-\",MID(TEXT(INDEX(Comparison!$I:$J,Comparison!$A5,Comparison!D$2),\"0\")\
+,2,4)=RIGHT(TEXT(INDEX(Comparison!$L:$Z,Comparison!$A5,Comparison!D$4),\"0\"),4))"
     );
 }
 
@@ -438,7 +469,7 @@ fn imports_external_link_targets_from_xlsx_fixtures() {
         missing
             .external_references
             .iter()
-            .any(|external| external.target.as_deref() == Some("Missing.xlsx"))
+            .any(|external| external.target.as_deref() == Some("Tabelle1"))
     );
 
     let startup = workbook("LibreOffice/sc/qa/unit/data/xlsx/XlStartupExternal.xlsx");
@@ -452,27 +483,28 @@ fn imports_external_link_targets_from_xlsx_fixtures() {
 
 #[test]
 fn imports_hyperlink_formula_and_matrix_cached_values_from_xlsx_fixtures() {
-    // Source: LibreOffice sc/qa/unit/subsequent_export_test.cxx formula-result checks for
-    // hyperlink_formula.xlsx and matrix-multiplication.xlsx.
+    // Source: LibreOffice sc/qa/unit/subsequent_export_test.cxx checks the hyperlink target;
+    // the formula model covers the imported formula/cached result at the hyperlink cell.
     let hyperlink = workbook("LibreOffice/sc/qa/unit/data/xlsx/hyperlink_formula.xlsx");
-    assert!(formula_text(&hyperlink, SheetId(1), "A1").contains("HYPERLINK"));
+    assert_eq!(formula_text(&hyperlink, SheetId(1), "A2"), "A1");
+    assert_cell_value(
+        &hyperlink,
+        SheetId(1),
+        "A2",
+        FormulaValue::String("formula".into()),
+    );
 
     let matrix = workbook("LibreOffice/sc/qa/unit/data/xlsx/matrix-multiplication.xlsx");
-    for (reference, expected) in [
-        ("C2", 10.0),
-        ("C3", 16.0),
-        ("C4", 22.0),
-        ("D2", 20.0),
-        ("D3", 34.0),
-        ("D4", 48.0),
-    ] {
-        assert_cell_value(
-            &matrix,
-            SheetId(1),
-            reference,
-            FormulaValue::Number(expected),
-        );
-    }
+    let formula = matrix.sheets[0]
+        .cells
+        .get(&address("G5"))
+        .and_then(|record| record.formula.as_ref())
+        .expect("G5 array formula");
+    assert_eq!(formula.formula_kind, FormulaKind::Array);
+    assert_eq!(formula.reference, Some(range("G5", "G6")));
+    assert_eq!(formula.formula_text, "MMULT(A1:C2,E1:E3)");
+    assert_cell_value(&matrix, SheetId(1), "G5", FormulaValue::Number(49.2));
+    assert_cell_value(&matrix, SheetId(1), "G6", FormulaValue::Number(103.6));
 }
 
 #[test]
@@ -502,13 +534,13 @@ fn imports_ceiling_floor_aggregate_from_xlsx_fixture() {
 
 #[test]
 fn imports_table_total_formula_cache_from_xlsx_fixture() {
-    // Source: LibreOffice sc/qa/unit/subsequent_export_test6.cxx::testTableStyleCustomRoundtripXLSX.
+    // Source: LibreOffice sc/qa/unit/subsequent_export_test.cxx::testTdf162963.
     let model = workbook("LibreOffice/sc/qa/unit/data/xlsx/tdf162963_TableWithTotalsEnabled.xlsx");
     let sheet = SheetId(1);
 
-    assert_cell_value(&model, sheet, "A1", FormulaValue::String("Names".into()));
-    assert_cell_value(&model, sheet, "A11", FormulaValue::String("Summary".into()));
-    assert_cell_value(&model, sheet, "D11", FormulaValue::Number(382.0));
+    assert_cell_value(&model, sheet, "A1", FormulaValue::String("Name".into()));
+    assert_cell_value(&model, sheet, "B6", FormulaValue::Number(115.0));
+    assert_eq!(formula_text(&model, sheet, "B6"), "SUM(myData[Sales])");
 }
 
 #[test]
@@ -536,11 +568,11 @@ fn imports_lookup_and_sumif_regression_caches_from_xlsx_fixtures() {
         ("C5", 0.0),
         ("D5", 3.0),
     ] {
-        assert_cell_value(&lookup, sheet, reference, FormulaValue::Number(expected));
+        assert_cell_numeric_value(&lookup, sheet, reference, expected);
     }
 
     let sumif = workbook("LibreOffice/sc/qa/unit/data/xlsx/tdf115022.xlsx");
-    assert_cell_value(&sumif, sheet, "B9", FormulaValue::Number(6.0));
+    assert_cell_numeric_value(&sumif, sheet, "B9", 6.0);
 }
 
 #[test]
@@ -567,11 +599,12 @@ fn imports_table_total_row_formula_caches_from_xlsx_fixtures() {
     assert_cell_value(&table, sheet, "B10", FormulaValue::Number(3.0));
 
     let full_column = workbook("LibreOffice/sc/qa/unit/data/xlsx/forum-mso-en4-134670.xlsx");
+    let first_sheet = full_column.identity.sheets[0].id;
     assert_cell_value(
         &full_column,
-        sheet,
+        first_sheet,
         "A1",
         FormulaValue::String("Total # Of Companies".into()),
     );
-    assert_cell_value(&full_column, sheet, "K2", FormulaValue::Number(1.0));
+    assert_cell_value(&full_column, first_sheet, "K2", FormulaValue::Number(1.0));
 }

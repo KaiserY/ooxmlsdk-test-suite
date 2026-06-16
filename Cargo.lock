@@ -672,7 +672,7 @@ checksum = "d6790f58c7ff633d8771f42965289203411a5e5c68388703c06e14f24770b41e"
 
 [[package]]
 name = "ooxmlsdk"
-version = "0.10.2"
+version = "0.10.3"
 dependencies = [
  "ooxmlsdk-derive",
  "quick-xml",
@@ -703,7 +703,7 @@ dependencies = [
 
 [[package]]
 name = "ooxmlsdk-derive"
-version = "0.10.2"
+version = "0.10.3"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -712,7 +712,7 @@ dependencies = [
 
 [[package]]
 name = "ooxmlsdk-fonts"
-version = "0.10.2"
+version = "0.10.3"
 dependencies = [
  "fontdb",
  "icu_segmenter",
@@ -733,7 +733,7 @@ dependencies = [
 
 [[package]]
 name = "ooxmlsdk-formula"
-version = "0.10.2"
+version = "0.10.3"
 dependencies = [
  "encoding_rs",
  "icu_collator",
@@ -741,6 +741,7 @@ dependencies = [
  "icu_properties",
  "libm",
  "num-complex",
+ "num-integer",
  "ooxmlsdk",
  "regex",
  "rustfft",
@@ -760,7 +761,7 @@ dependencies = [
 
 [[package]]
 name = "ooxmlsdk-layout"
-version = "0.10.2"
+version = "0.10.3"
 dependencies = [
  "hypher",
  "icu_segmenter",
