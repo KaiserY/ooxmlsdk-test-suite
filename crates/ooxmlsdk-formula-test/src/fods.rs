@@ -780,6 +780,7 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
                         source: QualifiedRange {
                             sheet: SheetId(0),
                             sheet_name: None,
+                            end_sheet_name: None,
                             range: CellRange::new(CellAddress::default(), CellAddress::default()),
                             start_flags: AddressFlags::default(),
                             end_flags: AddressFlags::default(),
@@ -1316,6 +1317,7 @@ fn parse_fods_qualified_range(
     Some(QualifiedRange {
         sheet,
         sheet_name: Some(SheetName(Cow::Owned(sheet_name.to_string()))),
+        end_sheet_name: None,
         range,
         start_flags: AddressFlags::default(),
         end_flags: AddressFlags::default(),
