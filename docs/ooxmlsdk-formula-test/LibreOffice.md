@@ -93,6 +93,54 @@ The highest-value missing tests fall into these buckets:
 | 6 | Dynamic-array/spill edit lifecycle: blocker clearing, matrix master resize/growth, copy/undo/redo, and single-value operator edge cases. | `ucalc_formula2.cxx`, `subsequent_filters_test.cxx`, `subsequent_export_test2.cxx` | Import metadata is partly covered; edit-time behavior is blocked until the formula model exposes dynamic-array recalculation/edit state. |
 | 7 | ODS/XLS/XLSB fixture-backed formula import/export. | `subsequent_filters_test*.cxx`, `subsequent_export_test*.cxx` | Blocked on ODS/XLS/XLSB readers in this test-suite; keep FODS under the corpus runner. |
 
+## 2026-06-18 Dispatch Coverage Audit
+
+This audit compares the current `ooxmlsdk-formula` function dispatch surface
+against formula semantics exercised by `crates/ooxmlsdk-formula-test`. It is
+scoped to formula evaluation tests only. Import-only XML assertions and raw
+package checks are not counted as formula coverage.
+
+Coverage counting uses `FormulaFunctionId`, not raw function-name strings:
+LibreOffice FODS formulas often use prefixes such as `ORG.LIBREOFFICE.*`,
+while the evaluator resolves them to the same function id as the Excel-facing
+name. A function id is counted as covered when at least one registered alias is
+used by either a direct evaluator assertion or the LibreOffice FODS function
+corpus.
+
+| Metric | Count | Notes |
+| --- | ---: | --- |
+| Function ids with dispatch/context/evaluator entry | 293 | Extracted from `crates/ooxmlsdk-formula/src/function/dispatch.rs` and evaluator context modules. |
+| Function ids hit by direct evaluator assertions | 151 | Extracted from `tests/evaluation.rs` and formula-test helper code. |
+| Function ids hit by LibreOffice FODS formulas | 472 | Includes ids registered but not currently dispatched; those remain implementation gaps, not test gaps. |
+| Dispatched function ids hit by any formula-test path | 291 | Direct assertions plus FODS corpus after namespace-prefix normalization. |
+| Dispatched function ids with no current formula-test hit | 2 | Listed below. |
+
+Current any-path dispatch gaps:
+
+| Priority | Function id | Public names | Evidence | Action |
+| --- | --- | --- | --- | --- |
+| P0 | `ForecastDotEtsDotSeasonality` | `FORECAST.ETS.SEASONALITY` | Present in LibreOffice OOXML formula mapping and interpreter dispatch, but not present in copied FODS function formulas or POI formula tests. | Add an Excel/LO-backed evaluator assertion or a focused FODS/XLSX fixture before treating ETS seasonal detection as covered. |
+| P0 | `ForecastDotEtsDotStat` | `FORECAST.ETS.STAT`, `FORECAST.ETS.STAT.ADD` | Present in LibreOffice OOXML formula mapping and interpreter dispatch. Current FODS coverage exercises `FORECAST.ETS.STAT.MULT`, not additive `STAT`. | Add an Excel/LO-backed evaluator assertion or a focused FODS/XLSX fixture. |
+
+Important follow-up: `evaluation.rs` is the primary evaluator coverage table
+and currently hits only 151 of the 293 dispatched function ids. The remaining
+142 ids are direct evaluator test gaps even when the broad LibreOffice FODS
+corpus also exercises many of them. FODS remains a valuable corpus oracle, but
+it should not be treated as a substitute for explicit, readable evaluator
+assertions. Add small direct assertions for FODS-only functions, prioritizing
+high-risk behavior: date serials, criteria coercion, lookup modes, matrix
+returns, financial signs, text parsing, error propagation, and
+volatile/dynamic-array semantics.
+
+Historical check: implementation commit `854ae9e` still referenced about 475
+formula function ids across the evaluator/dispatch path. The direct evaluator
+refactor in `09cf9ac` reduced that count to about 261, and the current working
+tree has only partly recovered the surface. This is evidence that recent
+refactoring narrowed the function-id evaluator path. Treat the missing ids as a
+recovery backlog: verify each against the old commit plus LibreOffice/POI/Excel
+before restoring tests or behavior, because some old references may have been
+partial placeholders rather than complete Excel-compatible implementations.
+
 Only SpreadsheetML/Calc formula behavior belongs here: formula text, addresses,
 shared formulas, array/dynamic-array formulas, data tables, names, external
 references, cached results, recalculation state, dependency state, and function

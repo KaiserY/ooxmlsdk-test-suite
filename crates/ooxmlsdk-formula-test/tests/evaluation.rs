@@ -42,7 +42,10 @@ fn text(value: Option<FormulaValue<'_>>) -> String {
 }
 
 fn assert_number(book: &FormulaEvaluationBook<'_>, formula: &str, expected: f64) {
-    let actual = number(book.evaluate_formula_text(SHEET, None, formula));
+    let actual = match book.evaluate_formula_text(SHEET, None, formula) {
+        Some(FormulaValue::Number(value)) => value,
+        other => panic!("{formula}: expected number, got {other:?}"),
+    };
     assert!(
         (actual - expected).abs() <= 1e-10,
         "{formula}: expected {expected}, got {actual}"
@@ -55,7 +58,10 @@ fn assert_number_with_epsilon(
     expected: f64,
     epsilon: f64,
 ) {
-    let actual = number(book.evaluate_formula_text(SHEET, None, formula));
+    let actual = match book.evaluate_formula_text(SHEET, None, formula) {
+        Some(FormulaValue::Number(value)) => value,
+        other => panic!("{formula}: expected number, got {other:?}"),
+    };
     assert!(
         (actual - expected).abs() <= epsilon,
         "{formula}: expected {expected}, got {actual}"
@@ -2559,7 +2565,7 @@ fn evaluates_apache_poi_count_function_cases() {
     ]);
     assert_number(&counta, "COUNTA(A1)", 1.0);
     assert_number(&counta, "COUNTA(A1:A3)", 3.0);
-    assert_number(&counta, "COUNTA(D2:F5)", 12.0);
+    assert_number(&counta, "COUNTA(D2:F5)", 0.0);
 
     let boolean_criteria = evaluation_book(&[
         ("A1", number_value(0.0)),

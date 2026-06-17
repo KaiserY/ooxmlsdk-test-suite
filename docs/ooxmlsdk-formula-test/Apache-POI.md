@@ -161,3 +161,18 @@ High-value first groups:
    shared group metadata, cached values, array ranges, or evaluated results.
 5. When POI and LibreOffice disagree, document the disagreement in the Rust test
    source comment and prefer Excel/POI behavior only for POI-specific tests.
+
+## 2026-06-18 Formula Dispatch Gap Check
+
+Cross-checking current `ooxmlsdk-formula` dispatch ids against direct
+`evaluation.rs` assertions, the LibreOffice FODS corpus, and POI formula tests
+shows two any-path formula-test gaps that POI does not currently fill:
+
+| Priority | Function id | Public names | POI status | Follow-up |
+| --- | --- | --- | --- | --- |
+| P0 | `ForecastDotEtsDotSeasonality` | `FORECAST.ETS.SEASONALITY` | No matching POI formula test or fixture found in the local `../poi` checkout. | Add Excel/LibreOffice-backed focused formula assertions or fixture coverage. |
+| P0 | `ForecastDotEtsDotStat` | `FORECAST.ETS.STAT`, `FORECAST.ETS.STAT.ADD` | No matching POI formula test or fixture found in the local `../poi` checkout. | Add Excel/LibreOffice-backed focused formula assertions or fixture coverage. |
+
+This does not mean `evaluation.rs` is complete. Direct evaluator coverage is
+still incomplete and should be expanded from POI/LO/Excel evidence even when a
+function is already exercised indirectly by the FODS corpus.
