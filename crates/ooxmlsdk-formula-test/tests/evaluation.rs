@@ -3563,7 +3563,7 @@ fn evaluates_apache_poi_text_function_cases() {
     // poi/src/test/java/org/apache/poi/ss/formula/functions/TestClean.java,
     // TestCode.java, TestLen.java, TestLeftRight.java, TestMid.java,
     // TestSubstitute.java, TestTrim.java, TestFind.java, TestConcat.java,
-    // and TestText.java.
+    // TestText.java, and TestProperXSSF.java.
     let book = evaluation_book(&[]);
     for (formula, expected) in [
         ("CLEAN(CHAR(7)&\"text\"&CHAR(7))", "text"),
@@ -3614,6 +3614,40 @@ fn evaluates_apache_poi_text_function_cases() {
         ("TRIM(123456)", "123456"),
         ("TRIM(FALSE)", "FALSE"),
         ("TRIM(TRUE)", "TRUE"),
+        ("PROPER(\"hi there\")", "Hi There"),
+        ("PROPER(\"what's up\")", "What'S Up"),
+        ("PROPER(\"I DON'T TH!NK SO!\")", "I Don'T Th!Nk So!"),
+        (
+            "PROPER(\"dr\u{00DC}b\u{00F6}'\u{00E4} \u{00E9}lo\u{015F}|\u{00EB}\u{00E8} \")",
+            "Dr\u{00FC}b\u{00F6}'\u{00C4} \u{00C9}lo\u{015F}|\u{00CB}\u{00E8} ",
+        ),
+        ("PROPER(\"hi123 the123re\")", "Hi123 The123Re"),
+        ("PROPER(\"-\")", "-"),
+        ("PROPER(\"!\u{00A7}$\")", "!\u{00A7}$"),
+        ("PROPER(\"/&%\")", "/&%"),
+        ("PROPER(\"Apache POI\")", "Apache Poi"),
+        ("PROPER(\"  hello world\")", "  Hello World"),
+        ("PROPER(\"\")", ""),
+        ("PROPER(\"a\")", "A"),
+        ("PROPER(\"abc\")", "Abc"),
+        ("PROPER(\"abc abc\")", "Abc Abc"),
+        ("PROPER(\"abc/abc\")", "Abc/Abc"),
+        ("PROPER(\"ABC/ABC\")", "Abc/Abc"),
+        ("PROPER(\"aBc/ABC\")", "Abc/Abc"),
+        ("PROPER(\"aBc@#$%^&*()_+=-ABC\")", "Abc@#$%^&*()_+=-Abc"),
+        ("PROPER(\"aBc25aerg/ABC\")", "Abc25Aerg/Abc"),
+        (
+            "PROPER(\"aBc/\u{00C4}\u{00F6}\u{00DF}\u{00FC}/ABC\")",
+            "Abc/\u{00C4}\u{00F6}\u{00DF}\u{00FC}/Abc",
+        ),
+        ("PROPER(\"\u{00FC}\")", "\u{00DC}"),
+        ("PROPER(\"\u{00DC}\")", "\u{00DC}"),
+        ("PROPER(\"\u{00DF}\")", "SS"),
+        ("PROPER(\"\u{00DF}omesing\")", "SSomesing"),
+        (
+            "PROPER(\"aBc/\u{00FC}\u{00C4}\u{00F6}\u{00DF}\u{00FC}/ABC\")",
+            "Abc/\u{00DC}\u{00E4}\u{00F6}\u{00DF}\u{00FC}/Abc",
+        ),
         ("TEXT(\"abc\",\"abc\")", "abc"),
         ("TEXT(321321.321,\"#,###.00000\")", "321,321.32100"),
         ("TEXT(321.321,\"00000.00000\")", "00321.32100"),
@@ -3735,7 +3769,8 @@ fn evaluates_apache_poi_text_function_cases() {
 fn evaluates_apache_poi_lookup_reference_function_cases() {
     // Source: Apache POI
     // poi/src/test/java/org/apache/poi/ss/formula/functions/TestAddress.java,
-    // TestIndex.java, TestOffset.java, TestRowCol.java, and TestMatch.java.
+    // TestAreas.java, TestIndex.java, TestOffset.java, TestRowCol.java,
+    // TestMatch.java, and TestIndirect.java.
     let book = evaluation_book(&[]);
     for (formula, expected) in [
         ("ADDRESS(1,2)", "$B$1"),
@@ -3755,6 +3790,16 @@ fn evaluates_apache_poi_lookup_reference_function_cases() {
         ),
     ] {
         assert_text(&book, formula, expected);
+    }
+
+    for (formula, expected) in [
+        ("AREAS(B1)", 1.0),
+        ("AREAS(B2:D4)", 1.0),
+        ("AREAS((B2:D4,E5,F6:I9))", 3.0),
+        ("AREAS((B2:D4,E5,C3,E4))", 4.0),
+        ("AREAS((I9))", 1.0),
+    ] {
+        assert_number(&book, formula, expected);
     }
 
     let grid = evaluation_book(&[
@@ -3795,6 +3840,137 @@ fn evaluates_apache_poi_lookup_reference_function_cases() {
     assert_number(&grid, "ROWS(A1:B3)", 3.0);
     assert_number(&grid, "ROWS(A1:A6)", 6.0);
     assert_number(&grid, "ROWS(C5)", 1.0);
+
+    let sheet1 = SHEET;
+    let sheet2 = SheetId(2);
+    let sales = SheetId(3);
+    let indirect = FormulaEvaluationBook {
+        sheet_names: vec![
+            SheetBinding {
+                id: sheet1,
+                name: Cow::Borrowed("Sheet1"),
+            },
+            SheetBinding {
+                id: sheet2,
+                name: Cow::Borrowed("Sheet2"),
+            },
+            SheetBinding {
+                id: sales,
+                name: Cow::Borrowed("John's sales"),
+            },
+        ],
+        cells: BTreeMap::from([
+            ((sheet1, address("A1")), number_value(11.0)),
+            ((sheet1, address("B1")), number_value(12.0)),
+            ((sheet1, address("C1")), number_value(13.0)),
+            ((sheet1, address("D1")), number_value(14.0)),
+            ((sheet1, address("A2")), number_value(21.0)),
+            ((sheet1, address("B2")), number_value(22.0)),
+            ((sheet1, address("C2")), number_value(23.0)),
+            ((sheet1, address("D2")), number_value(24.0)),
+            ((sheet1, address("A3")), number_value(31.0)),
+            ((sheet1, address("B3")), number_value(32.0)),
+            ((sheet1, address("C3")), number_value(33.0)),
+            ((sheet1, address("D3")), number_value(34.0)),
+            ((sheet1, address("A4")), string("sales1")),
+            ((sheet1, address("B4")), string("sales2")),
+            ((sheet2, address("A1")), number_value(50.0)),
+            ((sheet2, address("B1")), number_value(55.0)),
+            ((sheet2, address("C1")), number_value(60.0)),
+            ((sheet2, address("D1")), number_value(65.0)),
+            ((sheet2, address("A2")), number_value(51.0)),
+            ((sheet2, address("B2")), number_value(56.0)),
+            ((sheet2, address("C2")), number_value(61.0)),
+            ((sheet2, address("D2")), number_value(66.0)),
+            ((sheet2, address("A3")), number_value(52.0)),
+            ((sheet2, address("B3")), number_value(57.0)),
+            ((sheet2, address("C3")), number_value(62.0)),
+            ((sheet2, address("D3")), number_value(67.0)),
+            ((sales, address("A1")), number_value(30.0)),
+            ((sales, address("B1")), number_value(31.0)),
+            ((sales, address("C1")), number_value(32.0)),
+        ]),
+        defined_names: BTreeMap::from([
+            (
+                DefinedNameKey {
+                    sheet: None,
+                    name_upper: "SALES1".to_string(),
+                },
+                Cow::Borrowed("Sheet1!A1:D1"),
+            ),
+            (
+                DefinedNameKey {
+                    sheet: None,
+                    name_upper: "SALES2".to_string(),
+                },
+                Cow::Borrowed("Sheet2!B1:C3"),
+            ),
+        ]),
+        ..FormulaEvaluationBook::default()
+    };
+
+    for (formula, expected) in [
+        ("INDIRECT(\"C2\")", 23.0),
+        ("INDIRECT(\"c2\")", 23.0),
+        ("INDIRECT(\"C2\", TRUE)", 23.0),
+        ("INDIRECT(\"$C2\")", 23.0),
+        ("INDIRECT(\"C$2\")", 23.0),
+        ("SUM(INDIRECT(\"Sheet2!B1:C3\"))", 351.0),
+        ("SUM(INDIRECT(\"Sheet2!b1:c3\"))", 351.0),
+        ("SUM(INDIRECT(\"Sheet2! B1 : C3 \"))", 351.0),
+        ("SUM(INDIRECT(\"'John''s sales'!A1:C1\"))", 93.0),
+        ("INDIRECT(\"'Sheet1'!B3\")", 32.0),
+        ("INDIRECT(\"sHeet1!B3\")", 32.0),
+        ("INDIRECT(\" D3 \")", 34.0),
+        ("INDIRECT(\"Sheet1! D3 \")", 34.0),
+        ("INDIRECT(\"A1\", TRUE)", 11.0),
+        ("SUM(INDIRECT(A4))", 50.0),
+        ("SUM(INDIRECT(B4))", 351.0),
+        ("INDIRECT(\"R1C1\", FALSE)", 11.0),
+        ("INDIRECT(\"R1C4\", FALSE)", 14.0),
+        ("INDIRECT(\"R2C3\", FALSE)", 23.0),
+        ("INDIRECT(\"r2c3\", FALSE)", 23.0),
+        ("SUM(INDIRECT(\"Sheet2!R1C2:R3C3\", FALSE))", 351.0),
+        ("SUM(INDIRECT(\"Sheet2!r1c2:r3c3\", FALSE))", 351.0),
+        ("SUM(INDIRECT(\"Sheet2! R1C2 : R3C3 \", FALSE))", 351.0),
+    ] {
+        assert_number(&indirect, formula, expected);
+    }
+    assert_number_at(&indirect, "C4", "INDIRECT(\"A1:G1\")", 13.0);
+    assert_number_at(&indirect, "C4", "INDIRECT(\"R1C1:R1C7\", FALSE)", 13.0);
+    assert_number_at(&indirect, "C4", "INDIRECT(\"r1c1:r1c7\", FALSE)", 13.0);
+
+    for (formula, expected) in [
+        ("INDIRECT(\"C\")", FormulaErrorValue::Ref),
+        ("INDIRECT(\"4\")", FormulaErrorValue::Ref),
+        ("INDIRECT(#DIV/0!)", FormulaErrorValue::Div0),
+        ("INDIRECT(#NAME?, \"x\")", FormulaErrorValue::Name),
+        ("INDIRECT(#NUM!, #N/A)", FormulaErrorValue::Num),
+        ("INDIRECT(\"garbage\", #N/A)", FormulaErrorValue::NA),
+        ("INDIRECT(\"garbage\", \"\")", FormulaErrorValue::Value),
+        ("INDIRECT(\"garbage\", \"flase\")", FormulaErrorValue::Value),
+        ("INDIRECT(\"'Sheet1 '!D3\")", FormulaErrorValue::Ref),
+        ("INDIRECT(\" Sheet1!D3\")", FormulaErrorValue::Ref),
+        ("INDIRECT(\"'Sheet1' !D3\")", FormulaErrorValue::Ref),
+        (
+            "SUM(INDIRECT(\"'John's sales'!A1:C1\"))",
+            FormulaErrorValue::Ref,
+        ),
+        ("INDIRECT(\"[Book1]Sheet1!A1\")", FormulaErrorValue::Ref),
+        ("INDIRECT(\"Sheet3!A1\")", FormulaErrorValue::Ref),
+        ("INDIRECT(\"Sheet1!A 1\")", FormulaErrorValue::Ref),
+        (
+            "INDIRECT(\"'Sheet1 '!R3C4\", FALSE)",
+            FormulaErrorValue::Ref,
+        ),
+        ("INDIRECT(\"R2CX\", FALSE)", FormulaErrorValue::Ref),
+    ] {
+        assert_eq!(
+            indirect.evaluate_formula_text(sheet1, None, formula),
+            Some(FormulaValue::Error(expected)),
+            "{formula}"
+        );
+    }
 
     let numbers = evaluation_book(&[
         ("A1", number_value(4.0)),
