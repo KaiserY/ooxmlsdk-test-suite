@@ -78,6 +78,20 @@ fn formula_text<'a>(model: &'a WorkbookValueModel<'a>, sheet: SheetId, reference
         .unwrap_or_else(|| panic!("formula {reference} not found"))
 }
 
+fn formula_text_opt<'a>(
+    model: &'a WorkbookValueModel<'a>,
+    sheet: SheetId,
+    reference: &str,
+) -> Option<&'a str> {
+    model
+        .sheets
+        .iter()
+        .find(|item| item.id == sheet)
+        .and_then(|sheet| sheet.cells.get(&address(reference)))
+        .and_then(|record| record.formula.as_ref())
+        .map(|formula| formula.formula_text.as_ref())
+}
+
 fn display_text<'a>(model: &'a WorkbookValueModel<'a>, sheet: SheetId, reference: &str) -> &'a str {
     model
         .sheets
@@ -120,6 +134,560 @@ fn assert_cell_numeric_value(
         value => panic!("{reference}: non-numeric value {value:?}"),
     };
     assert_eq!(actual, expected, "{reference}");
+}
+
+fn column_name(mut column: u32) -> String {
+    let mut name = Vec::new();
+    loop {
+        let rem = column % 26;
+        name.push((b'A' + rem as u8) as char);
+        column /= 26;
+        if column == 0 {
+            break;
+        }
+        column -= 1;
+    }
+    name.iter().rev().collect()
+}
+
+fn cell_value_opt<'a>(
+    model: &'a WorkbookValueModel<'a>,
+    sheet: SheetId,
+    reference: &str,
+) -> Option<FormulaValue<'a>> {
+    model
+        .sheets
+        .iter()
+        .find(|item| item.id == sheet)
+        .and_then(|sheet| sheet.cells.get(&address(reference)))
+        .map(|record| {
+            record
+                .formula
+                .as_ref()
+                .and_then(|formula| {
+                    formula
+                        .evaluated_value
+                        .clone()
+                        .or_else(|| formula.cached_value.clone())
+                })
+                .unwrap_or_else(|| record.raw_value.clone())
+        })
+}
+
+fn evaluated_formula_value<'a>(
+    model: &'a WorkbookValueModel<'a>,
+    sheet: SheetId,
+    reference: &str,
+) -> Option<FormulaValue<'a>> {
+    model
+        .sheets
+        .iter()
+        .find(|item| item.id == sheet)
+        .and_then(|sheet| sheet.cells.get(&address(reference)))
+        .and_then(|record| record.formula.as_ref())
+        .and_then(|formula| formula.evaluated_value.clone())
+}
+
+fn assert_poi_formula_value_matches(
+    actual: Option<FormulaValue<'_>>,
+    expected: FormulaValue<'_>,
+    context: &str,
+) {
+    match (actual, expected) {
+        (Some(FormulaValue::Number(actual)), FormulaValue::Number(expected)) => assert!(
+            (actual - expected).abs() <= 1e-8,
+            "{context}: expected {expected}, got {actual}"
+        ),
+        (Some(FormulaValue::Boolean(actual)), FormulaValue::Boolean(expected)) => {
+            assert_eq!(actual, expected, "{context}")
+        }
+        (Some(FormulaValue::String(actual)), FormulaValue::String(expected)) => {
+            assert_eq!(actual, expected, "{context}")
+        }
+        (Some(FormulaValue::Blank), FormulaValue::Blank) => {}
+        (Some(FormulaValue::Error(_)), FormulaValue::Error(_)) => {}
+        (actual, expected) => panic!("{context}: expected {expected:?}, got {actual:?}"),
+    }
+}
+
+#[test]
+fn imports_apache_poi_xlookup_fixture_cached_and_recalculated_values() {
+    // Source: Apache POI
+    // poi-ooxml/src/test/java/org/apache/poi/xssf/TestXSSFXLookupFunction.java::testXLookupFile.
+    let model = workbook("Apache-POI/test-data/spreadsheet/xlookup.xlsx");
+    let sheet = sheet_id(&model, "Sheet1");
+    assert_eq!(
+        cell_value(&model, sheet, "C2"),
+        FormulaValue::String("Dianne Pugh".into())
+    );
+    assert_eq!(
+        cell_value(&model, sheet, "D2"),
+        FormulaValue::String("Finance".into())
+    );
+
+    let recalculated = recalculated_workbook("Apache-POI/test-data/spreadsheet/xlookup.xlsx");
+    let sheet = sheet_id(&recalculated, "Sheet1");
+    assert_eq!(
+        cell_value(&recalculated, sheet, "C2"),
+        FormulaValue::String("Dianne Pugh".into())
+    );
+    assert_eq!(
+        cell_value(&recalculated, sheet, "D2"),
+        FormulaValue::String("Finance".into())
+    );
+}
+
+#[test]
+fn evaluates_apache_poi_xssf_shared_formula_fixtures() {
+    // Source: Apache POI
+    // poi-ooxml/src/test/java/org/apache/poi/xssf/usermodel/TestXSSFFormulaEvaluation.java
+    // testSharedFormulas_evaluateInCell and testEvaluateColumnGreaterThan255.
+    let shared = workbook("Apache-POI/test-data/spreadsheet/49872.xlsx");
+    let sheet = SheetId(1);
+    assert_eq!(formula_text(&shared, sheet, "B3"), "B1+B2");
+    assert_eq!(formula_text(&shared, sheet, "C3"), "C1+C2");
+    assert_eq!(formula_text(&shared, sheet, "D3"), "D1+D2");
+    assert_cell_numeric_value(&shared, sheet, "B3", 3.0);
+    assert_cell_numeric_value(&shared, sheet, "C3", 3.0);
+    assert_cell_numeric_value(&shared, sheet, "D3", 3.0);
+
+    let recalculated_shared = recalculated_workbook("Apache-POI/test-data/spreadsheet/49872.xlsx");
+    assert_poi_formula_value_matches(
+        evaluated_formula_value(&recalculated_shared, sheet, "B3"),
+        FormulaValue::Number(3.0),
+        "49872.xlsx B3",
+    );
+    assert_poi_formula_value_matches(
+        evaluated_formula_value(&recalculated_shared, sheet, "C3"),
+        FormulaValue::Number(3.0),
+        "49872.xlsx C3",
+    );
+    assert_poi_formula_value_matches(
+        evaluated_formula_value(&recalculated_shared, sheet, "D3"),
+        FormulaValue::Number(3.0),
+        "49872.xlsx D3",
+    );
+
+    let columns = workbook("Apache-POI/test-data/spreadsheet/50096.xlsx");
+    for column in 245_u32..265 {
+        let value_ref = format!("{}1", column_name(column));
+        let formula_ref = format!("{}2", column_name(column));
+        assert_eq!(
+            formula_text(&columns, sheet, &formula_ref),
+            value_ref,
+            "{formula_ref}"
+        );
+        assert_eq!(
+            cell_value(&columns, sheet, &formula_ref),
+            cell_value(&columns, sheet, &value_ref),
+            "{formula_ref}"
+        );
+    }
+
+    let recalculated_columns = recalculated_workbook("Apache-POI/test-data/spreadsheet/50096.xlsx");
+    for column in 245_u32..265 {
+        let value_ref = format!("{}1", column_name(column));
+        let formula_ref = format!("{}2", column_name(column));
+        let expected = cell_value(&recalculated_columns, sheet, &value_ref);
+        assert_poi_formula_value_matches(
+            evaluated_formula_value(&recalculated_columns, sheet, &formula_ref),
+            expected,
+            &format!("50096.xlsx {formula_ref}"),
+        );
+    }
+}
+
+#[test]
+fn evaluates_apache_poi_xssf_multisheet_reference_fixture() {
+    // Source: Apache POI
+    // poi-ooxml/src/test/java/org/apache/poi/xssf/usermodel/TestXSSFFormulaEvaluation.java
+    // testMultiSheetReferencesHSSFandXSSF and testMultiSheetAreasHSSFandXSSF.
+    let model = workbook("Apache-POI/test-data/spreadsheet/55906-MultiSheetRefs.xlsx");
+    let sheet = SheetId(1);
+    for (reference, formula, expected) in [
+        ("A3", "SUM(Sheet1:Sheet3!A1)", 66.0),
+        ("B3", "AVERAGE(Sheet1:Sheet3!A1)", 22.0),
+        ("B4", "MIN(Sheet1:Sheet3!A$1)", 11.0),
+        ("B5", "MAX(Sheet1:Sheet3!A$1)", 33.0),
+        ("B6", "COUNT(Sheet1:Sheet3!A$1)", 3.0),
+        ("C3", "COUNTA(Sheet1:Sheet3!C1)", 3.0),
+        ("D3", "COUNTA(Sheet1:Sheet3!D1)", 0.0),
+        ("E3", "COUNTA(Sheet1:Sheet3!E1)", 3.0),
+        ("H3", "SUM(Sheet1:Sheet3!A1:B2)", 110.0),
+        ("I3", "AVERAGE(Sheet1:Sheet3!A1:B2)", 27.5),
+        ("I4", "MIN(Sheet1:Sheet3!A$1:B$2)", 11.0),
+        ("I5", "MAX(Sheet1:Sheet3!A$1:B$2)", 44.0),
+        ("I6", "COUNT(Sheet1:Sheet3!$A$1:$B$2)", 4.0),
+    ] {
+        assert_eq!(
+            formula_text(&model, sheet, reference),
+            formula,
+            "{reference}"
+        );
+        assert_cell_numeric_value(&model, sheet, reference, expected);
+    }
+
+    let recalculated =
+        recalculated_workbook("Apache-POI/test-data/spreadsheet/55906-MultiSheetRefs.xlsx");
+    for (reference, expected) in [
+        ("A3", 66.0),
+        ("B3", 22.0),
+        ("B4", 11.0),
+        ("B5", 33.0),
+        ("B6", 3.0),
+        ("C3", 3.0),
+        ("D3", 0.0),
+        ("E3", 3.0),
+        ("H3", 110.0),
+        ("I3", 27.5),
+        ("I4", 11.0),
+        ("I5", 44.0),
+        ("I6", 4.0),
+    ] {
+        assert_poi_formula_value_matches(
+            evaluated_formula_value(&recalculated, sheet, reference),
+            FormulaValue::Number(expected),
+            &format!("55906-MultiSheetRefs.xlsx {reference}"),
+        );
+    }
+}
+
+#[test]
+fn evaluates_apache_poi_xssf_formula_evaluation_regression_fixtures() {
+    // Source: Apache POI
+    // poi-ooxml/src/test/java/org/apache/poi/xssf/usermodel/TestXSSFFormulaEvaluation.java
+    // test59736, testBug61468, testBug61495, testBug62834, testBug63934,
+    // and testBug60848_sumproductWithUnaryMinusArray.
+    let cached_59736 = workbook("Apache-POI/test-data/spreadsheet/59736.xlsx");
+    let sheet = SheetId(1);
+    assert_cell_numeric_value(&cached_59736, sheet, "A1", 1.0);
+    let recalculated_59736 = recalculated_workbook("Apache-POI/test-data/spreadsheet/59736.xlsx");
+    assert_poi_formula_value_matches(
+        evaluated_formula_value(&recalculated_59736, sheet, "A2"),
+        FormulaValue::Number(1.0),
+        "59736.xlsx A2",
+    );
+    assert_poi_formula_value_matches(
+        evaluated_formula_value(&recalculated_59736, sheet, "A3"),
+        FormulaValue::Number(1.0),
+        "59736.xlsx A3",
+    );
+
+    let budget = workbook("Apache-POI/test-data/spreadsheet/simple-monthly-budget.xlsx");
+    assert_cell_numeric_value(&budget, sheet, "E9", 3750.0);
+    let recalculated_budget =
+        recalculated_workbook("Apache-POI/test-data/spreadsheet/simple-monthly-budget.xlsx");
+    assert_poi_formula_value_matches(
+        evaluated_formula_value(&recalculated_budget, sheet, "E9"),
+        FormulaValue::Number(3750.0),
+        "simple-monthly-budget.xlsx E9",
+    );
+
+    let recalculated_62834 = recalculated_workbook("Apache-POI/test-data/spreadsheet/62834.xlsx");
+    assert_poi_formula_value_matches(
+        evaluated_formula_value(&recalculated_62834, sheet, "A2"),
+        FormulaValue::String("a value".into()),
+        "62834.xlsx A2",
+    );
+    assert_poi_formula_value_matches(
+        evaluated_formula_value(&recalculated_62834, sheet, "A3"),
+        FormulaValue::String("a value".into()),
+        "62834.xlsx A3",
+    );
+    assert_poi_formula_value_matches(
+        evaluated_formula_value(&recalculated_62834, sheet, "A5"),
+        FormulaValue::String("another value".into()),
+        "62834.xlsx A5",
+    );
+
+    let recalculated_63934 = recalculated_workbook("Apache-POI/test-data/spreadsheet/63934.xlsx");
+    assert_poi_formula_value_matches(
+        evaluated_formula_value(&recalculated_63934, sheet, "B2"),
+        FormulaValue::String("Male".into()),
+        "63934.xlsx B2",
+    );
+
+    let formatting = workbook("Apache-POI/test-data/spreadsheet/61495-test.xlsm");
+    assert_eq!(
+        formula_text(&formatting, sheet, "B1"),
+        "IF(TEST!A1=\"\",\"\",CONCATENATE(\"D\",\" \",TEXT(TEST!A1,\"00.00\")))"
+    );
+    assert_eq!(
+        formula_text(&formatting, sheet, "B2"),
+        "IF(TEST!A2=\"\",\"\",CONCATENATE(\"D\",\" \",TEXT(TEST!A2,\"00,00\")))"
+    );
+    let recalculated_formatting =
+        recalculated_workbook("Apache-POI/test-data/spreadsheet/61495-test.xlsm");
+    assert_poi_formula_value_matches(
+        evaluated_formula_value(&recalculated_formatting, sheet, "B1"),
+        FormulaValue::String("D 67.10".into()),
+        "61495-test.xlsm B1",
+    );
+    assert_poi_formula_value_matches(
+        evaluated_formula_value(&recalculated_formatting, sheet, "B2"),
+        FormulaValue::String("D 0,068".into()),
+        "61495-test.xlsm B2",
+    );
+
+    let sumproduct = recalculated_workbook(
+        "Apache-POI/test-data/spreadsheet/bug60848_sumproduct_unary_minus.xlsx",
+    );
+    assert_poi_formula_value_matches(
+        evaluated_formula_value(&sumproduct, sheet, "A3"),
+        FormulaValue::Number(0.0),
+        "bug60848_sumproduct_unary_minus.xlsx A3",
+    );
+}
+
+#[test]
+fn imports_apache_poi_external_reference_formula_fixture() {
+    // Source: Apache POI
+    // poi-ooxml/src/test/java/org/apache/poi/xssf/usermodel/TestXSSFFormulaEvaluation.java
+    // testReferencesToOtherWorkbooks. The POI Java API exception/linking
+    // assertions are intentionally omitted; this keeps only formula text and
+    // value behavior.
+    let model = workbook("Apache-POI/test-data/spreadsheet/ref2-56737.xlsx");
+    let sheet = SheetId(1);
+    for (reference, formula, expected) in [
+        (
+            "E3",
+            "'56737.xlsx'#$Uses.$A$1",
+            FormulaValue::String("Hello!".into()),
+        ),
+        (
+            "G3",
+            "'56737.xlsx'#$Defines.NR_To_A1",
+            FormulaValue::String("Test A1".into()),
+        ),
+        (
+            "I3",
+            "'56737.xlsx'#$.NR_Global_B2",
+            FormulaValue::Number(142.0),
+        ),
+        (
+            "E5",
+            "'56737.xls'#$Uses.$C$1",
+            FormulaValue::String("Hello!".into()),
+        ),
+        (
+            "G5",
+            "'56737.xls'#$Defines.NR_To_A1",
+            FormulaValue::String("Test A1".into()),
+        ),
+        (
+            "I5",
+            "'56737.xls'#$.NR_Global_B2",
+            FormulaValue::Number(142.0),
+        ),
+    ] {
+        assert_eq!(
+            formula_text(&model, sheet, reference),
+            formula,
+            "{reference}"
+        );
+        assert_eq!(
+            cell_value(&model, sheet, reference),
+            expected,
+            "{reference}"
+        );
+    }
+
+    let recalculated = recalculated_workbook("Apache-POI/test-data/spreadsheet/ref2-56737.xlsx");
+    for (reference, expected) in [
+        ("E3", FormulaValue::String("Hello!".into())),
+        ("G3", FormulaValue::String("Test A1".into())),
+        ("I3", FormulaValue::Number(142.0)),
+        ("E5", FormulaValue::String("Hello!".into())),
+        ("G5", FormulaValue::String("Test A1".into())),
+        ("I5", FormulaValue::Number(142.0)),
+    ] {
+        assert_poi_formula_value_matches(
+            evaluated_formula_value(&recalculated, sheet, reference),
+            expected,
+            &format!("ref2-56737.xlsx {reference}"),
+        );
+    }
+}
+
+#[test]
+fn evaluates_apache_poi_structured_reference_formula_fixture() {
+    // Source: Apache POI
+    // poi-ooxml/src/test/java/org/apache/poi/xssf/usermodel/TestXSSFFormulaEvaluation.java
+    // verifyAllFormulasInWorkbookCanBeEvaluated for
+    // evaluate_formula_with_structured_table_references.xlsx.
+    let model = workbook(
+        "Apache-POI/test-data/spreadsheet/evaluate_formula_with_structured_table_references.xlsx",
+    );
+    let sheet = sheet_id(&model, "Tabelle1");
+    assert_eq!(formula_text(&model, sheet, "C3"), "SUM(Table1[[A]:[B]])");
+    assert_cell_numeric_value(&model, sheet, "C3", 10.0);
+
+    let recalculated = recalculated_workbook(
+        "Apache-POI/test-data/spreadsheet/evaluate_formula_with_structured_table_references.xlsx",
+    );
+    assert_poi_formula_value_matches(
+        evaluated_formula_value(&recalculated, sheet, "C3"),
+        FormulaValue::Number(10.0),
+        "evaluate_formula_with_structured_table_references.xlsx C3",
+    );
+}
+
+#[test]
+fn evaluates_apache_poi_formula_eval_test_data_copy_fixture() {
+    // Source: Apache POI
+    // poi-ooxml/src/test/java/org/apache/poi/xssf/usermodel/TestFormulaEvaluatorOnXSSF.java.
+    let mut model = workbook("Apache-POI/test-data/spreadsheet/FormulaEvalTestData_Copy.xlsx");
+    model.evaluate_supported_formulas();
+    let sheet = sheet_id(&model, "EverythingTests");
+    let sheet_model = model
+        .sheets
+        .iter()
+        .find(|item| item.id == sheet)
+        .expect("EverythingTests sheet");
+
+    let mut checked = 0usize;
+    for start_row in [22_u32, 95_u32] {
+        let mut row = start_row;
+        loop {
+            let function_name_ref = format!("B{}", row + 1);
+            let Some(FormulaValue::String(function_name)) =
+                cell_value_opt(&model, sheet, &function_name_ref)
+            else {
+                row += 4;
+                continue;
+            };
+            if function_name == "<END-OF-FUNCTIONS>" {
+                break;
+            }
+            if function_name.eq_ignore_ascii_case("DOLLAR") {
+                row += 4;
+                continue;
+            }
+
+            let mut formula_columns = sheet_model
+                .cells
+                .iter()
+                .filter_map(|(address, record)| {
+                    (address.row == row && address.column >= 3 && record.formula.is_some())
+                        .then_some(address.column)
+                })
+                .collect::<Vec<_>>();
+            formula_columns.sort_unstable();
+
+            for column in formula_columns {
+                let reference = format!("{}{}", column_name(column), row + 1);
+                let formula = formula_text(&model, sheet, &reference);
+                if formula == "COLUMN(1:2)"
+                    || formula == "ROW(2:3)"
+                    || formula == "ISREF(currentcell())"
+                {
+                    continue;
+                }
+                let expected_ref = format!("{}{}", column_name(column), row + 2);
+                let expected = cell_value_opt(&model, sheet, &expected_ref)
+                    .unwrap_or_else(|| panic!("{expected_ref}: missing expected value"));
+                let context = format!("{function_name} {reference}={formula}");
+                assert_poi_formula_value_matches(
+                    evaluated_formula_value(&model, sheet, &reference),
+                    expected,
+                    &context,
+                );
+                checked += 1;
+            }
+
+            row += 4;
+        }
+    }
+    assert!(checked > 1000, "expected broad POI formula coverage");
+}
+
+#[test]
+fn evaluates_apache_poi_matrix_formula_eval_fixture() {
+    // Source: Apache POI
+    // poi-ooxml/src/test/java/org/apache/poi/xssf/usermodel/TestMatrixFormulasFromXMLSpreadsheet.java.
+    let mut model = workbook("Apache-POI/test-data/spreadsheet/MatrixFormulaEvalTestData.xlsx");
+    model.evaluate_supported_formulas();
+    let sheet = SheetId(1);
+
+    let mut checked = 0usize;
+    let mut row = 1_u32;
+    loop {
+        let function_name_ref = format!("A{}", row + 1);
+        let Some(FormulaValue::String(function_name)) =
+            cell_value_opt(&model, sheet, &function_name_ref)
+        else {
+            panic!("{function_name_ref}: missing matrix formula test name");
+        };
+        if function_name == "<END>" {
+            break;
+        }
+
+        for formula_row in row..row + 3 {
+            for column in 7_u32..10 {
+                let reference = format!("{}{}", column_name(column), formula_row + 1);
+                let Some(formula) = formula_text_opt(&model, sheet, &reference) else {
+                    continue;
+                };
+                let expected_ref = format!("{}{}", column_name(column + 3), formula_row + 1);
+                let expected = cell_value_opt(&model, sheet, &expected_ref)
+                    .unwrap_or_else(|| panic!("{expected_ref}: missing expected value"));
+                let context = format!("{function_name} {reference}={formula}");
+                assert_poi_formula_value_matches(
+                    evaluated_formula_value(&model, sheet, &reference),
+                    expected,
+                    &context,
+                );
+                checked += 1;
+            }
+        }
+
+        row += 4;
+    }
+    assert!(checked > 20, "expected matrix formula coverage");
+}
+
+#[test]
+fn evaluates_apache_poi_formula_sheet_range_fixture() {
+    // Source: Apache POI
+    // poi-ooxml/src/test/java/org/apache/poi/xssf/usermodel/TestMultiSheetFormulaEvaluatorOnXSSF.java.
+    let mut model = workbook("Apache-POI/test-data/spreadsheet/FormulaSheetRange.xlsx");
+    model.evaluate_supported_formulas();
+    let sheet = sheet_id(&model, "test");
+
+    let mut checked = 0usize;
+    let mut row = 10_u32;
+    loop {
+        let function_name_ref = format!("A{}", row + 1);
+        let Some(FormulaValue::String(function_name)) =
+            cell_value_opt(&model, sheet, &function_name_ref)
+        else {
+            row += 1;
+            continue;
+        };
+        if function_name == "<END>" {
+            break;
+        }
+        let test_name = match cell_value_opt(&model, sheet, &format!("B{}", row + 1)) {
+            Some(FormulaValue::String(value)) => value.into_owned(),
+            _ => String::new(),
+        };
+        let reference = format!("D{}", row + 1);
+        let expected_ref = format!("C{}", row + 1);
+        let expected = cell_value_opt(&model, sheet, &expected_ref)
+            .unwrap_or_else(|| panic!("{expected_ref}: missing expected value"));
+        let context = format!(
+            "{function_name} {test_name} {reference}={}",
+            formula_text(&model, sheet, &reference)
+        );
+        assert_poi_formula_value_matches(
+            evaluated_formula_value(&model, sheet, &reference),
+            expected,
+            &context,
+        );
+        checked += 1;
+        row += 1;
+    }
+    assert!(checked > 1, "expected sheet-range formula coverage");
 }
 
 #[test]
