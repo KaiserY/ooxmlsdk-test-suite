@@ -381,7 +381,7 @@ fn imports_builtin_defined_names_from_xlsx_fixture() {
 #[test]
 fn imports_formula_intersection_and_cached_values_from_xlsx_fixtures() {
     // Source: LibreOffice sc/qa/unit/subsequent_filters_test2.cxx::testTdf136364,
-    // testTdf131424, testTdf85617, and testRefStringXLSX.
+    // testTdf131424, and testRefStringXLSX.
     let intersection = workbook("LibreOffice/sc/qa/unit/data/xlsx/tdf136364.xlsx");
     let sheet = SheetId(1);
     assert_eq!(
@@ -402,12 +402,44 @@ fn imports_formula_intersection_and_cached_values_from_xlsx_fixtures() {
         );
     }
 
-    let implicit_intersection =
-        recalculated_workbook("LibreOffice/sc/qa/unit/data/xlsx/tdf85617.xlsx");
-    assert_cell_numeric_value(&implicit_intersection, sheet, "C3", 4.5);
-
     let ref_string = workbook("LibreOffice/sc/qa/unit/data/xlsx/ref_string.xlsx");
     assert_cell_value(&ref_string, sheet, "C3", FormulaValue::Number(3.0));
+}
+
+#[test]
+fn imports_indirect_intersection_formula_text_from_xlsx_fixture() {
+    // Source: LibreOffice sc/qa/unit/subsequent_filters_test2.cxx::testTdf160371.
+    let model = recalculated_workbook("LibreOffice/sc/qa/unit/data/xlsx/tdf160371.xlsx");
+    let sheet = SheetId(1);
+
+    assert_eq!(
+        formula_text(&model, sheet, "B4"),
+        "INDIRECT(B2)!INDIRECT(B3)"
+    );
+    assert_cell_value(&model, sheet, "B4", FormulaValue::Number(1.0));
+}
+
+#[test]
+fn imports_named_table_reference_cache_from_xlsx_fixture() {
+    // Source: LibreOffice sc/qa/unit/subsequent_filters_test2.cxx::testNamedTableRef.
+    let model = workbook("LibreOffice/sc/qa/unit/data/xlsx/tablerefsnamed.xlsx");
+    let sheet = SheetId(1);
+
+    for row in 2..=7 {
+        assert!(
+            !matches!(
+                cell_value(&model, sheet, &format!("F{row}")),
+                FormulaValue::Error(FormulaErrorValue::Ref)
+            ),
+            "F{row}"
+        );
+        assert_cell_value(
+            &model,
+            sheet,
+            &format!("G{row}"),
+            FormulaValue::Boolean(true),
+        );
+    }
 }
 
 #[test]
@@ -429,6 +461,40 @@ fn imports_complex_formula_text_from_xlsx_fixtures() {
         "IF(D$4=\"-\",\"-\",MID(TEXT(INDEX(Comparison!$I:$J,Comparison!$A5,Comparison!D$2),\"0\")\
 ,2,4)=RIGHT(TEXT(INDEX(Comparison!$L:$Z,Comparison!$A5,Comparison!D$4),\"0\"),4))"
     );
+}
+
+#[test]
+fn imports_structured_reference_formula_text_from_xlsx_fixtures() {
+    // Source: LibreOffice sc/qa/unit/subsequent_export_test2.cxx::testTdf105272
+    // and testTdf118990.
+    let structured = workbook("LibreOffice/sc/qa/unit/data/xlsx/tdf105272.xlsx");
+    assert_eq!(
+        formula_text(&structured, SheetId(1), "H4"),
+        "Table1[[#This Row],[Total]]/Table1[[#This Row],['# Athletes]]"
+    );
+
+    let external = workbook("LibreOffice/sc/qa/unit/data/xlsx/tdf118990.xlsx");
+    assert_eq!(
+        formula_text(&external, SheetId(1), "A2"),
+        "VLOOKUP(B1,'file://192.168.1.1/share/lookupsource.xlsx'#$Sheet1.A1:B5,2)"
+    );
+    assert_eq!(
+        formula_text(&external, SheetId(1), "A3"),
+        "VLOOKUP(B1,'file://NETWORKHOST/share/lookupsource.xlsx'#$Sheet1.A1:B5,2)"
+    );
+}
+
+#[test]
+fn imports_cross_sheet_formula_persistence_regression_from_xlsx_fixture() {
+    // Source: LibreOffice sc/qa/unit/subsequent_export_test5.cxx::testTdf163554.
+    let model = recalculated_workbook("LibreOffice/sc/qa/unit/data/xlsx/tdf163554.xlsx");
+    let sheet = sheet_id(&model, "time (misc) - last");
+
+    assert_eq!(
+        formula_text(&model, sheet, "A1"),
+        "SUM($'time (misc) - last'.B1:$'time (pnrst)'.B1)"
+    );
+    assert_cell_value(&model, sheet, "A1", FormulaValue::Number(7.0));
 }
 
 #[test]

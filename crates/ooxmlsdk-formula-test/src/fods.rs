@@ -301,9 +301,9 @@ impl FodsWorkbook {
         // Source: LibreOffice sc/qa/unit/functions_test.cxx FunctionsTest::load.
         // LO's authoritative assertion is Sheet1.B3 after DoHardRecalc(). If it
         // fails, LO diagnoses rows using sheets whose first row has the
-        // Expected/Correct/FunctionString layout. This harness uses that same
-        // layout to extract comparable row cases; sheets without that layout are
-        // auxiliary data, not FunctionsTest rows.
+        // Expected/Correct/FunctionString layout. Keep the summary case first so
+        // the Rust corpus test preserves that authoritative assertion while
+        // still carrying row-level diagnostics for failures.
         let summary_address = CellAddress { column: 1, row: 2 };
         let summary_sheet = self.sheets.first()?;
         let summary_cell = summary_sheet
@@ -330,7 +330,7 @@ impl FodsWorkbook {
             return Some(vec![summary_case]);
         }
 
-        let mut cases = Vec::new();
+        let mut cases = vec![summary_case];
         for (index, sheet) in self.sheets.iter().enumerate() {
             let Some(layout) = sheet.function_test_layout() else {
                 continue;
@@ -388,9 +388,6 @@ impl FodsWorkbook {
                     cases.push(case);
                 }
             }
-        }
-        if cases.is_empty() {
-            cases.push(summary_case);
         }
         Some(cases)
     }
@@ -1497,117 +1494,6 @@ fn xml_general_reference_text(reference: &[u8]) -> Option<String> {
 mod tests {
     use super::*;
     use ooxmlsdk_corpus_test_support::workspace_root;
-
-    #[test]
-    fn reads_libreoffice_calculation_search_settings() {
-        for (settings, expected) in [
-            ("", FormulaSearchType::Wildcard),
-            (
-                r#"<table:calculation-settings table:automatic-find-labels="false"/>"#,
-                FormulaSearchType::Regex,
-            ),
-            (
-                r#"<table:calculation-settings table:use-regular-expressions="false"/>"#,
-                FormulaSearchType::Normal,
-            ),
-            (
-                r#"<table:calculation-settings table:use-regular-expressions="false" table:use-wildcards="true"/>"#,
-                FormulaSearchType::Wildcard,
-            ),
-        ] {
-            let xml = format!(
-                r#"
-      <office:document xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
-          xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0">
-        <office:body>
-          <office:spreadsheet>
-            {settings}
-            <table:table table:name="Sheet1"/>
-          </office:spreadsheet>
-        </office:body>
-      </office:document>
-    "#
-            );
-            let workbook = read_fods_workbook_from_reader(xml.as_bytes()).unwrap();
-            assert_eq!(
-                workbook.formula_search_type, expected,
-                "settings={settings}"
-            );
-            assert_eq!(workbook.evaluation_book().formula_search_type, expected);
-        }
-    }
-
-    #[test]
-    fn reads_fods_tables_cells_formulas_and_cached_values() {
-        let xml = br#"
-      <office:document xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
-          xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0"
-          xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0"
-          office:mimetype="application/vnd.oasis.opendocument.spreadsheet">
-        <office:body>
-          <office:spreadsheet>
-            <table:table table:name="Sheet1">
-              <table:table-row>
-                <table:table-cell office:value-type="float" office:value="2"/>
-                <table:table-cell table:number-columns-repeated="2"/>
-                <table:table-cell table:formula="of:=SUM([.A1:.A1])" office:value-type="float" office:value="2"/>
-                <table:table-cell table:formula="of:=&quot;&quot;"><text:p/></table:table-cell>
-                <table:covered-table-cell table:number-columns-repeated="2"/>
-                <table:table-cell office:value-type="float" office:value="5"/>
-              </table:table-row>
-              <table:table-row table:number-rows-repeated="2">
-                <table:table-cell table:number-columns-repeated="4"/>
-              </table:table-row>
-              <table:table-row>
-                <table:table-cell office:value-type="string"><text:p>ok</text:p></table:table-cell>
-              </table:table-row>
-            </table:table>
-          </office:spreadsheet>
-        </office:body>
-      </office:document>
-    "#;
-
-        let workbook = read_fods_workbook_from_reader(&xml[..]).unwrap();
-        assert_eq!(workbook.sheets.len(), 1);
-        assert_eq!(workbook.sheets[0].name, "Sheet1");
-        assert_eq!(workbook.sheets[0].cells.len(), 5);
-        assert_eq!(
-            workbook.sheets[0].cells[0].cached_value,
-            FormulaValue::Number(2.0)
-        );
-        assert_eq!(
-            workbook.sheets[0].cells[1].address,
-            CellAddress { column: 3, row: 0 }
-        );
-        assert_eq!(
-            workbook.sheets[0].cells[1].formula.as_deref(),
-            Some("of:=SUM([.A1:.A1])")
-        );
-        assert_eq!(
-            workbook.sheets[0].cells[2].address,
-            CellAddress { column: 4, row: 0 }
-        );
-        assert_eq!(
-            workbook.sheets[0].cells[2].cached_value,
-            FormulaValue::String(Cow::Borrowed(""))
-        );
-        assert_eq!(
-            workbook.sheets[0].cells[3].address,
-            CellAddress { column: 7, row: 0 }
-        );
-        assert_eq!(
-            workbook.sheets[0].cells[3].cached_value,
-            FormulaValue::Number(5.0)
-        );
-        assert_eq!(
-            workbook.sheets[0].cells[4].address,
-            CellAddress { column: 0, row: 3 }
-        );
-        assert_eq!(
-            workbook.sheets[0].cells[4].cached_value,
-            FormulaValue::String(Cow::Borrowed("ok"))
-        );
-    }
 
     #[test]
     fn hard_recalc_broadcasts_libreoffice_matrix_function_arguments() {

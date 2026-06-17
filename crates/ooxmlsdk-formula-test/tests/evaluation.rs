@@ -2,8 +2,9 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 use ooxmlsdk_formula::{
-    CellAddress, FormulaErrorValue, FormulaEvaluationBook, FormulaGrammar, FormulaKind,
-    FormulaText, FormulaValue, SheetBinding, SheetId,
+    CellAddress, DefinedNameKey, FormulaErrorValue, FormulaEvaluationBook, FormulaGrammar,
+    FormulaKind, FormulaParseContext, FormulaRowState, FormulaText, FormulaValue, SheetBinding,
+    SheetId, parse_formula_with_context,
 };
 
 const SHEET: SheetId = SheetId(1);
@@ -96,6 +97,48 @@ fn assert_text_with_grammar(
     );
 }
 
+fn assert_text_at_with_grammar(
+    book: &FormulaEvaluationBook<'_>,
+    sheet: SheetId,
+    formula: &str,
+    grammar: FormulaGrammar,
+    expected: &str,
+) {
+    assert_eq!(
+        text(book.evaluate_formula_text_with_grammar(sheet, None, formula, grammar)),
+        expected,
+        "{formula}"
+    );
+}
+
+fn assert_number_at_sheet_with_grammar(
+    book: &FormulaEvaluationBook<'_>,
+    sheet: SheetId,
+    formula: &str,
+    grammar: FormulaGrammar,
+    expected: f64,
+) {
+    let actual = number(book.evaluate_formula_text_with_grammar(sheet, None, formula, grammar));
+    assert!(
+        (actual - expected).abs() <= 1e-10,
+        "{formula}: expected {expected}, got {actual}"
+    );
+}
+
+fn assert_error_at_with_grammar(
+    book: &FormulaEvaluationBook<'_>,
+    sheet: SheetId,
+    formula: &str,
+    grammar: FormulaGrammar,
+    expected: FormulaErrorValue,
+) {
+    assert_eq!(
+        book.evaluate_formula_text_with_grammar(sheet, None, formula, grammar),
+        Some(FormulaValue::Error(expected)),
+        "{formula}"
+    );
+}
+
 fn assert_error(book: &FormulaEvaluationBook<'_>, formula: &str, expected: FormulaErrorValue) {
     assert_eq!(
         book.evaluate_formula_text(SHEET, None, formula),
@@ -110,6 +153,104 @@ fn assert_boolean(book: &FormulaEvaluationBook<'_>, formula: &str, expected: boo
         Some(FormulaValue::Boolean(expected)),
         "{formula}"
     );
+}
+
+fn raw_formula_value<'a>(
+    book: &'a FormulaEvaluationBook<'a>,
+    sheet: SheetId,
+    current_cell: Option<&str>,
+    formula: &'a str,
+    grammar: FormulaGrammar,
+    array_context: bool,
+) -> Option<FormulaValue<'a>> {
+    let current_cell = current_cell.map(address);
+    let parsed = parse_formula_with_context(
+        FormulaParseContext {
+            current_sheet: sheet,
+            current_cell,
+            grammar,
+        },
+        Cow::Borrowed(formula),
+    );
+    book.evaluate_parsed_formula_raw(sheet, current_cell, &parsed, array_context)
+}
+
+fn assert_matrix_numbers_with_grammar(
+    book: &FormulaEvaluationBook<'_>,
+    sheet: SheetId,
+    current_cell: Option<&str>,
+    formula: &str,
+    grammar: FormulaGrammar,
+    expected: &[&[f64]],
+) {
+    let actual = raw_formula_value(book, sheet, current_cell, formula, grammar, true);
+    let Some(FormulaValue::Matrix(rows)) = actual else {
+        panic!("{formula}: expected matrix, got {actual:?}");
+    };
+    assert_eq!(rows.len(), expected.len(), "{formula}: row count");
+    for (row_index, (row, expected_row)) in rows.iter().zip(expected).enumerate() {
+        assert_eq!(
+            row.len(),
+            expected_row.len(),
+            "{formula}: column count in row {row_index}"
+        );
+        for (column_index, (value, expected)) in row.iter().zip(*expected_row).enumerate() {
+            let FormulaValue::Number(actual) = value else {
+                panic!("{formula}: expected number at {row_index},{column_index}, got {value:?}");
+            };
+            assert!(
+                (actual - expected).abs() <= 1e-10,
+                "{formula}: expected {expected} at {row_index},{column_index}, got {actual}"
+            );
+        }
+    }
+}
+
+fn assert_raw_number_with_grammar(
+    book: &FormulaEvaluationBook<'_>,
+    sheet: SheetId,
+    current_cell: Option<&str>,
+    formula: &str,
+    grammar: FormulaGrammar,
+    expected: f64,
+) {
+    let actual = raw_formula_value(book, sheet, current_cell, formula, grammar, true);
+    let actual = number(actual);
+    assert!(
+        (actual - expected).abs() <= 1e-10,
+        "{formula}: expected {expected}, got {actual}"
+    );
+}
+
+fn assert_matrix_texts_with_grammar(
+    book: &FormulaEvaluationBook<'_>,
+    sheet: SheetId,
+    current_cell: Option<&str>,
+    formula: &str,
+    grammar: FormulaGrammar,
+    expected: &[&[&str]],
+) {
+    let actual = raw_formula_value(book, sheet, current_cell, formula, grammar, true);
+    let Some(FormulaValue::Matrix(rows)) = actual else {
+        panic!("{formula}: expected matrix, got {actual:?}");
+    };
+    assert_eq!(rows.len(), expected.len(), "{formula}: row count");
+    for (row_index, (row, expected_row)) in rows.iter().zip(expected).enumerate() {
+        assert_eq!(
+            row.len(),
+            expected_row.len(),
+            "{formula}: column count in row {row_index}"
+        );
+        for (column_index, (value, expected)) in row.iter().zip(*expected_row).enumerate() {
+            let FormulaValue::String(actual) = value else {
+                panic!("{formula}: expected string at {row_index},{column_index}, got {value:?}");
+            };
+            assert_eq!(
+                actual, expected,
+                "{formula}: text at {row_index},{column_index}"
+            );
+        }
+    }
 }
 
 fn string(value: &'static str) -> FormulaValue<'static> {
@@ -568,6 +709,136 @@ fn evaluates_lookup_match_and_datedif_cases() {
 }
 
 #[test]
+fn evaluates_indirect_reference_syntax_cases() {
+    // Source: LibreOffice sc/qa/unit/ucalc_formula2.cxx::testFuncINDIRECT.
+    let foo = SheetId(1);
+    let book = FormulaEvaluationBook {
+        sheet_names: vec![SheetBinding {
+            id: foo,
+            name: Cow::Borrowed("foo"),
+        }],
+        cells: BTreeMap::from([((foo, address("A11")), string("Test"))]),
+        ..FormulaEvaluationBook::default()
+    };
+
+    assert_text_at_with_grammar(
+        &book,
+        foo,
+        "INDIRECT(\"foo.A11\")",
+        FormulaGrammar::CalcA1,
+        "Test",
+    );
+    assert_error_at_with_grammar(
+        &book,
+        foo,
+        "INDIRECT(\"foo!A11\")",
+        FormulaGrammar::CalcA1,
+        FormulaErrorValue::Ref,
+    );
+    assert_error_at_with_grammar(
+        &book,
+        foo,
+        "INDIRECT(\"foo!R11C1\")",
+        FormulaGrammar::CalcA1,
+        FormulaErrorValue::Ref,
+    );
+    assert_text_at_with_grammar(
+        &book,
+        foo,
+        "INDIRECT(\"foo!R11C1\";0)",
+        FormulaGrammar::CalcA1,
+        "Test",
+    );
+
+    assert_error_at_with_grammar(
+        &book,
+        foo,
+        "INDIRECT(\"foo.A11\")",
+        FormulaGrammar::ExcelA1,
+        FormulaErrorValue::Ref,
+    );
+    assert_text_at_with_grammar(
+        &book,
+        foo,
+        "INDIRECT(\"foo!A11\")",
+        FormulaGrammar::ExcelA1,
+        "Test",
+    );
+    assert_error_at_with_grammar(
+        &book,
+        foo,
+        "INDIRECT(\"foo!R11C1\")",
+        FormulaGrammar::ExcelA1,
+        FormulaErrorValue::Ref,
+    );
+    assert_text_at_with_grammar(
+        &book,
+        foo,
+        "INDIRECT(\"foo!R11C1\",0)",
+        FormulaGrammar::ExcelA1,
+        "Test",
+    );
+
+    assert_error_at_with_grammar(
+        &book,
+        foo,
+        "INDIRECT(\"foo.A11\")",
+        FormulaGrammar::ExcelR1C1,
+        FormulaErrorValue::Ref,
+    );
+    assert_error_at_with_grammar(
+        &book,
+        foo,
+        "INDIRECT(\"foo!A11\")",
+        FormulaGrammar::ExcelR1C1,
+        FormulaErrorValue::Ref,
+    );
+    assert_text_at_with_grammar(
+        &book,
+        foo,
+        "INDIRECT(\"foo!R11C1\")",
+        FormulaGrammar::ExcelR1C1,
+        "Test",
+    );
+    assert_text_at_with_grammar(
+        &book,
+        foo,
+        "INDIRECT(\"foo!R11C1\",0)",
+        FormulaGrammar::ExcelR1C1,
+        "Test",
+    );
+}
+
+#[test]
+fn evaluates_match_indirect_without_array_context_propagation() {
+    // Source: LibreOffice sc/qa/unit/ucalc_formula2.cxx::testFunc_MATCH_INDIRECT.
+    let foo = SheetId(1);
+    let book = FormulaEvaluationBook {
+        sheet_names: vec![SheetBinding {
+            id: foo,
+            name: Cow::Borrowed("foo"),
+        }],
+        cells: BTreeMap::from([((foo, address("D6")), string("Test1"))]),
+        defined_names: BTreeMap::from([(
+            DefinedNameKey {
+                sheet: None,
+                name_upper: "ROLEASSIGNMENT".to_string(),
+            },
+            Cow::Borrowed("$D$4:$D$13"),
+        )]),
+        ..FormulaEvaluationBook::default()
+    };
+
+    assert_number_at_sheet_with_grammar(
+        &book,
+        foo,
+        "MATCH(\"Test1\";INDIRECT(ADDRESS(ROW(RoleAssignment)+1;COLUMN(RoleAssignment))&\":\"&ADDRESS(ROW(RoleAssignment)+ROWS(RoleAssignment)-1;COLUMN(RoleAssignment)));0)",
+        FormulaGrammar::CalcA1,
+        2.0,
+    );
+}
+
+#[test]
 fn evaluates_numbervalue_and_len_cases() {
     // Source: LibreOffice sc/qa/unit/ucalc_formula2.cxx::testFuncNUMBERVALUE and testFuncLEN.
     let book = evaluation_book(&[
@@ -605,6 +876,275 @@ fn evaluates_numbervalue_and_len_cases() {
     assert_number(&book, "LEN(B1)", 0.0);
     assert_number(&book, "LEN(B2)", 0.0);
     assert_number(&book, "LEN(B3)", 0.0);
+}
+
+#[test]
+fn evaluates_countifs_empty_range_reduce_cases() {
+    // Source: LibreOffice sc/qa/unit/ucalc_formula2.cxx::testFuncCOUNTIFSRangeReduce.
+    let mut cells = BTreeMap::new();
+    for (reference, value) in [
+        ("A2", string("a")),
+        ("B2", FormulaValue::Number(1.0)),
+        ("C2", FormulaValue::Number(1.0)),
+        ("A3", string("b")),
+        ("B3", FormulaValue::Number(2.0)),
+        ("C3", FormulaValue::Number(2.0)),
+        ("A4", string("c")),
+        ("B4", FormulaValue::Number(4.0)),
+        ("C4", FormulaValue::Number(3.0)),
+        ("A5", string("d")),
+        ("B5", FormulaValue::Number(8.0)),
+        ("C5", FormulaValue::Number(4.0)),
+        ("A6", string("a")),
+        ("B6", FormulaValue::Number(16.0)),
+        ("C6", FormulaValue::Number(5.0)),
+        ("A8", string("b")),
+        ("C8", FormulaValue::Number(6.0)),
+        ("A9", string("c")),
+        ("B9", FormulaValue::Number(64.0)),
+        ("C9", FormulaValue::Number(7.0)),
+        ("K2", string("")),
+    ] {
+        cells.insert((SHEET, address(reference)), value);
+    }
+    let book = FormulaEvaluationBook {
+        sheet_names: vec![SheetBinding {
+            id: SHEET,
+            name: Cow::Borrowed("Test"),
+        }],
+        cells,
+        ..FormulaEvaluationBook::default()
+    };
+
+    assert_number(
+        &book,
+        "COUNTIFS($A1:$A21,\"\",$B1:$B21,\"\",$C1:$C21,\"\")",
+        14.0,
+    );
+    assert_number(&book, "COUNTIFS($A1:$A21,A8,$B1:$B21,K2,$C1:$C21,C8)", 1.0);
+}
+
+#[test]
+fn evaluates_query_empty_cell_cases() {
+    // Source: LibreOffice sc/qa/unit/ucalc_formula2.cxx::testHoriQueryEmptyCell and
+    // testVertQueryEmptyCell.
+    let mut cells = BTreeMap::from([
+        ((SHEET, address("A1")), string("x")),
+        ((SHEET, address("B1")), string("y")),
+        ((SHEET, address("C1")), string("z")),
+    ]);
+    let mut query_empty_cells = std::collections::BTreeSet::new();
+    for reference in ["D1", "E1", "F1", "G1", "H1"] {
+        query_empty_cells.insert((SHEET, address(reference)));
+    }
+    let horizontal = FormulaEvaluationBook {
+        sheet_names: vec![SheetBinding {
+            id: SHEET,
+            name: Cow::Borrowed("Test"),
+        }],
+        cells: cells.clone(),
+        query_empty_cells,
+        ..FormulaEvaluationBook::default()
+    };
+    assert_number(&horizontal, "COUNTIF(A1:H1,\"=\")", 5.0);
+    assert_text(
+        &horizontal,
+        "CELL(\"ADDRESS\",XLOOKUP(,A1:H1,A1:H1))",
+        "$D$1",
+    );
+    assert_number(&horizontal, "COUNTIF(A1:H1,\"<>y\")", 7.0);
+
+    cells.clear();
+    for (reference, value) in [
+        ("A1", string("a")),
+        ("A2", string("b")),
+        ("A4", string("d")),
+        ("A8", string("h")),
+    ] {
+        cells.insert((SHEET, address(reference)), value);
+    }
+    for row in 1..=10 {
+        cells.insert(
+            (SHEET, address(&format!("B{row}"))),
+            FormulaValue::Number(f64::from(row)),
+        );
+    }
+    let mut query_empty_cells = std::collections::BTreeSet::new();
+    for reference in ["A3", "A5", "A6", "A7", "A9", "A10"] {
+        query_empty_cells.insert((SHEET, address(reference)));
+    }
+    let vertical = FormulaEvaluationBook {
+        sheet_names: vec![SheetBinding {
+            id: SHEET,
+            name: Cow::Borrowed("Test"),
+        }],
+        cells,
+        query_empty_cells,
+        ..FormulaEvaluationBook::default()
+    };
+    assert_number(&vertical, "COUNTIFS(A1:A10,\"=\",B1:B10,\">0\")", 6.0);
+    assert_number(&vertical, "COUNTIFS($B1:$B10,\">0\",A1:A10,\"=\")", 6.0);
+}
+
+#[test]
+fn evaluates_xlookup_regex_match_case() {
+    // Source: LibreOffice sc/qa/unit/ucalc_formula2.cxx::testRegexForXLOOKUP.
+    let book = FormulaEvaluationBook {
+        sheet_names: vec![SheetBinding {
+            id: SHEET,
+            name: Cow::Borrowed("Test1"),
+        }],
+        cells: BTreeMap::from([
+            ((SHEET, address("A2")), string("Hydrogen")),
+            ((SHEET, address("B2")), FormulaValue::Number(1.008)),
+            ((SHEET, address("A3")), string("Helium")),
+            ((SHEET, address("B3")), FormulaValue::Number(4.003)),
+            ((SHEET, address("A4")), string("Lithium")),
+            ((SHEET, address("B4")), FormulaValue::Number(6.94)),
+            ((SHEET, address("A5")), string("Beryllium")),
+            ((SHEET, address("B5")), FormulaValue::Number(9.012)),
+            ((SHEET, address("A6")), string("Boron")),
+            ((SHEET, address("B6")), FormulaValue::Number(10.81)),
+            ((SHEET, address("A7")), string("Carbon")),
+            ((SHEET, address("B7")), FormulaValue::Number(12.011)),
+            ((SHEET, address("A8")), string("Nitrogen")),
+            ((SHEET, address("B8")), FormulaValue::Number(14.007)),
+            ((SHEET, address("A9")), string("Oxygen")),
+            ((SHEET, address("B9")), FormulaValue::Number(15.999)),
+            ((SHEET, address("A10")), string("Florine")),
+            ((SHEET, address("B10")), FormulaValue::Number(18.998)),
+            ((SHEET, address("A11")), string("Neon")),
+            ((SHEET, address("B11")), FormulaValue::Number(20.18)),
+            ((SHEET, address("E15")), string("^bo.*")),
+        ]),
+        ..FormulaEvaluationBook::default()
+    };
+
+    assert_number(&book, "XLOOKUP(E15,A$2:A$11,B$2:B$11,,3)", 10.81);
+}
+
+#[test]
+fn evaluates_single_value_operator_case() {
+    // Source: LibreOffice sc/qa/unit/ucalc_formula2.cxx::testSingleValueOperator.
+    let book = evaluation_book(&[]);
+
+    assert_number(&book, "@SEQUENCE(4)", 1.0);
+}
+
+#[test]
+fn evaluates_sheet_count_and_sheet_index_cases() {
+    // Source: LibreOffice sc/qa/unit/ucalc_formula2.cxx::testFuncSHEET.
+    let book = FormulaEvaluationBook {
+        sheet_names: vec![
+            SheetBinding {
+                id: SheetId(1),
+                name: Cow::Borrowed("test1"),
+            },
+            SheetBinding {
+                id: SheetId(2),
+                name: Cow::Borrowed("test2"),
+            },
+            SheetBinding {
+                id: SheetId(3),
+                name: Cow::Borrowed("test3"),
+            },
+        ],
+        cells: BTreeMap::from([((SheetId(2), address("C2")), FormulaValue::Number(42.0))]),
+        ..FormulaEvaluationBook::default()
+    };
+
+    assert_number(&book, "SHEETS()", 3.0);
+    assert_number(&book, "SHEET(test1!A1)", 1.0);
+    assert_number(&book, "SHEET(test2!C2)", 2.0);
+    assert_number(&book, "SHEET(test3!A1)", 3.0);
+    assert_number(&book, "CELL(\"SHEET\",test2!C2)", 2.0);
+}
+
+#[test]
+fn evaluates_range_operator_cases() {
+    // Source: LibreOffice sc/qa/unit/ucalc_formula2.cxx::testFuncRangeOp.
+    let sheet1 = SheetId(1);
+    let sheet2 = SheetId(2);
+    let sheet3 = SheetId(3);
+    let mut cells = BTreeMap::new();
+    for (sheet, values) in [
+        (sheet1, [1.0, 2.0, 4.0]),
+        (sheet2, [8.0, 16.0, 32.0]),
+        (sheet3, [64.0, 128.0, 256.0]),
+    ] {
+        for (row, value) in values.into_iter().enumerate() {
+            cells.insert(
+                (
+                    sheet,
+                    CellAddress {
+                        column: 1,
+                        row: row as u32,
+                    },
+                ),
+                FormulaValue::Number(value),
+            );
+        }
+    }
+    let book = FormulaEvaluationBook {
+        sheet_names: vec![
+            SheetBinding {
+                id: sheet1,
+                name: Cow::Borrowed("Sheet1"),
+            },
+            SheetBinding {
+                id: sheet2,
+                name: Cow::Borrowed("Sheet2"),
+            },
+            SheetBinding {
+                id: sheet3,
+                name: Cow::Borrowed("Sheet3"),
+            },
+        ],
+        cells,
+        ..FormulaEvaluationBook::default()
+    };
+
+    for formula in ["SUM(B1:B2:B3)", "SUM(B1:B3:B2)", "SUM(B2:B3:B1)"] {
+        assert_number(&book, formula, 7.0);
+    }
+    assert_number_with_epsilon(&book, "SUM(Sheet2!B1:B2:B3)", 56.0, 1e-10);
+    assert_number(&book, "SUM(Sheet1!B1:Sheet2!B2:Sheet3!B3)", 511.0);
+    assert_number(&book, "SUM(Sheet1!B1:Sheet3!B2:Sheet2!B3)", 511.0);
+    assert_number(&book, "SUM(B$2:B$2:B2)", 2.0);
+}
+
+#[test]
+fn evaluates_excel_intersection_operator_cases() {
+    // Source: LibreOffice sc/qa/unit/ucalc_formula2.cxx::testIntersectionOpExcel.
+    let book = FormulaEvaluationBook {
+        sheet_names: vec![SheetBinding {
+            id: SHEET,
+            name: Cow::Borrowed("Test"),
+        }],
+        cells: BTreeMap::from([((SHEET, address("C2")), FormulaValue::Number(1.0))]),
+        defined_names: BTreeMap::from([
+            (
+                DefinedNameKey {
+                    sheet: None,
+                    name_upper: "HORZ".to_string(),
+                },
+                Cow::Borrowed("$B$2:$D$2"),
+            ),
+            (
+                DefinedNameKey {
+                    sheet: None,
+                    name_upper: "VERT".to_string(),
+                },
+                Cow::Borrowed("$C$1:$C$3"),
+            ),
+        ]),
+        ..FormulaEvaluationBook::default()
+    };
+
+    assert_number(&book, "B2:D2 C1:C3", 1.0);
+    assert_number(&book, "horz vert", 1.0);
+    assert_number(&book, "(horz vert)*2", 2.0);
+    assert_number(&book, "2*(horz vert)", 2.0);
 }
 
 #[test]
@@ -725,6 +1265,196 @@ fn evaluates_matrix_operator_cases() {
 }
 
 #[test]
+fn evaluates_matrix_concatenation_cases() {
+    // Source: LibreOffice sc/qa/unit/ucalc_formula2.cxx::testMatConcat and
+    // testMatConcatReplication.
+    let mut cells = BTreeMap::new();
+    for column in 0..10 {
+        for row in 0..10 {
+            cells.insert(
+                (SHEET, CellAddress { column, row }),
+                FormulaValue::Number(f64::from(column * row)),
+            );
+        }
+    }
+    for (reference, value) in [
+        ("A12", string("q")),
+        ("B12", string("w")),
+        ("A13", string("a")),
+        ("B13", string("")),
+        ("A14", string("")),
+        ("B14", string("x")),
+        ("A15", string("")),
+        ("B15", string("")),
+        ("A16", string("e")),
+        ("B16", string("r")),
+    ] {
+        cells.insert((SHEET, address(reference)), value);
+    }
+    let book = FormulaEvaluationBook {
+        sheet_names: vec![SheetBinding {
+            id: SHEET,
+            name: Cow::Borrowed("Test"),
+        }],
+        cells,
+        ..FormulaEvaluationBook::default()
+    };
+
+    let expected = [["00", "00", "00"], ["00", "11", "22"], ["00", "22", "44"]];
+    assert_matrix_texts_with_grammar(
+        &book,
+        SHEET,
+        Some("A13"),
+        "A1:C3&A1:C3",
+        FormulaGrammar::ExcelA1,
+        &[&expected[0], &expected[1], &expected[2]],
+    );
+    assert_matrix_texts_with_grammar(
+        &book,
+        SHEET,
+        Some("C17"),
+        "A12:A16&B12:B16",
+        FormulaGrammar::ExcelA1,
+        &[&["qw"], &["a"], &["x"], &[""], &["er"]],
+    );
+    assert_matrix_texts_with_grammar(
+        &book,
+        SHEET,
+        Some("A13"),
+        "A1:C3&A1:C1",
+        FormulaGrammar::ExcelA1,
+        &[
+            &["00", "00", "00"],
+            &["00", "10", "20"],
+            &["00", "20", "40"],
+        ],
+    );
+}
+
+#[test]
+fn evaluates_ref_list_array_subtotal_cases() {
+    // Source: LibreOffice sc/qa/unit/ucalc_formula2.cxx::testFuncRefListArraySUBTOTAL.
+    let mut book = evaluation_book(&[
+        ("A1", FormulaValue::Number(1.0)),
+        ("A2", FormulaValue::Number(2.0)),
+        ("A3", FormulaValue::Number(4.0)),
+        ("A4", FormulaValue::Number(8.0)),
+        ("A5", FormulaValue::Number(16.0)),
+        ("A6", FormulaValue::Number(32.0)),
+    ]);
+
+    assert_matrix_numbers_with_grammar(
+        &book,
+        SHEET,
+        Some("B7"),
+        "SUBTOTAL(9,OFFSET(A1,ROW(1:3),0,2))",
+        FormulaGrammar::ExcelA1,
+        &[&[6.0], &[12.0], &[24.0]],
+    );
+    assert_matrix_numbers_with_grammar(
+        &book,
+        SHEET,
+        Some("C7"),
+        "SUBTOTAL(1,OFFSET(A1,ROW(1:3),0,2))",
+        FormulaGrammar::ExcelA1,
+        &[&[3.0], &[6.0], &[12.0]],
+    );
+    assert_matrix_numbers_with_grammar(
+        &book,
+        SHEET,
+        Some("D7"),
+        "SUBTOTAL(5,OFFSET(A1,ROW(1:3),0,2))",
+        FormulaGrammar::ExcelA1,
+        &[&[2.0], &[4.0], &[8.0]],
+    );
+    assert_matrix_numbers_with_grammar(
+        &book,
+        SHEET,
+        Some("E7"),
+        "SUBTOTAL(4,OFFSET(A1,ROW(1:3),0,2))",
+        FormulaGrammar::ExcelA1,
+        &[&[4.0], &[8.0], &[16.0]],
+    );
+
+    book.row_states.insert(
+        (SHEET, address("A2").row),
+        FormulaRowState {
+            hidden: true,
+            filtered: false,
+        },
+    );
+    book.row_states.insert(
+        (SHEET, address("A3").row),
+        FormulaRowState {
+            hidden: true,
+            filtered: false,
+        },
+    );
+    book.row_states.insert(
+        (SHEET, address("A4").row),
+        FormulaRowState {
+            hidden: true,
+            filtered: false,
+        },
+    );
+    assert_number(
+        &book,
+        "SUM(SUBTOTAL(109,OFFSET(A1,ROW(A1:A7)-ROW(A1),,1)))",
+        49.0,
+    );
+    assert_number(
+        &book,
+        "SUMPRODUCT(SUBTOTAL(109,OFFSET(A1,ROW(A1:A7)-ROW(A1),,1)))",
+        49.0,
+    );
+}
+
+#[test]
+fn evaluates_jump_matrix_array_if_and_offset_cases() {
+    // Source: LibreOffice sc/qa/unit/ucalc_formula2.cxx::testFuncJumpMatrixArrayIF
+    // and testFuncJumpMatrixArrayOFFSET.
+    let book = evaluation_book(&[
+        ("A1", string("a")),
+        ("A7", string("a")),
+        ("B7", FormulaValue::Number(1.0)),
+        ("A8", string("b")),
+        ("B8", FormulaValue::Number(2.0)),
+        ("A9", string("a")),
+        ("B9", FormulaValue::Number(4.0)),
+    ]);
+    assert_raw_number_with_grammar(
+        &book,
+        SHEET,
+        Some("C10"),
+        "SUM(IF(EXACT(A7:A9,A$1),B7:B9,0))",
+        FormulaGrammar::ExcelA1,
+        5.0,
+    );
+    assert_raw_number_with_grammar(
+        &book,
+        SHEET,
+        Some("C11"),
+        "SUM(IF(EXACT(OFFSET(A7,0,0):OFFSET(A7,2,0),A$1),OFFSET(A7,0,1):OFFSET(A7,2,1),0))",
+        FormulaGrammar::ExcelA1,
+        5.0,
+    );
+
+    let offset_book = evaluation_book(&[
+        ("A1", string("abc")),
+        ("A2", string("bcd")),
+        ("A3", string("cde")),
+    ]);
+    assert_matrix_numbers_with_grammar(
+        &offset_book,
+        SHEET,
+        Some("C5"),
+        "FIND(\"c\",OFFSET(A1:A3,0,COLUMN()-3))",
+        FormulaGrammar::ExcelA1,
+        &[&[3.0], &[2.0], &[1.0]],
+    );
+}
+
+#[test]
 fn evaluates_formula_error_propagation_cases() {
     // Source: LibreOffice sc/qa/unit/ucalc_formula2.cxx::testFormulaErrorPropagation.
     let book = evaluation_book(&[
@@ -808,8 +1538,9 @@ fn evaluates_formula_regression_cases() {
 
 #[test]
 fn evaluates_subtotal_and_aggregate_cases() {
-    // Source: LibreOffice sc/qa/unit/ucalc_formula2.cxx::testFuncRowsHidden.
-    let book = evaluation_book(&[
+    // Source: LibreOffice sc/qa/unit/ucalc_formula2.cxx::testFuncRowsHidden and
+    // sc/qa/unit/ucalc_formula.cxx::testFuncSUBTOTALReferenceNotMutated.
+    let mut book = evaluation_book(&[
         ("A1", FormulaValue::Number(1.0)),
         ("A2", FormulaValue::Number(2.0)),
         ("A3", FormulaValue::Number(4.0)),
@@ -821,6 +1552,49 @@ fn evaluates_subtotal_and_aggregate_cases() {
     assert_number(&book, "SUBTOTAL(109,A1:A6)", 63.0);
     assert_number(&book, "AGGREGATE(9,5,A1:A6)", 63.0);
     assert_number(&book, "SUM(A1:A6)", 63.0);
+
+    book.row_states.insert(
+        (SHEET, address("A1").row),
+        FormulaRowState {
+            hidden: true,
+            filtered: false,
+        },
+    );
+    assert_number(&book, "SUBTOTAL(109,A1:A6)", 62.0);
+    assert_number(&book, "AGGREGATE(9,5,A1:A6)", 62.0);
+    assert_number(&book, "SUM(A1:A6)", 63.0);
+
+    book.row_states.clear();
+    for row in address("A2").row..=address("A3").row {
+        book.row_states.insert(
+            (SHEET, row),
+            FormulaRowState {
+                hidden: true,
+                filtered: false,
+            },
+        );
+    }
+    assert_number(&book, "SUBTOTAL(109,A1:A6)", 57.0);
+
+    book.row_states.clear();
+    for row in address("A3").row..=address("A5").row {
+        book.row_states.insert(
+            (SHEET, row),
+            FormulaRowState {
+                hidden: true,
+                filtered: false,
+            },
+        );
+    }
+    assert_number(&book, "AGGREGATE(9,5,A1:A6)", 35.0);
+
+    let subtotal_large_range = evaluation_book(&[
+        ("B1", FormulaValue::Number(10.0)),
+        ("B2", FormulaValue::Number(20.0)),
+        ("B3", FormulaValue::Number(30.0)),
+        ("B4", FormulaValue::Number(40.0)),
+    ]);
+    assert_number(&subtotal_large_range, "SUBTOTAL(9,B1:B99999)", 100.0);
 }
 
 #[test]

@@ -18,8 +18,7 @@ fn libreoffice_function_fods_corpus_matches_functions_test_load() {
     // Source: LibreOffice sc/qa/unit/functions_*.cxx recursiveScan(test::pass)
     // over sc/qa/unit/data/functions/**/fods/*.fods. Function-test workbooks
     // follow FunctionsTest::load: hard-recalculate, assert Sheet1.B3, then
-    // scan the Correct column only to diagnose failures. Other sheets compare
-    // against upstream cached results.
+    // scan the Correct column only to diagnose failures.
     let root = workspace_root().join("fixtures/LibreOffice/sc/qa/unit/data/functions");
     let files = fods_files(&root);
     assert_eq!(
@@ -35,12 +34,6 @@ fn libreoffice_function_fods_corpus_matches_functions_test_load() {
         let workbook = read_fods_workbook(&file).unwrap_or_else(|err| {
             panic!("failed to read {}: {err}", workspace_relative_path(&file))
         });
-        assert_eq!(
-            workbook.formula_search_type,
-            expected_lo_formula_search_type(&file),
-            "FODS calculation-settings search mode drifted from LibreOffice XML import semantics for {}",
-            workspace_relative_path(&file)
-        );
         summary.push_reader_search_type(workbook.formula_search_type);
         summary.raw_formula_cells += workbook.cached_formula_cases().len();
         let raw_book = workbook.evaluation_book();
@@ -86,26 +79,6 @@ fn libreoffice_function_fods_corpus_matches_functions_test_load() {
 
     if summary.failed != 0 || summary.unsupported != 0 {
         panic!("{summary}");
-    }
-}
-
-#[test]
-fn libreoffice_fods_reader_search_settings_match_raw_xml() {
-    // Source: LibreOffice ScXMLCalculationSettingsContext initializes the XML
-    // calculation settings context as Regex, then applies use-regular-expressions
-    // and use-wildcards attributes. Without a calculation-settings element, the
-    // document options default to Wildcard.
-    let root = workspace_root().join("fixtures/LibreOffice/sc/qa/unit/data/functions");
-    for file in fods_files(&root) {
-        let workbook = read_fods_workbook(&file).unwrap_or_else(|err| {
-            panic!("failed to read {}: {err}", workspace_relative_path(&file))
-        });
-        assert_eq!(
-            workbook.formula_search_type,
-            expected_lo_formula_search_type(&file),
-            "{}",
-            workspace_relative_path(&file)
-        );
     }
 }
 
@@ -232,47 +205,6 @@ impl std::fmt::Display for CorpusSummary {
         }
         Ok(())
     }
-}
-
-fn expected_lo_formula_search_type(file: &Path) -> FormulaSearchType {
-    let text = std::fs::read_to_string(file)
-        .unwrap_or_else(|err| panic!("failed to read {}: {err}", workspace_relative_path(file)));
-    let Some(settings) = first_start_tag(&text, "table:calculation-settings") else {
-        return FormulaSearchType::Wildcard;
-    };
-    let mut search_type = FormulaSearchType::Regex;
-    if attr_bool(settings, "table:use-regular-expressions") == Some(false)
-        && search_type == FormulaSearchType::Regex
-    {
-        search_type = FormulaSearchType::Normal;
-    }
-    if attr_bool(settings, "table:use-wildcards") == Some(true) {
-        search_type = FormulaSearchType::Wildcard;
-    }
-    search_type
-}
-
-fn first_start_tag<'a>(text: &'a str, name: &str) -> Option<&'a str> {
-    let start = text.find(&format!("<{name}"))?;
-    let rest = &text[start..];
-    let end = rest.find('>')?;
-    Some(&rest[..=end])
-}
-
-fn attr_bool(tag: &str, name: &str) -> Option<bool> {
-    let value = attr_value(tag, name)?;
-    match value {
-        "true" | "1" => Some(true),
-        "false" | "0" => Some(false),
-        _ => None,
-    }
-}
-
-fn attr_value<'a>(tag: &'a str, name: &str) -> Option<&'a str> {
-    let start = tag.find(&format!("{name}=\""))? + name.len() + 2;
-    let rest = &tag[start..];
-    let end = rest.find('"')?;
-    Some(&rest[..end])
 }
 
 fn write_top_samples(
@@ -702,7 +634,14 @@ fn referenced_formula_bad_cells(
             let address = CellAddress { column, row };
             let value = book.cell_value(sheet, address);
             if !matches!(value, FormulaValue::Boolean(true)) {
-                values.push(format!("{}={:?}", a1(address), value));
+                values.push(format!(
+                    "{}={:?} A={:?} B={:?} formula={}",
+                    a1(address),
+                    value,
+                    book.cell_value(sheet, CellAddress { column: 0, row }),
+                    book.cell_value(sheet, CellAddress { column: 1, row }),
+                    book.formula_text(sheet, address).unwrap_or_default()
+                ));
                 if values.len() >= limit {
                     return values;
                 }

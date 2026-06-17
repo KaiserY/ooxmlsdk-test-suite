@@ -16,21 +16,33 @@ Current baseline:
 | --- | ---: | ---: | ---: | ---: | ---: |
 | LibreOffice functions FODS | 507 | 52,191 | 17,095 | 4,133 | 30,963 |
 
+This baseline came from the broad cached-formula comparison mode. It should be
+refreshed after the FODS runner is fully aligned to LibreOffice
+`FunctionsTest::load`, because LO does not assert every formula cell in the
+function workbooks as an independent test result.
+
 Additional non-FODS migration baseline:
 
 | Group | Source | Migrated Rust tests | Verification | Notes |
 | --- | --- | ---: | --- | --- |
-| Synthetic address/evaluator/shared formula | `ucalc_formula.cxx`, `ucalc_formula2.cxx`, `ucalc_sharedformula.cxx`, `subsequent_export_test3.cxx` | 24 | not run in bulk-migration pass | Public evaluator/address/shared-formula APIs cover these cases; assertions preserve LO expected values. |
-| XLSX formula import metadata/cache | `subsequent_filters_test*.cxx`, `subsequent_export_test*.cxx` | 21 | not run in bulk-migration pass | Includes `functions-excel-2010.xlsx` row whitelist and fixture-backed display/cache assertions; failing assertions are intentionally preserved as formula-model/import gaps. |
+| Synthetic address/evaluator/shared formula | `ucalc_formula.cxx`, `ucalc_formula2.cxx`, `ucalc_sharedformula.cxx`, `subsequent_export_test3.cxx` | 36 | `cargo test -p ooxmlsdk-formula-test` compiles and currently fails on LO-aligned evaluator assertions | Public evaluator/address/shared-formula APIs cover all currently expressible non-edit synthetic formula cases; failing assertions preserve LO expected values. |
+| XLSX formula import metadata/cache | `subsequent_filters_test*.cxx`, `subsequent_export_test*.cxx` | 25 | `cargo test -p ooxmlsdk-formula-test --test xlsx_import` compiles and currently fails on LO-normalized formula text/model exposure differences | Includes `functions-excel-2010.xlsx` row whitelist, named/table/shared/array/external formula metadata, and fixture-backed display/cache assertions. |
 
-The corpus runner compares `ooxmlsdk-formula` evaluation results with the cached
-formula values stored in the upstream FODS files. Failures are intentionally not
-fixed in this migration pass; they are the follow-up bug backlog for
-`ooxmlsdk-formula`.
+The FODS corpus runner should follow LibreOffice formula-test semantics, not raw
+FODS import semantics. For `sc/qa/unit/data/functions/**/fods/*.fods`, LO loads
+the file, calls `DoHardRecalc()`, and asserts `Sheet1.B3 == 1.0`. Only when that
+summary cell fails does LO scan sheets with the `Expected` / `Correct` /
+`FunctionString` header layout to report the first failing row. Rust may keep
+per-row extraction for diagnostics, but the authoritative formula assertion is
+the hard-recalculated summary result.
 
-The current bulk-migration pass intentionally does not run `cargo test`,
-`cargo check`, or `cargo clippy`; the goal is to move upstream assertions first
-and measure failures after the migration surface is broad enough.
+Failures are intentionally not fixed in this migration pass; they are the
+follow-up bug backlog for `ooxmlsdk-formula`.
+
+The current migration pass ran `cargo fmt --all`,
+`cargo test -p ooxmlsdk-formula-test`, and
+`cargo test -p ooxmlsdk-formula-test --test xlsx_import`. The test package
+compiles; failing assertions are kept active and not marked ignored.
 
 Current API-blocked non-FODS groups:
 
@@ -39,9 +51,47 @@ Current API-blocked non-FODS groups:
 | Token compiler/stringify/equality | No public token compiler/stringifier API equivalent to LO `ScCompiler`/`ScTokenArray` yet. |
 | Structural reference updates | No public model for insert/delete/move/undo/sheet-copy/name-update reference rewriting yet. |
 | Formula listeners/dependency edit state | Current dependency graph is import/evaluation metadata, not LO listener lifecycle state. |
-| Spill/dynamic-array edit behavior | Import metadata is exposed, but blocker clearing/auto-resolve/edit-time matrix state is not modeled yet. |
+| Spill/dynamic-array edit behavior | Import metadata and the scalar `@` operator expectation are covered where expressible; blocker clearing/auto-resolve/edit-time matrix state is not modeled yet. |
 | ODS/XLS/XLSB fixture-backed formula import/export | Test-suite currently has OOXML package API and FODS fixture reader only; no ODS/XLS/BIFF fixture reader. |
-| Export XML preservation checks | Belongs to package/export round-trip testing once formula metadata APIs are complete. |
+| Export XML preservation checks | Raw XML assertions are excluded from this formula migration unless the behavior is exposed through formula text/value/metadata. |
+| Volatile/time-dependent calculation | No deterministic public test hook for volatile functions such as `NOW` yet. |
+| Structured table/external reference evaluation | XLSX import metadata/cache is covered where exposed, but full LO-style table and external-workbook live evaluation is not modeled yet. |
+
+Current FODS alignment notes:
+
+| Area | LO behavior | Current Rust state | Evaluation |
+| --- | --- | --- | --- |
+| Function corpus assertion | `FunctionsTest::load` hard-recalculates, then asserts `Sheet1.B3 == 1.0`; row scan is diagnostic only. | `libreoffice_function_test_cases` models this shape and falls back to row cases when the summary fails. | Keep, but document/measure the summary-first result separately from broad cached-cell comparison. |
+| Hard recalc | LO recalculates the loaded document before checking formula results. | `hard_recalc_book()` repeatedly evaluates formula targets and updates eager cell values. | Formula-relevant; keep aligning when evaluator behavior changes. |
+| FODS formula grammar | LO reads OpenFormula FODS formulas and evaluates them in Calc. | Reader normalizes OpenFormula text, arrays, named ranges, query-empty cells, row hidden/filter state, pivot tables, and volatile `TODAY` serials into `FormulaEvaluationBook`. | Formula-relevant support code; keep only where it affects formula evaluation. |
+| Function workbook failure diagnostics | LO scans tabs from index 1, finds `Expected`, `Correct`, `FunctionString`, and reports first incorrect row. | Rust extracts all failing row cases for better aggregate diagnostics. | Acceptable diagnostic extension, but not a separate migration target. |
+| Dubious FODS fixtures | LO keeps `functions/array/dubious/fods` as observed edge-case data. | Rust uses cached rows for dubious fixtures instead of hard recalculating. | Keep documented as a deliberate oracle choice. |
+| Calculation-settings raw XML assertion | LO XML import sets regex/wildcard search options, which can affect formula criteria. | Raw XML-only search-settings tests were removed from formula migration coverage. | Reintroduce only through formula results such as `COUNTIF`/`SUMIF`/database criteria behavior. |
+| Generic FODS table/cell parser tests | Not part of formula assertions in `FunctionsTest`. | Raw table/cell/repeat/text parser shape tests were removed from formula migration coverage. | Treat parser details as harness support, not LibreOffice formula migration coverage. Avoid adding new import-XML-only assertions here. |
+
+## 2026-06-17 Gap Review
+
+Current `crates/ooxmlsdk-formula-test/tests/` inventory:
+
+| Area | Rust tests | Coverage state |
+| --- | ---: | --- |
+| FODS function corpus | 1 formula corpus test | Formula coverage is the 507-fixture `FunctionsTest::load`-style corpus test; XML-support assertions are not counted as migration coverage. |
+| Synthetic address parsing | 4 | Covers selected LO A1/R1C1 address cases; token compiler/stringifier cases are still blocked. |
+| Synthetic evaluator assertions | 31 | Covers LO scalar, lookup, aggregate, hidden-row, sheet, matrix, statistical, text, error, reference-grammar, query-empty, XLOOKUP regex, range/intersection, dynamic-array scalar, and regression formulas that current public APIs can express. |
+| Shared formula translation | 1 | Covers direct shared-formula text translation only; structural edit/update behavior is still blocked. |
+| XLSX import metadata/cache | 25 | Covers selected LO `.xlsx` fixtures for defined names, data tables, shared formulas, spill metadata, structured references, external references, cached values, formula text, and display text. |
+
+The highest-value missing tests fall into these buckets:
+
+| Priority | Missing coverage | Source evidence | Current path |
+| --- | --- | --- | --- |
+| 1 | Remaining evaluator-only synthetic functions that are not yet expressible through public APIs: token compiler/stringifier cases, structural reference updates, dependency listener lifecycle, iteration state, live external-workbook evaluation, and edit-time dynamic-array lifecycle. | `ucalc_formula.cxx`, `ucalc_formula2.cxx`, `ucalc_sharedformula.cxx` | Blocked until the formula crate exposes equivalent public models; do not simulate LO edit internals with unrelated assertions. |
+| 2 | FODS harness formula alignment. | `functions_test.cxx`, `functions_*.cxx` | Done for formula coverage: summary-first `FunctionsTest::load` behavior is modeled; row extraction remains diagnostic only. Do not add raw FODS import/XML shape checks as migration work. |
+| 3 | Remaining XLSX fixture-backed cases whose assertions are pure export XML, drawing macro XML, conditional-format listener lifecycle, or data-validation/external formula XML. | `subsequent_filters_test*.cxx`, `subsequent_export_test*.cxx` | Excluded from this formula pass unless exposed through `WorkbookValueModel` as formula text/value/cache/metadata. |
+| 4 | Shared formula XLS/XLSB/ODS and most `ucalc_sharedformula.cxx` edit cases. | `ucalc_sharedformula.cxx`, `subsequent_filters_test2.cxx`, `subsequent_filters_test4.cxx`, `subsequent_export_test3.cxx` | Keep blocked until structural edit/reference-update and non-XLSX fixture readers exist; keep lightweight XLSX formula-state tests where possible. |
+| 5 | Token compiler/stringifier/equality and low-level reference token data. | `ucalc_formula.cxx` | Blocked on public token compiler/stringifier APIs. |
+| 6 | Dynamic-array/spill edit lifecycle: blocker clearing, matrix master resize/growth, copy/undo/redo, and single-value operator edge cases. | `ucalc_formula2.cxx`, `subsequent_filters_test.cxx`, `subsequent_export_test2.cxx` | Import metadata is partly covered; edit-time behavior is blocked until the formula model exposes dynamic-array recalculation/edit state. |
+| 7 | ODS/XLS/XLSB fixture-backed formula import/export. | `subsequent_filters_test*.cxx`, `subsequent_export_test*.cxx` | Blocked on ODS/XLS/XLSB readers in this test-suite; keep FODS under the corpus runner. |
 
 Only SpreadsheetML/Calc formula behavior belongs here: formula text, addresses,
 shared formulas, array/dynamic-array formulas, data tables, names, external
@@ -102,8 +152,8 @@ UNO-editing cases are listed as non-migratable boundary cases.
 | yes | SUM | `../core/sc/qa/unit/ucalc_formula.cxx::testFuncSUM` | synthetic | `SUM` evaluation. |
 | yes | PRODUCT | `../core/sc/qa/unit/ucalc_formula.cxx::testFuncPRODUCT` | synthetic | `PRODUCT` evaluation. |
 | yes | SUMPRODUCT | `../core/sc/qa/unit/ucalc_formula.cxx::testFuncSUMPRODUCT` | synthetic | `SUMPRODUCT` evaluation. |
-| yes | SUBTOTAL | `../core/sc/qa/unit/ucalc_formula.cxx::testFuncSUBTOTAL` | synthetic | `SUBTOTAL` evaluation and hidden-row behavior. |
-| yes | SUBTOTAL reference immutability | `../core/sc/qa/unit/ucalc_formula.cxx::testFuncSUBTOTALReferenceNotMutated` | synthetic | `SUBTOTAL` must not mutate reference inputs. |
+| yes | SUBTOTAL | `../core/sc/qa/unit/ucalc_formula.cxx::testFuncSUBTOTAL` | synthetic | Covered in `evaluation.rs`; relative named-expression rewrite portions remain structural/name-reference API gaps. |
+| yes | SUBTOTAL reference immutability | `../core/sc/qa/unit/ucalc_formula.cxx::testFuncSUBTOTALReferenceNotMutated` | synthetic | Covered for LO result over oversized range; token reference immutability inspection is blocked on token APIs. |
 | yes | SUMXMY2 | `../core/sc/qa/unit/ucalc_formula.cxx::testFuncSUMXMY2` | synthetic | `SUMXMY2` evaluation. |
 | yes | MIN | `../core/sc/qa/unit/ucalc_formula.cxx::testFuncMIN` | synthetic | `MIN` evaluation. |
 | yes | N | `../core/sc/qa/unit/ucalc_formula.cxx::testFuncN` | synthetic | `N` evaluation. |
@@ -112,7 +162,7 @@ UNO-editing cases are listed as non-migratable boundary cases.
 | yes | IF | `../core/sc/qa/unit/ucalc_formula2.cxx::testFuncIF` | synthetic | `IF` evaluation. |
 | yes | CHOOSE | `../core/sc/qa/unit/ucalc_formula2.cxx::testFuncCHOOSE` | synthetic | `CHOOSE` evaluation. |
 | yes | IFERROR | `../core/sc/qa/unit/ucalc_formula2.cxx::testFuncIFERROR` | synthetic | `IFERROR` evaluation. |
-| yes | SHEET | `../core/sc/qa/unit/ucalc_formula2.cxx::testFuncSHEET` | synthetic | `SHEET` evaluation. |
+| yes | SHEET | `../core/sc/qa/unit/ucalc_formula2.cxx::testFuncSHEET` | synthetic | Covered in `evaluation.rs` for sheet count and sheet index. |
 | yes | NOW | `../core/sc/qa/unit/ucalc_formula2.cxx::testFuncNOW` | synthetic | Volatile `NOW` handling. |
 | yes | NUMBERVALUE | `../core/sc/qa/unit/ucalc_formula2.cxx::testFuncNUMBERVALUE` | synthetic | Locale-aware number text parsing. |
 | yes | LEN | `../core/sc/qa/unit/ucalc_formula2.cxx::testFuncLEN` | synthetic | Text length evaluation. |
@@ -137,7 +187,7 @@ UNO-editing cases are listed as non-migratable boundary cases.
 | yes | external reference functions | `../core/sc/qa/unit/ucalc_formula2.cxx::testExternalRefFunctions` | synthetic | Functions over external refs. |
 | yes | unresolved external ref | `../core/sc/qa/unit/ucalc_formula2.cxx::testExternalRefUnresolved` | synthetic | Unresolved external reference behavior. |
 | yes | matrix operator | `../core/sc/qa/unit/ucalc_formula2.cxx::testMatrixOp` | synthetic | Matrix operations. |
-| yes | range operator | `../core/sc/qa/unit/ucalc_formula2.cxx::testFuncRangeOp` | synthetic | Range operator behavior. |
+| yes | range operator | `../core/sc/qa/unit/ucalc_formula2.cxx::testFuncRangeOp` | synthetic | Covered in `evaluation.rs`; active failures expose range-operator parser/evaluator gaps. |
 | yes | FORMULA | `../core/sc/qa/unit/ucalc_formula2.cxx::testFuncFORMULA` | synthetic | `FORMULA` introspection. |
 | yes | table references | `../core/sc/qa/unit/ucalc_formula2.cxx::testFuncTableRef` | synthetic | Structured table reference parsing/evaluation. |
 | yes | FTEST | `../core/sc/qa/unit/ucalc_formula2.cxx::testFuncFTEST` | synthetic | Statistical function evaluation. |
@@ -159,24 +209,25 @@ UNO-editing cases are listed as non-migratable boundary cases.
 | yes | tdf100818 regression | `../core/sc/qa/unit/ucalc_formula2.cxx::testTdf100818` | synthetic | Calc formula regression; port expected LO behavior. |
 | yes | tdf147398 regression | `../core/sc/qa/unit/ucalc_formula2.cxx::testTdf147398` | synthetic | Calc formula regression; port expected LO behavior. |
 | yes | tdf156985 regression | `../core/sc/qa/unit/ucalc_formula2.cxx::testTdf156985` | synthetic | Calc formula regression; port expected LO behavior. |
-| yes | matrix concatenation | `../core/sc/qa/unit/ucalc_formula2.cxx::testMatConcat` | synthetic | Matrix concatenation. |
-| yes | matrix concatenation replication | `../core/sc/qa/unit/ucalc_formula2.cxx::testMatConcatReplication` | synthetic | Matrix concatenation replication. |
+| yes | matrix concatenation | `../core/sc/qa/unit/ucalc_formula2.cxx::testMatConcat` | synthetic | Covered in `evaluation.rs`; active failure exposes matrix text-concatenation gap. |
+| yes | matrix concatenation replication | `../core/sc/qa/unit/ucalc_formula2.cxx::testMatConcatReplication` | synthetic | Covered in `evaluation.rs`; active failure exposes matrix text-concatenation/broadcast gap. |
 | yes | R1C1 whole-column ref | `../core/sc/qa/unit/ucalc_formula2.cxx::testRefR1C1WholeCol` | synthetic | Whole-column R1C1 parsing. |
 | yes | R1C1 whole-row ref | `../core/sc/qa/unit/ucalc_formula2.cxx::testRefR1C1WholeRow` | synthetic | Whole-row R1C1 parsing. |
 | yes | copied column label | `../core/sc/qa/unit/ucalc_formula2.cxx::testSingleCellCopyColumnLabel` | synthetic | Column-label formula behavior. |
-| yes | Excel intersection | `../core/sc/qa/unit/ucalc_formula2.cxx::testIntersectionOpExcel` | synthetic | Excel intersection operator. |
-| yes | hidden rows | `../core/sc/qa/unit/ucalc_formula2.cxx::testFuncRowsHidden` | synthetic | Function behavior with hidden rows. |
+| yes | Excel intersection | `../core/sc/qa/unit/ucalc_formula2.cxx::testIntersectionOpExcel` | synthetic | Covered in `evaluation.rs`. |
+| yes | hidden rows | `../core/sc/qa/unit/ucalc_formula2.cxx::testFuncRowsHidden` | synthetic | Covered in `evaluation.rs` for `SUBTOTAL`, `AGGREGATE`, and `SUM`. |
 | yes | SUMIFS | `../core/sc/qa/unit/ucalc_formula2.cxx::testFuncSUMIFS` | synthetic | Conditional aggregate evaluation. |
 | yes | COUNTIF empty | `../core/sc/qa/unit/ucalc_formula2.cxx::testFuncCOUNTIFEmpty` | synthetic | Empty-cell conditional count behavior. |
 | yes | COUNTIFS range reduce | `../core/sc/qa/unit/ucalc_formula2.cxx::testFuncCOUNTIFSRangeReduce` | synthetic | Conditional count range reduction. |
-| yes | reference list array SUBTOTAL | `../core/sc/qa/unit/ucalc_formula2.cxx::testFuncRefListArraySUBTOTAL` | synthetic | Ref-list array behavior. |
-| yes | jump matrix array IF | `../core/sc/qa/unit/ucalc_formula2.cxx::testFuncJumpMatrixArrayIF` | synthetic | Matrix array with `IF`. |
-| yes | jump matrix array OFFSET | `../core/sc/qa/unit/ucalc_formula2.cxx::testFuncJumpMatrixArrayOFFSET` | synthetic | Matrix array with `OFFSET`. |
+| yes | reference list array SUBTOTAL | `../core/sc/qa/unit/ucalc_formula2.cxx::testFuncRefListArraySUBTOTAL` | synthetic | Covered in `evaluation.rs`; active failure exposes ref-list array `SUBTOTAL`/`OFFSET` gap. |
+| yes | jump matrix array IF | `../core/sc/qa/unit/ucalc_formula2.cxx::testFuncJumpMatrixArrayIF` | synthetic | Covered in `evaluation.rs`; active failure exposes matrix array-context `IF` gap. |
+| yes | jump matrix array OFFSET | `../core/sc/qa/unit/ucalc_formula2.cxx::testFuncJumpMatrixArrayOFFSET` | synthetic | Covered in `evaluation.rs`; active failure exposes matrix array-context `OFFSET` gap. |
 | yes | iterative calculation | `../core/sc/qa/unit/ucalc_formula2.cxx::testIterations` | synthetic | Iteration/recalculation behavior. |
+| yes | insert-column cell-store event swap | `../core/sc/qa/unit/ucalc_formula2.cxx::testInsertColCellStoreEventSwap` | synthetic | Formula state after column insertion/storage swap. |
 | yes | delete-row aftermath | `../core/sc/qa/unit/ucalc_formula2.cxx::testFormulaAfterDeleteRows` | synthetic | Formula state after row deletion. |
-| yes | XLOOKUP regex | `../core/sc/qa/unit/ucalc_formula2.cxx::testRegexForXLOOKUP` | synthetic | `XLOOKUP` regex semantics. |
-| yes | horizontal query empty cell | `../core/sc/qa/unit/ucalc_formula2.cxx::testHoriQueryEmptyCell` | synthetic | Horizontal query behavior on empty cells. |
-| yes | vertical query empty cell | `../core/sc/qa/unit/ucalc_formula2.cxx::testVertQueryEmptyCell` | synthetic | Vertical query behavior on empty cells. |
+| yes | XLOOKUP regex | `../core/sc/qa/unit/ucalc_formula2.cxx::testRegexForXLOOKUP` | synthetic | Covered in `evaluation.rs`; active failure exposes missing `XLOOKUP` regex evaluation. |
+| yes | horizontal query empty cell | `../core/sc/qa/unit/ucalc_formula2.cxx::testHoriQueryEmptyCell` | synthetic | Covered in `evaluation.rs`; active failure exposes empty-cell `XLOOKUP` reference behavior gap. |
+| yes | vertical query empty cell | `../core/sc/qa/unit/ucalc_formula2.cxx::testVertQueryEmptyCell` | synthetic | Covered in `evaluation.rs`. |
 | yes | spill error basic | `../core/sc/qa/unit/ucalc_formula2.cxx::testSpillErrorBasic` | synthetic | Dynamic array `#SPILL!` behavior. |
 | yes | spill error no blocker | `../core/sc/qa/unit/ucalc_formula2.cxx::testSpillErrorNoBlockingData` | synthetic | Dynamic array without blocking data. |
 | yes | spill error multi column | `../core/sc/qa/unit/ucalc_formula2.cxx::testSpillErrorMultiColumn` | synthetic | Multi-column spill behavior. |
@@ -198,6 +249,9 @@ UNO-editing cases are listed as non-migratable boundary cases.
 | yes | spill undo redo blocker delete | `../core/sc/qa/unit/ucalc_formula2.cxx::testSpillMatrixUndoRedoBlockerDelete` | synthetic | Undo/redo after blocker deletion. |
 | yes | spill undo redo input change | `../core/sc/qa/unit/ucalc_formula2.cxx::testSpillMatrixUndoRedoInputChange` | synthetic | Undo/redo after input change. |
 | yes | dynamic array flag copy | `../core/sc/qa/unit/ucalc_formula2.cxx::testDynamicArrayFlagCopy` | synthetic | Dynamic array flag copy. |
+| yes | single value operator | `../core/sc/qa/unit/ucalc_formula2.cxx::testSingleValueOperator` | synthetic | Covered in `evaluation.rs`; active failure exposes missing `@` operator parsing/evaluation. |
+| yes | dynamic array master survives cell copy | `../core/sc/qa/unit/ucalc_formula2.cxx::testDynamicArrayMasterSurvivesCellCopy` | synthetic | Dynamic array master state after cell copy. |
+| yes | dynamic array master grows on recalc | `../core/sc/qa/unit/ucalc_formula2.cxx::testDynamicArrayMasterGrowsOnRecalc` | synthetic | Dynamic array master resize during recalculation. |
 | yes | dynamic array resize copy to clipboard | `../core/sc/qa/unit/ucalc_formula2.cxx::testDynamicArrayResizeDuringCopyToClip` | synthetic | Dynamic array resize during clipboard copy. |
 | yes | dynamic array resize static copy | `../core/sc/qa/unit/ucalc_formula2.cxx::testDynamicArrayResizeDuringCopyStaticToDocument` | synthetic | Dynamic array resize during static document copy. |
 | yes | dynamic array resize updated copy | `../core/sc/qa/unit/ucalc_formula2.cxx::testDynamicArrayResizeDuringCopyUpdated` | synthetic | Dynamic array resize after updated copy. |
@@ -277,20 +331,32 @@ UNO-editing cases are listed as non-migratable boundary cases.
 | yes | shared formula fdo84556 | `../core/sc/qa/unit/subsequent_filters_test2.cxx::testSharedFormulaXLS_fdo84556` | LO XLS fixture | Shared formula relative refs. |
 | yes | shared formula column labels ODS | `../core/sc/qa/unit/subsequent_filters_test2.cxx::testSharedFormulaColumnLabelsODS` | LO ODS fixture | Shared formula with labels. |
 | yes | shared formula column-row labels ODS | `../core/sc/qa/unit/subsequent_filters_test2.cxx::testSharedFormulaColumnRowLabelsODS` | LO ODS fixture | Shared formula with column/row labels. |
+| yes | shared formula XLS import | `../core/sc/qa/unit/subsequent_filters_test4.cxx::testSharedFormulaXLS` | LO XLS fixture | Shared formula import. |
+| yes | shared formula XLS import 2 | `../core/sc/qa/unit/subsequent_filters_test4.cxx::testSharedFormulaXLS2` | LO XLS fixture | Additional shared formula import. |
+| yes | shared formula XLSX import | `../core/sc/qa/unit/subsequent_filters_test4.cxx::testSharedFormulaXLSX` | `corpus/LibreOffice/sc/qa/unit/data/xlsx/shared-formula/basic.xlsx` | Shared formula group import state; initial state is covered in Rust. |
+| yes | shared formula XLSX ref-update import state | `../core/sc/qa/unit/subsequent_filters_test4.cxx::testSharedFormulaRefUpdateXLSX` | `corpus/LibreOffice/sc/qa/unit/data/xlsx/shared-formula/refupdate.xlsx` | Pre-edit shared formula import state; LO row-delete rewrite is a structural reference-update gap. |
 | yes | external reference cache XLSX | `../core/sc/qa/unit/subsequent_filters_test2.cxx::testExternalRefCacheXLSX` | `corpus/LibreOffice/sc/qa/unit/data/xlsx/external-refs.xlsx` | External reference cache import. |
 | yes | external reference cache ODS | `../core/sc/qa/unit/subsequent_filters_test2.cxx::testExternalRefCacheODS` | LO ODS fixture | External reference cache import. |
 | yes | VBA/UDF formulas | `../core/sc/qa/unit/subsequent_filters_test2.cxx::testVBAUserFunctionXLSM` | LO XLSM fixture | VBA user-function formula text. |
 | yes | unresolved external references | `../core/sc/qa/unit/subsequent_filters_test2.cxx::testErrorOnExternalReferences` | LO fixture | Error handling for unresolved externals. |
-| yes | tdf160371 formula string | `../core/sc/qa/unit/subsequent_filters_test2.cxx::testTdf160371` | LO fixture | Imported formula string/reference semantics. |
+| yes | tdf160371 formula string | `../core/sc/qa/unit/subsequent_filters_test2.cxx::testTdf160371` | `corpus/LibreOffice/sc/qa/unit/data/xlsx/tdf160371.xlsx` | Covered in `xlsx_import.rs`; active failure exposes LO import normalization gap from space intersection to `!`. |
 | yes | tdf136364 formula string | `../core/sc/qa/unit/subsequent_filters_test2.cxx::testTdf136364` | LO fixture | Imported formula string/reference semantics. |
+| yes | tdf131424 table reference cache | `../core/sc/qa/unit/subsequent_filters_test2.cxx::testTdf131424` | LO XLSX fixture | Structured/table-reference formula cached results; covered in Rust. |
+| yes | tdf85617 implicit intersection cache | `../core/sc/qa/unit/subsequent_filters_test2.cxx::testTdf85617` | LO XLSX fixture | Implicit-intersection formula cached result; covered in Rust. |
+| yes | reference string XLSX | `../core/sc/qa/unit/subsequent_filters_test2.cxx::testRefStringXLSX` | LO XLSX fixture | Reference-string formula cached result; covered in Rust. |
 | yes | tdf131536 formula string | `../core/sc/qa/unit/subsequent_filters_test2.cxx::testTdf131536` | LO fixture | Imported formula string/reference semantics. |
 | no | Excel XML named expressions global | `../core/sc/qa/unit/subsequent_filters_test2.cxx::testNamedExpressionsXLSXML_Global` | LO XML fixture | Not OOXML package coverage for this test-suite migration. |
 | no | Excel XML named expressions local | `../core/sc/qa/unit/subsequent_filters_test2.cxx::testNamedExpressionsXLSXML_Local` | LO XML fixture | Not OOXML package coverage for this test-suite migration. |
 | no | Excel XML empty rows | `../core/sc/qa/unit/subsequent_filters_test2.cxx::testEmptyRowsXLSXML` | LO XML fixture | Not OOXML package coverage for this test-suite migration. |
-| yes | named table references | `../core/sc/qa/unit/subsequent_filters_test2.cxx::testNamedTableRef` | `corpus/LibreOffice/sc/qa/unit/data/xlsx/tablerefsnamed.xlsx` | Structured reference import. |
+| yes | named table references | `../core/sc/qa/unit/subsequent_filters_test2.cxx::testNamedTableRef` | `corpus/LibreOffice/sc/qa/unit/data/xlsx/tablerefsnamed.xlsx` | Covered in `xlsx_import.rs`. |
 | yes | conditional-format formula listener | `../core/sc/qa/unit/subsequent_filters_test3.cxx::testCondFormatFormulaListenerXLSX` | `corpus/LibreOffice/sc/qa/unit/data/xlsx/cond_format_formula_listener.xlsx` | Formula dependency/listener behavior if exposed by formula model. |
 | yes | formula text regression | `../core/sc/qa/unit/subsequent_filters_test3.cxx::testTdf112780` | LO fixture | Formula import regression. |
 | yes | VBA macro function import | `../core/sc/qa/unit/subsequent_filters_test3.cxx::testVBAMacroFunctionODS` | LO ODS fixture | Macro function formula preservation. |
+| yes | tdf137091 fraction display | `../core/sc/qa/unit/subsequent_filters_test3.cxx::testTdf137091` | LO XLSX fixture | Formula display text regression; covered in Rust. |
+| yes | tdf141495 add-in date display | `../core/sc/qa/unit/subsequent_filters_test3.cxx::testTdf141495` | LO XLSX fixture | Formula display text regression; covered in Rust. |
+| yes | tdf70455 currency display | `../core/sc/qa/unit/subsequent_filters_test3.cxx::testTdf70455` | LO XLSX fixture | Formula display text regression; covered in Rust. |
+| yes | tdf98481 lookup caches | `../core/sc/qa/unit/subsequent_filters_test3.cxx::testTdf98481` | LO XLSX fixture | `LOOKUP` formula cached result regression; covered in Rust. |
+| yes | tdf115022 SUMIF cache | `../core/sc/qa/unit/subsequent_filters_test3.cxx::testTdf115022` | LO XLSX fixture | `SUMIF` formula cached result regression; covered in Rust. |
 | yes | LOOKUP external ref | `../core/sc/qa/unit/subsequent_filters_test5.cxx::testTdf167134_LOOKUP_extRef` | LO FODS fixtures | External reference lookup semantics. |
 | yes | named range formula | `../core/sc/qa/unit/subsequent_filters_test5.cxx::testTdf94627` | LO XLSB fixture | Named range formula preservation. |
 | yes | full-column refs | `../core/sc/qa/unit/subsequent_filters_test5.cxx::testFullColumnRefs` | LO fixture | Full-column formula references. |
@@ -298,13 +364,15 @@ UNO-editing cases are listed as non-migratable boundary cases.
 | yes | EASTERSUNDAY export semantics | `../core/sc/qa/unit/subsequent_export_test.cxx::testTdf162177_EastersundayODF14` | LO FODS fixture | Function name/namespace semantics if evaluator/export supports it. |
 | yes | named range export regression | `../core/sc/qa/unit/subsequent_export_test.cxx::testNamedRangeBugfdo62729` | LO ODS fixture | Named range formula export semantics. |
 | yes | built-in ranges | `../core/sc/qa/unit/subsequent_export_test.cxx::testBuiltinRangesXLSX` | `corpus/LibreOffice/sc/qa/unit/data/xlsx/built-in_ranges.xlsx` | Built-in named ranges. |
+| yes | table total formula cache | `../core/sc/qa/unit/subsequent_export_test.cxx::testTdf162963` | LO XLSX fixture | Table total-row formula/cached result; covered in Rust. |
+| yes | table total formula ODF cache | `../core/sc/qa/unit/subsequent_export_test.cxx::testTdf162963_ODF` | LO ODS fixture | Table total-row formula/cached result. |
 | yes | quoted sheet name | `../core/sc/qa/unit/subsequent_export_test.cxx::testFormulaRefSheetNameODS` | LO ODS fixture | Formula sheet-name quoting. |
 | yes | generated formula values | `../core/sc/qa/unit/subsequent_export_test.cxx::testCellValuesExportODS` | generated | Formula string/value round-trip behavior. |
 | yes | inline array XLS | `../core/sc/qa/unit/subsequent_export_test.cxx::testInlineArrayXLS` | LO XLS fixture | Inline array formula import/export semantics. |
 | yes | formula references XLS | `../core/sc/qa/unit/subsequent_export_test.cxx::testFormulaReferenceXLS` | LO XLS fixture | Absolute/relative/3D reference formulas. |
 | yes | matrix multiplication XLSX | `../core/sc/qa/unit/subsequent_export_test2.cxx::testMatrixMultiplicationXLSX` | `corpus/LibreOffice/sc/qa/unit/data/xlsx/matrix-multiplication.xlsx` | Matrix multiplication formula result/import. |
-| yes | structured reference export tdf105272 | `../core/sc/qa/unit/subsequent_export_test2.cxx::testTdf105272` | LO XLSX fixture | Structured reference formula preservation. |
-| yes | structured reference export tdf118990 | `../core/sc/qa/unit/subsequent_export_test2.cxx::testTdf118990` | LO XLSX fixture | Structured reference formula preservation. |
+| yes | structured reference export tdf105272 | `../core/sc/qa/unit/subsequent_export_test2.cxx::testTdf105272` | `corpus/LibreOffice/sc/qa/unit/data/xlsx/tdf105272.xlsx` | Covered in `xlsx_import.rs`. |
+| yes | structured reference export tdf118990 | `../core/sc/qa/unit/subsequent_export_test2.cxx::testTdf118990` | `corpus/LibreOffice/sc/qa/unit/data/xlsx/tdf118990.xlsx` | Covered in `xlsx_import.rs`; active failure exposes external-link formula path normalization gap. |
 | yes | validation formula copy/paste | `../core/sc/qa/unit/subsequent_export_test2.cxx::testValidationCopyPaste` | generated | Data-validation formula reference behavior. |
 | yes | empty values in array formulas | `../core/sc/qa/unit/subsequent_export_test2.cxx::testTdf170201_empty_values_in_array_formulas` | LO XLSX fixture | Array formula empty-value preservation. |
 | yes | hyperlink formula | `../core/sc/qa/unit/subsequent_export_test2.cxx::testTdf126024XLSX` | `corpus/LibreOffice/sc/qa/unit/data/xlsx/hyperlink_formula.xlsx` | `HYPERLINK` formula preservation. |
@@ -320,6 +388,7 @@ UNO-editing cases are listed as non-migratable boundary cases.
 | yes | Excel 2010 functions XLSX | `../core/sc/qa/unit/subsequent_export_test3.cxx::testFunctionsExcel2010XLSX` | `corpus/LibreOffice/sc/qa/unit/data/xlsx/functions-excel-2010.xlsx` | Excel 2010 formula functions and no-error checks. |
 | yes | Excel 2010 functions XLS | `../core/sc/qa/unit/subsequent_export_test3.cxx::testFunctionsExcel2010XLS` | LO XLS fixture | Excel 2010 formula functions and no-error checks. |
 | yes | Excel 2010 functions ODS | `../core/sc/qa/unit/subsequent_export_test3.cxx::testFunctionsExcel2010ODS` | LO ODS fixture | Excel 2010 formula functions and no-error checks. |
+| yes | defined-name formula text | `../core/sc/qa/unit/subsequent_export_test3.cxx::testForumMsoEn4145327` | LO XLSX fixture | Defined-name formula text import; covered in Rust. |
 | yes | CEILING/FLOOR XLSX | `../core/sc/qa/unit/subsequent_export_test3.cxx::testCeilingFloorXLSX` | `corpus/LibreOffice/sc/qa/unit/data/xlsx/ceiling-floor.xlsx` | `CEILING`/`FLOOR` compatibility semantics. |
 | yes | CEILING/FLOOR XLS | `../core/sc/qa/unit/subsequent_export_test3.cxx::testCeilingFloorXLS` | LO XLS fixture | `CEILING`/`FLOOR` compatibility semantics. |
 | yes | CEILING/FLOOR ODS | `../core/sc/qa/unit/subsequent_export_test3.cxx::testCeilingFloorODS` | LO ODS fixture | `CEILING`/`FLOOR` compatibility semantics. |
@@ -327,13 +396,14 @@ UNO-editing cases are listed as non-migratable boundary cases.
 | yes | external virtual path | `../core/sc/qa/unit/subsequent_export_test3.cxx::testSupBookVirtualPathXLS` | LO XLS fixture | External workbook path/formula preservation. |
 | yes | sheet-local range name | `../core/sc/qa/unit/subsequent_export_test3.cxx::testSheetLocalRangeNameXLS` | LO XLS fixture | Sheet-local named formulas. |
 | yes | relative named expressions | `../core/sc/qa/unit/subsequent_export_test3.cxx::testRelativeNamedExpressionsXLS` | LO ODS fixture | Relative named expressions. |
-| yes | formula persistence regression | `../core/sc/qa/unit/subsequent_export_test5.cxx::testTdf163554` | LO fixture | Formula persistence; port expected LO formula string/value. |
+| yes | external defined name XLSX | `../core/sc/qa/unit/subsequent_export_test5.cxx::testExternalDefinedNameXLSX` | LO XLSX fixture | External defined-name cache/import state; covered in Rust. |
+| yes | formula persistence regression | `../core/sc/qa/unit/subsequent_export_test5.cxx::testTdf163554` | `corpus/LibreOffice/sc/qa/unit/data/xlsx/tdf163554.xlsx` | Covered in `xlsx_import.rs`; active failure exposes missing/error formula model exposure for LO-normalized 3D sheet range. |
 | yes | empty functions | `../core/sc/qa/unit/subsequent_export_test5.cxx::testTdf170565_empty_functions` | LO ODS fixture | Empty function call preservation. |
 | yes | external refs in data validation | `../core/sc/qa/unit/subsequent_export_test5.cxx::testErrorExternalsInDataValidation` | LO fixture | External formulas in validation. |
 | yes | missing-path external | `../core/sc/qa/unit/subsequent_export_test5.cxx::testMissingPathExternal` | `corpus/LibreOffice/sc/qa/unit/data/xlsx/MissingPathExternal.xlsx` | Missing external path behavior. |
 | yes | startup external refs XLS | `../core/sc/qa/unit/subsequent_export_test6.cxx::testXlStartupExternalXLS` | LO XLS fixture | Startup external reference behavior. |
 | yes | startup external refs XLSX | `../core/sc/qa/unit/subsequent_export_test6.cxx::testXlStartupExternalXLSX` | `corpus/LibreOffice/sc/qa/unit/data/xlsx/XlStartupExternal.xlsx` | Startup external reference behavior. |
-| yes | shape macro external ref | `../core/sc/qa/unit/subsequent_export_test6.cxx::testShapeMacroExtRef` | `corpus/LibreOffice/sc/qa/unit/data/xlsx/shape-macro-ext-ref.xlsx` | Formula-like macro external reference preservation if exposed through formula metadata. |
+| no | shape macro external ref | `../core/sc/qa/unit/subsequent_export_test6.cxx::testShapeMacroExtRef` | `corpus/LibreOffice/sc/qa/unit/data/xlsx/shape-macro-ext-ref.xlsx` | Drawing `macro` XML and exported external-link XML are raw package/export assertions, not formula-model assertions. |
 | no | cell cursor get/set array formula | `../core/sc/qa/extras/sccellcursorobj.cxx::testGetSetArrayFormula` | LO UNO fixture | UNO editing/query API, not package/formula model test-suite coverage yet. |
 | no | cell cursor get/set formula array | `../core/sc/qa/extras/sccellcursorobj.cxx::testGetSetFormulaArray` | LO UNO fixture | UNO editing/query API, not package/formula model test-suite coverage yet. |
 | no | cell cursor query dependents | `../core/sc/qa/extras/sccellcursorobj.cxx::testQueryDependents` | LO UNO fixture | UNO query API, not package/formula model test-suite coverage yet. |
