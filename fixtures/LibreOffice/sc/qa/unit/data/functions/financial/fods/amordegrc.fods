@@ -1544,8 +1544,8 @@
      <table:table-cell table:number-columns-repeated="11"/>
     </table:table-row>
     <table:table-row table:style-name="ro10">
-     <table:table-cell table:formula="of:=AMORDEGRC(10000;DATE(2012;3;1);DATE(2012;12;31);1500;1;0.31;2)" office:value-type="string" office:string-value="" calcext:value-type="error">
-      <text:p>Err:502</text:p>
+     <table:table-cell table:formula="of:=AMORDEGRC(10000;DATE(2012;3;1);DATE(2012;12;31);1500;1;0.31;2)" office:value-type="float" office:value="2818" calcext:value-type="float">
+      <text:p>2818</text:p>
      </table:table-cell>
      <table:table-cell/>
      <table:table-cell table:style-name="ce21"/>

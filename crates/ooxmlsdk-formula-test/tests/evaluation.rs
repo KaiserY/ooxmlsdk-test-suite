@@ -152,6 +152,19 @@ fn assert_error(book: &FormulaEvaluationBook<'_>, formula: &str, expected: Formu
     );
 }
 
+fn assert_error_with_grammar(
+    book: &FormulaEvaluationBook<'_>,
+    formula: &str,
+    grammar: FormulaGrammar,
+    expected: FormulaErrorValue,
+) {
+    assert_eq!(
+        book.evaluate_formula_text_with_grammar(SHEET, None, formula, grammar),
+        Some(FormulaValue::Error(expected)),
+        "{formula}"
+    );
+}
+
 fn assert_boolean(book: &FormulaEvaluationBook<'_>, formula: &str, expected: bool) {
     assert_eq!(
         book.evaluate_formula_text(SHEET, None, formula),
@@ -2867,6 +2880,29 @@ fn evaluates_apache_poi_statistical_function_cases() {
         1e-15,
     );
     assert_number_with_epsilon(&book, "LOGNORMDIST(1)", 0.5, 1e-15);
+    assert_number(&book, "MODE.SNGL(2,1,2,1)", 2.0);
+    assert_number(&book, "MODE.MULT(1,2,3,1)", 1.0);
+    assert_matrix_numbers_with_grammar(
+        &book,
+        SHEET,
+        None,
+        "MODE.MULT(2,1,2,1)",
+        FormulaGrammar::ExcelA1,
+        &[&[2.0], &[1.0]],
+    );
+    assert_matrix_numbers_with_grammar(
+        &book,
+        SHEET,
+        None,
+        "MODE.MULT({1,2,2;3,1,3})",
+        FormulaGrammar::ExcelA1,
+        &[&[1.0], &[3.0], &[2.0]],
+    );
+    assert_number(&book, "PROB({0,1,2,3},{0.2,0.3,0.1,0.4},2)", 0.1);
+    assert_number(&book, "PROB({0,1,2,3},{0.2,0.3,0.1,0.4},1,3)", 0.8);
+    assert_number(&book, "PROB({3;4;5;6},{0.2;0.4;0.3;0.1},4)", 0.4);
+    assert_number(&book, "PROB({1;4},{30;70}/100,4)", 0.7);
+    assert_number(&book, "PROB({1;4}*2,{0.3;0.7},2)", 0.3);
     assert_error(&book, "FISHER(1)", FormulaErrorValue::IllegalArgument);
     assert_error(
         &book,
@@ -2897,6 +2933,10 @@ fn evaluates_apache_poi_statistical_function_cases() {
         "LOGNORM.DIST(0,0,1,FALSE)",
         FormulaErrorValue::IllegalArgument,
     );
+    assert_error(&book, "MODE.SNGL(1,2,3)", FormulaErrorValue::NA);
+    assert_error(&book, "MODE.MULT(1,2,3)", FormulaErrorValue::NA);
+    assert_error(&book, "PROB({0,1},{0.2,0.2},1)", FormulaErrorValue::NA);
+    assert_error(&book, "PROB({0,1},{0.2,1.2},1)", FormulaErrorValue::NA);
 
     let average = evaluation_book(&[
         ("A1", number_value(1.0)),
@@ -3287,6 +3327,115 @@ fn evaluates_apache_poi_financial_function_cases() {
 
     assert_number_with_epsilon(&book, "NPER(0.05,250,-1000)", 4.57353557, 0.00000001);
     assert_error(&book, "NPER(12,4500,100000,100000)", FormulaErrorValue::Num);
+    assert_number_with_epsilon(
+        &book,
+        "PDURATION(0.06,100000,200000)",
+        11.895661045941875,
+        1e-12,
+    );
+    assert_matrix_numbers_with_grammar(
+        &book,
+        SHEET,
+        None,
+        "PDURATION({0.025;0.031},{2000;2450},{2200;2500})",
+        FormulaGrammar::ExcelA1,
+        &[&[3.85986616262265], &[0.6617501927899998]],
+    );
+    assert_error(
+        &book,
+        "PDURATION(0,100,200)",
+        FormulaErrorValue::IllegalArgument,
+    );
+    assert_error(
+        &book,
+        "PDURATION(0.06,-100,200)",
+        FormulaErrorValue::IllegalArgument,
+    );
+
+    // Source: LibreOffice scaddins/source/analysis/financial.cxx,
+    // scaddins/source/analysis/analysishelper.cxx, and
+    // sc/qa/unit/data/functions/financial/fods/*.fods. POI registers these
+    // Analysis ToolPak functions but does not implement them.
+    assert_number(
+        &book,
+        "AMORDEGRC(10000,DATE(2012,3,1),DATE(2012,12,31),1500,1,0.31,1)",
+        2848.0,
+    );
+    assert_number(
+        &book,
+        "AMORDEGRC(10000,DATE(2012,3,1),DATE(2012,12,31),1500,1,0.31,3)",
+        2843.0,
+    );
+    assert_error(
+        &book,
+        "AMORDEGRC(10000,DATE(2012,3,1),DATE(2012,12,31),1500,1,0.31,2)",
+        FormulaErrorValue::Num,
+    );
+    assert_raw_number_with_grammar(
+        &book,
+        SHEET,
+        None,
+        "of:=AMORDEGRC(10000;DATE(2012;3;1);DATE(2012;12;31);1500;1;0.31;2)",
+        FormulaGrammar::OpenFormula,
+        2818.0,
+    );
+    assert_number(
+        &book,
+        "AMORLINC(10000,DATE(2012,3,1),DATE(2012,12,31),1500,1,0.3,1)",
+        3000.0,
+    );
+    assert_error(
+        &book,
+        "AMORLINC(10000,DATE(2012,3,1),DATE(2012,12,31),1500,1,0.8,2)",
+        FormulaErrorValue::Num,
+    );
+    assert_raw_number_with_grammar(
+        &book,
+        SHEET,
+        None,
+        "of:=AMORLINC(10000;DATE(2012;3;1);DATE(2012;12;31);1500;1;0.8;2)",
+        FormulaGrammar::OpenFormula,
+        1722.22222222222,
+    );
+    assert_error(
+        &book,
+        "AMORLINC(-10000,DATE(2012,3,1),DATE(2012,12,31),1500,1,0.3,4)",
+        FormulaErrorValue::Num,
+    );
+    assert_number_with_epsilon(
+        &book,
+        "ODDLPRICE(DATE(1999,2,7),DATE(1999,6,15),DATE(1998,10,15),0.0375,0.0405,100,2,0)",
+        99.8782860147214,
+        1e-12,
+    );
+    assert_number_with_epsilon(
+        &book,
+        "ODDLPRICE(DATE(1999,2,7),DATE(1999,6,15),DATE(1998,10,15),0.0375,0,100,2,0)",
+        101.333333333333,
+        1e-12,
+    );
+    assert_error(
+        &book,
+        "ODDLPRICE(DATE(1999,2,7),DATE(1999,6,15),DATE(1998,10,15),0,0.0405,100,2,0)",
+        FormulaErrorValue::Num,
+    );
+    assert_number_with_epsilon(
+        &book,
+        "ODDLYIELD(\"1999-04-20\",\"1999-06-15\",\"1998-10-15\",0.0375,99.875,100,2,0)",
+        0.0448731663302424,
+        1e-15,
+    );
+    assert_error(
+        &book,
+        "ODDLYIELD(\"1999-04-20\",\"1999-06-15\",\"1998-10-15\",0.0375,0,100,2,0)",
+        FormulaErrorValue::Num,
+    );
+    assert_error_with_grammar(
+        &book,
+        "of:=ODDLYIELD(\"1999-04-20\";\"1999-06-15\";\"1998-10-15\";0.0375;0;100;2;0)",
+        FormulaGrammar::OpenFormula,
+        FormulaErrorValue::IllegalArgument,
+    );
 }
 
 #[test]
