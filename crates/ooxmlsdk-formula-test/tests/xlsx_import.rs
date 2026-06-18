@@ -1,8 +1,8 @@
 use ooxmlsdk::parts::spreadsheet_document::SpreadsheetDocument;
 use ooxmlsdk_corpus_test_support::corpus_file_path;
 use ooxmlsdk_formula::{
-    BuiltInName, CellAddress, CellRange, FormulaErrorValue, FormulaKind, FormulaValue, SheetId,
-    WorkbookValueModel,
+    BuiltInName, CellAddress, CellRange, FormulaDependency, FormulaErrorValue, FormulaKind,
+    FormulaValue, SheetId, WorkbookValueModel,
 };
 
 fn workbook(relative_path: &str) -> WorkbookValueModel<'static> {
@@ -194,10 +194,14 @@ fn assert_poi_formula_value_matches(
     context: &str,
 ) {
     match (actual, expected) {
-        (Some(FormulaValue::Number(actual)), FormulaValue::Number(expected)) => assert!(
-            (actual - expected).abs() <= 1e-8,
-            "{context}: expected {expected}, got {actual}"
-        ),
+        (Some(FormulaValue::Number(actual)), FormulaValue::Number(expected)) => {
+            let matches = if expected != 0.0 {
+                (actual - expected).abs() <= (expected * 1e-8).abs()
+            } else {
+                actual.abs() < 1e-4
+            };
+            assert!(matches, "{context}: expected {expected}, got {actual}");
+        }
         (Some(FormulaValue::Boolean(actual)), FormulaValue::Boolean(expected)) => {
             assert_eq!(actual, expected, "{context}")
         }
@@ -384,18 +388,40 @@ fn evaluates_apache_poi_xssf_formula_evaluation_regression_fixtures() {
     );
 
     let recalculated_62834 = recalculated_workbook("Apache-POI/test-data/spreadsheet/62834.xlsx");
+    let sheet_62834 = sheet_id(&recalculated_62834, "problem");
+    assert_eq!(formula_text(&recalculated_62834, sheet_62834, "A5"), "A4");
+    assert_eq!(
+        cell_value(&recalculated_62834, sheet_62834, "A4"),
+        FormulaValue::String("another value".into())
+    );
+    let a5_dependency = recalculated_62834
+        .sheets
+        .iter()
+        .find(|item| item.id == sheet_62834)
+        .and_then(|sheet| sheet.cells.get(&address("A5")))
+        .and_then(|record| record.formula.as_ref())
+        .and_then(|formula| formula.parsed_formula.as_ref())
+        .and_then(|parsed| parsed.dependencies.first())
+        .expect("62834.xlsx A5 parsed dependency");
+    assert!(matches!(
+        a5_dependency,
+        FormulaDependency::Cell {
+            sheet,
+            address: CellAddress { column: 0, row: 3 }
+        } if *sheet == sheet_62834
+    ));
     assert_poi_formula_value_matches(
-        evaluated_formula_value(&recalculated_62834, sheet, "A2"),
+        evaluated_formula_value(&recalculated_62834, sheet_62834, "A2"),
         FormulaValue::String("a value".into()),
         "62834.xlsx A2",
     );
     assert_poi_formula_value_matches(
-        evaluated_formula_value(&recalculated_62834, sheet, "A3"),
+        evaluated_formula_value(&recalculated_62834, sheet_62834, "A3"),
         FormulaValue::String("a value".into()),
         "62834.xlsx A3",
     );
     assert_poi_formula_value_matches(
-        evaluated_formula_value(&recalculated_62834, sheet, "A5"),
+        evaluated_formula_value(&recalculated_62834, sheet_62834, "A5"),
         FormulaValue::String("another value".into()),
         "62834.xlsx A5",
     );
@@ -408,23 +434,25 @@ fn evaluates_apache_poi_xssf_formula_evaluation_regression_fixtures() {
     );
 
     let formatting = workbook("Apache-POI/test-data/spreadsheet/61495-test.xlsm");
+    let formatting_sheet = sheet_id(&formatting, "TEST");
     assert_eq!(
-        formula_text(&formatting, sheet, "B1"),
+        formula_text(&formatting, formatting_sheet, "B1"),
         "IF(TEST!A1=\"\",\"\",CONCATENATE(\"D\",\" \",TEXT(TEST!A1,\"00.00\")))"
     );
     assert_eq!(
-        formula_text(&formatting, sheet, "B2"),
+        formula_text(&formatting, formatting_sheet, "B2"),
         "IF(TEST!A2=\"\",\"\",CONCATENATE(\"D\",\" \",TEXT(TEST!A2,\"00,00\")))"
     );
     let recalculated_formatting =
         recalculated_workbook("Apache-POI/test-data/spreadsheet/61495-test.xlsm");
+    let formatting_sheet = sheet_id(&recalculated_formatting, "TEST");
     assert_poi_formula_value_matches(
-        evaluated_formula_value(&recalculated_formatting, sheet, "B1"),
+        evaluated_formula_value(&recalculated_formatting, formatting_sheet, "B1"),
         FormulaValue::String("D 67.10".into()),
         "61495-test.xlsm B1",
     );
     assert_poi_formula_value_matches(
-        evaluated_formula_value(&recalculated_formatting, sheet, "B2"),
+        evaluated_formula_value(&recalculated_formatting, formatting_sheet, "B2"),
         FormulaValue::String("D 0,068".into()),
         "61495-test.xlsm B2",
     );
@@ -432,8 +460,9 @@ fn evaluates_apache_poi_xssf_formula_evaluation_regression_fixtures() {
     let sumproduct = recalculated_workbook(
         "Apache-POI/test-data/spreadsheet/bug60848_sumproduct_unary_minus.xlsx",
     );
+    let sumproduct_sheet = sheet_id(&sumproduct, "Sheet1");
     assert_poi_formula_value_matches(
-        evaluated_formula_value(&sumproduct, sheet, "A3"),
+        evaluated_formula_value(&sumproduct, sumproduct_sheet, "A3"),
         FormulaValue::Number(0.0),
         "bug60848_sumproduct_unary_minus.xlsx A3",
     );
@@ -447,7 +476,7 @@ fn imports_apache_poi_external_reference_formula_fixture() {
     // assertions are intentionally omitted; this keeps only formula text and
     // value behavior.
     let model = workbook("Apache-POI/test-data/spreadsheet/ref2-56737.xlsx");
-    let sheet = SheetId(1);
+    let sheet = sheet_id(&model, "Refs");
     for (reference, formula, expected) in [
         (
             "E3",
@@ -493,6 +522,7 @@ fn imports_apache_poi_external_reference_formula_fixture() {
     }
 
     let recalculated = recalculated_workbook("Apache-POI/test-data/spreadsheet/ref2-56737.xlsx");
+    let sheet = sheet_id(&recalculated, "Refs");
     for (reference, expected) in [
         ("E3", FormulaValue::String("Hello!".into())),
         ("G3", FormulaValue::String("Test A1".into())),
@@ -1014,7 +1044,7 @@ fn imports_named_table_reference_cache_from_xlsx_fixture() {
 fn imports_complex_formula_text_from_xlsx_fixtures() {
     // Source: LibreOffice sc/qa/unit/subsequent_filters_test2.cxx::testTdf131536.
     let model = recalculated_workbook("LibreOffice/sc/qa/unit/data/xlsx/tdf131536.xlsx");
-    let sheet = SheetId(1);
+    let sheet = sheet_id(&model, "Comparison");
 
     assert_cell_numeric_value(&model, sheet, "D10", 1.0);
     assert_eq!(

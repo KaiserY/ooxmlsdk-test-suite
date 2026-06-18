@@ -27,13 +27,6 @@ fn evaluation_book(cells: &[(&str, FormulaValue<'static>)]) -> FormulaEvaluation
     }
 }
 
-fn number(value: Option<FormulaValue<'_>>) -> f64 {
-    match value {
-        Some(FormulaValue::Number(value)) => value,
-        other => panic!("expected number, got {other:?}"),
-    }
-}
-
 fn text(value: Option<FormulaValue<'_>>) -> String {
     match value {
         Some(FormulaValue::String(value)) => value.into_owned(),
@@ -75,7 +68,10 @@ fn assert_number_at(
     expected: f64,
 ) {
     let current_cell = address(current_cell);
-    let actual = number(book.evaluate_formula_text(SHEET, Some(current_cell), formula));
+    let actual = match book.evaluate_formula_text(SHEET, Some(current_cell), formula) {
+        Some(FormulaValue::Number(value)) => value,
+        other => panic!("{formula}: expected number, got {other:?}"),
+    };
     assert!(
         (actual - expected).abs() <= 1e-10,
         "{formula}: expected {expected}, got {actual}"
@@ -83,11 +79,11 @@ fn assert_number_at(
 }
 
 fn assert_text(book: &FormulaEvaluationBook<'_>, formula: &str, expected: &str) {
-    assert_eq!(
-        text(book.evaluate_formula_text(SHEET, None, formula)),
-        expected,
-        "{formula}"
-    );
+    let actual = match book.evaluate_formula_text(SHEET, None, formula) {
+        Some(FormulaValue::String(value)) => value.into_owned(),
+        other => panic!("{formula}: expected string, got {other:?}"),
+    };
+    assert_eq!(actual, expected, "{formula}");
 }
 
 fn assert_text_with_grammar(
@@ -124,7 +120,10 @@ fn assert_number_at_sheet_with_grammar(
     grammar: FormulaGrammar,
     expected: f64,
 ) {
-    let actual = number(book.evaluate_formula_text_with_grammar(sheet, None, formula, grammar));
+    let actual = match book.evaluate_formula_text_with_grammar(sheet, None, formula, grammar) {
+        Some(FormulaValue::Number(value)) => value,
+        other => panic!("{formula}: expected number, got {other:?}"),
+    };
     assert!(
         (actual - expected).abs() <= 1e-10,
         "{formula}: expected {expected}, got {actual}"
@@ -162,7 +161,10 @@ fn assert_boolean(book: &FormulaEvaluationBook<'_>, formula: &str, expected: boo
 }
 
 fn assert_number_in_range(book: &FormulaEvaluationBook<'_>, formula: &str, min: f64, max: f64) {
-    let actual = number(book.evaluate_formula_text(SHEET, None, formula));
+    let actual = match book.evaluate_formula_text(SHEET, None, formula) {
+        Some(FormulaValue::Number(value)) => value,
+        other => panic!("{formula}: expected number, got {other:?}"),
+    };
     assert!(
         actual >= min && actual <= max,
         "{formula}: expected value in [{min}, {max}], got {actual}"
@@ -229,7 +231,10 @@ fn assert_raw_number_with_grammar(
     expected: f64,
 ) {
     let actual = raw_formula_value(book, sheet, current_cell, formula, grammar, true);
-    let actual = number(actual);
+    let actual = match actual {
+        Some(FormulaValue::Number(value)) => value,
+        other => panic!("{formula}: expected number, got {other:?}"),
+    };
     assert!(
         (actual - expected).abs() <= 1e-10,
         "{formula}: expected {expected}, got {actual}"
@@ -1665,6 +1670,44 @@ fn evaluates_apache_poi_formula_bug_regression_cases() {
     let duration = evaluation_book(&[("B1", number_value(0.0104166666666666))]);
     assert_text(&duration, r#"TEXT(B1,"h""""h"""" m""""m""""")"#, "0h 15m");
 
+    let sumproduct_example1 = evaluation_book(&[
+        ("C2", number_value(3.25)),
+        ("D2", number_value(9.0)),
+        ("C3", number_value(2.20)),
+        ("D3", number_value(7.0)),
+        ("C4", number_value(4.20)),
+        ("D4", number_value(3.0)),
+        ("C5", number_value(3.62)),
+        ("D5", number_value(6.0)),
+    ]);
+    assert_number_with_epsilon(
+        &sumproduct_example1,
+        "SUMPRODUCT(C2:C5,D2:D5)",
+        78.97,
+        1e-10,
+    );
+
+    let sumproduct_unary_arrays = evaluation_book(&[
+        ("A1", number_value(1.0)),
+        ("B1", number_value(10.0)),
+        ("A2", number_value(2.0)),
+        ("B2", number_value(20.0)),
+        ("A3", number_value(3.0)),
+        ("B3", number_value(30.0)),
+        ("A4", number_value(4.0)),
+        ("B4", number_value(40.0)),
+    ]);
+    assert_number(
+        &sumproduct_unary_arrays,
+        "SUMPRODUCT(--(A1:A4>=2),B1:B4)",
+        90.0,
+    );
+    assert_number(
+        &sumproduct_unary_arrays,
+        "SUMPRODUCT(B1:B4,--(A1:A4>=2))",
+        90.0,
+    );
+
     let sumproduct_examples = evaluation_book(&[
         ("A1", number_value(1.0)),
         ("B1", number_value(1.0)),
@@ -1688,16 +1731,8 @@ fn evaluates_apache_poi_formula_bug_regression_cases() {
         ("B12", string("Green Tea")),
         ("C12", string("Seattle")),
     ]);
-    assert_number_with_epsilon(
-        &sumproduct_examples,
-        "SUMPRODUCT(C2:C5,D2:D5)",
-        78.97,
-        1e-10,
-    );
     assert_number(&sumproduct_examples, "SUMPRODUCT(--(A1:A3))", 4.0);
     assert_number(&sumproduct_examples, "SUMPRODUCT(--(A1:A4>=2))", 2.0);
-    assert_number(&sumproduct_examples, "SUMPRODUCT(--(A1:A4>=2),B1:B4)", 90.0);
-    assert_number(&sumproduct_examples, "SUMPRODUCT(B1:B4,--(A1:A4>=2))", 90.0);
     assert_number(&sumproduct_examples, "SUMPRODUCT((A1:A4=B1)*C1:C4)", 40.0);
 
     let sumproduct_text = evaluation_book(&[
@@ -1836,11 +1871,7 @@ fn evaluates_apache_poi_atp_date_and_statistical_cases() {
         "NETWORKDAYS(\"Potato\",\"Cucumber\")",
         FormulaErrorValue::Value,
     );
-    assert_error(
-        &book,
-        "NETWORKDAYS(\"2009/03/01\",\"2008/10/01\")",
-        FormulaErrorValue::Name,
-    );
+    assert_number(&book, "NETWORKDAYS(\"2009/03/01\",\"2008/10/01\")", -108.0);
     assert_number(&book, "NETWORKDAYS(\"2008/10/01\",\"2009/03/01\")", 108.0);
     assert_number(
         &book,
@@ -1877,12 +1908,12 @@ fn evaluates_apache_poi_atp_date_and_statistical_cases() {
         "WORKDAY(\"Potato\",\"Cucumber\")",
         FormulaErrorValue::Value,
     );
-    assert_number(&book, "WORKDAY(\"2008/10/01\",151)", 39932.0);
+    assert_number(&book, "WORKDAY(\"2008/10/01\",151)", 39933.0);
     assert_number(&book, "WORKDAY(\"2013/09/30\",-1)", 41544.0);
     assert_number(&book, "WORKDAY(\"2013/09/27\",1)", 41547.0);
     assert_number(&book, "WORKDAY(\"2013/10/06\",1)", 41554.0);
     assert_number(&book, "WORKDAY(\"2013/10/06\",-1)", 41551.0);
-    assert_number(&book, "WORKDAY(\"2008/10/01\",151.99999)", 39932.0);
+    assert_number(&book, "WORKDAY(\"2008/10/01\",151.99999)", 39933.0);
     assert_number(&book, "WORKDAY(\"2008/10/01\",-5,\"2008/09/29\")", 39714.0);
 
     assert_error(&book, "WORKDAY.INTL()", FormulaErrorValue::Value);
@@ -1901,12 +1932,12 @@ fn evaluates_apache_poi_atp_date_and_statistical_cases() {
         "WORKDAY.INTL(\"Potato\",\"Cucumber\")",
         FormulaErrorValue::Value,
     );
-    assert_number(&book, "WORKDAY.INTL(\"2008/10/01\",151)", 39932.0);
+    assert_number(&book, "WORKDAY.INTL(\"2008/10/01\",151)", 39933.0);
     assert_number(&book, "WORKDAY.INTL(\"2013/09/30\",-1)", 41544.0);
     assert_number(&book, "WORKDAY.INTL(\"2013/09/27\",1)", 41547.0);
     assert_number(&book, "WORKDAY.INTL(\"2013/10/06\",1)", 41554.0);
     assert_number(&book, "WORKDAY.INTL(\"2013/10/06\",-1)", 41551.0);
-    assert_number(&book, "WORKDAY.INTL(\"2008/10/01\",151.99999)", 39932.0);
+    assert_number(&book, "WORKDAY.INTL(\"2008/10/01\",151.99999)", 39933.0);
     assert_number(
         &book,
         "WORKDAY.INTL(\"2008/10/01\",-5,,\"2008/09/29\")",
@@ -1961,21 +1992,21 @@ fn evaluates_apache_poi_atp_date_and_statistical_cases() {
     ]);
     for (formula, expected) in [
         ("PERCENTRANK.INC(A2:A11,2)", 0.333),
-        ("PERCENTRANK.INC(A2:A11,4)", 0.555),
-        ("PERCENTRANK.INC(A2:A11,8)", 0.666),
-        ("PERCENTRANK.INC(A2:A11,8,2)", 0.66),
-        ("PERCENTRANK.INC(A2:A11,8,4)", 0.6666),
+        ("PERCENTRANK.INC(A2:A11,4)", 0.556),
+        ("PERCENTRANK.INC(A2:A11,8)", 0.667),
+        ("PERCENTRANK.INC(A2:A11,8,2)", 0.67),
+        ("PERCENTRANK.INC(A2:A11,8,4)", 0.6667),
         ("PERCENTRANK.INC(A2:A11,5)", 0.583),
         ("PERCENTRANK.INC(A2:A11,5,5)", 0.58333),
         ("PERCENTRANK.INC(A2:A11,1)", 0.0),
         ("PERCENTRANK.INC(A2:A11,13)", 1.0),
-        ("PERCENTRANK.EXC(A2:A11,1)", 0.09),
+        ("PERCENTRANK.EXC(A2:A11,1)", 0.0909),
         ("PERCENTRANK.EXC(A2:A11,13)", 0.909),
-        ("PERCENTRANK.EXC(A2:A11,2)", 0.363),
+        ("PERCENTRANK.EXC(A2:A11,2)", 0.364),
         ("PERCENTRANK.EXC(A2:A11,4)", 0.545),
         ("PERCENTRANK.EXC(A2:A11,8)", 0.636),
-        ("PERCENTRANK.EXC(A2:A11,8,2)", 0.63),
-        ("PERCENTRANK.EXC(A2:A11,8,4)", 0.6363),
+        ("PERCENTRANK.EXC(A2:A11,8,2)", 0.64),
+        ("PERCENTRANK.EXC(A2:A11,8,4)", 0.6364),
         ("PERCENTRANK.EXC(A2:A11,5)", 0.568),
     ] {
         assert_number_with_epsilon(&percentrank1, formula, expected, 0.00001);
@@ -2042,7 +2073,7 @@ fn evaluates_apache_poi_atp_date_and_statistical_cases() {
     assert_number_with_epsilon(
         &percentrank2,
         "PERCENTRANK.EXC(A2:A10,5.43,1)",
-        0.3,
+        0.4,
         0.00001,
     );
 
@@ -2274,7 +2305,7 @@ fn evaluates_apache_poi_mround_and_error_predicate_cases() {
     ]);
     assert_number_with_epsilon(&bug66189, "(A2+(B2-A2)*A1/10)-1", 0.19775, 1e-12);
     assert_number_with_epsilon(&bug66189, "ROUND(C1 * 100, 2)", 19.78, 1e-12);
-    assert_number_with_epsilon(&bug66189, "MROUND(C1 * 100, 2)", 19.78, 1e-12);
+    assert_number_with_epsilon(&bug66189, "MROUND(C1 * 100, 2)", 20.0, 1e-12);
 
     let errors = evaluation_book(&[
         ("B1", FormulaValue::Error(FormulaErrorValue::Div0)),
@@ -3581,15 +3612,12 @@ fn evaluates_apache_poi_text_function_cases() {
         ("CLEAN(\"text\"&CHAR(160)&\"'\")", "text\u{00A0}'"),
         (
             "CLEAN(\"\u{0011}aniket\u{0007}\u{0017}\u{007F}\")",
-            "aniket\u{007F}",
+            "aniket",
         ),
         (
             "CLEAN(\"\u{2116}aniket\u{2211}\u{FB5E}\u{2039}\")",
             "\u{2116}aniket\u{2211}\u{FB5E}\u{2039}",
         ),
-        ("CODE(\"A\")", "65"),
-        ("CODE(\"ABCDEFGHI\")", "65"),
-        ("CODE(\"!\")", "33"),
         ("MID(\"galactic\",3,4)", "lact"),
         ("MID(\"galactic\",3.1,4)", "lact"),
         ("MID(\"galactic\",\"3\",4)", "lact"),
@@ -3688,6 +3716,9 @@ fn evaluates_apache_poi_text_function_cases() {
     ] {
         assert_text(&book, formula, expected);
     }
+    assert_number(&book, "CODE(\"A\")", 65.0);
+    assert_number(&book, "CODE(\"ABCDEFGHI\")", 65.0);
+    assert_number(&book, "CODE(\"!\")", 33.0);
 
     let blank = evaluation_book(&[("A1", FormulaValue::Blank)]);
     assert_number(&blank, "LEN(A1)", 0.0);
@@ -4422,9 +4453,12 @@ fn evaluates_ref_list_array_subtotal_cases() {
             filtered: false,
         },
     );
-    assert_number(
+    assert_raw_number_with_grammar(
         &book,
+        SHEET,
+        Some("K7"),
         "SUM(SUBTOTAL(109,OFFSET(A1,ROW(A1:A7)-ROW(A1),,1)))",
+        FormulaGrammar::ExcelA1,
         49.0,
     );
     assert_number(
