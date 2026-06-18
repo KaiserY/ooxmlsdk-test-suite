@@ -164,9 +164,10 @@ High-value first groups:
 
 ## 2026-06-18 Formula Dispatch Gap Check
 
-Cross-checking current `ooxmlsdk-formula` dispatch ids against direct
+Cross-checking current `ooxmlsdk-formula` ordinary dispatch ids against direct
 `evaluation.rs` assertions, the LibreOffice FODS corpus, and POI formula tests
-shows two any-path formula-test gaps that POI does not currently fill:
+shows two any-path formula-test gaps. POI does not currently fill either ETS
+gap:
 
 | Priority | Function id | Public names | POI status | Follow-up |
 | --- | --- | --- | --- | --- |

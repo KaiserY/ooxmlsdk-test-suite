@@ -3397,6 +3397,9 @@ fn evaluates_apache_poi_error_and_boolean_cases() {
     let text_divide = evaluation_book(&[("A1", string("text"))]);
     assert_error(&text_divide, "A1/2", FormulaErrorValue::Value);
 
+    // Source: LibreOffice sc/qa/unit/data/functions/spreadsheet/fods/errortype.fods.
+    assert_number(&evaluation_book(&[]), "ERRORTYPE(#null)", 525.0);
+
     let main = SheetId(1);
     let other = SheetId(2);
     let blank_refs = FormulaEvaluationBook {
@@ -3602,6 +3605,9 @@ fn evaluates_apache_poi_text_function_cases() {
     // TestSubstitute.java, TestTrim.java, TestFind.java, TestConcat.java,
     // TestText.java, and TestProperXSSF.java.
     let book = evaluation_book(&[]);
+    // Source: LibreOffice sc/qa/unit/data/functions/addin/fods/rot13.fods.
+    assert_text(&book, "ROT13(\"text\")", "grkg");
+
     for (formula, expected) in [
         ("CLEAN(CHAR(7)&\"text\"&CHAR(7))", "text"),
         ("CLEAN(CHAR(7)&\"text\"&CHAR(17))", "text"),
