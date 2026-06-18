@@ -965,7 +965,7 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
                         FormulaValue::String(Cow::Borrowed(""))
                     } else if matches!(
                         cell.cached_value,
-                        FormulaValue::Error(FormulaErrorValue::Unknown)
+                        FormulaValue::Error(FormulaErrorValue::Error)
                     ) {
                         fods_error_value(&cell.text).unwrap_or(cell.cached_value.clone())
                     } else {
@@ -1079,7 +1079,7 @@ struct PendingCell {
 
 fn cached_value_from_attrs(event: &quick_xml::events::BytesStart<'_>) -> FormulaValue<'static> {
     if attr_value_by_qname(event, b"calcext:value-type").as_deref() == Some("error") {
-        return FormulaValue::Error(FormulaErrorValue::Unknown);
+        return FormulaValue::Error(FormulaErrorValue::Error);
     }
     match attr_value(event, b"value-type").as_deref() {
         Some("float") | Some("currency") | Some("percentage") => attr_value(event, b"value")
@@ -1122,8 +1122,9 @@ fn fods_error_value(text: &str) -> Option<FormulaValue<'static>> {
             "#NUM!" => FormulaErrorValue::Num,
             "#N/A" => FormulaErrorValue::NA,
             "ERR:502" => FormulaErrorValue::IllegalArgument,
+            "ERR:504" => FormulaErrorValue::IllegalParameter,
+            "ERR:508" => FormulaErrorValue::PairExpected,
             "ERR:511" => FormulaErrorValue::Parameter,
-            "ERR:504" | "ERR:508" => FormulaErrorValue::Unknown,
             _ => return None,
         },
     ))
