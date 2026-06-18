@@ -14,7 +14,7 @@ Current baseline:
 
 | Corpus | Fixtures | Cached formula cells | Current formula assertions | Mismatched | Unsupported |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| LibreOffice functions FODS | 507 | 52,191 | 3,139 | 0 | 0 |
+| LibreOffice functions FODS | 507 | 52,191 | 3,149 | 0 | 0 |
 
 This baseline follows LibreOffice `FunctionsTest::load`: the runner
 hard-recalculates each workbook, asserts the summary result shape, and keeps
@@ -75,7 +75,7 @@ Current `crates/ooxmlsdk-formula-test/tests/` inventory:
 | --- | ---: | --- |
 | FODS function corpus | 1 formula corpus test | Formula coverage is the 507-fixture `FunctionsTest::load`-style corpus test; XML-support assertions are not counted as migration coverage. |
 | Synthetic address parsing | 4 | Covers selected LO A1/R1C1 address cases; token compiler/stringifier cases are still blocked. |
-| Synthetic evaluator assertions | 53 | Covers LO/POI scalar, lookup, aggregate, hidden-row, sheet, matrix, statistical, text, error, reference-grammar, query-empty, XLOOKUP regex, range/intersection, dynamic-array scalar, and regression formulas that current public APIs can express. |
+| Synthetic evaluator assertions | 54 | Covers LO/POI scalar, lookup, aggregate, hidden-row, sheet, matrix, statistical, text, error, reference-grammar, query-empty, XLOOKUP regex, range/intersection, dynamic-array scalar/matrix, regression, financial add-in, and `TEXT*`/`REGEX` formulas that current public APIs can express. |
 | Shared formula translation | 1 | Covers direct shared-formula text translation only; structural edit/update behavior is still blocked. |
 | XLSX import metadata/cache | 34 | Covers selected LO/POI `.xlsx` fixtures for defined names, data tables, shared formulas, spill metadata, structured references, external references, cached values, formula text, and display text. |
 
@@ -107,41 +107,33 @@ corpus.
 
 | Metric | Count | Notes |
 | --- | ---: | --- |
-| Registered formula function ids | 478 | Extracted from `FormulaFunctionId` and the public alias table in `crates/ooxmlsdk-formula/src/function.rs`. |
-| Registered formula aliases | 531 | Public names after alias registration, before namespace-prefix normalization. |
-| Function ids with ordinary dispatch entry | 437 | Unique `FormulaFunctionId::...` references in `crates/ooxmlsdk-formula/src/function/dispatch.rs`. |
-| Function ids with any evaluator implementation reference | 444 | Unique `FormulaFunctionId::...` references across `crates/ooxmlsdk-formula/src/`, excluding the registry table itself. This includes ordinary dispatch and special evaluator paths. |
-| Function ids hit by direct evaluator assertions | 213 | Extracted from formula strings in `tests/evaluation.rs`. |
-| Function ids hit by all non-FODS formula-test assertions | 220 | Extracted from formula strings in `tests/evaluation.rs`, `tests/xlsx_import.rs`, and `tests/shared_formula.rs`. |
-| Raw function names found in LibreOffice FODS formulas | 511 | Static scan of `table:formula` attributes in 507 FODS files. |
-| Function ids hit by LibreOffice FODS formulas | 471 | After mapping aliases and normalizing `COM.MICROSOFT.*`, `ORG.OPENOFFICE.*`, and `ORG.LIBREOFFICE.*` prefixes. Legacy `GAMMADIST` is counted separately from modern `GAMMA.DIST` because their LO/Excel edge semantics differ. |
+| Registered formula function ids | 480 | Extracted from `FormulaFunctionId` and the public alias table in `crates/ooxmlsdk-formula/src/function.rs`. |
+| Registered formula aliases | 534 | Public names after alias registration, before namespace-prefix normalization. |
+| Function ids with ordinary dispatch entry | 473 | Unique `FormulaFunctionId::...` references in `crates/ooxmlsdk-formula/src/function/dispatch.rs`. |
+| Function ids with any evaluator implementation reference | 480 | Unique `FormulaFunctionId::...` references across `crates/ooxmlsdk-formula/src/`, excluding the registry table itself. This includes ordinary dispatch and special evaluator paths. |
+| Function ids hit by direct evaluator assertions | 244 | Extracted from formula strings in `tests/evaluation.rs`. |
+| Function ids hit by all non-FODS formula-test assertions | 250 | Extracted from formula strings in `tests/evaluation.rs`, `tests/xlsx_import.rs`, and `tests/shared_formula.rs`. |
+| Raw function names found in LibreOffice FODS formulas | 504 | Static scan of `table:formula` attributes in 507 FODS files, ignoring quoted string literals. |
+| Function ids hit by LibreOffice FODS formulas | 468 | After mapping aliases and normalizing `COM.MICROSOFT.*`, `ORG.OPENOFFICE.*`, and `ORG.LIBREOFFICE.*` prefixes. Legacy `GAMMADIST` is counted separately from modern `GAMMA.DIST` because their LO/Excel edge semantics differ. |
 | Function ids hit by any formula-test path | 476 | Non-FODS assertions plus FODS corpus after namespace-prefix normalization. |
-| Dispatched function ids hit by any formula-test path | 435 | Current ordinary dispatch surface covered by active formula-test paths. |
-| Dispatched function ids with no current formula-test hit | 2 | Listed below. |
-| Static FODS function ids without ordinary dispatch | 41 | FODS formula ids that appear in static formulas but do not have a `dispatch.rs` branch. Some are special evaluator paths or non-asserted workbook formulas. |
-| Static FODS function ids without any evaluator implementation reference | 34 | Conservative remaining implementation-audit gap after excluding special evaluator refs. |
+| Dispatched function ids hit by any formula-test path | 469 | Current ordinary dispatch surface covered by active formula-test paths. |
+| Dispatched function ids with no current formula-test hit | 4 | Remaining alias-specific dispatch ids are compatibility spellings: `COM.MICROSOFT.CEILING`, `COM.MICROSOFT.FLOOR`, `ORG.OPENOFFICE.ERRORTYPE`, and `ORG.OPENOFFICE.ROT13`. Their normalized semantics are covered by canonical names. |
+| Static FODS function ids without ordinary dispatch | 7 | FODS formula ids that appear in static formulas but are intentionally handled by special evaluator paths: `CHOOSE`, `IF`, `IFERROR`, `IFNA`, `IFS`, `LET`, and `SWITCH`. |
+| Static FODS function ids without any evaluator implementation reference | 0 | The conservative static FODS implementation-audit gap is closed. |
 
-Current any-path ordinary-dispatch gaps:
-
-| Priority | Function id | Public names | Evidence | Action |
-| --- | --- | --- | --- | --- |
-| P0 | `ForecastDotEtsDotSeasonality` | `FORECAST.ETS.SEASONALITY` | Present in LibreOffice OOXML formula mapping and interpreter dispatch, but not present in copied FODS function formulas or POI formula tests. | Add an Excel/LO-backed evaluator assertion or a focused FODS/XLSX fixture before treating ETS seasonal detection as covered. |
-| P0 | `ForecastDotEtsDotStat` | `FORECAST.ETS.STAT`, `FORECAST.ETS.STAT.ADD` | Present in LibreOffice OOXML formula mapping and interpreter dispatch. Current FODS coverage exercises `FORECAST.ETS.STAT.MULT`, not additive `STAT`. | Add an Excel/LO-backed evaluator assertion or a focused FODS/XLSX fixture. |
+Current static FODS implementation-reference gaps: none. The remaining FODS
+ids without ordinary dispatch are short-circuit or binding functions whose
+arguments must not be eagerly evaluated through `dispatch.rs`.
 
 Important follow-up: `evaluation.rs` is the primary evaluator coverage table
-and currently hits 213 function ids directly. The broader formula-test suite now
-covers 435 of the 437 ordinary dispatched function ids through active
-assertions and the LibreOffice FODS corpus. The active FODS regression lane is
-green (`507` files, `3,139` assertions, `0` unsupported, `0` mismatched), but
-the static FODS surface still contains implementation-audit gaps: 41
-FODS-mapped function ids are not ordinary dispatch entries, and 34 do not have
-any evaluator implementation reference in the current tree. FODS remains a
+and currently hits 244 function ids directly. The active FODS regression lane is
+green (`507` files, `3,149` assertions, `0` unsupported, `0` mismatched), and
+the static FODS implementation-reference gap is now zero. FODS remains a
 valuable corpus oracle, but it should not be treated as a substitute for
-explicit, readable evaluator assertions or for static dispatch coverage. Add
-small direct assertions for FODS-only functions, prioritizing high-risk
-behavior: date serials, criteria coercion, lookup modes, matrix returns,
-financial signs, text parsing, error propagation, and volatile/dynamic-array
-semantics.
+explicit, readable evaluator assertions or for static dispatch coverage. Keep
+adding small direct assertions for high-risk behavior: date serials, criteria
+coercion, lookup modes, matrix returns, financial signs, text parsing, error
+propagation, and volatile/dynamic-array semantics.
 
 Recent passes closed FODS-backed gaps for `MODE.SNGL`, `MODE.MULT`, `PROB`,
 `PDURATION`, `AMORDEGRC`, `AMORLINC`, `ODDLPRICE`, and `ODDLYIELD`, including
@@ -150,13 +142,22 @@ arguments, LO column-major `MODE.MULT` ordering, `PDURATION` matrix
 broadcasting, financial date/basis validation, and the Excel-vs-OpenFormula
 `AMOR*` basis-2 split.
 
+The ETS dispatch pass closed the remaining ordinary-dispatch coverage gaps for
+`FORECAST.ETS.SEASONALITY` and additive `FORECAST.ETS.STAT`, and added
+LibreOffice-backed registration/dispatch for `FORECAST.ETS.PI.ADD`,
+`FORECAST.ETS.PI.MULT`, and Excel's `FORECAST.ETS.CONFINT` alias. LibreOffice is
+the implementation reference here; the local Apache POI checkout has no ETS
+evaluator implementation or formula-test oracle. The Rust PI implementation
+uses the exact LibreOffice EDS prediction-interval formula and a deterministic
+1000-scenario half-normal sampling pass for seasonal ETS so tests do not depend
+on random output.
+
 Historical check: implementation commit `854ae9e` still referenced about 475
 formula function ids across the evaluator/dispatch path. The direct evaluator
 refactor in `09cf9ac` reduced that count to about 261. The current working tree
-has restored ordinary dispatch coverage from 324 to 437 ids and active
-formula-test coverage from 320 to 435 dispatched ids, but the static FODS
-implementation gap above should still be closed against the old commit plus
-LibreOffice/POI/Excel before treating formula function coverage as complete.
+has restored ordinary dispatch coverage from 324 to 473 ids, any evaluator
+implementation references to 480 ids, and closed the static FODS no-reference
+gap against the local LibreOffice/POI review.
 
 Only SpreadsheetML/Calc formula behavior belongs here: formula text, addresses,
 shared formulas, array/dynamic-array formulas, data tables, names, external

@@ -2327,6 +2327,111 @@ fn evaluates_apache_poi_textjoin_cases() {
 }
 
 #[test]
+fn evaluates_libreoffice_dynamic_array_and_new_text_cases() {
+    // Source: LibreOffice sc/source/core/tool/interpr1.cxx::ScExpand,
+    // ScToCol, ScToRow, ScUnique, ScWrapCols, ScWrapRows,
+    // ScTextAfter, ScTextBefore, ScTextSplit, and ScRegex.
+    let book = evaluation_book(&[]);
+    assert_matrix_numbers_with_grammar(
+        &book,
+        SHEET,
+        None,
+        "EXPAND({1,2;3,4},3,4,0)",
+        FormulaGrammar::ExcelA1,
+        &[
+            &[1.0, 2.0, 0.0, 0.0],
+            &[3.0, 4.0, 0.0, 0.0],
+            &[0.0, 0.0, 0.0, 0.0],
+        ],
+    );
+    assert_matrix_numbers_with_grammar(
+        &book,
+        SHEET,
+        None,
+        "TOCOL({1,2;3,#N/A},3)",
+        FormulaGrammar::ExcelA1,
+        &[&[1.0], &[2.0], &[3.0]],
+    );
+    assert_matrix_numbers_with_grammar(
+        &book,
+        SHEET,
+        None,
+        "TOROW({1,2;3,4},,TRUE)",
+        FormulaGrammar::ExcelA1,
+        &[&[1.0, 3.0, 2.0, 4.0]],
+    );
+    assert_matrix_numbers_with_grammar(
+        &book,
+        SHEET,
+        None,
+        "WRAPCOLS({1;2;3;4;5},2,0)",
+        FormulaGrammar::ExcelA1,
+        &[&[1.0, 3.0, 5.0], &[2.0, 4.0, 0.0]],
+    );
+    assert_matrix_numbers_with_grammar(
+        &book,
+        SHEET,
+        None,
+        "WRAPROWS({1;2;3;4;5},2,0)",
+        FormulaGrammar::ExcelA1,
+        &[&[1.0, 2.0], &[3.0, 4.0], &[5.0, 0.0]],
+    );
+    assert_matrix_numbers_with_grammar(
+        &book,
+        SHEET,
+        None,
+        "UNIQUE({1;2;1;3})",
+        FormulaGrammar::ExcelA1,
+        &[&[1.0], &[2.0], &[3.0]],
+    );
+    assert_matrix_numbers_with_grammar(
+        &book,
+        SHEET,
+        None,
+        "UNIQUE({1;2;1;3},FALSE,TRUE)",
+        FormulaGrammar::ExcelA1,
+        &[&[2.0], &[3.0]],
+    );
+
+    assert_text(
+        &book,
+        "TEXTBEFORE(\"Needle in a haystack\",\" \")",
+        "Needle",
+    );
+    assert_text(
+        &book,
+        "TEXTAFTER(\"Needle in a haystack\",\" \")",
+        "in a haystack",
+    );
+    assert_text(&book, "TEXTBEFORE(\"abc-def-ghi\",\"-\",-1)", "abc-def");
+    assert_text(&book, "TEXTAFTER(\"abc-def-ghi\",\"-\",-1)", "ghi");
+    assert_matrix_texts_with_grammar(
+        &book,
+        SHEET,
+        None,
+        "TEXTSPLIT(\"a,b;c,d\",\",\",\";\")",
+        FormulaGrammar::ExcelA1,
+        &[&["a", "b"], &["c", "d"]],
+    );
+    assert_text(
+        &book,
+        "REGEX(\"Needle in a haystack\",\".e{2}dle\")",
+        "Needle",
+    );
+    assert_text(&book, "REGEX(\"The end\",\"^The\",\"AA\")", "AA end");
+    assert_text(
+        &book,
+        "REGEX(\"x1 y2 z3\",\"[a-z]\",\"Q\",\"g\")",
+        "Q1 Q2 Q3",
+    );
+    assert_error(
+        &book,
+        "REGEX(\"Needle\",\"missing\")",
+        FormulaErrorValue::NA,
+    );
+}
+
+#[test]
 fn evaluates_apache_poi_mround_and_error_predicate_cases() {
     // Source: Apache POI
     // poi/src/test/java/org/apache/poi/ss/formula/atp/TestMRound.java
@@ -3111,6 +3216,97 @@ fn evaluates_apache_poi_statistical_function_cases() {
         10.607253,
         1e-7,
     );
+    // Source: LibreOffice sc/source/core/tool/interpr3.cxx::ScRSQ/ScSTEYX
+    // and sc/source/core/tool/interpr5.cxx::ScLinest/ScLogest/ScTrend/ScGrowth.
+    assert_number(&book, "RSQ({2;4;6},{1;2;3})", 1.0);
+    assert_number(&book, "STEYX({2;4;6},{1;2;3})", 0.0);
+    assert_matrix_numbers_with_grammar(
+        &book,
+        SHEET,
+        None,
+        "LINEST({2;4;6},{1;2;3})",
+        FormulaGrammar::ExcelA1,
+        &[&[2.0, 0.0]],
+    );
+    assert_matrix_numbers_with_grammar(
+        &book,
+        SHEET,
+        None,
+        "LOGEST({2;4;8},{1;2;3})",
+        FormulaGrammar::ExcelA1,
+        &[&[2.0, 1.0]],
+    );
+    assert_matrix_numbers_with_grammar(
+        &book,
+        SHEET,
+        None,
+        "TREND({2;4;6},{1;2;3},{4;5})",
+        FormulaGrammar::ExcelA1,
+        &[&[8.0], &[10.0]],
+    );
+    assert_matrix_numbers_with_grammar(
+        &book,
+        SHEET,
+        None,
+        "GROWTH({2;4;8},{1;2;3},{4;5})",
+        FormulaGrammar::ExcelA1,
+        &[&[16.0], &[32.0]],
+    );
+
+    // Source: LibreOffice sc/source/core/tool/interpr8.cxx::ScForecast_Ets.
+    let ets_linear = evaluation_book(&[
+        ("A1", number_value(1.0)),
+        ("B1", number_value(2.0)),
+        ("A2", number_value(2.0)),
+        ("B2", number_value(4.0)),
+        ("A3", number_value(3.0)),
+        ("B3", number_value(6.0)),
+    ]);
+    assert_number(&ets_linear, "FORECAST.ETS.SEASONALITY(B1:B3,A1:A3)", 1.0);
+    assert_number(&ets_linear, "FORECAST.ETS.STAT(B1:B3,A1:A3,9)", 1.0);
+    assert_number(&ets_linear, "FORECAST.ETS.STAT.ADD(B1:B3,A1:A3,8)", 1.0);
+    assert_number(&ets_linear, "FORECAST.ETS.PI.ADD(4,B1:B3,A1:A3)", 0.0);
+    assert_number(&ets_linear, "FORECAST.ETS.CONFINT(4,B1:B3,A1:A3)", 0.0);
+    assert_number(
+        &ets_linear,
+        "FORECAST.ETS.PI.MULT(4,B1:B3,A1:A3,0.95,0)",
+        0.0,
+    );
+    assert_error(
+        &ets_linear,
+        "FORECAST.ETS.PI.ADD(4,B1:B3,A1:A3,1.5)",
+        FormulaErrorValue::IllegalArgument,
+    );
+    let ets_seasonal = evaluation_book(&[
+        ("A1", number_value(1.0)),
+        ("B1", number_value(10.0)),
+        ("A2", number_value(2.0)),
+        ("B2", number_value(21.0)),
+        ("A3", number_value(3.0)),
+        ("B3", number_value(11.0)),
+        ("A4", number_value(4.0)),
+        ("B4", number_value(19.0)),
+        ("A5", number_value(5.0)),
+        ("B5", number_value(13.0)),
+        ("A6", number_value(6.0)),
+        ("B6", number_value(23.0)),
+        ("A7", number_value(7.0)),
+        ("B7", number_value(12.0)),
+        ("A8", number_value(8.0)),
+        ("B8", number_value(24.0)),
+    ]);
+    assert_number_in_range(
+        &ets_seasonal,
+        "FORECAST.ETS.PI.ADD(9,B1:B8,A1:A8,0.95,2)",
+        0.0001,
+        20.0,
+    );
+    assert_number_in_range(
+        &ets_seasonal,
+        "FORECAST.ETS.PI.MULT(9,B1:B8,A1:A8,0.95,2)",
+        0.0001,
+        20.0,
+    );
 
     let correlation = evaluation_book(&[
         ("A2", number_value(3.0)),
@@ -3435,6 +3631,72 @@ fn evaluates_apache_poi_financial_function_cases() {
         "of:=ODDLYIELD(\"1999-04-20\";\"1999-06-15\";\"1998-10-15\";0.0375;0;100;2;0)",
         FormulaGrammar::OpenFormula,
         FormulaErrorValue::IllegalArgument,
+    );
+    assert_number_with_epsilon(
+        &book,
+        "DISC(\"2001-01-25\",\"2001-11-15\",97,100,3)",
+        0.0372448979591837,
+        1e-15,
+    );
+    assert_number_with_epsilon(
+        &book,
+        "PRICEDISC(\"1999-02-15\",\"1999-03-01\",0.0525,100,2)",
+        99.7958333333333,
+        1e-13,
+    );
+    assert_number_with_epsilon(
+        &book,
+        "PRICEMAT(\"1999-02-15\",\"1999-04-13\",\"1998-11-11\",0.061,0.061,0)",
+        99.984498875557,
+        1e-12,
+    );
+    assert_number_with_epsilon(
+        &book,
+        "YIELDDISC(DATE(1999,2,15),DATE(1999,3,1),99.795,100,2)",
+        0.0528225719868601,
+        1e-15,
+    );
+    assert_number_with_epsilon(
+        &book,
+        "INTRATE(\"1990-01-15\",\"2002-05-05\",1000000,2000000,3)",
+        0.0812374805252615,
+        1e-15,
+    );
+    assert_number_with_epsilon(
+        &book,
+        "RECEIVED(\"2008-09-01\",\"2009-03-31\",10000,0.05,1)",
+        10296.8068645379,
+        1e-10,
+    );
+    assert_number_with_epsilon(
+        &book,
+        "ACCRINTM(DATE(2012,1,1),DATE(2013,2,15),0.065,1000,3)",
+        73.1917808219178,
+        1e-13,
+    );
+    assert_number_with_epsilon(
+        &book,
+        "ACCRINT(DATE(2008,3,3),DATE(2009,3,3),DATE(2009,1,1),4.33/100,10000000,1,1)",
+        359650.273224044,
+        1e-7,
+    );
+    assert_number_with_epsilon(
+        &book,
+        "TBILLEQ(DATE(1999,3,31),DATE(1999,6,1),0.0914)",
+        0.094151493565943,
+        1e-15,
+    );
+    assert_number_with_epsilon(
+        &book,
+        "TBILLPRICE(DATE(1999,3,31),DATE(1999,6,1),0.0914)",
+        98.4258888888889,
+        1e-13,
+    );
+    assert_number_with_epsilon(
+        &book,
+        "TBILLYIELD(DATE(1999,3,31),DATE(1999,6,1),0.0914)",
+        6346.98524740594,
+        1e-10,
     );
 }
 
