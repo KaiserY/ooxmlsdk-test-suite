@@ -748,6 +748,7 @@ dependencies = [
  "regex",
  "rustc-hash",
  "rustfft",
+ "smallvec",
  "statrs",
  "thiserror",
  "winnow 1.0.3",
