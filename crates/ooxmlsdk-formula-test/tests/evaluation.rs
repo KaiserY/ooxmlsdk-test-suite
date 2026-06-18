@@ -608,6 +608,10 @@ fn evaluates_gcd_and_lcm_cases() {
         ("LCM({300;300;300},{150;0})", 0.0),
         ("LCM(12,24,36,48,60)", 720.0),
         ("LCM(0,12,24,36,48,60)", 0.0),
+        ("PERMUT(5,2)", 20.0),
+        ("PERMUT(5,0)", 1.0),
+        ("PERMUTATIONA(5,2)", 25.0),
+        ("PERMUTATIONA(0,0)", 1.0),
     ] {
         assert_number(&book, formula, expected);
     }
@@ -729,6 +733,31 @@ fn evaluates_lookup_match_and_datedif_cases() {
     ] {
         assert_number(&book, formula, expected);
     }
+
+    // Source: LibreOffice sc/qa/unit/data/functions/date_time/fods.
+    for (formula, expected) in [
+        ("MONTHS(DATE(2010,4,3),DATE(2011,6,17),0)", 14.0),
+        ("MONTHS(DATE(2010,3,31),DATE(2010,4,30),0)", 0.0),
+        ("MONTHS(DATE(2010,3,31),DATE(2010,4,1),1)", 1.0),
+        ("YEARS(DATE(2010,4,3),DATE(2013,6,17),0)", 3.0),
+        ("YEARS(DATE(2010,4,3),DATE(2013,6,17),1)", 3.0),
+        ("WEEKSINYEAR(DATE(2014,12,31))", 52.0),
+        ("WEEKSINYEAR(DATE(2015,1,1))", 53.0),
+        ("WEEKNUM(DATE(2014,1,5),1)", 2.0),
+        ("WEEKNUM(DATE(2014,1,5),2)", 1.0),
+    ] {
+        assert_number(&book, formula, expected);
+    }
+    assert_error(
+        &book,
+        "MONTHS(DATE(2010,4,3),DATE(2011,6,17),2)",
+        FormulaErrorValue::IllegalArgument,
+    );
+    assert_error(
+        &book,
+        "WEEKNUM(DATE(2016,7,24),3)",
+        FormulaErrorValue::IllegalArgument,
+    );
 }
 
 #[test]
@@ -2777,6 +2806,97 @@ fn evaluates_apache_poi_statistical_function_cases() {
     assert_error(&book, "GEOMEAN(1,0)", FormulaErrorValue::Num);
     assert_error(&book, "GEOMEAN(1,-1)", FormulaErrorValue::Num);
     assert_error(&book, "GEOMEAN(#DIV/0!,#NUM!)", FormulaErrorValue::Div0);
+    // Source: LibreOffice sc/source/core/tool/interpr3.cxx and
+    // sc/qa/unit/data/functions/statistical/fods.
+    assert_number_with_epsilon(&book, "PHI(0)", 0.3989422804014327, 1e-15);
+    assert_number_with_epsilon(&book, "GAUSS(1)", 0.341344746068543, 1e-15);
+    assert_number_with_epsilon(&book, "FISHER(0.5)", 0.549306144334055, 1e-15);
+    assert_number_with_epsilon(&book, "FISHERINV(0.5)", 0.46211715726001, 1e-14);
+    assert_number_with_epsilon(&book, "STANDARDIZE(42,40,1.5)", 1.3333333333333333, 1e-15);
+    assert_number_with_epsilon(&book, "GAMMALN(5)", 3.1780538303479458, 1e-15);
+    assert_number_with_epsilon(&book, "GAMMALN.PRECISE(5)", 3.1780538303479458, 1e-15);
+    assert_number(&book, "GAMMA(5)", 24.0);
+    assert_number_with_epsilon(&book, "B(10,0.5,5)", 0.24609375, 1e-15);
+    assert_number_with_epsilon(&book, "BINOM.DIST(6,10,0.5,TRUE)", 0.828125, 1e-15);
+    assert_number_with_epsilon(&book, "BINOM.DIST.RANGE(10,0.5,3,5)", 0.568359375, 1e-15);
+    assert_number(&book, "BINOM.INV(8,0.6,0.9)", 7.0);
+    assert_number_with_epsilon(&book, "BETA.DIST(0.5,2,2,TRUE)", 0.5, 1e-15);
+    assert_number_with_epsilon(&book, "BETA.DIST(0.5,2,2,FALSE)", 1.5, 1e-15);
+    assert_number_with_epsilon(&book, "BETADIST(0.5,2,2)", 0.5, 1e-15);
+    assert_number_with_epsilon(&book, "BETA.INV(0.5,2,2)", 0.5, 1e-12);
+    assert_number_with_epsilon(&book, "CHISQ.DIST(1,2,TRUE)", 0.3934693402873666, 1e-15);
+    assert_number_with_epsilon(&book, "CHISQ.DIST(1,2,FALSE)", 0.3032653298563167, 1e-15);
+    assert_number_with_epsilon(&book, "CHISQ.DIST.RT(1,2)", 0.6065306597126334, 1e-15);
+    assert_number_with_epsilon(&book, "CHISQ.INV(0.3934693402873666,2)", 1.0, 1e-10);
+    assert_number_with_epsilon(&book, "EXPON.DIST(1,2,TRUE)", 0.8646647167633873, 1e-15);
+    assert_number_with_epsilon(&book, "EXPON.DIST(1,2,FALSE)", 0.2706705664732254, 1e-15);
+    assert_number_with_epsilon(&book, "F.DIST.RT(1,5,5)", 0.5, 1e-12);
+    assert_number_with_epsilon(&book, "F.DIST(1,5,5,TRUE)", 0.5, 1e-12);
+    assert_number_with_epsilon(&book, "F.INV.RT(0.5,5,5)", 1.0, 1e-10);
+    assert_number_with_epsilon(&book, "F.INV(0.5,5,5)", 1.0, 1e-10);
+    assert_number_with_epsilon(&book, "GAMMA.DIST(2,3,2,TRUE)", 0.08030139707139416, 1e-14);
+    assert_number_with_epsilon(&book, "GAMMA.DIST(2,3,2,FALSE)", 0.09196986029286058, 1e-14);
+    assert_number_with_epsilon(&book, "GAMMA.INV(0.08030139707139416,3,2)", 2.0, 1e-9);
+    assert_number_with_epsilon(&book, "NEGBINOM.DIST(1,1,0.5,FALSE)", 0.25, 1e-15);
+    assert_number_with_epsilon(&book, "NEGBINOM.DIST(1,1,0.5,TRUE)", 0.75, 1e-15);
+    assert_number_with_epsilon(&book, "NEGBINOMDIST(1,1,0.5)", 0.25, 1e-15);
+    assert_number_with_epsilon(&book, "T.DIST(0,1,TRUE)", 0.5, 1e-15);
+    assert_number_with_epsilon(
+        &book,
+        "T.DIST(0,1,FALSE)",
+        std::f64::consts::FRAC_1_PI,
+        1e-15,
+    );
+    assert_number_with_epsilon(&book, "T.DIST.RT(1,1)", 0.25, 1e-15);
+    assert_number_with_epsilon(&book, "T.DIST.2T(1,1)", 0.5, 1e-15);
+    assert_number_with_epsilon(&book, "TDIST(1,1,2)", 0.5, 1e-15);
+    assert_number_with_epsilon(&book, "T.INV(0.75,1)", 1.0, 1e-10);
+    assert_number_with_epsilon(&book, "T.INV.2T(0.5,1)", 1.0, 1e-10);
+    assert_number_with_epsilon(&book, "WEIBULL.DIST(1,1,1,TRUE)", 0.6321205588285577, 1e-15);
+    assert_number_with_epsilon(
+        &book,
+        "WEIBULL.DIST(1,1,1,FALSE)",
+        0.36787944117144233,
+        1e-15,
+    );
+    assert_number_with_epsilon(&book, "LOGNORM.DIST(1,0,1,TRUE)", 0.5, 1e-15);
+    assert_number_with_epsilon(
+        &book,
+        "LOGNORM.DIST(1,0,1,FALSE)",
+        0.3989422804014327,
+        1e-15,
+    );
+    assert_number_with_epsilon(&book, "LOGNORMDIST(1)", 0.5, 1e-15);
+    assert_error(&book, "FISHER(1)", FormulaErrorValue::IllegalArgument);
+    assert_error(
+        &book,
+        "BETA.DIST(-1,2,2,TRUE)",
+        FormulaErrorValue::IllegalArgument,
+    );
+    assert_error(
+        &book,
+        "BINOM.DIST(11,10,0.5,TRUE)",
+        FormulaErrorValue::IllegalArgument,
+    );
+    assert_error(
+        &book,
+        "CHISQ.DIST.RT(-1,2)",
+        FormulaErrorValue::IllegalArgument,
+    );
+    assert_error(&book, "GAMMA(0)", FormulaErrorValue::IllegalArgument);
+    assert_error(&book, "T.DIST.2T(-1,1)", FormulaErrorValue::IllegalArgument);
+    assert_error(&book, "STANDARDIZE(42,40,0)", FormulaErrorValue::Div0);
+    assert_error(
+        &book,
+        "STANDARDIZE(42,40,-1)",
+        FormulaErrorValue::IllegalArgument,
+    );
+    assert_error(&book, "GAMMALN(0)", FormulaErrorValue::IllegalArgument);
+    assert_error(
+        &book,
+        "LOGNORM.DIST(0,0,1,FALSE)",
+        FormulaErrorValue::IllegalArgument,
+    );
 
     let average = evaluation_book(&[
         ("A1", number_value(1.0)),
@@ -3301,6 +3421,9 @@ fn evaluates_apache_poi_engineering_function_cases() {
     // poi/src/test/java/org/apache/poi/ss/formula/functions/TestBin2Dec.java,
     // TestDec2Bin.java, TestHex2Dec.java, TestOct2Dec.java, TestComplex.java,
     // TestDelta.java, TestSqrtpi.java, and TestBesselJ.java.
+    // Source: LibreOffice sc/qa/unit/data/functions/{addin,mathematical}/fods
+    // for BIT*, MULTINOMIAL, SERIESSUM, ERF, ERFC, GESTEP, COLOR, and
+    // RAWSUBTRACT.
     let book = evaluation_book(&[]);
     for (formula, expected) in [
         ("BIN2DEC(\"00101\")", 5.0),
@@ -3322,6 +3445,23 @@ fn evaluates_apache_poi_engineering_function_cases() {
         ("DELTA(0.5000000000,0.5)", 1.0),
         ("SQRTPI(1)", 1.77245385090552),
         ("SQRTPI(2)", 2.506628274631),
+        ("BITAND(5,3)", 1.0),
+        ("BITOR(5,3)", 7.0),
+        ("BITXOR(5,3)", 6.0),
+        ("BITLSHIFT(4,2)", 16.0),
+        ("BITRSHIFT(16,2)", 4.0),
+        ("BITLSHIFT(8,-1)", 4.0),
+        ("BITRSHIFT(8,-1)", 16.0),
+        ("MULTINOMIAL(2,3,4)", 1260.0),
+        ("SERIESSUM(2,1,1,{1,2,3})", 34.0),
+        ("ERF(1)", 0.842700793),
+        ("ERF(0,1)", 0.842700793),
+        ("ERFC(1)", 0.157299207),
+        ("GESTEP(5,4)", 1.0),
+        ("GESTEP(-1)", 0.0),
+        ("COLOR(255,0,0)", 16711680.0),
+        ("COLOR(255,255,255,255)", 4294967295.0),
+        ("RAWSUBTRACT(5,2,1)", 2.0),
         ("BESSELJ(1.9,2)", 0.329925829),
         ("BESSELJ(1.9,2.5)", 0.329925829),
         ("BESSELJ(12.4,7)", -0.217156767),
@@ -3357,6 +3497,7 @@ fn evaluates_apache_poi_engineering_function_cases() {
         "DEC2BIN(13.43,1)",
         "DEC2BIN(13.43,-8)",
         "DEC2BIN(13.43,0)",
+        "SERIESSUM(0,0,1,{1})",
         "HEX2DEC(\"GGGGGGG\")",
         "HEX2DEC(\"3.14159\")",
         "OCT2DEC(\"ABCDEFGH\")",
@@ -3367,6 +3508,11 @@ fn evaluates_apache_poi_engineering_function_cases() {
     ] {
         assert_error(&book, formula, FormulaErrorValue::Num);
     }
+
+    for formula in ["BITAND(-1,1)", "BITOR(281474976710656,1)"] {
+        assert_error(&book, formula, FormulaErrorValue::IllegalArgument);
+    }
+    assert_error(&book, "COLOR(-1,0,0)", FormulaErrorValue::IllegalArgument);
 
     for formula in [
         "BIN2DEC(0,0)",
@@ -3844,6 +3990,8 @@ fn evaluates_apache_poi_lookup_reference_function_cases() {
     ] {
         assert_number(&book, formula, expected);
     }
+    // Source: LibreOffice sc/qa/unit/data/functions/date_time/fods/hour.fods.
+    assert_text(&book, "BASISODATETIME(0.5)", "1899-12-30 12:00:00");
 
     let grid = evaluation_book(&[
         ("A1", number_value(1.0)),
