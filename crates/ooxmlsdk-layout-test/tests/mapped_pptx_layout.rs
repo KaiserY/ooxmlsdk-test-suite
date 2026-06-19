@@ -1,7 +1,9 @@
+use ooxmlsdk::parts::presentation_document::PresentationDocument;
 use ooxmlsdk_layout_test::{
     assert_page_contains, assert_page_contains_in_order, assert_page_filled_path_count_at_least,
     assert_page_image_count_at_least, assert_page_not_contains,
-    assert_page_stroked_path_count_at_least, assert_page_text_occurrences_at_least, pptx_layout,
+    assert_page_stroked_path_count_at_least, assert_page_text_occurrences_at_least, corpus_file,
+    pptx_layout,
 };
 
 #[derive(Clone, Copy)]
@@ -1155,4 +1157,18 @@ fn run_case(case: &PptxCase) {
     for expected in case.filled_path_minimums {
         assert_page_filled_path_count_at_least(&document, expected.page, expected.count);
     }
+}
+
+#[test]
+fn pptx_embedded_font_typeface_is_imported_into_layout_summary() {
+    // Source: ../core/sd/qa/unit/FontEmbeddingTest.cxx::testRoundtripEmbeddedFontsPPTX.
+    let mut package = PresentationDocument::new_from_file(corpus_file(
+        "sd/qa/unit/data/BoldonseFontEmbedded.pptx",
+    ))
+    .expect("Boldonse embedded-font fixture should open");
+    let summary =
+        ooxmlsdk_layout::pptx::inspect_layout(&mut package).expect("PPTX layout should inspect");
+
+    assert!(summary.embed_true_type_fonts);
+    assert_eq!(summary.embedded_font_typefaces, vec!["Boldonse"]);
 }

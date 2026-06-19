@@ -5,12 +5,13 @@ use std::sync::Arc;
 
 use ooxmlsdk_fonts::{
     DecorationMetrics, FallbackRun, FontCharset, FontCoverage, FontEmbeddingPolicy, FontFaceInfo,
-    FontFallbackChain, FontFamilyAlias, FontFlags, FontId, FontMetrics, FontPitch, FontRegistry,
-    FontRequest, FontSize, FontSource, FontStretch, FontSubsetPolicy, FontSubstitutionReason,
-    FontSubstitutionRule, FontUsageCollector, FontWeight, ScriptMetrics, ShapeOptions, ShapedGlyph,
-    ShapedRun, ShapingDiagnostics, TextDirection, TextScript, ThemeFontKind, ThemeFontMap,
-    VariationValue, VerticalMetrics, format_font_variations, parse_font_feature_settings,
-    parse_font_variations, script_direction_runs, trim_font_name_features,
+    FontFallbackChain, FontFamilyAlias, FontFamilyClass, FontFlags, FontId, FontMetrics, FontPitch,
+    FontRegistry, FontRequest, FontScriptRun, FontSize, FontSource, FontStretch, FontSubsetPolicy,
+    FontSubstitutionReason, FontSubstitutionRule, FontUsageCollector, FontWeight, ScriptMetrics,
+    ScriptScanOptions, ShapeOptions, ShapedGlyph, ShapedRun, ShapingDiagnostics, TextDirection,
+    TextScript, ThemeFontKind, ThemeFontMap, VariationValue, VerticalMetrics,
+    format_font_variations, parse_font_feature_settings, parse_font_variations,
+    script_direction_runs, script_direction_runs_with_options, trim_font_name_features,
 };
 
 #[test]
@@ -136,6 +137,129 @@ fn fixed_pitch_request_prefers_fixed_pitch_face() {
         .expect("fixed pitch request should resolve");
 
     assert_eq!(resolved.font_id, FontId(Arc::from("fixed")));
+}
+
+#[test]
+fn generic_family_class_request_matches_explicit_face_class() {
+    // Source: LibreOffice vcl/qa/cppunit/physicalfontcollection.cxx generic family tests.
+    let mut registry = FontRegistry::new();
+    let mut serif = FontFaceInfo::synthetic("serif", "Serif Candidate");
+    serif.family_class = Some(FontFamilyClass::Serif);
+    registry.register_face(FontSource::System, serif);
+    let mut sans = FontFaceInfo::synthetic("sans", "Sans Candidate");
+    sans.family_class = Some(FontFamilyClass::SansSerif);
+    registry.register_face(FontSource::System, sans);
+
+    let resolved = registry
+        .resolve(&FontRequest {
+            family_class: Some(FontFamilyClass::SansSerif),
+            ..FontRequest::default()
+        })
+        .expect("sans-serif class should resolve to matching face");
+
+    assert_eq!(resolved.font_id, FontId(Arc::from("sans")));
+}
+
+#[test]
+fn generic_family_class_request_rejects_mismatched_class() {
+    // Source: LibreOffice vcl/qa/cppunit/physicalfontcollection.cxx negative generic family tests.
+    let mut registry = FontRegistry::new();
+    let mut serif = FontFaceInfo::synthetic("serif", "Serif Candidate");
+    serif.family_class = Some(FontFamilyClass::Serif);
+    registry.register_face(FontSource::System, serif);
+
+    let error = registry
+        .resolve(&FontRequest {
+            family_class: Some(FontFamilyClass::SansSerif),
+            ..FontRequest::default()
+        })
+        .expect_err("sans-serif request should reject a serif-only registry");
+
+    assert!(matches!(error, ooxmlsdk_fonts::FontError::NoMatch));
+}
+
+#[test]
+fn fixed_family_class_matches_fixed_pitch_face() {
+    // Source: LibreOffice vcl/qa/cppunit/physicalfontcollection.cxx::testShouldMatchFixedFamily.
+    let mut registry = FontRegistry::new();
+    let mut fixed = FontFaceInfo::synthetic("fixed", "Matching family name");
+    fixed.pitch = FontPitch::Fixed;
+    registry.register_face(FontSource::System, fixed);
+
+    let resolved = registry
+        .resolve(&FontRequest {
+            family_class: Some(FontFamilyClass::Fixed),
+            ..FontRequest::default()
+        })
+        .expect("fixed class should match a fixed-pitch face");
+
+    assert_eq!(resolved.font_id, FontId(Arc::from("fixed")));
+}
+
+#[test]
+fn decorative_family_class_ignores_weight_and_slant_mismatch() {
+    // Source: LibreOffice vcl/qa/cppunit/physicalfontcollection.cxx::testShouldMatchDecorativeFamily.
+    let mut registry = FontRegistry::new();
+    let mut decorative = FontFaceInfo::synthetic("decorative", "Decorative");
+    decorative.family_class = Some(FontFamilyClass::Decorative);
+    decorative.weight = FontWeight::Medium;
+    registry.register_face(FontSource::System, decorative);
+
+    let resolved = registry
+        .resolve(&FontRequest {
+            family_class: Some(FontFamilyClass::Decorative),
+            italic: true,
+            weight: Some(FontWeight::Normal),
+            ..FontRequest::default()
+        })
+        .expect("decorative class should resolve despite style distance");
+
+    assert_eq!(resolved.font_id, FontId(Arc::from("decorative")));
+}
+
+#[test]
+fn generic_family_class_can_be_inferred_from_family_name() {
+    // Source: LibreOffice vcl/qa/cppunit/physicalfontcollection.cxx name-derived generic family tests.
+    let cases = [
+        ("script", FontFamilyClass::BrushScript),
+        ("testtitling", FontFamilyClass::Titling),
+        ("testcaps", FontFamilyClass::Capitals),
+        ("testoldstyle", FontFamilyClass::OldStyle),
+        ("testschoolbook", FontFamilyClass::Schoolbook),
+    ];
+
+    for (family, class) in cases {
+        let mut registry = FontRegistry::new();
+        registry.register_face(FontSource::System, FontFaceInfo::synthetic(family, family));
+
+        let resolved = registry
+            .resolve(&FontRequest {
+                family_class: Some(class),
+                ..FontRequest::default()
+            })
+            .expect("name-derived family class should resolve");
+
+        assert_eq!(resolved.font_id, FontId(Arc::from(family)));
+    }
+}
+
+#[test]
+fn other_style_family_class_does_not_match_unrelated_monotype_name() {
+    // Source: LibreOffice vcl/qa/cppunit/physicalfontcollection.cxx::testShouldNotFindOtherStyleFamily.
+    let mut registry = FontRegistry::new();
+    registry.register_face(
+        FontSource::System,
+        FontFaceInfo::synthetic("monotype", "monotype"),
+    );
+
+    let error = registry
+        .resolve(&FontRequest {
+            family_class: Some(FontFamilyClass::OldStyle),
+            ..FontRequest::default()
+        })
+        .expect_err("oldstyle request should not match unrelated monotype name");
+
+    assert!(matches!(error, ooxmlsdk_fonts::FontError::NoMatch));
 }
 
 #[test]
@@ -1219,6 +1343,118 @@ fn script_direction_runs_split_script_bidi_and_small_caps_segments() {
     assert_eq!(runs[0].direction, TextDirection::LeftToRight);
     assert_eq!(runs[0].size_pt, FontSize(8.0));
     assert_eq!(runs[1].script, TextScript::Arabic);
+    assert_eq!(runs[1].direction, TextDirection::RightToLeft);
+}
+
+fn script_direction_runs_with_app_script<'a>(
+    text: &'a str,
+    app_script: TextScript,
+) -> Vec<FontScriptRun<'a>> {
+    script_direction_runs_with_options(
+        text,
+        FontSize(10.0),
+        ScriptScanOptions {
+            app_script,
+            small_caps: false,
+        },
+    )
+}
+
+fn run_texts_and_scripts<'a>(runs: &'a [FontScriptRun<'a>]) -> Vec<(&'a str, TextScript)> {
+    runs.iter()
+        .map(|run| (run.text.as_ref(), run.script))
+        .collect()
+}
+
+#[test]
+fn script_direction_runs_assign_initial_weak_text_to_first_strong_script() {
+    // Source: LibreOffice i18nutil/qa/cppunit/test_scriptchangescanner.cxx::testWeakAtStart.
+    let runs = script_direction_runs_with_app_script("“x”", TextScript::Arabic);
+
+    assert_eq!(
+        run_texts_and_scripts(&runs),
+        vec![("“x”", TextScript::Latin)]
+    );
+}
+
+#[test]
+fn script_direction_runs_assign_only_weak_text_to_application_script() {
+    // Source: LibreOffice i18nutil/qa/cppunit/test_scriptchangescanner.cxx::testOnlyWeak.
+    let runs = script_direction_runs_with_app_script("“”", TextScript::Arabic);
+
+    assert_eq!(
+        run_texts_and_scripts(&runs),
+        vec![("“”", TextScript::Arabic)]
+    );
+}
+
+#[test]
+fn script_direction_runs_keep_weak_text_with_adjacent_strong_runs() {
+    // Source: LibreOffice i18nutil/qa/cppunit/test_scriptchangescanner.cxx::testStrongChange.
+    let runs = script_direction_runs_with_app_script("wide 廣 vast", TextScript::Latin);
+
+    assert_eq!(
+        run_texts_and_scripts(&runs),
+        vec![
+            ("wide ", TextScript::Latin),
+            ("廣 ", TextScript::Han),
+            ("vast", TextScript::Latin),
+        ]
+    );
+}
+
+#[test]
+fn script_direction_runs_assign_smart_quotes_like_libreoffice() {
+    // Source: LibreOffice i18nutil/qa/cppunit/test_scriptchangescanner.cxx smart quote tests.
+    let runs = script_direction_runs_with_app_script("Before “水” After", TextScript::Latin);
+
+    assert_eq!(
+        run_texts_and_scripts(&runs),
+        vec![
+            ("Before “", TextScript::Latin),
+            ("水” ", TextScript::Han),
+            ("After", TextScript::Latin),
+        ]
+    );
+
+    let leading = script_direction_runs_with_app_script("“廣”", TextScript::Latin);
+    assert_eq!(
+        run_texts_and_scripts(&leading),
+        vec![("“廣”", TextScript::Han)]
+    );
+}
+
+#[test]
+fn script_direction_runs_attach_inherited_mark_sequence_to_next_strong_script() {
+    // Source: LibreOffice i18nutil/qa/cppunit/test_scriptchangescanner.cxx::testNonspacingMark.
+    let runs = script_direction_runs_with_app_script(
+        "Before \u{0944}\u{0911}\u{0911} After",
+        TextScript::Latin,
+    );
+
+    assert_eq!(
+        run_texts_and_scripts(&runs),
+        vec![
+            ("Before", TextScript::Latin),
+            (" \u{0944}\u{0911}\u{0911} ", TextScript::Devanagari),
+            ("After", TextScript::Latin),
+        ]
+    );
+}
+
+#[test]
+fn script_direction_runs_split_simple_rtl_span_like_libreoffice() {
+    // Source: LibreOffice i18nutil/qa/cppunit/test_scriptchangescanner.cxx::testRtlRunTrivial.
+    let runs = script_direction_runs_with_app_script("Before אאאאאא after", TextScript::Latin);
+
+    assert_eq!(
+        run_texts_and_scripts(&runs),
+        vec![
+            ("Before ", TextScript::Latin),
+            ("אאאאאא ", TextScript::Hebrew),
+            ("after", TextScript::Latin),
+        ]
+    );
     assert_eq!(runs[1].direction, TextDirection::RightToLeft);
 }
 

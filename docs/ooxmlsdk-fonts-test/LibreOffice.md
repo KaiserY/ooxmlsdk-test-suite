@@ -39,11 +39,27 @@ The current `ooxmlsdk-fonts-test` migration is intentionally behavior-first:
   ownership, Mongolian NNBSP fallback clustering, font feature parsing, and font
   variation parsing/serialization.
 - `layout_ooxml_fonts.rs` covers the OOXML-to-layout boundary: script-specific
-  DOCX font families, theme fallback, common-character inheritance, and PPTX/XLSX
-  font requests reaching shaped layout runs.
+  DOCX font families, theme fallback, common-character inheritance, shaped
+  script runs, and XLSX text style mapping into layout font requests.
 - Fixture-backed LibreOffice DOCX/XLSX/PPTX/PDF rows remain in the table as
   source evidence. They should migrate only when the test can assert imported
   layout/PDF font behavior instead of raw XML presence.
+
+Current known gaps versus LibreOffice are still tracked in the tables below:
+full `ScriptChangeScanner` hint/bidi-control behavior, generic family-class
+matching, package-backed embedded font behavior, and PDF-visible variable
+font/kashida output.
+
+## Next Alignment Pass
+
+Prioritize behavior that can be asserted through stable font/layout APIs:
+
+| Priority | Scope | Upstream source | Notes |
+| --- | --- | --- | --- |
+| P0 | generic family-class matching | `../core/vcl/qa/cppunit/physicalfontcollection.cxx` | Initial synthetic coverage migrated: explicit serif/sans/decorative class matching, fixed pitch class matching, name-derived brush/script, titling, capitals, oldstyle, schoolbook, and negative oldstyle matching. |
+| P1 | script/direction scan parity | `../core/i18nutil/qa/cppunit/test_scriptchangescanner.cxx` | Initial coverage migrated: weak-at-start, only-weak, strong-change, smart quotes, nonspacing mark ownership, and simple RTL. Full hint/bidi-control behavior still needs an API that carries paragraph/run hints and control-character ownership. |
+| P2 | package-backed font semantics | Writer/Calc/Impress font fixtures listed below | PPTX embedded typeface import is covered through `PptxLayoutSummary`. Remaining fixtures already exist in corpus for DOCX embedded fonts, DOCX font family, XLSX charset/font-size, and WordArt font theme/text; migrate only rows that can assert imported font requests, layout runs, or PDF-visible output. |
+| P3 | PDF-visible variable/kashida output | `../core/vcl/qa/cppunit/pdfexport/*.cxx` | Keep in `ooxmlsdk-pdf-test`; these are rendering/output assertions, not pure font registry tests. |
 
 ## Legend
 
