@@ -74,14 +74,15 @@ Existing layout-relevant coverage is split:
 | `crates/ooxmlsdk-pdf-test/tests/mapped_pptx_pdf_fixtures.rs` | PPTX visible-output lane with many Impress shape/text/SmartArt/layout projections and some `PptxLayoutSummary` assertions. | Convert slide geometry/text/layout facts to `common::LayoutDocument`; keep PDF extraction tests where they assert PDF serialization. |
 | `crates/ooxmlsdk-pdf-test/tests/mapped_xlsx_pdf_fixtures.rs` | XLSX visible-output lane for Calc print output, formulas-as-rendered-values, pagination, row heights, images, links, pivots, and conditional formatting candidates. | Convert print-layout facts to `common::LayoutDocument`; formula/value-only cases remain formula or PDF-visible output evidence. |
 | `crates/ooxmlsdk-pdf-test/tests/pdfexport_fixtures.rs` | Direct LibreOffice PDF export/object tests. | Keep PDF-object rows in PDF lane; mirror only layout precursors such as link area/form widget/outline creation when useful. |
-| `docs/tests/ooxmlsdk-pdf-test/libreoffice/UPSTREAM_TEST_MATRIX.md` | Existing PDF-oriented upstream matrix. | Use as the starting inventory, but reclassify each row by layout ownership. |
+| `docs/ooxmlsdk-pdf-test/LibreOffice.md` | Current PDF migration index. | Keep reconciled with this document so PDF-only and layout-owned rows stay separate. |
 
-Recent verification in the main repository:
+Recent verification:
 
 | Package | Result |
 | --- | --- |
 | `cargo test -p ooxmlsdk-layout` | 72 tests passed |
-| `cargo test -p ooxmlsdk-pdf-test` | DOCX/PPTX/XLSX mapped and direct PDF fixture lanes passed |
+| `cargo test -p ooxmlsdk-layout-test` | layout split passed |
+| `cargo test -p ooxmlsdk-pdf-test` | 698 PDF tests passed |
 
 The test-suite workspace already depends on `ooxmlsdk-layout`, but it does not
 yet have an `ooxmlsdk-layout-test` crate. The first implementation pass should
@@ -352,11 +353,14 @@ Current verification status:
 
 - `cargo test -p ooxmlsdk-layout`: passed in the main repository.
 - `cargo test -p ooxmlsdk-layout-test`: passed.
+- `cargo test -p ooxmlsdk-pdf-test`: passed after PDF/layout ownership split.
 - `cargo test -p ooxmlsdk-layout-test --test pptx_layout`: passed with
   focused PPTX metadata assertions backed by `common::LayoutDocument.debug_records`.
 - `cargo test -p ooxmlsdk-layout-test --test mapped_docx_layout`: passed.
 - `cargo test -p ooxmlsdk-layout-test --test mapped_pptx_layout`: passed.
 - `cargo test -p ooxmlsdk-layout-test --test xlsx_layout`: passed.
+- `// Source: ../core/...` references in layout/PDF tests resolve to existing
+  LibreOffice source files.
 
 Rows intentionally left in `ooxmlsdk-pdf-test` are final PDF serialization,
 raw XObject, PDF pixel/raster, or color-effect assertions where common layout

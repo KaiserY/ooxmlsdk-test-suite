@@ -1,0 +1,20 @@
+[package]
+name = "ooxmlsdk-pdf-test"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+doctest = false
+
+[dependencies]
+crc32fast = { workspace = true }
+flate2 = { workspace = true }
+image = { workspace = true }
+lopdf = { workspace = true }
+ooxmlsdk-pdf = { workspace = true }
+pdfium-render = { workspace = true }
+thiserror = { workspace = true }
+walkdir = { workspace = true }

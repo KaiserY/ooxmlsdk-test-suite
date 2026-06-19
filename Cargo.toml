@@ -6,6 +6,7 @@ members = [
   "crates/ooxmlsdk-fonts-test",
   "crates/ooxmlsdk-formula-test",
   "crates/ooxmlsdk-layout-test",
+  "crates/ooxmlsdk-pdf-test",
   "crates/ooxmlsdk-test",
   "crates/ooxmlsdk-roundtrip-tests",
 ]
@@ -22,12 +23,25 @@ ooxmlsdk = { path = "../ooxmlsdk/crates/ooxmlsdk", default-features = false }
 ooxmlsdk-fonts = { path = "../ooxmlsdk/crates/ooxmlsdk-fonts" }
 ooxmlsdk-formula = { path = "../ooxmlsdk/crates/ooxmlsdk-formula" }
 ooxmlsdk-layout = { path = "../ooxmlsdk/crates/ooxmlsdk-layout" }
+ooxmlsdk-pdf = { path = "../ooxmlsdk/crates/ooxmlsdk-pdf" }
 ooxmlsdk-corpus-test-support = { path = "crates/ooxmlsdk-corpus-test-support" }
 criterion = "0.7.0"
+crc32fast = "1.5.0"
+flate2 = "1.1.9"
+image = { version = "0.25.10", default-features = false, features = [
+  "png",
+  "jpeg",
+  "gif",
+  "webp",
+] }
+lopdf = "0.41.0"
+pdfium-render = "0.9.2"
 quick-xml = "0.40.1"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.150"
+thiserror = "2.0.18"
 toml = "0.9.8"
+walkdir = "2.5.0"
 zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
 
 [profile.bench]
