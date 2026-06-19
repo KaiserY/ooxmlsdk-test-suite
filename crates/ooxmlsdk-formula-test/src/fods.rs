@@ -366,7 +366,7 @@ impl FodsWorkbook {
                     };
                     let expected = sheet
                         .cached_value_at(expected_address)
-                        .unwrap_or_else(|| FormulaValue::Blank);
+                        .unwrap_or(FormulaValue::Blank);
                     let mut case = formula_case_for_address(
                         sheet_id,
                         &sheet.name,
@@ -547,7 +547,7 @@ fn formula_case_for_cell(
                         address,
                         sheet
                             .cached_value_at(address)
-                            .unwrap_or_else(|| FormulaValue::Blank),
+                            .unwrap_or(FormulaValue::Blank),
                     ));
                 }
             }
@@ -1140,15 +1140,16 @@ fn formula_search_type_from_attrs(
     let mut search_type = FormulaSearchType::Regex;
     let regex = attr_value(event, b"use-regular-expressions").and_then(|value| parse_bool(&value));
     let wildcards = attr_value(event, b"use-wildcards").and_then(|value| parse_bool(&value));
-    if let Some(regex) = regex {
-        if !regex && search_type == FormulaSearchType::Regex {
-            search_type = FormulaSearchType::Normal;
-        }
+    if let Some(regex) = regex
+        && !regex
+        && search_type == FormulaSearchType::Regex
+    {
+        search_type = FormulaSearchType::Normal;
     }
-    if let Some(wildcards) = wildcards {
-        if wildcards {
-            search_type = FormulaSearchType::Wildcard;
-        }
+    if let Some(wildcards) = wildcards
+        && wildcards
+    {
+        search_type = FormulaSearchType::Wildcard;
     }
     Some(search_type)
 }

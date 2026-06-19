@@ -3152,9 +3152,19 @@ fn evaluates_apache_poi_subtotal_cases() {
     assert_number(&nested_numeric, "SUBTOTAL(5,B2:B3)", 1.0);
     assert_number(&nested_numeric, "SUBTOTAL(5,B2:B6)*2 + 2", 4.0);
     assert_number(&nested_numeric, "SUBTOTAL(5,B2:B3,B5:B6)", 1.0);
-    assert_number_with_epsilon(&nested_numeric, "SUBTOTAL(7,B2:B3)", 1.41421, 0.00001);
+    assert_number_with_epsilon(
+        &nested_numeric,
+        "SUBTOTAL(7,B2:B3)",
+        std::f64::consts::SQRT_2,
+        0.00001,
+    );
     assert_number_with_epsilon(&nested_numeric, "SUBTOTAL(7,B2:B6)*2 + 2", 7.65685, 0.00001);
-    assert_number_with_epsilon(&nested_numeric, "SUBTOTAL(7,B2:B3,B5:B6)", 2.82842, 0.00001);
+    assert_number_with_epsilon(
+        &nested_numeric,
+        "SUBTOTAL(7,B2:B3,B5:B6)",
+        2.0 * std::f64::consts::SQRT_2,
+        0.00001,
+    );
     assert_number_with_epsilon(&nested_numeric, "SUBTOTAL(8,B2:B3)", 1.0, 0.00001);
     assert_number_with_epsilon(
         &nested_numeric,
