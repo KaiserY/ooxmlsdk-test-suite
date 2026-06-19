@@ -51,6 +51,113 @@ Current migration status:
 | Matrix formula workbook | `tests/xlsx_import.rs::evaluates_apache_poi_matrix_formula_eval_fixture` | POI `TestMatrixFormulasFromXMLSpreadsheet` | Migrated active. Currently fails at first matrix formula for the same evaluated-value gap. |
 | Multi-sheet range workbook | `tests/xlsx_import.rs::evaluates_apache_poi_formula_sheet_range_fixture` | POI `TestMultiSheetFormulaEvaluatorOnXSSF` | Migrated active. Currently fails at first 3D range formula for the same evaluated-value gap. |
 
+## Excel Formula Printer Roundtrip Plan
+
+Use Apache POI as the primary Excel formula writeback oracle for the printer
+path. The target is accurate formula write-out, not original formula text
+preservation. POI parses formula text into `Ptg[]` and renders it back through
+`FormulaRenderer.toFormulaString(...)`; this path canonicalizes formulas and
+does not preserve insignificant input details such as whitespace. The Rust test
+oracle should therefore assert that the printed formula is valid, stable, and
+equivalent for the supported workbook context.
+
+The core string-level invariant is:
+
+1. Parse POI/fixture formula text into `FormulaProgram`.
+2. Print it with the Excel A1 printer.
+3. Parse the printed formula again.
+4. Print the reparsed program again.
+5. Assert the second print equals the first print.
+
+This checks write-out accuracy at the formula layer without requiring the
+printer to reproduce the exact original spelling. For workbook-backed formulas,
+add a second layer where supported: evaluate or compare cached/evaluated values
+before and after print/parse under the same workbook model.
+
+### Scope Estimate
+
+| Tier | Scope | Estimated size | Status / dependency |
+| --- | --- | ---: | --- |
+| 1 | POI parser/renderer string cases translated into `tests/program.rs` | about 100-150 formulas | Can start immediately. No package writer required. |
+| 2 | Existing POI `.xlsx`/`.xlsm` formula cells already imported by `tests/xlsx_import.rs` | about 10-15 fixtures; hundreds of formula cells | Can start as an import-side printer stability test. Value equivalence is limited by current evaluator gaps. |
+| 3 | Curated POI spreadsheet fixture sweep from `corpus/Apache-POI/test-data/spreadsheet/` | about 30-60 formula-relevant OOXML fixtures after filtering | Later. Needs allowlist and unsupported-category reporting. |
+| 4 | Full package write/reopen formula roundtrip | selected Tier 2/3 fixtures | Later. Needs XLSX formula writer integration; still compare canonical formula text/value, not raw XML. |
+
+Keep `.xls`/BIFF and `.xlsb` out of this printer roundtrip lane for now. They
+remain useful POI source evidence, but this test-suite currently needs OOXML
+formula write-out coverage for rendering/evaluation/PDF export workflows.
+
+Current active baseline in
+`crates/ooxmlsdk-formula-test/tests/printer_roundtrip.rs`:
+
+| Tier | Test | Formula inputs | Stable | Unsupported | Unstable |
+| --- | --- | ---: | ---: | ---: | ---: |
+| 1 | `apache_poi_parser_renderer_formula_strings_print_stably` | 61 | 61 | 0 | 0 |
+| 2 | `apache_poi_existing_xlsx_formula_cells_print_stably` | 1,692 | 1,692 | 0 | 0 |
+| 3 | `apache_poi_curated_xlsx_formula_cells_print_stably` | 576 | 576 | 0 | 0 |
+
+These tests are active and not ignored. They intentionally stop at formula
+printer stability; evaluator value equivalence and package write/reopen checks
+belong to later passes.
+
+### High-Value POI Sources
+
+| Source | What to mine |
+| --- | --- |
+| `poi/src/main/java/org/apache/poi/ss/formula/FormulaParser.java` | Excel-compatible parse rules and error boundaries. |
+| `poi/src/main/java/org/apache/poi/ss/formula/FormulaRenderer.java` | Token/program-to-text rendering behavior. |
+| `poi-ooxml/src/test/java/org/apache/poi/xssf/usermodel/TestXSSFFormulaParser.java` | XSSF parser coverage for A1 refs, sheet refs, external refs, names, 3D refs, whitespace canonicalization, and structured references. |
+| `poi/src/test/java/org/apache/poi/hssf/model/TestFormulaParser.java` | Formula grammar edge cases shared by Excel text syntax: unary operators, strings, arrays, whole rows/columns, range chains, names, and quoting. |
+| `poi-ooxml/src/test/java/org/apache/poi/ss/tests/formula/TestStructuredReferences.java` | Structured-reference syntax and table-reference edge cases. |
+| `poi/src/main/java/org/apache/poi/ss/formula/SharedFormula.java` and shared-formula tests | Shared formula expansion evidence for materialized formula text before printing. |
+
+### Initial Coverage Buckets
+
+Tier 1 should be a focused POI-derived table in `tests/printer_roundtrip.rs`
+or `tests/program.rs`:
+
+| Bucket | Examples / expectations |
+| --- | --- |
+| Operators and precedence | arithmetic, comparisons, concatenation, percent, exponent associativity, unary plus/minus, parentheses. |
+| Literals | strings with doubled quotes, booleans, Excel errors, integer/float/exponent numbers, array constants. |
+| Function calls | fixed/variable arity, missing args such as `IF(A1,,B1)`, nested functions, external/add-in names where parser-visible. |
+| References | relative/absolute A1 refs, ranges, unions, intersections, whole rows/columns, range chains. |
+| Workbook refs | quoted sheet names, escaped apostrophes, 3D sheet ranges, external workbook references, defined names. |
+| Structured refs | `Table[]`, `Table[Col]`, `Table[[#This Row],[Col]]`, item/column combinations, column ranges, escaped/special column names. |
+
+Tier 2 should iterate formulas from fixtures already covered by
+`tests/xlsx_import.rs`.
+For every formula cell whose text can be parsed into `FormulaProgram`, assert
+print/parse/print stability. Where the evaluator supports the formula, also
+assert that the original imported formula and the printed/reparsed formula
+produce the same value or cached-result classification.
+
+### Result Classification
+
+Printer roundtrip diagnostics should classify failures by formula category
+instead of only reporting the first raw string:
+
+| Class | Meaning |
+| --- | --- |
+| `parse_unsupported` | The imported/source formula is not yet accepted by `FormulaProgram`. |
+| `print_unsupported` | The program parses but the Excel printer cannot render a node. |
+| `print_unstable` | `print(parse(print(parse(f))))` changes after the first print. |
+| `value_mismatch` | Both formulas parse/print, but supported evaluation differs. |
+| `context_required` | The formula needs workbook metadata that the string-level harness did not provide, such as table/name/external-link resolution. |
+
+This split keeps parser/printer work independent from evaluator gaps. A formula
+can be a valid printer test even when its function evaluation is not yet
+implemented.
+
+### Acceptance Bar
+
+The first implementation pass should make Tier 1 green and add Tier 2 reporting
+without forcing all evaluator-backed comparisons to pass. A later package-level
+writer pass should write formulas into generated XLSX files, reopen them through
+the normal import path, and compare canonical formula text plus supported cached
+or recalculated values. At no point should this lane assert raw XML equality or
+original formula-string preservation.
+
 ## Test Matrix
 
 | Migrate | Priority | Source | Fixture | Target | Formula coverage / decision |

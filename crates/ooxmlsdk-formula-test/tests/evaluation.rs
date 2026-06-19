@@ -2,9 +2,9 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 use ooxmlsdk_formula::{
-    CellAddress, DefinedNameKey, FormulaErrorValue, FormulaEvaluationBook, FormulaGrammar,
-    FormulaKind, FormulaParseContext, FormulaRowState, FormulaText, FormulaValue, SheetBinding,
-    SheetId, parse_formula_with_context,
+    CellAddress, CellRange, DefinedNameKey, FormulaErrorValue, FormulaEvaluationBook,
+    FormulaGrammar, FormulaKind, FormulaParseContext, FormulaRowState, FormulaTable, FormulaText,
+    FormulaValue, SheetBinding, SheetId, parse_formula_with_context,
 };
 
 const SHEET: SheetId = SheetId(1);
@@ -690,6 +690,86 @@ fn evaluates_lookup_match_and_datedif_cases() {
     assert_number(&book, "VLOOKUP(\"Frank\",A2:B14,2,TRUE)", 15.0);
     assert_number(&book, "VLOOKUP(\"Henry\",A2:B14,2,TRUE)", 15.0);
     assert_number(&book, "VLOOKUP(\"Zena\",A2:B14,2,TRUE)", 15.0);
+
+    // Source: Apache POI test-data/spreadsheet/63934.xlsx.
+    let sheet1 = SheetId(1);
+    let sheet2 = SheetId(2);
+    let table_book = FormulaEvaluationBook {
+        sheet_names: vec![
+            SheetBinding {
+                id: sheet1,
+                name: Cow::Borrowed("Sheet1"),
+            },
+            SheetBinding {
+                id: sheet2,
+                name: Cow::Borrowed("Sheet2"),
+            },
+        ],
+        cells: [
+            ((sheet1, address("A2")), string("MALE")),
+            ((sheet2, address("A2")), string("Male")),
+            ((sheet2, address("B2")), string("Male")),
+            ((sheet2, address("A3")), string("Female")),
+            ((sheet2, address("B3")), string("Female")),
+            ((sheet2, address("A4")), string("M")),
+            ((sheet2, address("B4")), string("Male")),
+            ((sheet2, address("A5")), string("F")),
+            ((sheet2, address("B5")), string("Female")),
+        ]
+        .into_iter()
+        .collect(),
+        tables: [
+            (
+                "MEMBER_DATA".to_string(),
+                FormulaTable {
+                    sheet: sheet1,
+                    name: Cow::Borrowed("Member_Data"),
+                    range: CellRange::new(address("A1"), address("B2")),
+                    header_rows: 1,
+                    totals_rows: 0,
+                    columns: vec![Cow::Borrowed("Gender "), Cow::Borrowed("Gender mod")],
+                },
+            ),
+            (
+                "GENDER_LOOKUP".to_string(),
+                FormulaTable {
+                    sheet: sheet2,
+                    name: Cow::Borrowed("Gender_lookup"),
+                    range: CellRange::new(address("A1"), address("B5")),
+                    header_rows: 1,
+                    totals_rows: 0,
+                    columns: vec![Cow::Borrowed("Gender input"), Cow::Borrowed("Gender mod")],
+                },
+            ),
+        ]
+        .into_iter()
+        .collect(),
+        ..FormulaEvaluationBook::default()
+    };
+    assert_eq!(
+        table_book.evaluate_formula_text(
+            sheet1,
+            Some(address("B2")),
+            "TRIM(CLEAN(Member_Data[[#This Row],[Gender ]]))",
+        ),
+        Some(string("MALE"))
+    );
+    assert_eq!(
+        table_book.evaluate_formula_text(
+            sheet1,
+            Some(address("B2")),
+            "VLOOKUP(\"MALE\",Gender_lookup[],2,0)"
+        ),
+        Some(string("Male"))
+    );
+    assert_eq!(
+        table_book.evaluate_formula_text(
+            sheet1,
+            Some(address("B2")),
+            "VLOOKUP(TRIM(CLEAN(Member_Data[[#This Row],[Gender ]])),Gender_lookup[],2,0)",
+        ),
+        Some(string("Male"))
+    );
 
     let match_book = evaluation_book(&[
         ("A1", FormulaValue::Number(1.0)),
