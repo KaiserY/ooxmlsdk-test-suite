@@ -45,6 +45,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53"
 
 [[package]]
+name = "base64"
+version = "0.22.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
+
+[[package]]
 name = "bitflags"
 version = "2.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -674,8 +680,10 @@ checksum = "d6790f58c7ff633d8771f42965289203411a5e5c68388703c06e14f24770b41e"
 name = "ooxmlsdk"
 version = "0.10.3"
 dependencies = [
+ "base64",
  "ooxmlsdk-derive",
  "quick-xml",
+ "regex",
  "thiserror",
  "zip",
 ]
@@ -785,6 +793,14 @@ dependencies = [
  "ooxmlsdk-corpus-test-support",
  "serde",
  "toml",
+]
+
+[[package]]
+name = "ooxmlsdk-test"
+version = "0.1.0"
+dependencies = [
+ "ooxmlsdk",
+ "zip",
 ]
 
 [[package]]

@@ -1,0 +1,20 @@
+[package]
+name = "ooxmlsdk-test"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[features]
+default = ["parts"]
+parts = ["ooxmlsdk/parts"]
+flat-opc = ["parts", "ooxmlsdk/flat-opc"]
+validators = ["ooxmlsdk/validators"]
+mce = ["ooxmlsdk/mce"]
+
+[dependencies]
+ooxmlsdk = { workspace = true, default-features = false }
+
+[dev-dependencies]
+zip = { workspace = true }

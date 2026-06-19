@@ -5,6 +5,7 @@ members = [
   "crates/ooxmlsdk-corpus-test-support",
   "crates/ooxmlsdk-fonts-test",
   "crates/ooxmlsdk-formula-test",
+  "crates/ooxmlsdk-test",
   "crates/ooxmlsdk-roundtrip-tests",
 ]
 
