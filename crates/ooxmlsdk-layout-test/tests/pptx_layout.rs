@@ -1,7 +1,7 @@
 use ooxmlsdk_layout::common::{DebugShape, LayoutDocument};
 use ooxmlsdk_layout_test::{
     debug_bool_property, debug_integer_property, debug_shape_has_text_property,
-    debug_shape_integer_close, debug_shapes, debug_text_property, pptx_layout,
+    debug_shape_integer_close, debug_shapes, debug_text_property, normalize_space, pptx_layout,
 };
 
 fn pptx_debug(path: &str) -> LayoutDocument<'static> {
@@ -91,7 +91,7 @@ fn assert_graphic_bullet_size_100mm(
         bullets.iter().any(|shape| {
             shape.page_index == page_index
                 && debug_text_property(shape, "text")
-                    .map(|text| text.split_whitespace().collect::<Vec<_>>().join(" "))
+                    .map(normalize_space)
                     .as_deref()
                     == Some(expected_text)
                 && debug_shape_integer_close(shape, "graphic_width_100mm", expected_width)

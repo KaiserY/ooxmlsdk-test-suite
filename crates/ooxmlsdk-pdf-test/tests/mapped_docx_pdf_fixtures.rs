@@ -12,13 +12,24 @@ fn render_summary(name: &str) -> PdfSummary {
 }
 
 fn page_text(summary: &PdfSummary, page_index: usize) -> String {
-    summary
+    let text_capacity = summary
         .text_segments
         .iter()
         .filter(|segment| segment.page_index == page_index)
-        .map(|segment| segment.text.as_str())
-        .collect::<Vec<_>>()
-        .join("\n")
+        .map(|segment| segment.text.len() + 1)
+        .sum::<usize>()
+        .saturating_sub(1);
+    let mut text = String::with_capacity(text_capacity);
+    for segment in &summary.text_segments {
+        if segment.page_index != page_index {
+            continue;
+        }
+        if !text.is_empty() {
+            text.push('\n');
+        }
+        text.push_str(&segment.text);
+    }
+    text
 }
 
 fn normalized_page_text(summary: &PdfSummary, page_index: usize) -> String {
@@ -1779,7 +1790,14 @@ fn first_path_top_from_page_top(summary: &PdfSummary, fixture_name: &str) -> f32
 }
 
 fn normalize_space(text: &str) -> String {
-    text.split_whitespace().collect::<Vec<_>>().join(" ")
+    let mut normalized = String::with_capacity(text.len());
+    for part in text.split_whitespace() {
+        if !normalized.is_empty() {
+            normalized.push(' ');
+        }
+        normalized.push_str(part);
+    }
+    normalized
 }
 
 #[test]

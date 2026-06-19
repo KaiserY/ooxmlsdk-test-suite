@@ -1,6 +1,10 @@
 #![doc = "LibreOffice-derived layout conformance tests for ooxmlsdk-layout."]
 
-use std::path::{Path, PathBuf};
+use std::{
+    any::Any,
+    path::{Path, PathBuf},
+    sync::Mutex,
+};
 
 use ooxmlsdk::parts::{
     presentation_document::PresentationDocument, spreadsheet_document::SpreadsheetDocument,
@@ -130,22 +134,93 @@ pub fn point_y(point: Point) -> f32 {
 }
 
 pub fn all_page_text(document: &LayoutDocument<'_>, page_index: usize) -> String {
-    document
+    let page = document
         .pages
         .get(page_index)
-        .unwrap_or_else(|| panic!("missing page {page_index}; pages={}", document.pages.len()))
+        .unwrap_or_else(|| panic!("missing page {page_index}; pages={}", document.pages.len()));
+    let text_capacity = page
         .items
         .iter()
         .filter_map(|item| match item {
-            DisplayItem::Text(text) => Some(text.text.as_ref()),
+            DisplayItem::Text(run) => Some(run.text.len() + 1),
             _ => None,
         })
-        .collect::<Vec<_>>()
-        .join(" ")
+        .sum::<usize>()
+        .saturating_sub(1);
+    let mut text = String::with_capacity(text_capacity);
+    for item in &page.items {
+        let DisplayItem::Text(run) = item else {
+            continue;
+        };
+        if !text.is_empty() {
+            text.push(' ');
+        }
+        text.push_str(run.text.as_ref());
+    }
+    text
 }
 
 pub fn normalize_space(text: &str) -> String {
-    text.split_whitespace().collect::<Vec<_>>().join(" ")
+    let mut normalized = String::with_capacity(text.len());
+    for part in text.split_whitespace() {
+        if !normalized.is_empty() {
+            normalized.push(' ');
+        }
+        normalized.push_str(part);
+    }
+    normalized
+}
+
+pub fn run_cases_parallel<T, Run, Describe>(
+    cases: &'static [T],
+    run: Run,
+    describe: Describe,
+) -> Vec<String>
+where
+    T: Sync + 'static,
+    Run: Fn(&T) + Send + Sync + Copy,
+    Describe: Fn(&T, String) -> String + Send + Sync + Copy,
+{
+    if cases.is_empty() {
+        return Vec::new();
+    }
+    let worker_count = std::thread::available_parallelism()
+        .map(usize::from)
+        .unwrap_or(1)
+        .min(cases.len());
+    let chunk_size = cases.len().div_ceil(worker_count);
+    let failures = Mutex::new(Vec::new());
+    std::thread::scope(|scope| {
+        for (chunk_index, chunk) in cases.chunks(chunk_size).enumerate() {
+            let failures = &failures;
+            scope.spawn(move || {
+                for (case_index, case) in chunk.iter().enumerate() {
+                    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                        run(case);
+                    }));
+                    if let Err(error) = result {
+                        failures.lock().unwrap().push((
+                            chunk_index * chunk_size + case_index,
+                            describe(case, panic_message(error)),
+                        ));
+                    }
+                }
+            });
+        }
+    });
+    let mut failures = failures.into_inner().unwrap();
+    failures.sort_by_key(|(case_index, _)| *case_index);
+    failures.into_iter().map(|(_, failure)| failure).collect()
+}
+
+fn panic_message(error: Box<dyn Any + Send>) -> String {
+    if let Some(message) = error.downcast_ref::<String>() {
+        message.clone()
+    } else if let Some(message) = error.downcast_ref::<&str>() {
+        (*message).to_string()
+    } else {
+        "unknown panic".to_string()
+    }
 }
 
 pub fn normalized_page_text(document: &LayoutDocument<'_>, page_index: usize) -> String {

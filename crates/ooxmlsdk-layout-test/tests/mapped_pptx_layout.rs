@@ -3,7 +3,7 @@ use ooxmlsdk_layout_test::{
     assert_page_contains, assert_page_contains_in_order, assert_page_filled_path_count_at_least,
     assert_page_image_count_at_least, assert_page_not_contains,
     assert_page_stroked_path_count_at_least, assert_page_text_occurrences_at_least, corpus_file,
-    pptx_layout,
+    pptx_layout, run_cases_parallel,
 };
 
 #[derive(Clone, Copy)]
@@ -1090,22 +1090,12 @@ const CASES: &[PptxCase] = &[
 
 #[test]
 fn mapped_pptx_layout_matches_libreoffice_layout_coverage() {
-    let mut failures = Vec::new();
-    for case in CASES {
-        if let Err(error) = std::panic::catch_unwind(|| run_case(case)) {
-            let message = if let Some(message) = error.downcast_ref::<String>() {
-                message.clone()
-            } else if let Some(message) = error.downcast_ref::<&str>() {
-                (*message).to_string()
-            } else {
-                "unknown panic".to_string()
-            };
-            failures.push(format!(
-                "{}\n  source: {}\n  file: {}\n  failure: {}",
-                case.name, case.source, case.file, message
-            ));
-        }
-    }
+    let failures = run_cases_parallel(CASES, run_case, |case, message| {
+        format!(
+            "{}\n  source: {}\n  file: {}\n  failure: {}",
+            case.name, case.source, case.file, message
+        )
+    });
     assert!(
         failures.is_empty(),
         "{} mapped PPTX layout cases failed:\n\n{}",

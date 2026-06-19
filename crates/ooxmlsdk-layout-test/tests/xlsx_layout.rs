@@ -2,7 +2,8 @@ use ooxmlsdk_layout::common::Color;
 use ooxmlsdk_layout_test::{
     assert_link_target, assert_page_contains, assert_page_contains_any, assert_page_image_count,
     assert_page_not_contains, assert_page_path_count_at_least, assert_page_size,
-    assert_page_text_occurrences, assert_text_color, assert_text_font_size, xlsx_layout,
+    assert_page_text_occurrences, assert_text_color, assert_text_font_size, run_cases_parallel,
+    xlsx_layout,
 };
 
 #[derive(Clone, Copy)]
@@ -1597,22 +1598,12 @@ const CASES: &[XlsxCase] = &[
 
 #[test]
 fn xlsx_layout_matches_libreoffice_layout_coverage() {
-    let mut failures = Vec::new();
-    for case in CASES {
-        if let Err(error) = std::panic::catch_unwind(|| run_case(case)) {
-            let message = if let Some(message) = error.downcast_ref::<String>() {
-                message.clone()
-            } else if let Some(message) = error.downcast_ref::<&str>() {
-                (*message).to_string()
-            } else {
-                "unknown panic".to_string()
-            };
-            failures.push(format!(
-                "{}\n  source: {}\n  file: {}\n  failure: {}",
-                case.name, case.source, case.file, message
-            ));
-        }
-    }
+    let failures = run_cases_parallel(CASES, run_case, |case, message| {
+        format!(
+            "{}\n  source: {}\n  file: {}\n  failure: {}",
+            case.name, case.source, case.file, message
+        )
+    });
     assert!(
         failures.is_empty(),
         "{} XLSX layout cases failed:\n\n{}",
