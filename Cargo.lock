@@ -787,6 +787,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "ooxmlsdk-layout-test"
+version = "0.1.0"
+dependencies = [
+ "ooxmlsdk",
+ "ooxmlsdk-layout",
+]
+
+[[package]]
 name = "ooxmlsdk-roundtrip-tests"
 version = "0.1.0"
 dependencies = [
