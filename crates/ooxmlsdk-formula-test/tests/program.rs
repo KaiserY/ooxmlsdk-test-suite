@@ -12,6 +12,14 @@ fn print_source(formula: &str) -> String {
     .expect("formula program should print")
 }
 
+fn try_print_source(formula: &str) -> Option<String> {
+    FormulaProgram::from_source(FormulaSource {
+        text: formula,
+        context: Default::default(),
+    })
+    .print_formula(&FormulaPrintOptions::default())
+}
+
 #[test]
 fn prints_formula_program_from_source() {
     // Source: LibreOffice ScCompiler token array printing and Apache POI FormulaRenderer
@@ -26,12 +34,33 @@ fn prints_formula_program_from_source() {
         ("A1+B1 C1", "A1+B1 C1"),
         ("2^3^4", "2^(3^4)"),
         ("\"a\"\"b\"&C1", "\"a\"\"b\"&C1"),
+        ("1E+2+A1", "100+A1"),
+        (".25*4", "0.25*4"),
         ("{1,2;3,4}", "{1,2;3,4}"),
         ("Sheet1!A1", "Sheet1!A1"),
         ("'My Sheet'!$A$1:$B$2", "'My Sheet'!$A$1:$B$2"),
+        ("[Book.xlsx]'O''Brien'!A1", "[Book.xlsx]'O''Brien'!A1"),
         ("#DIV/0!", "#DIV/0!"),
     ] {
         assert_eq!(print_source(source), expected, "{source}");
+    }
+}
+
+#[test]
+fn rejects_invalid_numeric_exponents_without_zero_fallback() {
+    // Source: Apache POI FormulaParser::parseNumber requires exponent digits.
+    // Invalid exponent text must not be silently lowered to numeric zero.
+    for source in ["1E+", "1E-", "1E+A1"] {
+        assert_eq!(try_print_source(source), None, "{source}");
+    }
+}
+
+#[test]
+fn rejects_failed_compound_parses_without_partial_program() {
+    // Source: Apache POI resets parser state on failed range/function branches;
+    // LibreOffice keeps failed formula compilation from emitting a printable token stream.
+    for source in ["SUM(1,", "{1,2;3}"] {
+        assert_eq!(try_print_source(source), None, "{source}");
     }
 }
 
