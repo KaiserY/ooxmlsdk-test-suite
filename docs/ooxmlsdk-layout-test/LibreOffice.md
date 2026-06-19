@@ -255,9 +255,8 @@ a test-harness mistake.
    `corpus/LibreOffice/**`, producing `common::LayoutDocument`, and querying
    pages/text/items/frames with tolerance helpers.
 3. Port direct summary tests first. Prefer `common::LayoutDocument` for row
-   heights, line heights, frame/page counts, and visible page content. Keep a
-   narrow PPTX import-summary assertion only when common layout does not yet
-   expose the LibreOffice-backed metadata, such as master/notes shape records,
+   heights, line heights, frame/page counts, visible page content, and
+   debug-only LibreOffice-backed metadata such as master/notes shape records,
    SmartArt text anchors, per-shape text insets, geometry preset names, or
    graphic bullet dimensions.
 4. Port PDF tests whose assertion is actually a layout fact:
@@ -271,7 +270,7 @@ Initial priority list:
 | Priority | Group | Source evidence | Expected outcome |
 | --- | --- | --- | --- |
 | P0 | test harness and fixtures | current PDF tests + `corpus/LibreOffice` | Layout crate compiles and loads DOCX/PPTX/XLSX fixtures. |
-| P1 | existing summary tests | `layout_summary()` / `pptx_import_summary()` call sites | Migrate common-representable assertions to `common::LayoutDocument`; keep PPTX import-summary rows only for fields still blocked on common layout metadata. |
+| P1 | existing summary tests | former `layout_summary()` / `pptx_layout_summary()` call sites | Migrate assertions to `common::LayoutDocument`, using `debug_records` for metadata that is diagnostic rather than paint output. |
 | P2 | Writer core layout rows | `sw/qa/core/layout`, `sw/qa/core/text`, `sw/qa/core/objectpositioning` | Cover page/frame/text/table/floating/footnote/border basics. |
 | P3 | Writer extras layout rows | `sw/qa/extras/layout/layout*.cxx` | Cover dense layout regressions and split/reflow cases. |
 | P4 | PPTX layout rows | `sd/qa/unit/layout-tests.cxx`, `import-tests*.cxx`, SmartArt tests | Cover slide/table/shape/text/SmartArt layout. |
@@ -299,7 +298,7 @@ Known PDF-test gaps to fix during migration:
 | Some rows are value/import correctness rather than layout, especially XLSX formula/pivot/cache cases. | Keep them out of layout-test unless the printed position/page/formatting is the asserted behavior. |
 | Direct PDF annotations/widgets/bookmarks are final serialization checks. | Keep PDF assertions; add layout precursor checks for `LinkArea`, `FormWidget`, and `OutlineEntry` when source-backed. |
 | LO layout dump has internal XPath node shape not modeled by common layout. | Assert equivalent page/frame/text/path fact; add debug records only for unavoidable internal diagnostics. |
-| Focused PPTX rows still need master/notes shape records, SmartArt text anchor geometry, per-shape text inset diagnostics, preset geometry names, and graphic bullet dimensions. | Keep them in `pptx_import_summary()` for now; migrate each row to `common::LayoutDocument` as those narrow fields are added. |
+| Focused PPTX rows need master/notes shape records, SmartArt text anchor geometry, per-shape text inset diagnostics, preset geometry names, and graphic bullet dimensions. | Assert these through `common::LayoutDocument.debug_records`; promote only stable paint-facing data into normal display items. |
 | Existing PDF tests do not fully cover `sw/qa/core/layout/data/floattable*.docx`. | Add explicit layout-test rows for floating table split/follow/reflow behavior. |
 | Existing PDF tests only selectively cover Impress `sd_layout_tests`. | Add P4 scan and migrate static PPTX/ODP-equivalent OOXML rows first. |
 | Existing PDF tests review some Calc conditional-format rows. | Promote only after rendered cell fill/text color can be asserted through layout or PDF raster. |
@@ -334,8 +333,7 @@ Rules:
 - [x] Create `crates/ooxmlsdk-layout-test`.
 - [x] Add fixture loading helpers for DOCX/PPTX/XLSX common layout.
 - [x] Port current DOCX summary assertions to `common::LayoutDocument`.
-- [x] Keep focused PPTX import-summary assertions for metadata not yet exposed
-      by common layout.
+- [x] Move focused PPTX metadata assertions to `common::LayoutDocument.debug_records`.
 - [x] Port Writer core layout P2 rows.
 - [x] Port Writer extras layout P3 rows.
 - [x] Port PPTX P4 rows.
@@ -346,26 +344,28 @@ Rules:
 Current migrated mapped coverage:
 
 - DOCX: 265 active mapped layout cases plus 5 focused DOCX layout tests.
-- PPTX: 135 active mapped layout cases plus 16 focused PPTX import-summary
-  metadata tests.
+- PPTX: 135 active mapped layout cases plus 17 focused PPTX debug metadata
+  tests.
 - XLSX: 187 active mapped layout cases.
 
 Current verification status:
 
 - `cargo test -p ooxmlsdk-layout`: passed in the main repository.
 - `cargo test -p ooxmlsdk-layout-test`: passed.
+- `cargo test -p ooxmlsdk-layout-test --test pptx_layout`: passed with
+  focused PPTX metadata assertions backed by `common::LayoutDocument.debug_records`.
 - `cargo test -p ooxmlsdk-layout-test --test mapped_docx_layout`: passed.
 - `cargo test -p ooxmlsdk-layout-test --test mapped_pptx_layout`: passed.
 - `cargo test -p ooxmlsdk-layout-test --test xlsx_layout`: passed.
 
 Rows intentionally left in `ooxmlsdk-pdf-test` are final PDF serialization,
 raw XObject, PDF pixel/raster, or color-effect assertions where common layout
-does not expose the final rendered evidence.
+does not expose the final rendered evidence. Mixed PDF tests that also contain
+layout assertions should be split gradually: move the layout assertion to this
+crate and leave only the final PDF-visible/object assertion in `ooxmlsdk-pdf-test`.
 
 Rows deferred after source re-check:
 
-- `sd/qa/unit/import-tests3.cxx:testTdf165732`: imports text inset
-  properties; common layout does not expose per-shape text inset diagnostics.
 - `sd/qa/unit/import-tests3.cxx:testTdf131553`: verifies that the SmartArt child
   object imports as OLE2; not a rendered slide layout assertion.
 - `sc/qa/unit/subsequent_filters_test4.cxx:testControlImport`: UNO control

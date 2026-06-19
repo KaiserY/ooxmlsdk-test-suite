@@ -6,7 +6,9 @@ use ooxmlsdk::parts::{
     presentation_document::PresentationDocument, spreadsheet_document::SpreadsheetDocument,
     wordprocessing_document::WordprocessingDocument,
 };
-use ooxmlsdk_layout::common::{Color, DisplayItem, Fill, LayoutDocument, Point, Rect};
+use ooxmlsdk_layout::common::{
+    Color, DebugRecord, DebugShape, DebugValue, DisplayItem, Fill, LayoutDocument, Point, Rect,
+};
 use ooxmlsdk_layout::{LayoutOptions, Result};
 
 pub fn corpus_file(path: &str) -> PathBuf {
@@ -41,16 +43,66 @@ pub fn xlsx_layout(path: &str) -> Result<LayoutDocument<'static>> {
     ooxmlsdk_layout::xlsx::layout_document(&mut package, &LayoutOptions { source_file_name })
 }
 
-pub fn pptx_import_summary(path: &str) -> Result<ooxmlsdk_layout::pptx::PptxLayoutSummary> {
-    let mut package = PresentationDocument::new_from_file(corpus_file(path))?;
-    ooxmlsdk_layout::pptx::inspect_layout(&mut package)
-}
-
 pub fn assert_close(actual: f32, expected: f32, tolerance: f32, context: &str) {
     assert!(
         (actual - expected).abs() <= tolerance,
         "{context}: actual {actual}, expected {expected}, tolerance {tolerance}"
     );
+}
+
+pub fn debug_shapes<'a, 'doc>(
+    document: &'a LayoutDocument<'doc>,
+    kind: &str,
+) -> Vec<&'a DebugShape<'doc>> {
+    document
+        .debug_records
+        .iter()
+        .filter_map(|record| match record {
+            DebugRecord::Shape(shape) if shape.kind == kind => Some(shape),
+            _ => None,
+        })
+        .collect()
+}
+
+pub fn debug_text_property<'a, 'doc>(shape: &'a DebugShape<'doc>, name: &str) -> Option<&'a str> {
+    shape.metadata.iter().find_map(|property| {
+        (property.name == name)
+            .then_some(&property.value)
+            .and_then(|value| match value {
+                DebugValue::Text(text) => Some(text.as_ref()),
+                _ => None,
+            })
+    })
+}
+
+pub fn debug_integer_property(shape: &DebugShape<'_>, name: &str) -> Option<i64> {
+    shape.metadata.iter().find_map(|property| {
+        (property.name == name)
+            .then_some(&property.value)
+            .and_then(|value| match value {
+                DebugValue::Integer(value) => Some(*value),
+                _ => None,
+            })
+    })
+}
+
+pub fn debug_bool_property(shape: &DebugShape<'_>, name: &str) -> Option<bool> {
+    shape.metadata.iter().find_map(|property| {
+        (property.name == name)
+            .then_some(&property.value)
+            .and_then(|value| match value {
+                DebugValue::Bool(value) => Some(*value),
+                _ => None,
+            })
+    })
+}
+
+pub fn debug_shape_has_text_property(shape: &DebugShape<'_>, name: &str, expected: &str) -> bool {
+    debug_text_property(shape, name).is_some_and(|value| value.contains(expected))
+}
+
+pub fn debug_shape_integer_close(shape: &DebugShape<'_>, name: &str, expected: i64) -> bool {
+    debug_integer_property(shape, name).is_some_and(|value| (value - expected).abs() <= 3)
 }
 
 pub fn rect_left(rect: Rect) -> f32 {
