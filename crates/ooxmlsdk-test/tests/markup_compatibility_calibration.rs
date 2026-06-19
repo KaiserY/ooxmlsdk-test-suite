@@ -2,7 +2,11 @@ use std::io::{Cursor, Read};
 
 use ooxmlsdk::schemas::schemas_openxmlformats_org_spreadsheetml_2006_main::SharedStringTable;
 use ooxmlsdk::schemas::schemas_openxmlformats_org_wordprocessingml_2006_main::{
-    BodyChoice, Document, Paragraph, ParagraphChoice, ParagraphProperties, Run, Text,
+    BodyChoice, Document, Paragraph, ParagraphChoice, ParagraphProperties, Run,
+};
+#[cfg(feature = "mce")]
+use ooxmlsdk::sdk::{
+    FileFormatVersion, MarkupCompatibilityProcessMode, MarkupCompatibilityProcessSettings, SdkMce,
 };
 use ooxmlsdk_test::{assert_stable_roundtrip, fixtures};
 
@@ -165,23 +169,41 @@ fn mcsupport_load_process_content() {
 }
 
 #[test]
-#[ignore = "calibration: mc:Ignorable attribute entity whitespace is preserved raw instead of decoded"]
+#[cfg(feature = "mce")]
 fn markup_compatibility_ignore_whitespaces_full_mode() {
     // Source: test/DocumentFormat.OpenXml.Tests/OpenXmlDomTest/MarkupCompatibilityTest.cs
     //   Ignore_Whitespaces_FullMode
-    let xml = r#"<w:t xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="  &#x9;&#xA;&#xD; ">text</w:t>"#;
+    let settings = MarkupCompatibilityProcessSettings {
+        process_mode: MarkupCompatibilityProcessMode::ProcessAllParts,
+        target_file_format_version: FileFormatVersion::Office2007,
+    };
+    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" mc:Ignorable="  &#x9;&#xA;&#xD; "><w:body><w:p><w:pPr w14:myattr="kept"><w:keepNext/></w:pPr></w:p></w:body></w:document>"#;
+    let mut document = xml.parse::<Document>().unwrap();
 
-    let (text, serialized, reparsed) = assert_stable_roundtrip::<Text>(xml);
+    document.process_mce(&settings).unwrap();
 
+    let properties = paragraph_properties(first_paragraph(&document));
     assert_eq!(
-        xml_other_attr(&text.xml_other_attrs, "mc:Ignorable"),
-        Some("  \t\n\r ")
+        xml_other_attr(&properties.xml_other_attrs, "w14:myattr"),
+        Some("kept")
+    );
+    assert!(properties.keep_next.is_some());
+
+    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" mc:Ignorable="w14&#x9;wp14"><w:body><w:p><w:pPr w14:myattr="drop" wp14:other="drop"><w:keepNext/></w:pPr></w:p></w:body></w:document>"#;
+    let mut document = xml.parse::<Document>().unwrap();
+
+    document.process_mce(&settings).unwrap();
+
+    let properties = paragraph_properties(first_paragraph(&document));
+    assert_eq!(
+        xml_other_attr(&properties.xml_other_attrs, "w14:myattr"),
+        None
     );
     assert_eq!(
-        xml_other_attr(&reparsed.xml_other_attrs, "mc:Ignorable"),
-        Some("  \t\n\r ")
+        xml_other_attr(&properties.xml_other_attrs, "wp14:other"),
+        None
     );
-    assert!(serialized.contains("mc:Ignorable=\"  \t\n\r \""));
+    assert!(properties.keep_next.is_some());
 }
 
 #[test]
