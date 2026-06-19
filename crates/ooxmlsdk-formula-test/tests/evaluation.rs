@@ -78,6 +78,20 @@ fn assert_number_at(
     );
 }
 
+fn assert_error_at(
+    book: &FormulaEvaluationBook<'_>,
+    current_cell: &str,
+    formula: &str,
+    expected: FormulaErrorValue,
+) {
+    let current_cell = address(current_cell);
+    assert_eq!(
+        book.evaluate_formula_text(SHEET, Some(current_cell), formula),
+        Some(FormulaValue::Error(expected)),
+        "{formula}"
+    );
+}
+
 fn assert_text(book: &FormulaEvaluationBook<'_>, formula: &str, expected: &str) {
     let actual = match book.evaluate_formula_text(SHEET, None, formula) {
         Some(FormulaValue::String(value)) => value.into_owned(),
@@ -1166,6 +1180,40 @@ fn evaluates_xlookup_regex_match_case() {
     };
 
     assert_number(&book, "XLOOKUP(E15,A$2:A$11,B$2:B$11,,3)", 10.81);
+}
+
+#[test]
+fn evaluates_gnumeric_xlookup_and_xmatch_cases() {
+    // Source: Gnumeric test/t1110-xlookup.pl and samples/xlookup.gnumeric.
+    // Migrated as formula semantics only; do not copy GPL fixtures into the
+    // ooxmlsdk main repository.
+    let book = evaluation_book(&[
+        ("A4", string("A")),
+        ("A5", string("B")),
+        ("A6", string("C")),
+        ("B4", number_value(1.0)),
+        ("B5", number_value(2.0)),
+        ("B6", number_value(3.0)),
+        ("D4", number_value(10.0)),
+        ("D5", number_value(20.0)),
+        ("D6", number_value(30.0)),
+    ]);
+
+    assert_number(&book, "XMATCH(\"B\",A4:A6,0)", 2.0);
+    assert_number(&book, "XLOOKUP(\"B\",A4:A6,B4:B6)", 2.0);
+    assert_text(
+        &book,
+        "XLOOKUP(\"D\",A4:A6,B4:B6,\"Not Found\")",
+        "Not Found",
+    );
+    assert_number(&book, "XLOOKUP(\"B\",A4:A6,B4:B6,,0,1)", 2.0);
+    assert_number(&book, "XLOOKUP(\"B\",A4:A6,B4:B6,,0,-1)", 2.0);
+    assert_number(&book, "XMATCH(\"A*\",A4:A6,2)", 1.0);
+    assert_number(&book, "XLOOKUP(\"C\",A4:A6,D4:D6,,0,1)", 30.0);
+    assert_number(&book, "XLOOKUP(1.5,B4:B6,D4:D6,,-1,1)", 10.0);
+    assert_number(&book, "XLOOKUP(1.5,B4:B6,D4:D6,,1,1)", 20.0);
+    assert_number(&book, "XMATCH(\"B\",A4:A6,0,1)", 2.0);
+    assert_number(&book, "XMATCH(\"B\",A4:A6,0,-1)", 2.0);
 }
 
 #[test]
@@ -2508,6 +2556,169 @@ fn evaluates_libreoffice_dynamic_array_and_new_text_cases() {
         &book,
         "REGEX(\"Needle\",\"missing\")",
         FormulaErrorValue::NA,
+    );
+}
+
+#[test]
+fn evaluates_gnumeric_unique_cases() {
+    // Source: Gnumeric test/t1109-unique.pl and samples/unique.gnumeric.
+    // Migrated as formula semantics only; do not copy GPL fixtures into the
+    // ooxmlsdk main repository.
+    let book = evaluation_book(&[
+        ("A1", number_value(1.0)),
+        ("A2", number_value(2.0)),
+        ("A3", number_value(1.0)),
+        ("A4", number_value(2.0)),
+        ("A5", number_value(1.0)),
+        ("A6", number_value(2.0)),
+    ]);
+
+    assert_matrix_numbers_with_grammar(
+        &book,
+        SHEET,
+        None,
+        "UNIQUE(A1:A6)",
+        FormulaGrammar::ExcelA1,
+        &[&[1.0], &[2.0]],
+    );
+    assert_matrix_numbers_with_grammar(
+        &book,
+        SHEET,
+        None,
+        "UNIQUE({1;1;1;1;1;1})",
+        FormulaGrammar::ExcelA1,
+        &[&[1.0]],
+    );
+    assert_matrix_texts_with_grammar(
+        &book,
+        SHEET,
+        None,
+        "UNIQUE({\"\";\" \";\"  \";\"   \"})",
+        FormulaGrammar::ExcelA1,
+        &[&[""], &[" "], &["  "], &["   "]],
+    );
+    assert_matrix_texts_with_grammar(
+        &book,
+        SHEET,
+        None,
+        "UNIQUE({\"TRUE\";\"FALSE\";\"0\"})",
+        FormulaGrammar::ExcelA1,
+        &[&["TRUE"], &["FALSE"], &["0"]],
+    );
+    assert_matrix_numbers_with_grammar(
+        &book,
+        SHEET,
+        None,
+        "UNIQUE({1,2;1,3;1,2})",
+        FormulaGrammar::ExcelA1,
+        &[&[1.0, 2.0], &[1.0, 3.0]],
+    );
+}
+
+#[test]
+fn evaluates_gnumeric_regex_function_cases() {
+    // Source: Gnumeric test/t1112-regextest.pl, test/t1113-regexextract.pl,
+    // test/t1114-regexreplace.pl, and matching samples/regextest.gnumeric,
+    // samples/regexextract.gnumeric, samples/regexreplace.gnumeric.
+    // Migrated as formula semantics only; do not copy GPL fixtures into the
+    // ooxmlsdk main repository.
+    let book = evaluation_book(&[]);
+
+    assert_boolean(&book, "REGEXTEST(\"hello\",\"hello\")", true);
+    assert_boolean(&book, "REGEXTEST(\"hello\",\"world\")", false);
+    assert_boolean(&book, "REGEXTEST(\"Hello\",\"hello\",TRUE)", true);
+    assert_boolean(&book, "REGEXTEST(\"Hello\",\"hello\")", false);
+    assert_boolean(&book, "REGEXTEST(\"hello world\",\"^hello\")", true);
+    assert_boolean(&book, "REGEXTEST(\" world hello\",\"^hello\")", false);
+    assert_boolean(&book, "REGEXTEST(\"hello world\",\"world$\")", true);
+    assert_boolean(&book, "REGEXTEST(\"hello world \",\"world$\")", false);
+    assert_boolean(&book, "REGEXTEST(\"123\",\"[0-9]+\")", true);
+    assert_boolean(&book, "REGEXTEST(\"color\",\"colou?r\")", true);
+    assert_boolean(&book, "REGEXTEST(\"colour\",\"colou?r\")", true);
+    assert_boolean(&book, "REGEXTEST(\"aaaa\",\"a{4}\")", true);
+    assert_boolean(&book, "REGEXTEST(\"aaa\",\"a{4}\")", false);
+    assert_boolean(&book, "REGEXTEST(\"bat\",\"[bc]at\")", true);
+    assert_boolean(&book, "REGEXTEST(\"hat\",\"[^bc]at\")", true);
+    assert_boolean(&book, r#"REGEXTEST("9","\d")"#, true);
+    assert_boolean(&book, r#"REGEXTEST("hell","\bhell\b")"#, true);
+    assert_boolean(&book, r#"REGEXTEST("hello","\bhell\b")"#, false);
+    assert_boolean(&book, "REGEXTEST(\"cat\",\"cat|dog\")", true);
+    assert_boolean(&book, "REGEXTEST(\"bird\",\"cat|dog\")", false);
+    assert_boolean(&book, r#"REGEXTEST("3.14","3\.14")"#, true);
+    assert_boolean(&book, r#"REGEXTEST("3x14","3\.14")"#, false);
+    assert_boolean(&book, "REGEXTEST(\"π is 3.14\",\"π\")", true);
+
+    assert_text(&book, r#"REGEXEXTRACT("Order 12345","\d+")"#, "12345");
+    assert_error(
+        &book,
+        r#"REGEXEXTRACT("Order ABCD","\d+")"#,
+        FormulaErrorValue::NA,
+    );
+    assert_text(
+        &book,
+        "REGEXEXTRACT(\"Error 404\",\"error\",0,TRUE)",
+        "Error",
+    );
+    assert_text(
+        &book,
+        r#"TEXTJOIN(",",TRUE,REGEXEXTRACT("apple, banana, cherry","[a-z]+",1))"#,
+        "apple,banana,cherry",
+    );
+    assert_text(
+        &book,
+        r#"TEXTJOIN(",",TRUE,REGEXEXTRACT("John Smith (30)","([A-Za-z ]+) \((\d+)\)",2))"#,
+        "John Smith,30",
+    );
+    assert_error(
+        &book,
+        "REGEXEXTRACT(\"test string\",\"[a-z ]+\",2)",
+        FormulaErrorValue::NA,
+    );
+    assert_text(
+        &book,
+        r#"REGEXEXTRACT("Price is $19.99","\$[0-9.]+")"#,
+        "$19.99",
+    );
+
+    assert_text(
+        &book,
+        r#"REGEXREPLACE("123-456-789","\d","x")"#,
+        "xxx-xxx-xxx",
+    );
+    assert_text(
+        &book,
+        r#"REGEXREPLACE("123-456-789","\d","x",1)"#,
+        "x23-456-789",
+    );
+    assert_text(
+        &book,
+        r#"REGEXREPLACE("123-456-789","\d","x",-1)"#,
+        "123-456-78x",
+    );
+    assert_text(
+        &book,
+        "REGEXREPLACE(\"Apple apple APPLE\",\"apple\",\"orange\",0,TRUE)",
+        "orange orange orange",
+    );
+    assert_text(
+        &book,
+        r#"REGEXREPLACE("John Smith","(\w+) (\w+)","$2, $1")"#,
+        "Smith, John",
+    );
+    assert_text(
+        &book,
+        r#"REGEXREPLACE("2024-04-30","(\d{4})-(\d{2})-(\d{2})","\3/\2/\1")"#,
+        "30/04/2024",
+    );
+    assert_text(
+        &book,
+        "REGEXREPLACE(\"The price is 100€\",\"€\",\" EUR\")",
+        "The price is 100 EUR",
+    );
+    assert_text(
+        &book,
+        "REGEXREPLACE(\"Hello World\",\"\\d+\",\"Numbers\")",
+        "Hello World",
     );
 }
 
@@ -4846,6 +5057,47 @@ fn evaluates_excel_intersection_operator_cases() {
     assert_number(&book, "horz vert", 1.0);
     assert_number(&book, "(horz vert)*2", 2.0);
     assert_number(&book, "2*(horz vert)", 2.0);
+}
+
+#[test]
+fn evaluates_gnumeric_intersection_cases() {
+    // Source: Gnumeric test/t1903-intersection-tests.pl and
+    // samples/intersection-tests.gnumeric.
+    // Migrated as formula semantics only; do not copy GPL fixtures into the
+    // ooxmlsdk main repository.
+    let book = evaluation_book(&[
+        ("A13", number_value(10.0)),
+        ("A14", number_value(11.0)),
+        ("A15", number_value(12.0)),
+        ("A16", number_value(13.0)),
+        ("C25", number_value(10.0)),
+        ("D25", number_value(11.0)),
+        ("E25", number_value(12.0)),
+        ("F25", number_value(13.0)),
+        ("A47", number_value(22.0)),
+        ("A48", number_value(33.0)),
+        ("B54", number_value(123.0)),
+        ("C54", number_value(345.0)),
+    ]);
+
+    assert_error_at(&book, "B12", "$A$13:$A$16", FormulaErrorValue::Value);
+    assert_number_at(&book, "B13", "$A$13:$A$16", 10.0);
+    assert_number_at(&book, "B14", "$A$13:$A$16", 11.0);
+    assert_number_at(&book, "B15", "$A$13:$A$16", 12.0);
+    assert_number_at(&book, "B16", "$A$13:$A$16", 13.0);
+    assert_error_at(&book, "B17", "$A$13:$A$16", FormulaErrorValue::Value);
+
+    assert_error_at(&book, "B26", "$C$25:$F$25", FormulaErrorValue::Value);
+    assert_number_at(&book, "C26", "$C$25:$F$25", 10.0);
+    assert_number_at(&book, "D26", "$C$25:$F$25", 11.0);
+    assert_number_at(&book, "E26", "$C$25:$F$25", 12.0);
+    assert_number_at(&book, "F26", "$C$25:$F$25", 13.0);
+    assert_error_at(&book, "G26", "$C$25:$F$25", FormulaErrorValue::Value);
+
+    assert_number_at(&book, "D47", "A$1:A$65536", 22.0);
+    assert_number_at(&book, "D48", "A$1:A$65536", 33.0);
+    assert_number_at(&book, "B56", "A54:IV54", 123.0);
+    assert_number_at(&book, "C56", "B54:IV54", 345.0);
 }
 
 #[test]
