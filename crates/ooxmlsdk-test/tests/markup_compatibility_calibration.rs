@@ -117,13 +117,17 @@ fn mcsupport_load_preserve_attr() {
 
 #[cfg(feature = "mce")]
 #[test]
-#[ignore = "calibration: Office2007 inherited Ignorable processing is not implemented yet"]
 fn mcsupport_load_ignorable() {
     // Source: test/DocumentFormat.OpenXml.Tests/ofapiTest/MCSupport.cs
     //   LoadIgnorable
     let xml = doc_sample_part("mcdoc.docx", "word/document.xml");
+    let settings = MarkupCompatibilityProcessSettings {
+        process_mode: MarkupCompatibilityProcessMode::ProcessLoadedPartsOnly,
+        target_file_format_version: FileFormatVersion::Office2007,
+    };
 
-    let document = xml.parse::<Document>().unwrap();
+    let mut document = xml.parse::<Document>().unwrap();
+    document.process_mce(&settings).unwrap();
     let paragraph = first_paragraph(&document);
 
     assert!(
@@ -228,14 +232,19 @@ fn markup_compatibility_ignored_known_attribute_full_mode() {
 
 #[cfg(feature = "mce")]
 #[test]
-#[ignore = "calibration: Office2007 ignored known attribute processing is not implemented yet"]
 fn markup_compatibility_ignored_known_attribute_o12_mode() {
     // Source: test/DocumentFormat.OpenXml.Tests/OpenXmlDomTest/MarkupCompatibilityTest.cs
     //   Ignored_KnownAttribute_O12Mode
-    let xml = r#"<w:pPr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" mc:Ignorable="w14" w14:myattr="attribute1 from unknown namespace1."><w:keepNext/></w:pPr>"#;
+    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" mc:Ignorable="w14"><w:body><w:p><w:pPr w14:myattr="attribute1 from unknown namespace1."><w:keepNext/></w:pPr></w:p></w:body></w:document>"#;
+    let settings = MarkupCompatibilityProcessSettings {
+        process_mode: MarkupCompatibilityProcessMode::ProcessAllParts,
+        target_file_format_version: FileFormatVersion::Office2007,
+    };
 
-    let properties = xml.parse::<ParagraphProperties>().unwrap();
+    let mut document = xml.parse::<Document>().unwrap();
+    document.process_mce(&settings).unwrap();
 
+    let properties = paragraph_properties(first_paragraph(&document));
     assert!(
         xml_other_attr(&properties.xml_other_attrs, "w14:myattr").is_none(),
         "ProcessAllParts/Office2007 removes ignored known extension attributes upstream"
@@ -243,7 +252,6 @@ fn markup_compatibility_ignored_known_attribute_o12_mode() {
 }
 
 #[test]
-#[ignore = "calibration: standalone AlternateContent does not preserve MCE attributes yet"]
 fn markup_compatibility_process_content_ignored_unknown_element_full_mode() {
     // Source: test/DocumentFormat.OpenXml.Tests/OpenXmlDomTest/MarkupCompatibilityTest.cs
     //   ProcessContent_Ignored_UnknownElement_FullMode
@@ -279,7 +287,6 @@ fn markup_compatibility_process_content_ignored_known_element_o12_mode() {
 }
 
 #[test]
-#[ignore = "calibration: standalone AlternateContent does not preserve MCE attributes yet"]
 fn markup_compatibility_process_content_xml_space_full_mode() {
     // Source: test/DocumentFormat.OpenXml.Tests/OpenXmlDomTest/MarkupCompatibilityTest.cs
     //   ProcessContent_xmlSpace_FullMode
@@ -359,22 +366,25 @@ fn markup_compatibility_must_understand_ignored_unknown_element_full_mode() {
 
 #[cfg(feature = "mce")]
 #[test]
-#[ignore = "calibration: MustUnderstand prefix validation is not implemented yet"]
 fn markup_compatibility_must_understand_ignored_unknown_element_o12_mode() {
     // Source: test/DocumentFormat.OpenXml.Tests/OpenXmlDomTest/MarkupCompatibilityTest.cs
     //   MustUnderstand_Ignored_UnknownElement_O12Mode
-    let xml = r#"<w:pPr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:MustUnderstand="uns1"><w:keepNext/></w:pPr>"#;
+    let xml = r#"<w:pPr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:uns1="http://test.openxmlsdk.microsoft.com/unknownns1" mc:Ignorable="uns1" mc:MustUnderstand="uns1"><w:keepNext/></w:pPr>"#;
+    let settings = MarkupCompatibilityProcessSettings {
+        process_mode: MarkupCompatibilityProcessMode::ProcessAllParts,
+        target_file_format_version: FileFormatVersion::Office2007,
+    };
 
-    let parsed = xml.parse::<ParagraphProperties>();
+    let mut properties = xml.parse::<ParagraphProperties>().unwrap();
+    let processed = properties.process_mce(&settings);
 
     assert!(
-        parsed.is_err(),
-        "MCE processing should reject an unresolved MustUnderstand prefix upstream"
+        processed.is_err(),
+        "MCE processing should reject an unsupported MustUnderstand namespace upstream"
     );
 }
 
 #[test]
-#[ignore = "calibration: standalone AlternateContent does not preserve MCE attributes yet"]
 fn markup_compatibility_must_understand_unselected_full_mode() {
     // Source: test/DocumentFormat.OpenXml.Tests/OpenXmlDomTest/MarkupCompatibilityTest.cs
     //   MustUnderstand_Unselected_FullMode
