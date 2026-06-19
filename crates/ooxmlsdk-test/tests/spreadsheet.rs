@@ -300,7 +300,6 @@ fn shared_string_table_round_trip_from_openxml_part_test() {
 }
 
 #[test]
-#[cfg(any())]
 fn shared_string_table_process_content_preserves_extension_attributes_from_mc_support_test() {
     // Source: test/DocumentFormat.OpenXml.Tests/ofapiTest/MCSupport.cs
     //   LoadProcessContent
@@ -316,28 +315,31 @@ fn shared_string_table_process_content_preserves_extension_attributes_from_mc_su
         xml_other_attr(&item.xml_other_attrs, "mc:Ignorable"),
         Some("w14")
     );
-    assert_eq!(item.w14_attr.as_deref(), Some("value"));
-    let placeholder = item
-        .w14_placeholder
-        .as_ref()
+    assert_eq!(
+        xml_other_attr(&item.xml_other_attrs, "w14:attr"),
+        Some("value")
+    );
+    let placeholder_xml = item
+        .xml_other_children
+        .iter()
+        .find_map(|(_, xml)| {
+            std::str::from_utf8(xml)
+                .ok()
+                .filter(|xml| xml.contains("<w14:placeholder"))
+        })
         .expect("expected w14 placeholder");
-    assert_eq!(
-        xml_other_attr(&placeholder.xml_other_attrs, "mc:ProcessContent"),
-        Some("w14:placeholder")
+    assert!(placeholder_xml.contains(r#"mc:ProcessContent="w14:placeholder""#));
+    assert!(placeholder_xml.contains(r#"mc:PreserveAttributes="w14:a w14:b""#));
+    assert!(placeholder_xml.contains(r#"w14:a="a""#));
+    assert!(placeholder_xml.contains(r#"w14:b="b""#));
+    assert!(placeholder_xml.contains(r#"w14:c="c""#));
+    assert!(placeholder_xml.contains(">ddd<"));
+    assert!(
+        item.xml_other_children
+            .iter()
+            .filter_map(|(_, xml)| std::str::from_utf8(xml).ok())
+            .any(|xml| xml.contains("<w14:no"))
     );
-    assert_eq!(
-        xml_other_attr(&placeholder.xml_other_attrs, "mc:PreserveAttributes"),
-        Some("w14:a w14:b")
-    );
-    let text = placeholder
-        .text
-        .as_ref()
-        .expect("expected placeholder text");
-    assert_eq!(text.w14_a.as_deref(), Some("a"));
-    assert_eq!(text.w14_b.as_deref(), Some("b"));
-    assert_eq!(text.w14_c.as_deref(), Some("c"));
-    assert_eq!(text.xml_content.as_deref(), Some("ddd"));
-    assert!(item.w14_no.is_some());
     assert!(item.text.is_some());
     assert!(item.phonetic_properties.is_some());
 

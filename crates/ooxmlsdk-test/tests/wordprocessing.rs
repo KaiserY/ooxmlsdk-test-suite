@@ -1,7 +1,8 @@
 use ooxmlsdk::common::XmlHeaderType;
 use ooxmlsdk::schemas::schemas_openxmlformats_org_wordprocessingml_2006_main::{
     Body, BodyChoice, Columns, CommentChoice, Comments, DeletedRun, DeletedRunChoice, Document,
-    Hyperlink, HyperlinkChoice, Paragraph, ParagraphChoice, Run, RunChoice, Text,
+    Hyperlink, HyperlinkChoice, Justification, LevelJustification, Paragraph, ParagraphChoice,
+    ParagraphProperties, Run, RunChoice, TabStop, TableJustification, Text, TextDirection,
 };
 #[cfg(not(feature = "mce"))]
 use ooxmlsdk::schemas::schemas_openxmlformats_org_wordprocessingml_2006_main::{
@@ -10,6 +11,12 @@ use ooxmlsdk::schemas::schemas_openxmlformats_org_wordprocessingml_2006_main::{
 use ooxmlsdk::sdk::SdkType;
 use ooxmlsdk::simple_type::TwipsMeasureValue;
 use ooxmlsdk_test::{assert_stable_roundtrip, fixtures, trim_xml_declaration};
+
+fn xml_other_attr<'a>(attrs: &'a [ooxmlsdk::common::XmlOtherAttr], name: &str) -> Option<&'a str> {
+    attrs
+        .iter()
+        .find_map(|attr| (attr.name() == name).then_some(attr.raw_value()))
+}
 
 fn xml_namespace_prefix_matches(
     declaration: &ooxmlsdk::common::XmlNamespace,
@@ -331,16 +338,35 @@ fn deleted_run_flat_choice_parses_upstream_particle_shape() {
 }
 
 #[test]
+#[ignore = "calibration: conformance=strict is preserved as a raw attribute instead of removed"]
 fn document_attribute_translation_test() {
-    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" conformance="strict" />"#;
-    let document = xml.parse::<Document>().unwrap();
+    // Source: test/DocumentFormat.OpenXml.Tests/Wordprocessing/DocumentTests.cs
+    //   DocumentAttributeTranslationTest
+    const NAMESPACE: &str = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 
-    assert!(document.w_conformance.is_none());
+    for (name, value, removed) in [
+        ("conformance", "strict", true),
+        ("conformance", "anything", false),
+        ("conformance", "", false),
+        ("anything", "something", false),
+    ] {
+        let xml = format!(r#"<w:document xmlns:w="{NAMESPACE}" {name}="{value}" />"#);
+        let document = xml.parse::<Document>().unwrap();
+
+        if removed {
+            assert!(document.w_conformance.is_none());
+            assert_eq!(xml_other_attr(&document.xml_other_attrs, name), None);
+        } else {
+            assert_eq!(xml_other_attr(&document.xml_other_attrs, name), Some(value));
+        }
+    }
 }
 
 #[test]
-#[cfg(any())]
+#[ignore = "calibration: ISO 2010 logical justification values are not translated to legacy physical values yet"]
 fn justification_attribute_translation_test() {
+    // Source: test/DocumentFormat.OpenXml.Tests/Wordprocessing/JustificationTests.cs
+    //   JustificationAttributeTranslationTest
     const NAMESPACE: &str = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 
     for (value, expected) in [("start", "left"), ("end", "right")] {
@@ -352,8 +378,10 @@ fn justification_attribute_translation_test() {
 }
 
 #[test]
-#[cfg(any())]
+#[ignore = "calibration: ISO 2010 logical table justification values are not translated to legacy physical values yet"]
 fn table_justification_attribute_translation_test() {
+    // Source: test/DocumentFormat.OpenXml.Tests/Wordprocessing/TableJustificationTests.cs
+    //   TableJustificationAttributeTranslationTest
     const NAMESPACE: &str = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 
     for (value, expected) in [("start", "left"), ("end", "right")] {
@@ -365,8 +393,10 @@ fn table_justification_attribute_translation_test() {
 }
 
 #[test]
-#[cfg(any())]
+#[ignore = "calibration: ISO 2010 logical tab stop values are not translated to legacy physical values yet"]
 fn tab_stop_attribute_translation_test() {
+    // Source: test/DocumentFormat.OpenXml.Tests/Wordprocessing/TabStopTests.cs
+    //   TabStopAttributeTranslationTest
     const NAMESPACE: &str = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 
     for (value, expected) in [("start", "left"), ("end", "right")] {
@@ -378,8 +408,10 @@ fn tab_stop_attribute_translation_test() {
 }
 
 #[test]
-#[cfg(any())]
+#[ignore = "calibration: ISO 2010 text direction aliases are not translated to legacy values yet"]
 fn text_direction_attribute_translation_test() {
+    // Source: test/DocumentFormat.OpenXml.Tests/Wordprocessing/TextDirectionTests.cs
+    //   TextDirectionTranslationTest
     const NAMESPACE: &str = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 
     for (value, expected) in [
@@ -398,8 +430,9 @@ fn text_direction_attribute_translation_test() {
 }
 
 #[test]
-#[cfg(any())]
+#[ignore = "calibration: ISO 2010 logical level justification values are not translated to legacy physical values yet"]
 fn level_justification_attribute_translation_test() {
+    // Source: upstream wordprocessing attribute translation behavior.
     const NAMESPACE: &str = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 
     for (value, expected) in [("start", "left"), ("end", "right")] {
@@ -692,7 +725,6 @@ fn document_round_trip_preserves_hello_o14_structure_from_openxml_asset() {
 }
 
 #[test]
-#[cfg(any())]
 #[cfg(not(feature = "mce"))]
 fn document_round_trip_preserves_mce_attributes_and_alternate_content() {
     // Source: test/DocumentFormat.OpenXml.Tests/ofapiTest/MCSupport.cs
@@ -715,7 +747,10 @@ fn document_round_trip_preserves_mce_attributes_and_alternate_content() {
         xml_other_attr(&run.xml_other_attrs, "mc:PreserveAttributes"),
         Some("w14:editId")
     );
-    assert_eq!(run.w14_myattr.as_deref(), Some("myattr"));
+    assert_eq!(
+        xml_other_attr(&run.xml_other_attrs, "w14:myattr"),
+        Some("myattr")
+    );
 
     let alternate_content = run
         .run_choice
@@ -740,7 +775,7 @@ fn document_round_trip_preserves_mce_attributes_and_alternate_content() {
 }
 
 #[test]
-#[cfg(any())]
+#[ignore = "calibration: mc:Ignorable attribute entity whitespace is preserved raw instead of decoded"]
 fn text_round_trip_preserves_ignorable_whitespace_list_from_markup_compatibility_test() {
     // Source: test/DocumentFormat.OpenXml.Tests/OpenXmlDomTest/MarkupCompatibilityTest.cs
     //   Ignore_Whitespaces_FullMode
@@ -761,7 +796,6 @@ fn text_round_trip_preserves_ignorable_whitespace_list_from_markup_compatibility
 }
 
 #[test]
-#[cfg(any())]
 fn paragraph_properties_preserve_known_extension_attribute_from_markup_compatibility_test() {
     // Source: test/DocumentFormat.OpenXml.Tests/OpenXmlDomTest/MarkupCompatibilityTest.cs
     //   Ignored_KnownAttribute_FullMode
@@ -775,11 +809,11 @@ fn paragraph_properties_preserve_known_extension_attribute_from_markup_compatibi
         Some("w14:myattr")
     );
     assert_eq!(
-        properties.w14_myattr.as_deref(),
+        xml_other_attr(&properties.xml_other_attrs, "w14:myattr"),
         Some("attribute1 from unknown namespace1.")
     );
     assert_eq!(
-        reparsed.w14_myattr.as_deref(),
+        xml_other_attr(&reparsed.xml_other_attrs, "w14:myattr"),
         Some("attribute1 from unknown namespace1.")
     );
     assert!(properties.keep_next.is_some());

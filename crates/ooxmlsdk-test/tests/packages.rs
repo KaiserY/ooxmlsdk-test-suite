@@ -19,6 +19,7 @@ use ooxmlsdk::parts::{
     workbook_styles_part::WorkbookStylesPart, worksheet_part::WorksheetPart,
 };
 use ooxmlsdk::schemas::opc_relationships::TargetMode;
+use ooxmlsdk::schemas::schemas_microsoft_com_office_drawing_2014_chartex::SeriesLayout;
 use ooxmlsdk::schemas::schemas_openxmlformats_org_presentationml_2006_main::{
     Presentation as PmlPresentation, Slide, SlideId, SlideIdList,
 };
@@ -4865,7 +4866,6 @@ fn model3d_reference_relationship_parts_use_powerpoint_content_type() {
 }
 
 #[test]
-#[cfg(any())]
 fn wordprocessing_extended_chart_part_root_loads_from_office2016_unknown_element_test() {
     // Source: test/DocumentFormat.OpenXml.Tests/TestOffice2016.cs
     //   OF16_006_AccessChartPart_IntentionalUnknownElement
@@ -4885,7 +4885,14 @@ fn wordprocessing_extended_chart_part_root_loads_from_office2016_unknown_element
     assert!(chart_part.embedded_package_part(&package).is_some());
 
     let chart_space = chart_part.root_element(&mut package).unwrap();
-    assert!(chart_space.chart_data_intentionally_changed.is_some());
+    assert!(
+        chart_space
+            .xml_other_children
+            .iter()
+            .filter_map(|(_, xml)| std::str::from_utf8(xml).ok())
+            .any(|xml| xml.contains("<cx:chartDataIntentionallyChanged>")),
+        "expected intentional unknown chart data child to be preserved"
+    );
     assert_eq!(
         chart_space
             .chart
