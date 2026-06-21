@@ -10,5 +10,6 @@ license.workspace = true
 doctest = false
 
 [dependencies]
-emfsdk.workspace = true
+emfsdk = { workspace = true, features = ["render"] }
+image.workspace = true
 walkdir.workspace = true

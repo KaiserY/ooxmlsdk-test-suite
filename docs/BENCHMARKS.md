@@ -56,9 +56,12 @@ perf record \
 
 perf script -i perf-xml-word-complex0-read-fp.data \
   | inferno-collapse-perf \
-  | inferno-flamegraph \
-      --title "xml word complex0 read slice fp" \
-      > flamegraph-xml-word-complex0-read-fp.svg
+  > folded-xml-word-complex0-read-fp.txt
+
+inferno-flamegraph \
+  --title "xml word complex0 read slice fp" \
+  folded-xml-word-complex0-read-fp.txt \
+  > flamegraph-xml-word-complex0-read-fp.svg
 ```
 
 Generate folded stacks when comparing hotspots. The SVG is useful for browsing,
@@ -66,10 +69,6 @@ but inclusive frames near the root can hide the actionable self-cost. Start with
 leaf cost and then inspect inclusive stacks for the selected function.
 
 ```bash
-perf script -i perf-xml-word-complex0-read-fp.data \
-  | inferno-collapse-perf \
-  > folded-xml-word-complex0-read-fp.txt
-
 python3 - <<'PY'
 from collections import Counter
 from pathlib import Path
@@ -102,8 +101,13 @@ PY
 
 Notes:
 
-- Prefer `--call-graph fp` here; `--call-graph dwarf` produced cleaner process
-  selection but lost useful Rust caller stacks in this benchmark.
+- Inferno's general Linux workflow uses `perf record --call-graph dwarf`, then
+  `perf script | inferno-collapse-perf | inferno-flamegraph`. In this benchmark,
+  prefer `--call-graph fp`; `--call-graph dwarf` produced cleaner process
+  selection but lost useful Rust caller stacks.
+- Pass the folded stack file path to `inferno-flamegraph` when generating the
+  final SVG. This avoids depending on stdin behavior across installed Inferno
+  versions.
 - Keep `--no-inherit`; without it, `gnuplot` can dominate the profile even when
   the bench executable is invoked directly.
 - Keep `--delay`; it skips process startup and dynamic linker samples.
@@ -140,6 +144,59 @@ local `ooxmlsdk` regression samples. `wordprocessing_document_complex0.xml` is
 extracted from `word/document.xml` in `complex0.docx`.
 
 ## Run history
+
+### 2026-06-21 XML run after WML table stack changes
+
+Command:
+
+```bash
+cargo bench -p ooxmlsdk-bench --bench xml
+```
+
+XML results:
+
+| Benchmark | Read slice | Read cursor | Read bufreader | Write | Round-trip |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `xml/word/document_hello_world` | 3.5914 us | 4.1367 us | 4.0616 us | 777.22 ns | 4.4063 us |
+| `xml/word/document_complex0` | 1.4696 ms | 1.7786 ms | 1.7799 ms | 193.89 us | 1.7311 ms |
+| `xml/sheet/workbook` | 1.4782 us | 1.7703 us | 1.7888 us | 424.11 ns | 2.0399 us |
+| `xml/slides/presentation` | 9.7968 us | 11.622 us | 11.593 us | 1.9154 us | 11.525 us |
+
+Focused profile:
+
+```bash
+RUSTFLAGS="-C force-frame-pointers=yes" \
+  cargo bench -p ooxmlsdk-bench --bench xml --no-run
+
+BIN=$(find target/release/deps -maxdepth 1 -type f -executable -name 'xml-*' | sort | tail -n 1)
+
+perf record \
+  --no-inherit \
+  --delay 3000 \
+  -F 997 \
+  -g \
+  --call-graph fp \
+  -o perf-xml-word-complex0-read-fp.data \
+  -- "$BIN" \
+  --bench \
+  --profile-time 45 \
+  --noplot \
+  xml/word/document_complex0/read/slice
+```
+
+The focused run captured 42,072 samples. `inferno-collapse-perf` produced 5,850
+folded stacks, and the SVG output was 1.2 MiB.
+
+Hotspot summary for `xml/word/document_complex0/read/slice`:
+
+| Area | Evidence |
+| --- | --- |
+| Generated parse dispatch | `read_inner<ooxmlsdk::common::xml::SliceReader>` was the largest leaf at 13.06% and 87.07% inclusive. |
+| WML table parse path | Inclusive table frames were high because the fixture is table-heavy: `Table` 67.15%, `TableRow` 66.44%, `TableCell` 63.48%. |
+| XML scanner | `next_tag_event` was 26.93% inclusive, `quick_xml::Reader::read_event_impl` was 23.83% inclusive and 8.16% self in `perf report`. |
+| Byte search | `find_avx2`, `memchr3_raw`, `memchr2`, and related search frames accounted for a visible scanner share. |
+| Allocation/drop | Allocator/free leaf frames and generated DOM drops remain visible; each read iteration parses and then drops the resulting typed DOM. |
+| Recursive table stack path | `__ooxmlsdk_read_inner_stack*` did not show as a hotspot in this fixture; the measured path is dominated by ordinary generated `read_inner` and XML scanning. |
 
 ### 2026-06-11 XML run with profiler symbols
 

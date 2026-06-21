@@ -470,8 +470,10 @@ dependencies = [
  "bitflags 2.13.0",
  "emfsdk-derive",
  "encoding_rs",
+ "fontdb",
  "image",
  "thiserror",
+ "ttf-parser",
 ]
 
 [[package]]
@@ -488,6 +490,7 @@ name = "emfsdk-test"
 version = "0.1.0"
 dependencies = [
  "emfsdk",
+ "image",
  "walkdir",
 ]
 

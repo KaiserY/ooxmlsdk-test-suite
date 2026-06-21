@@ -109,6 +109,11 @@ The current common model is sufficient for the first large migration batch:
 | links/widgets/outlines | `LinkArea`, `form_widgets`, `outline_entries` |
 | reflow/replay diagnostics | `ReflowDiagnostics`, `ReflowRequest`, `BackwardMove`, `LayoutRerun`, `RestartPlan` |
 
+For embedded EMF/WMF, this lane owns only the source OOXML placement and layout
+facts: image item presence, bounds, crop/rotation/flip, floating, and
+behind-text behavior. Bare metafile renderer behavior belongs in `emfsdk-test`;
+final PDF visibility belongs in `ooxmlsdk-pdf-test`.
+
 Known limits are not blockers for starting migration:
 
 - LibreOffice layout dump XML node paths are not copied literally. Preserve the
@@ -287,7 +292,7 @@ finer ownership:
 | direct PDF/object rows | keep in PDF; add layout precursor only if common layout exposes it |
 | layout dump projection rows | migrate to layout-test; assert common layout directly |
 | raster/bitmap rows | migrate only if the underlying primitive is in common layout; otherwise keep PDF/raster |
-| metafile/render XML rows | migrate path/text/shape primitive assertions to common layout |
+| metafile/render XML rows | migrate source OOXML placement and stable path/text/shape primitive assertions to common layout; keep bare `.emf`/`.wmf` renderer coverage in `emfsdk-test` |
 | graphics/color/effects rows | migrate simple fill/stroke/text/image facts; keep complex final-render effects in PDF/raster |
 | other visible output rows | decide per row; printed text/value assertions may stay PDF if layout does not own the value |
 

@@ -100,6 +100,7 @@ the corresponding layout-test assertion separately.
 | text object font size, fill color, alpha, render mode | PDF test | This is final PDF extraction, not a layout text-run assertion. |
 | path fill/stroke color, alpha, clipping, painted primitive count | PDF test when asserted from exported PDF; layout-test when asserted from layout document | Prefer PDF here only when the final content stream/raster is the behavior under test. |
 | rendered page pixels, color ratios, image pixels, snapshots | PDF test | Expected values must come from LibreOffice output or upstream assertions, not current Rust output. |
+| embedded EMF/WMF final visibility | PDF smoke test | Keep only end-to-end checks that OOXML -> layout -> PDF invokes metafile rasterization and produces visible PDF output; detailed metafile renderer behavior belongs in `emfsdk-test`. |
 | page count, page size, row/cell/frame bounds, text order, shape bounds | layout-test by default | Keep in PDF only when LibreOffice is explicitly testing exported PDF page/object output. |
 | package XML/source part containment | package/round-trip lanes | Not PDF unless paired with final PDF evidence. |
 | formula value correctness | formula-test | PDF may only assert the visible printed/exported result. |
@@ -223,6 +224,11 @@ The new test-suite crate should own the reusable PDF observation surface:
 Do not expose layout summary helpers from the PDF test crate. If a test needs
 both a layout precursor and a PDF object assertion, keep them as two tests in
 two crates with the same LibreOffice `// Source:` comment.
+
+Embedded EMF/WMF tests in this crate should stay narrow. Use them to prove final
+PDF visibility and image/XObject output from a source OOXML fixture. Do not copy
+the `emfio` primitive matrix into PDF tests; that coverage belongs in
+`emfsdk-test`.
 
 ## Migration Checklist
 
