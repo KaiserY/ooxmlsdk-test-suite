@@ -12,3 +12,8 @@ manifest = "corpus/Apache-POI/manifest.toml"
 id = "libreoffice"
 path = "corpus/LibreOffice"
 manifest = "corpus/LibreOffice/manifest.toml"
+
+[[corpus]]
+id = "libemf2svg"
+path = "corpus/libemf2svg"
+manifest = "corpus/libemf2svg/manifest.toml"

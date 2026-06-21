@@ -1,6 +1,7 @@
 [workspace]
 resolver = "3"
 members = [
+  "crates/emfsdk-test",
   "crates/ooxmlsdk-bench",
   "crates/ooxmlsdk-corpus-test-support",
   "crates/ooxmlsdk-fonts-test",
@@ -19,6 +20,7 @@ publish = false
 license = "MIT OR Apache-2.0"
 
 [workspace.dependencies]
+emfsdk = { path = "../emfsdk/crates/emfsdk" }
 ooxmlsdk = { path = "../ooxmlsdk/crates/ooxmlsdk", default-features = false }
 ooxmlsdk-fonts = { path = "../ooxmlsdk/crates/ooxmlsdk-fonts" }
 ooxmlsdk-formula = { path = "../ooxmlsdk/crates/ooxmlsdk-formula" }

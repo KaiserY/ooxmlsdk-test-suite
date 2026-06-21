@@ -1,0 +1,7 @@
+[corpus]
+id = "libemf2svg"
+name = "libemf2svg"
+path = "corpus/libemf2svg"
+license = "GPL-2.0-only"
+source = "https://github.com/kakwa/libemf2svg"
+default_roundtrip = false
