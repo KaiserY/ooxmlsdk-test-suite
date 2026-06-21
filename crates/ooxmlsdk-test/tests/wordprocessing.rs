@@ -1,14 +1,15 @@
 use ooxmlsdk::common::XmlHeaderType;
 use ooxmlsdk::schemas::schemas_openxmlformats_org_wordprocessingml_2006_main::{
     Body, BodyChoice, Columns, CommentChoice, Comments, DeletedRun, DeletedRunChoice, Document,
-    Hyperlink, HyperlinkChoice, Justification, LevelJustification, Paragraph, ParagraphChoice,
-    ParagraphProperties, Run, RunChoice, TabStop, TableJustification, Text, TextDirection,
+    FontTypeHintValues, Hyperlink, HyperlinkChoice, Justification, LevelJustification, Paragraph,
+    ParagraphChoice, ParagraphProperties, Run, RunChoice, RunFonts, TabStop, TableJustification,
+    Text, TextDirection,
 };
 #[cfg(not(feature = "mce"))]
 use ooxmlsdk::schemas::schemas_openxmlformats_org_wordprocessingml_2006_main::{
     SdtBlock, SdtPropertiesChoice,
 };
-use ooxmlsdk::sdk::SdkType;
+use ooxmlsdk::sdk::{SdkEnum, SdkType};
 use ooxmlsdk::simple_type::TwipsMeasureValue;
 use ooxmlsdk_test::{assert_stable_roundtrip, fixtures, trim_xml_declaration};
 
@@ -29,6 +30,24 @@ fn xml_namespace_prefix_matches(
             .next()
             .is_some_and(|prefix| prefix == expected),
     }
+}
+
+#[test]
+fn sdk_enum_other_variant_preserves_bytes_and_escapes_attribute_write() {
+    let value = FontTypeHintValues::from_xml_bytes(b"vendor&hint\"").expect("unknown enum value");
+    assert_eq!(
+        <FontTypeHintValues as SdkEnum>::as_xml_bytes(&value),
+        b"vendor&hint\""
+    );
+
+    let fonts = RunFonts {
+        hint: Some(value),
+        ..Default::default()
+    };
+    assert_eq!(
+        fonts.to_xml().expect("serialized run fonts"),
+        r#"<w:rFonts w:hint="vendor&amp;hint&quot;" />"#
+    );
 }
 
 fn first_body(document: &Document) -> &Body {
