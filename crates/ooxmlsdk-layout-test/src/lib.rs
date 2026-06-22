@@ -11,8 +11,10 @@ use ooxmlsdk::parts::{
     wordprocessing_document::WordprocessingDocument,
 };
 use ooxmlsdk_layout::common::{
-    Color, DebugRecord, DebugShape, DebugValue, DisplayItem, Fill, LayoutDocument, Point, Rect,
+    Color, DebugRecord, DebugShape, DebugValue, DisplayItem, Fill, FrameFragmentKind,
+    LayoutDocument, Point, Rect,
 };
+use ooxmlsdk_layout::options::LayoutDiagnosticsOptions;
 use ooxmlsdk_layout::{LayoutOptions, Result};
 
 pub fn corpus_file(path: &str) -> PathBuf {
@@ -34,7 +36,16 @@ pub fn docx_layout_named(name: &str) -> Result<LayoutDocument<'static>> {
 
 pub fn pptx_layout(path: &str) -> Result<LayoutDocument<'static>> {
     let mut package = PresentationDocument::new_from_file(corpus_file(path))?;
-    ooxmlsdk_layout::pptx::layout_document(&mut package, &LayoutOptions::default())
+    ooxmlsdk_layout::pptx::layout_document(
+        &mut package,
+        &LayoutOptions {
+            diagnostics: LayoutDiagnosticsOptions {
+                collect_debug_records: true,
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+    )
 }
 
 pub fn xlsx_layout(path: &str) -> Result<LayoutDocument<'static>> {
@@ -325,6 +336,38 @@ pub fn row_heights(document: &LayoutDocument<'_>, page_index: usize) -> Vec<f32>
                 .then(|| fragment.bounds.map(|bounds| bounds.size.height.0))
                 .flatten()
             })
+        })
+        .collect()
+}
+
+pub fn assert_image_below_table_top_and_flush_right(
+    document: &LayoutDocument<'_>,
+    page_index: usize,
+    tolerance: f32,
+) {
+    let images = image_bounds(document, page_index);
+    let rows = table_row_fragment_bounds(document, page_index);
+    assert!(
+        images.iter().any(|image| {
+            rows.iter().any(|row| {
+                rect_top(*image) > rect_top(*row)
+                    && (rect_right(*image) - rect_right(*row)).abs() <= tolerance
+            })
+        }),
+        "missing image below table top and flush with table right edge on page {page_index}; images={images:?}; rows={rows:?}"
+    );
+}
+
+fn table_row_fragment_bounds(document: &LayoutDocument<'_>, page_index: usize) -> Vec<Rect> {
+    document
+        .frames
+        .iter()
+        .filter(|frame| frame.page_index == page_index)
+        .flat_map(|frame| &frame.fragments)
+        .filter_map(|fragment| {
+            matches!(fragment.kind, FrameFragmentKind::TableRow)
+                .then_some(fragment.bounds)
+                .flatten()
         })
         .collect()
 }

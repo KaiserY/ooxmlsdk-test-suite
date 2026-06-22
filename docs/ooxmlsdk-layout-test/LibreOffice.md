@@ -309,6 +309,23 @@ Known PDF-test gaps to fix during migration:
 | Existing PDF tests only selectively cover Impress `sd_layout_tests`. | Add P4 scan and migrate static PPTX/ODP-equivalent OOXML rows first. |
 | Existing PDF tests review some Calc conditional-format rows. | Promote only after rendered cell fill/text color can be asserted through layout or PDF raster. |
 
+## Recent DOCX Assertion Recheck
+
+These rows were rechecked against the local LibreOffice source after the PDF
+assertions were tightened. Treat the PDF assertions as final visible-output
+coverage only; the LO layout semantics below remain owned by this lane.
+
+| Fixture / source | LO assertion | Layout-test status |
+| --- | --- | --- |
+| `tdf134063.docx` / `ooxmlexport15.cxx:testTdf134063` | page count is 2 and the first line has three `SwFixPortion` default tabs, each 720 twips. | `review`: PDF now checks three 36 pt visible gaps; add a common-layout tab/portion assertion when line portion data is exposed. |
+| `tdf136588.docx` / `layout.cxx:TestTdf136588` | `/root/page/body/txt[2]/SwParaPortion/SwLineLayout[2]` has portion text `effectively by modern-day small to `. | `implementation-gap`: a strict line assertion currently shows different line breaks; keep the PDF check as visible text only. |
+| `fdo38414.docx` / `ooxmlexport10.cxx:testFdo38414` | imported table has 5 columns and layout dump cell 4/5 heights match after the fake `gridBefore` cell. | `implementation-gap`: current common fragments do not expose the fifth fake cell; keep the PDF check as visible table text only. |
+| `tdf128646.docx` / `ooxmlexport20.cxx:testTdf128646` | layout-in-cell image is below the table top, above the anchor paragraph top, and flush with the table right edge. | `migrate-now`: active layout-test checks the image is below table top and flush right; add paragraph-top comparison when paragraph fragment lookup is stable. |
+| `tdf105035_framePrB/C.docx` / `ooxmlexport18.cxx` | separate fly frame bounds either do not overlap (`B`) or start at the same top (`C`). | `review`: PDF checks rendered textbox text positions; migrate to direct frame/fly bounds when common layout exposes the relevant invisible fly records. |
+| `tdf115094.docx` / `layout6.cxx:testTdf115094` | nested anchored fly tops in table cells are above the containing cell tops. | `review`: PDF checks visible object/text relation; migrate to cell/fly top comparison when nested anchored fly bounds are exposed. |
+| `tdf98882.docx` / `ooxmlimport.cxx:testTdf98882` | fly frame height equals the image content height, expected 360 twips. | `review`: PDF checks the visible image height as 18 pt; migrate to frame-vs-image height when the frame bound is available in common layout. |
+| `floattable-split.docx` / `uiwriter9.cxx:testSplitFloatingTable` | follow floating table split geometry and row counts are asserted in the layout dump before and after a UI split operation. | `review`: PDF checks the follow table content is visible on page 2; static pre-edit split/follow geometry should be added to layout-test. |
+
 ## Fixture Boundary
 
 Layout fixtures belong in `../ooxmlsdk-test-suite/corpus/LibreOffice` when they
@@ -331,6 +348,7 @@ Rules:
 | `migrate-now` | Static OOXML -> layout assertion, common layout can represent it now. |
 | `pdf-only` | Final PDF serialization/object assertion; keep in `ooxmlsdk-pdf-test`. |
 | `review` | Likely layout-visible, but source assertion needs item-level review before adding an active test. |
+| `implementation-gap` | Source assertion is understood and representable in principle, but current layout output does not yet match LO. Keep PDF-visible coverage separate and fix implementation before enabling the strict layout assertion. |
 | `blocked-api` | Good layout target, but common layout lacks a required narrow field. Add the field before migrating. |
 | `deferred` | Editing/UI/ODS/XLS/XLSB/export-XML/crash-only/model-only behavior for the current layout lane. |
 

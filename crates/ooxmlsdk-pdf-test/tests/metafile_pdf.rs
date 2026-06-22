@@ -36,7 +36,7 @@ fn docx_embedded_emf_exports_as_visible_pdf_image() {
     let [r, g, b, _] = rendered
         .pixel_rgba(512, 655)
         .expect("missing rendered pixel at the calibrated tdf109137 blue rectangle sample point");
-    let diff = (i16::from(r) - 0).abs() + (i16::from(g) - 0).abs() + (i16::from(b) - 255).abs();
+    let diff = i16::from(r).abs() + i16::from(g).abs() + (i16::from(b) - 255).abs();
     assert!(
         diff <= 12,
         "expected visible blue output from embedded EMF on page 1; sampled #{r:02x}{g:02x}{b:02x}; rendered_crc={}",

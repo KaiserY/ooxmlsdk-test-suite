@@ -194,6 +194,26 @@ old mixed matrix wholesale.
 | tiled bitmap rows | The Rust check renders exported PDF and compares upstream-backed pixels/colors. | The row is view invalidation, interactive tiled rendering, or editor state. |
 | source XML/package checks | Only as secondary setup evidence for a final PDF assertion. | As standalone assertions; move to package/round-trip docs. |
 
+## Recent Mapped Assertion Recheck
+
+The rows below were rechecked against the local LibreOffice source. Their Rust
+PDF assertions are intentionally limited to exported-PDF visible output or
+PDFium extraction behavior. They must not be treated as replacements for the
+upstream LO layout-dump assertions; see
+`docs/ooxmlsdk-layout-test/LibreOffice.md` for the remaining layout ownership.
+
+| Fixture / source | PDF-test assertion kept here | Reason it stays limited |
+| --- | --- | --- |
+| `tdf134063.docx` / `ooxmlexport15.cxx:testTdf134063` | exported page count is 2 and PDFium character bounds expose at least three 36 pt gaps. | This is the visible PDF projection of three 720 twip tabs; the LO `SwFixPortion` assertion remains a layout-test target. |
+| `tdf136588.docx` / `layout.cxx:TestTdf136588` | exported PDF contains the full visible question text. | PDFium splits the final word across extracted portions and does not expose the LO `SwLineLayout[2]` node. |
+| `fdo38414.docx` / `ooxmlexport10.cxx:testFdo38414` | exported PDF contains the table text and repeated `0.` entries. | PDFium does not expose the fake `gridBefore` cell height relation from the LO layout dump. |
+| `tdf128646.docx` / `ooxmlexport20.cxx:testTdf128646` | exported PDF contains `NÉV` and at least one image. | The image/table relative-position assertion is covered in layout-test; PDF only checks visible output. |
+| `tdf105035_framePrB/C.docx` / `ooxmlexport18.cxx` | rendered textbox text positions are separated or share a top. | The LO assertion compares invisible fly frame bounds, which are not final PDF objects. |
+| `tdf115094.docx` / `layout6.cxx:testTdf115094` | visible label text is placed to the right of a vertically overlapping object path. | The LO assertion compares nested anchored fly and cell tops, not a PDF text-inside-path relation. |
+| `tdf98882.docx` / `ooxmlimport.cxx:testTdf98882` | visible image height is 18 pt, matching 360 twips. | The LO assertion compares fly frame height to image content height; PDF exposes only the visible image. |
+| `floattable-split.docx` / `uiwriter9.cxx:testSplitFloatingTable` | exported PDF has 3 pages and the follow table content appears on page 2. | The LO source is a layout/UI split geometry test; PDF only validates final visible content. |
+| `tdf161301.xlsx`, `tdf126858-1.xlsx`, `Pivot4_Column_Grand_Subtotals_SortDescending.xlsx` | expected strings include PDFium-reported spaces/segment gaps. | These are PDFium text extraction differences from LO-visible Calc output, not changes to source LO expectations. |
+
 ## Fixture Boundary
 
 LibreOffice PDF fixtures copied into this test-suite should preserve upstream

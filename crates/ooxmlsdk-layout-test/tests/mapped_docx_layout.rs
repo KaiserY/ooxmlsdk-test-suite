@@ -1,9 +1,10 @@
 use ooxmlsdk_layout_test::{
-    assert_page_contains, assert_page_contains_in_order, assert_page_has_no_text,
-    assert_page_image_count, assert_page_image_count_at_least, assert_page_not_contains,
-    assert_page_path_count, assert_page_path_count_at_least, assert_page_starts_with,
-    assert_page_text_occurrences, assert_path_width_count, assert_text_strikethrough,
-    assert_text_underline, docx_layout, docx_layout_named, run_cases_parallel,
+    assert_image_below_table_top_and_flush_right, assert_page_contains,
+    assert_page_contains_in_order, assert_page_has_no_text, assert_page_image_count,
+    assert_page_image_count_at_least, assert_page_not_contains, assert_page_path_count,
+    assert_page_path_count_at_least, assert_page_starts_with, assert_page_text_occurrences,
+    assert_path_width_count, assert_text_strikethrough, assert_text_underline, docx_layout,
+    docx_layout_named, run_cases_parallel,
 };
 
 #[derive(Clone, Copy)]
@@ -2023,6 +2024,12 @@ fn mapped_docx_layout_matches_libreoffice_layout_coverage() {
         failures.len(),
         failures.join("\n\n")
     );
+}
+
+#[test]
+fn tdf128646_matches_libreoffice_layout_in_cell_shape_position() {
+    let document = docx_layout_named("tdf128646.docx").unwrap();
+    assert_image_below_table_top_and_flush_right(&document, 0, 1.0);
 }
 
 fn run_case(case: &DocxCase) {
