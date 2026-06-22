@@ -44,7 +44,13 @@ pub fn xlsx_layout(path: &str) -> Result<LayoutDocument<'static>> {
         .and_then(|file_name| file_name.to_str())
         .map(ToString::to_string);
     let mut package = SpreadsheetDocument::new_from_file(fixture)?;
-    ooxmlsdk_layout::xlsx::layout_document(&mut package, &LayoutOptions { source_file_name })
+    ooxmlsdk_layout::xlsx::layout_document(
+        &mut package,
+        &LayoutOptions {
+            source_file_name,
+            ..Default::default()
+        },
+    )
 }
 
 pub fn assert_close(actual: f32, expected: f32, tolerance: f32, context: &str) {

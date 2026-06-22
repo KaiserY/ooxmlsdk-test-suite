@@ -35,10 +35,7 @@ fn normalized_family_aliases_resolve_before_matching() {
         .expect("alias should resolve to registered substitute family");
 
     assert_eq!(resolved.font_id, FontId(Arc::from("liberation-serif")));
-    assert_eq!(
-        resolved.substitution.expect("alias substitution").reason,
-        FontSubstitutionReason::Alias
-    );
+    assert_eq!(resolved.resolved_family, Cow::Borrowed("Liberation Serif"));
 }
 
 #[test]
@@ -302,7 +299,7 @@ fn symbol_charset_request_prefers_symbolic_face() {
     registry.register_face(FontSource::System, symbolic);
 
     let resolved = registry
-        .resolve(&FontRequest {
+        .resolve_with_diagnostics(&FontRequest {
             family: Some(Cow::Borrowed("Symbolic Family")),
             charset: Some(FontCharset::Symbol),
             ..FontRequest::default()
@@ -401,10 +398,7 @@ fn normalized_alias_can_be_requested_without_spaces() {
         .expect("normalized alias should resolve");
 
     assert_eq!(resolved.font_id, FontId(Arc::from("testfont")));
-    assert_eq!(
-        resolved.substitution.expect("alias substitution").reason,
-        FontSubstitutionReason::Alias
-    );
+    assert_eq!(resolved.resolved_family, Cow::Borrowed("Test Font"));
 }
 
 #[test]
@@ -425,7 +419,7 @@ fn face_ranking_prefers_closest_weight_and_stretch() {
     registry.register_face(FontSource::System, condensed);
 
     let resolved = registry
-        .resolve(&FontRequest {
+        .resolve_with_diagnostics(&FontRequest {
             family: Some(Cow::Borrowed("Example")),
             bold: true,
             stretch: Some(FontStretch::Normal),
@@ -492,7 +486,7 @@ fn equal_rank_candidates_are_ordered_by_family_name() {
     registry.register_face(FontSource::System, FontFaceInfo::synthetic("a", "A Family"));
 
     let resolved = registry
-        .resolve(&FontRequest::default())
+        .resolve_with_diagnostics(&FontRequest::default())
         .expect("unqualified request should resolve the first equal-rank candidate");
 
     assert_eq!(resolved.font_id, FontId(Arc::from("a")));
@@ -530,13 +524,6 @@ fn explicit_substitution_records_substituted_family() {
 
     assert_eq!(resolved.font_id, FontId(Arc::from("replacement")));
     assert_eq!(resolved.resolved_family, Cow::Borrowed("Replacement"));
-    assert_eq!(
-        resolved
-            .substitution
-            .expect("substitution diagnostics")
-            .reason,
-        FontSubstitutionReason::MissingFamily
-    );
 }
 
 #[test]
@@ -561,10 +548,7 @@ fn substitution_request_uses_normalized_family_name() {
         .expect("normalized substitution should resolve");
 
     assert_eq!(resolved.font_id, FontId(Arc::from("replacement")));
-    assert_eq!(
-        resolved.substitution.expect("substitution").reason,
-        FontSubstitutionReason::MissingFamily
-    );
+    assert_eq!(resolved.resolved_family, Cow::Borrowed("Replacement"));
 }
 
 #[test]
@@ -621,28 +605,31 @@ fn resolved_font_preserves_variation_values() {
         FontFaceInfo::synthetic("variable", "Variable Face"),
     );
 
+    let request = FontRequest {
+        family: Some(Cow::Borrowed("Variable Face")),
+        variations: vec![
+            VariationValue {
+                tag: Cow::Borrowed("wght"),
+                value: 700.0,
+            },
+            VariationValue {
+                tag: Cow::Borrowed("wdth"),
+                value: 75.0,
+            },
+        ],
+        ..FontRequest::default()
+    };
     let resolved = registry
-        .resolve(&FontRequest {
-            family: Some(Cow::Borrowed("Variable Face")),
-            variations: vec![
-                VariationValue {
-                    tag: Cow::Borrowed("wght"),
-                    value: 700.0,
-                },
-                VariationValue {
-                    tag: Cow::Borrowed("wdth"),
-                    value: 75.0,
-                },
-            ],
-            ..FontRequest::default()
-        })
+        .resolve(&request)
         .expect("variable font request should resolve");
+    let options = ShapeOptions::from_request(&request, TextDirection::LeftToRight);
 
-    assert_eq!(resolved.variation_values.len(), 2);
-    assert_eq!(resolved.variation_values[0].tag, Cow::Borrowed("wght"));
-    assert_eq!(resolved.variation_values[0].value, 700.0);
-    assert_eq!(resolved.variation_values[1].tag, Cow::Borrowed("wdth"));
-    assert_eq!(resolved.variation_values[1].value, 75.0);
+    assert_eq!(resolved.font_id, FontId(Arc::from("variable")));
+    assert_eq!(options.variations.len(), 2);
+    assert_eq!(options.variations[0].tag, Cow::Borrowed("wght"));
+    assert_eq!(options.variations[0].value, 700.0);
+    assert_eq!(options.variations[1].tag, Cow::Borrowed("wdth"));
+    assert_eq!(options.variations[1].value, 75.0);
 }
 
 #[test]
@@ -771,7 +758,6 @@ fn approximate_shaping_preserves_rtl_script_and_language_context() {
 
     assert_eq!(run.direction, TextDirection::RightToLeft);
     assert_eq!(run.script, Some(TextScript::Arabic));
-    assert_eq!(run.language, Some(Cow::Borrowed("ar")));
 }
 
 #[test]
@@ -844,7 +830,7 @@ fn fallback_diagnostics_keep_original_multibyte_text_range() {
         )
         .expect("fallback shaping should succeed");
 
-    assert_eq!(runs[1].text, Cow::Borrowed("中"));
+    assert_eq!(runs[1].text, "中");
     assert_eq!(runs[1].text_range, 1..4);
     assert_eq!(runs[1].glyphs[0].text_range, 1..4);
     assert_eq!(runs[1].diagnostics.fallback_runs[0].text_range, 1..4);
@@ -907,7 +893,7 @@ fn fallback_keeps_mongolian_nnbsp_with_following_mongolian_cluster() {
 
     assert_eq!(runs.len(), 3);
     assert_eq!(runs[1].font_id, FontId(Arc::from("mongolian")));
-    assert_eq!(runs[1].text, Cow::Borrowed("\u{202f}\u{1822}"));
+    assert_eq!(runs[1].text, "\u{202f}\u{1822}");
     assert_eq!(runs[1].text_range, 1..7);
 }
 
@@ -1269,10 +1255,7 @@ fn default_office_policy_provides_pdf_font_aliases() {
         .expect("Calibri should resolve through default policy");
 
     assert_eq!(resolved.font_id, FontId(Arc::from("carlito")));
-    assert_eq!(
-        resolved.substitution.expect("alias").reason,
-        FontSubstitutionReason::Alias
-    );
+    assert_eq!(resolved.resolved_family, Cow::Borrowed("Carlito"));
 }
 
 #[test]
@@ -1334,22 +1317,22 @@ fn real_ttf_small_caps_maps_lowercase_to_uppercase_and_scales_size() {
 
 #[test]
 fn script_direction_runs_split_script_bidi_and_small_caps_segments() {
-    // Source: Typst shaping.rs and ooxmlsdk-pdf text_metrics.rs script/bidi/small-caps splitting.
-    let runs = script_direction_runs("aش", FontSize(10.0), true);
+    // Source: LibreOffice tdf#160401/#i78474 disables small-caps for CTL script runs.
+    let text = "aش";
+    let runs = script_direction_runs(text, FontSize(10.0), true);
 
     assert_eq!(runs.len(), 2);
-    assert_eq!(runs[0].text, Cow::Borrowed("A"));
+    assert_eq!(&text[runs[0].text_range.clone()], "a");
     assert_eq!(runs[0].script, TextScript::Latin);
     assert_eq!(runs[0].direction, TextDirection::LeftToRight);
-    assert_eq!(runs[0].size_pt, FontSize(8.0));
+    assert_eq!(runs[0].size_pt, FontSize(10.0));
+    assert!(runs[0].small_caps);
     assert_eq!(runs[1].script, TextScript::Arabic);
     assert_eq!(runs[1].direction, TextDirection::RightToLeft);
+    assert!(!runs[1].small_caps);
 }
 
-fn script_direction_runs_with_app_script<'a>(
-    text: &'a str,
-    app_script: TextScript,
-) -> Vec<FontScriptRun<'a>> {
+fn script_direction_runs_with_app_script(text: &str, app_script: TextScript) -> Vec<FontScriptRun> {
     script_direction_runs_with_options(
         text,
         FontSize(10.0),
@@ -1360,9 +1343,12 @@ fn script_direction_runs_with_app_script<'a>(
     )
 }
 
-fn run_texts_and_scripts<'a>(runs: &'a [FontScriptRun<'a>]) -> Vec<(&'a str, TextScript)> {
+fn run_texts_and_scripts<'a>(
+    text: &'a str,
+    runs: &'a [FontScriptRun],
+) -> Vec<(&'a str, TextScript)> {
     runs.iter()
-        .map(|run| (run.text.as_ref(), run.script))
+        .map(|run| (&text[run.text_range.clone()], run.script))
         .collect()
 }
 
@@ -1372,7 +1358,7 @@ fn script_direction_runs_assign_initial_weak_text_to_first_strong_script() {
     let runs = script_direction_runs_with_app_script("“x”", TextScript::Arabic);
 
     assert_eq!(
-        run_texts_and_scripts(&runs),
+        run_texts_and_scripts("“x”", &runs),
         vec![("“x”", TextScript::Latin)]
     );
 }
@@ -1383,7 +1369,7 @@ fn script_direction_runs_assign_only_weak_text_to_application_script() {
     let runs = script_direction_runs_with_app_script("“”", TextScript::Arabic);
 
     assert_eq!(
-        run_texts_and_scripts(&runs),
+        run_texts_and_scripts("“”", &runs),
         vec![("“”", TextScript::Arabic)]
     );
 }
@@ -1394,7 +1380,7 @@ fn script_direction_runs_keep_weak_text_with_adjacent_strong_runs() {
     let runs = script_direction_runs_with_app_script("wide 廣 vast", TextScript::Latin);
 
     assert_eq!(
-        run_texts_and_scripts(&runs),
+        run_texts_and_scripts("wide 廣 vast", &runs),
         vec![
             ("wide ", TextScript::Latin),
             ("廣 ", TextScript::Han),
@@ -1409,7 +1395,7 @@ fn script_direction_runs_assign_smart_quotes_like_libreoffice() {
     let runs = script_direction_runs_with_app_script("Before “水” After", TextScript::Latin);
 
     assert_eq!(
-        run_texts_and_scripts(&runs),
+        run_texts_and_scripts("Before “水” After", &runs),
         vec![
             ("Before “", TextScript::Latin),
             ("水” ", TextScript::Han),
@@ -1419,7 +1405,7 @@ fn script_direction_runs_assign_smart_quotes_like_libreoffice() {
 
     let leading = script_direction_runs_with_app_script("“廣”", TextScript::Latin);
     assert_eq!(
-        run_texts_and_scripts(&leading),
+        run_texts_and_scripts("“廣”", &leading),
         vec![("“廣”", TextScript::Han)]
     );
 }
@@ -1433,7 +1419,7 @@ fn script_direction_runs_attach_inherited_mark_sequence_to_next_strong_script() 
     );
 
     assert_eq!(
-        run_texts_and_scripts(&runs),
+        run_texts_and_scripts("Before \u{0944}\u{0911}\u{0911} After", &runs),
         vec![
             ("Before", TextScript::Latin),
             (" \u{0944}\u{0911}\u{0911} ", TextScript::Devanagari),
@@ -1448,7 +1434,7 @@ fn script_direction_runs_split_simple_rtl_span_like_libreoffice() {
     let runs = script_direction_runs_with_app_script("Before אאאאאא after", TextScript::Latin);
 
     assert_eq!(
-        run_texts_and_scripts(&runs),
+        run_texts_and_scripts("Before אאאאאא after", &runs),
         vec![
             ("Before ", TextScript::Latin),
             ("אאאאאא ", TextScript::Hebrew),
@@ -1461,7 +1447,7 @@ fn script_direction_runs_split_simple_rtl_span_like_libreoffice() {
 #[test]
 fn font_usage_collector_applies_embedding_policy() {
     // Source: LibreOffice embeddedfontsmanager.cxx restricted embedding policy.
-    let run = shaped_usage_run("restricted", 41, 'A');
+    let run = shaped_usage_run("restricted", 41, "A", 'A');
     let mut collector = FontUsageCollector::default();
 
     collector.record_run_with_policy(
@@ -1524,25 +1510,17 @@ fn shaped_glyphs_mark_cjk_and_arabic_as_justifiable() {
     // Source: Typst shaping.rs and LibreOffice VCL justification metadata.
     let resolved = ooxmlsdk_fonts::ResolvedFont {
         font_id: FontId(Arc::from("approx")),
-        requested_family: Some(Cow::Borrowed("Approx")),
         resolved_family: Cow::Borrowed("Approx"),
         source: FontSource::System,
         face_index: 0,
         synthetic_bold: false,
         synthetic_italic: false,
-        variation_values: Vec::new(),
         metrics: FontMetrics::default(),
-        substitution: None,
         match_diagnostics: Default::default(),
     };
 
-    let shaped = resolved.shape_approximate(
-        "中شA",
-        FontSize(10.0),
-        TextDirection::LeftToRight,
-        None,
-        None,
-    );
+    let shaped =
+        resolved.shape_approximate("中شA", FontSize(10.0), TextDirection::LeftToRight, None);
 
     assert!(shaped.glyphs[0].justifiable);
     assert!(shaped.glyphs[1].justifiable);
@@ -1613,7 +1591,7 @@ fn font_usage_collector_records_glyphs_and_unicode_ranges() {
     // Source: LibreOffice PDF font subsetting paths in vcl/source/pdf/.
     let run = ShapedRun {
         font_id: FontId(Arc::from("subset-face")),
-        text: Cow::Borrowed("AB"),
+        text: "AB",
         text_range: 0..2,
         glyphs: Cow::Owned(vec![
             ShapedGlyph {
@@ -1632,7 +1610,6 @@ fn font_usage_collector_records_glyphs_and_unicode_ranges() {
         advance_pt: 24.0,
         direction: TextDirection::LeftToRight,
         script: Some(TextScript::Latin),
-        language: None,
         safe_breaks: Vec::new(),
         approximate: false,
         decorations: Vec::new(),
@@ -1652,8 +1629,8 @@ fn font_usage_collector_records_glyphs_and_unicode_ranges() {
 #[test]
 fn font_usage_collector_merges_multiple_runs_for_same_font() {
     // Source: LibreOffice PDF font subsetting paths merge glyph use per selected face.
-    let first = shaped_usage_run("subset-face", 41, 'A');
-    let second = shaped_usage_run("subset-face", 42, 'B');
+    let first = shaped_usage_run("subset-face", 41, "A", 'A');
+    let second = shaped_usage_run("subset-face", 42, "B", 'B');
     let mut collector = FontUsageCollector::default();
 
     collector.record_run(&first);
@@ -1670,7 +1647,7 @@ fn approximate_runs_do_not_require_font_embedding() {
     // Source: LibreOffice PDF output distinguishes real embedded face data from fallback metrics.
     let run = ShapedRun {
         font_id: FontId(Arc::from("system-face")),
-        text: Cow::Borrowed("A"),
+        text: "A",
         text_range: 0..1,
         glyphs: Cow::Owned(vec![ShapedGlyph {
             glyph_id: 0,
@@ -1681,7 +1658,6 @@ fn approximate_runs_do_not_require_font_embedding() {
         advance_pt: 0.0,
         direction: TextDirection::LeftToRight,
         script: Some(TextScript::Latin),
-        language: None,
         safe_breaks: Vec::new(),
         approximate: true,
         decorations: Vec::new(),
@@ -1889,21 +1865,25 @@ fn coverage_for_chars<const N: usize>(chars: [char; N]) -> FontCoverage {
     }
 }
 
-fn shaped_usage_run(font_id: &'static str, glyph_id: u32, ch: char) -> ShapedRun<'static> {
+fn shaped_usage_run(
+    font_id: &'static str,
+    glyph_id: u32,
+    text: &'static str,
+    ch: char,
+) -> ShapedRun<'static, 'static> {
     ShapedRun {
         font_id: FontId(Arc::from(font_id)),
-        text: Cow::Owned(ch.to_string()),
-        text_range: 0..ch.len_utf8(),
+        text,
+        text_range: 0..text.len(),
         glyphs: Cow::Owned(vec![ShapedGlyph {
             glyph_id,
-            text_range: 0..ch.len_utf8(),
+            text_range: 0..text.len(),
             source_char: Some(ch),
             ..ShapedGlyph::default()
         }]),
         advance_pt: 12.0,
         direction: TextDirection::LeftToRight,
         script: Some(TextScript::Latin),
-        language: None,
         safe_breaks: Vec::new(),
         approximate: false,
         decorations: Vec::new(),

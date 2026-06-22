@@ -307,17 +307,16 @@ fn shape_layout_font_request(
     text: &str,
 ) -> Vec<FontId> {
     let mut font_ids = Vec::new();
-    for script_run in
-        script_direction_runs(text.to_string(), request.base.size_pt, request.small_caps)
-    {
+    for script_run in script_direction_runs(text, request.base.size_pt, request.small_caps) {
         let mut font_request = request.for_script(script_run.script);
         font_request.size_pt = script_run.size_pt;
         let mut options = ShapeOptions::from_request(&font_request, script_run.direction);
         options.character_spacing_pt = request.character_spacing.0;
-        options.small_caps = false;
+        options.small_caps = script_run.small_caps;
         options.scan_registered_fallbacks = false;
+        let segment_text = &text[script_run.text_range.clone()];
         let runs = registry
-            .shape_text_runs_with_options(&font_request, script_run.text.as_ref(), &options)
+            .shape_text_runs_with_options(&font_request, segment_text, &options)
             .expect("layout font request should shape text");
         font_ids.extend(runs.into_iter().map(|run| run.font_id));
     }
