@@ -67,6 +67,8 @@ to a git or registry dependency.
   compare checked-in schema float rules with `ooxmlsdk/data`.
 - `cargo test -p ooxmlsdk-roundtrip-tests --test apache_poi_roundtrip -- --ignored`:
   run the Apache POI round-trip corpus lane.
+- `cargo test -p ooxmlsdk-roundtrip-tests --test libreoffice_roundtrip -- --ignored`:
+  run the LibreOffice round-trip corpus lane.
 - `cargo test -p ooxmlsdk-roundtrip-tests --test open_xml_sdk_roundtrip -- --ignored`:
   run the Open-XML-SDK round-trip corpus lane.
 

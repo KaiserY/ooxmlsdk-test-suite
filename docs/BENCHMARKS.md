@@ -145,6 +145,57 @@ extracted from `word/document.xml` in `complex0.docx`.
 
 ## Run history
 
+### 2026-07-01 XML lexical integer/float parser experiment
+
+Command:
+
+```bash
+cargo bench -p ooxmlsdk-bench --bench xml
+```
+
+Change under test:
+
+- `lexical-parse-integer` for generated integer attribute and text-child parse
+  paths.
+- `lexical-parse-float` for generated XML Schema `float`/`double` attribute and
+  text-child parse paths, preserving `NaN`, `INF`, and `-INF`.
+- The XML scanner stayed on `quick-xml`; this only changed typed scalar parsing
+  after XML tokenization.
+
+Fresh baseline before the lexical change:
+
+| Benchmark | Read slice | Read cursor | Read bufreader | Write | Round-trip |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `xml/word/document_hello_world` | 3.6143 us | 4.1529 us | 4.1058 us | 807.22 ns | 4.5441 us |
+| `xml/word/document_complex0` | 1.5051 ms | 1.8026 ms | 1.8194 ms | 182.45 us | 1.7472 ms |
+| `xml/sheet/workbook` | 1.3947 us | 1.7448 us | 1.8261 us | 436.05 ns | 1.9728 us |
+| `xml/slides/presentation` | 9.1260 us | 11.241 us | 11.318 us | 2.0307 us | 11.670 us |
+
+After lexical integer/float parse integration:
+
+| Benchmark | Read slice | Read cursor | Read bufreader | Write | Round-trip |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `xml/word/document_hello_world` | 3.6015 us | 4.1143 us | 4.3083 us | 833.79 ns | 4.6060 us |
+| `xml/word/document_complex0` | 1.5241 ms | 1.8127 ms | 1.8288 ms | 188.53 us | 1.7296 ms |
+| `xml/sheet/workbook` | 1.4538 us | 1.7455 us | 1.8089 us | 419.40 ns | 2.0030 us |
+| `xml/slides/presentation` | 9.4291 us | 11.291 us | 11.634 us | 1.9946 us | 12.206 us |
+
+Criterion change summary for the post-change run:
+
+| Benchmark | Read slice | Read cursor | Read bufreader | Write | Round-trip |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `xml/word/document_hello_world` | no change (-0.35%) | no change (-0.54%) | regressed (+3.42%) | regressed (+3.55%) | noise (+0.64%) |
+| `xml/word/document_complex0` | no change (+0.41%) | no change (+0.17%) | no change (-0.20%) | regressed (+2.13%) | no change (-0.45%) |
+| `xml/sheet/workbook` | regressed (+3.46%) | noise (+0.57%) | noise (-1.50%) | improved (-4.16%) | noise (+0.64%) |
+| `xml/slides/presentation` | regressed (+4.02%) | noise (+0.43%) | regressed (+2.96%) | improved (-2.78%) | regressed (+5.55%) |
+
+Conclusion: the broad lexical parser integration did not produce a reliable XML
+read-path speedup. The changes are mostly neutral on the large Word read case,
+but several small/read-heavy cases regressed, and the write changes are mixed
+even though the experiment targeted read-side scalar parsing. Do not keep this
+change on performance grounds without a narrower follow-up that demonstrates a
+clear win.
+
 ### 2026-06-21 XML run after WML table stack changes
 
 Command:
