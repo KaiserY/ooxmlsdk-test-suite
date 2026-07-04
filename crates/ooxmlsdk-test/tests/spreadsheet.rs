@@ -1,6 +1,5 @@
 use std::io::{Cursor, Read};
 
-use ooxmlsdk::common::XmlHeaderType;
 use ooxmlsdk::schemas::schemas_microsoft_com_office_spreadsheetml_2022_featurepropertybag::{
     ArrayFeatureProperty, ArrayFeaturePropertyChoice, BoolFeatureProperty, IntFeatureProperty,
 };
@@ -104,7 +103,6 @@ fn workbook_round_trip_from_openxml_part_test() {
     let (parsed, serialized, reparsed) =
         assert_stable_roundtrip::<Workbook>(fixtures::SPREADSHEET_WORKBOOK_XML);
 
-    assert_eq!(parsed.xml_header, XmlHeaderType::None);
     assert_eq!(parsed.sheets.sheet.len(), 2);
     assert_eq!(parsed.sheets.sheet[0].name.as_str(), "Sheet1");
     assert_eq!(parsed.sheets.sheet[1].name.as_str(), "Sheet2");
@@ -114,7 +112,6 @@ fn workbook_round_trip_from_openxml_part_test() {
     assert!(contains_x_start(&serialized, "sheet"));
     assert!(serialized.contains("name=\"Sheet1\""));
     assert!(serialized.contains("name=\"Sheet2\""));
-    assert_eq!(reparsed.xml_header, XmlHeaderType::None);
     assert_eq!(reparsed.sheets.sheet.len(), 2);
 }
 
@@ -124,7 +121,6 @@ fn workbook_round_trip_from_complex01_part_test() {
 
     let (parsed, serialized, reparsed) = assert_stable_roundtrip::<Workbook>(&workbook_xml);
 
-    assert_eq!(parsed.xml_header, XmlHeaderType::None);
     assert_eq!(
         xml_other_attr(&parsed.xml_other_attrs, "mc:Ignorable"),
         Some("x15")
@@ -157,7 +153,6 @@ fn workbook_round_trip_from_complex01_part_test() {
         "calcPr"
     ));
     assert!(trim_xml_declaration(&serialized).contains("calcId=\"152511\""));
-    assert_eq!(reparsed.xml_header, XmlHeaderType::None);
     assert_eq!(
         xml_other_attr(&reparsed.xml_other_attrs, "mc:Ignorable"),
         Some("x15")

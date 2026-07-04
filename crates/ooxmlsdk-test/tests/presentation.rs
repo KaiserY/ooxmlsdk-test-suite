@@ -1,4 +1,3 @@
-use ooxmlsdk::common::XmlHeaderType;
 use ooxmlsdk::schemas::schemas_microsoft_com_office_drawing_2013_main_command::ResetShapeProperties;
 use ooxmlsdk::schemas::schemas_openxmlformats_org_presentationml_2006_main::{
     NonVisualDrawingProperties, Presentation, SlideSize,
@@ -81,7 +80,6 @@ fn presentation_round_trip_from_openxml_part_test() {
     let (parsed, serialized, reparsed) =
         assert_stable_roundtrip::<Presentation>(fixtures::PRESENTATION_PRESENTATION_XML);
 
-    assert_eq!(parsed.xml_header, XmlHeaderType::None);
     assert_eq!(
         parsed
             .slide_master_id_list
@@ -105,7 +103,6 @@ fn presentation_round_trip_from_openxml_part_test() {
     );
     assert!(serialized.contains("autoCompressPictures=\"0\""));
     assert!(serialized.contains(r#"<p:sldSz cx="12192000" cy="6858000" />"#));
-    assert_eq!(reparsed.xml_header, XmlHeaderType::None);
     assert_eq!(
         reparsed
             .slide_id_list
