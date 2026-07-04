@@ -231,7 +231,9 @@ fn leaf_text_float_kind(ty: &serde_json::Value) -> Option<SchemaFloatKind> {
 fn float_kind(type_name: &str) -> Option<SchemaFloatKind> {
     Some(match type_name {
         "SingleValue" | "xsd:float" => SchemaFloatKind::Single,
-        "DoubleValue" | "xsd:double" | "cx:CT_NumericValue" => SchemaFloatKind::Double,
+        "DoubleValue" | "xsd:double" | "cx:CT_NumericValue" | "cdr:ST_MarkerCoordinate" => {
+            SchemaFloatKind::Double
+        }
         _ => return None,
     })
 }

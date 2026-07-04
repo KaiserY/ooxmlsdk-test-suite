@@ -149,6 +149,49 @@ not represent numeric/float-heavy spreadsheet XML.
 
 ## Run history
 
+### 2026-07-04 XML text event fast path
+
+Command:
+
+```bash
+cargo bench -p ooxmlsdk-bench --bench xml
+```
+
+Change under test:
+
+- Add a quick-xml serde-style `DeEvent` layer for element body reads.
+- Return `DeEvent::FastBytesText` for isolated `Text` events so generated
+  `#[sdk(text)]` and `text_child` paths can parse or copy raw text bytes before
+  falling back to decoded text.
+- Keep consecutive `Text` / `CData` / `GeneralRef` handling on the decoded
+  `DeEvent::Text` path.
+- Do not change MCE XML replacement logic.
+
+Absolute medians from the run:
+
+| Benchmark | Read slice | Read cursor | Read bufreader | Write | Round-trip |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `xml/word/document_hello_world` | 3.5369 us | 4.0694 us | 4.0557 us | 741.31 ns | 4.2564 us |
+| `xml/word/document_complex0` | 1.4557 ms | 1.7327 ms | 1.7691 ms | 156.16 us | 1.6556 ms |
+| `xml/sheet/worksheet_no_ext_data_b1_sheet1` | 6.1210 ms | 7.5950 ms | 7.7558 ms | 549.86 us | 6.6875 ms |
+| `xml/slides/presentation` | 9.1188 us | 10.971 us | 12.103 us | 1.4732 us | 11.073 us |
+
+Compared with the previous documented valid run after numeric write fast paths:
+
+| Benchmark | Read slice | Read cursor | Read bufreader | Write | Round-trip |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `xml/word/document_hello_world` | improved (-4.1%) | improved (-0.5%) | improved (-4.0%) | improved (-2.1%) | improved (-7.9%) |
+| `xml/word/document_complex0` | improved (-4.8%) | improved (-3.7%) | improved (-3.2%) | no change (-0.4%) | improved (-5.9%) |
+| `xml/sheet/worksheet_no_ext_data_b1_sheet1` | improved (-6.4%) | improved (-5.7%) | improved (-5.0%) | improved (-3.2%) | improved (-4.9%) |
+| `xml/slides/presentation` | improved (-2.8%) | improved (-4.9%) | noise (+3.6%) | no change (-0.5%) | improved (-2.4%) |
+
+Conclusion: keep the text event fast path. It targets generated text fields
+directly, especially simple spreadsheet cell value bodies such as `<v>...</v>`,
+while leaving MCE handling alone. The saved Criterion change report from this
+run compared against a discarded run that was affected by unrelated system
+load, so the table above compares absolute medians with the previous documented
+valid run instead.
+
 ### 2026-07-04 XML numeric write fast paths
 
 Command:

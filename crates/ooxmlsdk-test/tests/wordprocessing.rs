@@ -474,7 +474,9 @@ fn document_round_trip_from_openxml_reader_test() {
             .iter()
             .any(|declaration| xml_namespace_prefix_matches(declaration, b"w"))
     );
-    assert!(!serialized.starts_with("<?xml"));
+    assert!(
+        serialized.starts_with("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n")
+    );
     assert!(
         serialized
             .contains("xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"")
@@ -487,16 +489,15 @@ fn document_round_trip_from_openxml_reader_test() {
 }
 
 #[test]
-fn document_round_trip_preserves_plain_xml_declaration() {
+fn document_round_trip_writes_fixed_xml_declaration() {
     let xml = r#"<?xml version="1.0" encoding="utf-8"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body></w:body></w:document>"#;
     let (parsed, serialized, reparsed) = assert_stable_roundtrip::<Document>(xml);
 
-    assert_eq!(parsed.xml_header, XmlHeaderType::Plain);
-    assert!(serialized.starts_with("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n"));
+    assert_eq!(parsed.xml_header, XmlHeaderType::None);
     assert!(
-        !serialized.starts_with("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>")
+        serialized.starts_with("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n")
     );
-    assert_eq!(reparsed.xml_header, XmlHeaderType::Plain);
+    assert_eq!(reparsed.xml_header, XmlHeaderType::None);
 }
 
 #[test]
@@ -515,15 +516,15 @@ fn document_round_trip_with_two_paragraphs_from_openxml_reader_test() {
     let (parsed, serialized, reparsed) =
         assert_stable_roundtrip::<Document>(fixtures::WORDPROCESSING_DOCUMENT_TWO_PARAGRAPHS_XML);
 
-    assert_eq!(parsed.xml_header, XmlHeaderType::Standalone);
+    assert_eq!(parsed.xml_header, XmlHeaderType::None);
     let body = first_body(&parsed);
     assert_eq!(body.body_choice.len(), 2);
     assert!(body_choice_paragraph(&body.body_choice[0]).is_some());
     assert!(body_choice_paragraph(&body.body_choice[1]).is_some());
     assert!(
-        serialized.starts_with("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\r\n")
+        serialized.starts_with("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n")
     );
-    assert_eq!(reparsed.xml_header, XmlHeaderType::Standalone);
+    assert_eq!(reparsed.xml_header, XmlHeaderType::None);
     assert!(reparsed.body.is_some());
 }
 

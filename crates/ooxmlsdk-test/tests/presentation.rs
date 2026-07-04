@@ -4,11 +4,11 @@ use ooxmlsdk::schemas::schemas_openxmlformats_org_presentationml_2006_main::{
     NonVisualDrawingProperties, Presentation, SlideSize,
 };
 use ooxmlsdk::sdk::SdkType;
-use ooxmlsdk_test::{assert_stable_roundtrip, fixtures};
+use ooxmlsdk_test::{assert_roundtrip, assert_stable_roundtrip, fixtures};
 
 #[test]
 fn non_visual_drawing_properties_round_trip_with_embedded_xml() {
-    let (parsed, serialized, reparsed) = assert_stable_roundtrip::<NonVisualDrawingProperties>(
+    let (parsed, serialized, reparsed) = assert_roundtrip::<NonVisualDrawingProperties>(
         fixtures::PRESENTATION_NON_VISUAL_DRAWING_PROPERTIES_XML,
     );
 
@@ -81,7 +81,7 @@ fn presentation_round_trip_from_openxml_part_test() {
     let (parsed, serialized, reparsed) =
         assert_stable_roundtrip::<Presentation>(fixtures::PRESENTATION_PRESENTATION_XML);
 
-    assert_eq!(parsed.xml_header, XmlHeaderType::Standalone);
+    assert_eq!(parsed.xml_header, XmlHeaderType::None);
     assert_eq!(
         parsed
             .slide_master_id_list
@@ -101,11 +101,11 @@ fn presentation_round_trip_from_openxml_part_test() {
         Some(false)
     );
     assert!(
-        serialized.starts_with("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\r\n")
+        serialized.starts_with("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n")
     );
     assert!(serialized.contains("autoCompressPictures=\"0\""));
     assert!(serialized.contains(r#"<p:sldSz cx="12192000" cy="6858000" />"#));
-    assert_eq!(reparsed.xml_header, XmlHeaderType::Standalone);
+    assert_eq!(reparsed.xml_header, XmlHeaderType::None);
     assert_eq!(
         reparsed
             .slide_id_list

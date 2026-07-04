@@ -104,17 +104,17 @@ fn workbook_round_trip_from_openxml_part_test() {
     let (parsed, serialized, reparsed) =
         assert_stable_roundtrip::<Workbook>(fixtures::SPREADSHEET_WORKBOOK_XML);
 
-    assert_eq!(parsed.xml_header, XmlHeaderType::Standalone);
+    assert_eq!(parsed.xml_header, XmlHeaderType::None);
     assert_eq!(parsed.sheets.sheet.len(), 2);
     assert_eq!(parsed.sheets.sheet[0].name.as_str(), "Sheet1");
     assert_eq!(parsed.sheets.sheet[1].name.as_str(), "Sheet2");
     assert!(
-        serialized.starts_with("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\r\n")
+        serialized.starts_with("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n")
     );
     assert!(contains_x_start(&serialized, "sheet"));
     assert!(serialized.contains("name=\"Sheet1\""));
     assert!(serialized.contains("name=\"Sheet2\""));
-    assert_eq!(reparsed.xml_header, XmlHeaderType::Standalone);
+    assert_eq!(reparsed.xml_header, XmlHeaderType::None);
     assert_eq!(reparsed.sheets.sheet.len(), 2);
 }
 
@@ -124,7 +124,7 @@ fn workbook_round_trip_from_complex01_part_test() {
 
     let (parsed, serialized, reparsed) = assert_stable_roundtrip::<Workbook>(&workbook_xml);
 
-    assert_eq!(parsed.xml_header, XmlHeaderType::Standalone);
+    assert_eq!(parsed.xml_header, XmlHeaderType::None);
     assert_eq!(
         xml_other_attr(&parsed.xml_other_attrs, "mc:Ignorable"),
         Some("x15")
@@ -149,7 +149,7 @@ fn workbook_round_trip_from_complex01_part_test() {
     assert_eq!(parsed.sheets.sheet[0].name.as_str(), "Sheet1");
     assert_eq!(parsed.sheets.sheet[1].name.as_str(), "Sheet2");
     assert!(
-        serialized.starts_with("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\r\n")
+        serialized.starts_with("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n")
     );
     assert!(trim_xml_declaration(&serialized).contains("mc:Ignorable=\"x15\""));
     assert!(contains_x_start(
@@ -157,7 +157,7 @@ fn workbook_round_trip_from_complex01_part_test() {
         "calcPr"
     ));
     assert!(trim_xml_declaration(&serialized).contains("calcId=\"152511\""));
-    assert_eq!(reparsed.xml_header, XmlHeaderType::Standalone);
+    assert_eq!(reparsed.xml_header, XmlHeaderType::None);
     assert_eq!(
         xml_other_attr(&reparsed.xml_other_attrs, "mc:Ignorable"),
         Some("x15")

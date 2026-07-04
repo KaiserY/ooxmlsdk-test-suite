@@ -649,6 +649,14 @@
       "kind": "double"
     },
     {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/chartDrawing}x",
+      "kind": "double"
+    },
+    {
+      "element": "{http://schemas.openxmlformats.org/drawingml/2006/chartDrawing}y",
+      "kind": "double"
+    },
+    {
       "element": "{http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes}r4",
       "kind": "single"
     },

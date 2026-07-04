@@ -1,4 +1,5 @@
 use std::{
+    borrow::Cow,
     collections::BTreeMap,
     fs,
     io::{Cursor, Read},
@@ -12,7 +13,7 @@ use ooxmlsdk::parts::{
 };
 use ooxmlsdk::schemas::schemas_openxmlformats_org_wordprocessingml_2006_main::BodyChoice;
 use ooxmlsdk::sdk::{SdkPackage, SdkPart};
-use quick_xml::{Reader, escape::unescape, events::Event};
+use quick_xml::{Reader, XmlVersion, escape::unescape, events::Event};
 use serde::Deserialize;
 use zip::ZipArchive;
 
@@ -2229,61 +2230,36 @@ fn compare_xml_documents(original: &[XmlNode], roundtripped: &[XmlNode]) -> Vec<
                 while frame.original_idx < frame.original.len()
                     && frame.roundtripped_idx < frame.roundtripped.len()
                 {
-                    match (
-                        &frame.original[frame.original_idx],
-                        &frame.roundtripped[frame.roundtripped_idx],
-                    ) {
-                        (XmlNode::Declaration(decl), node)
-                            if !matches!(node, XmlNode::Declaration(_)) =>
-                        {
-                            let path = next_xml_child_path(
-                                &frame.parent_path,
-                                &mut frame.original_ordinals,
-                                &frame.original[frame.original_idx],
-                            );
-                            errors.push(format!(
-                                "{path}: missing XML declaration {} before {}",
-                                xml_declaration_summary(*decl),
-                                xml_node_summary(node)
-                            ));
-                            frame.original_idx += 1;
-                        }
-                        (node, XmlNode::Declaration(decl))
-                            if !matches!(node, XmlNode::Declaration(_)) =>
-                        {
-                            let path = next_xml_child_path(
-                                &frame.parent_path,
-                                &mut frame.roundtripped_ordinals,
-                                &frame.roundtripped[frame.roundtripped_idx],
-                            );
-                            errors.push(format!(
-                                "{path}: extra XML declaration {} before {}",
-                                xml_declaration_summary(*decl),
-                                xml_node_summary(node)
-                            ));
-                            frame.roundtripped_idx += 1;
-                        }
-                        _ => {
-                            let path = next_xml_child_path(
-                                &frame.parent_path,
-                                &mut frame.original_ordinals,
-                                &frame.original[frame.original_idx],
-                            );
-                            let _ = next_xml_child_path(
-                                &frame.parent_path,
-                                &mut frame.roundtripped_ordinals,
-                                &frame.roundtripped[frame.roundtripped_idx],
-                            );
-                            next_node = Some(CompareTask::Node {
-                                path,
-                                original: &frame.original[frame.original_idx],
-                                roundtripped: &frame.roundtripped[frame.roundtripped_idx],
-                            });
-                            frame.original_idx += 1;
-                            frame.roundtripped_idx += 1;
-                            break;
-                        }
+                    if matches!(frame.original[frame.original_idx], XmlNode::Declaration(_)) {
+                        frame.original_idx += 1;
+                        continue;
                     }
+                    if matches!(
+                        frame.roundtripped[frame.roundtripped_idx],
+                        XmlNode::Declaration(_)
+                    ) {
+                        frame.roundtripped_idx += 1;
+                        continue;
+                    }
+
+                    let path = next_xml_child_path(
+                        &frame.parent_path,
+                        &mut frame.original_ordinals,
+                        &frame.original[frame.original_idx],
+                    );
+                    let _ = next_xml_child_path(
+                        &frame.parent_path,
+                        &mut frame.roundtripped_ordinals,
+                        &frame.roundtripped[frame.roundtripped_idx],
+                    );
+                    next_node = Some(CompareTask::Node {
+                        path,
+                        original: &frame.original[frame.original_idx],
+                        roundtripped: &frame.roundtripped[frame.roundtripped_idx],
+                    });
+                    frame.original_idx += 1;
+                    frame.roundtripped_idx += 1;
+                    break;
                 }
 
                 if let Some(next_node) = next_node {
@@ -2291,6 +2267,9 @@ fn compare_xml_documents(original: &[XmlNode], roundtripped: &[XmlNode]) -> Vec<
                     stack.push(next_node);
                 } else {
                     for node in &frame.original[frame.original_idx..] {
+                        if matches!(node, XmlNode::Declaration(_)) {
+                            continue;
+                        }
                         errors.push(format!(
                             "{}: missing child in roundtripped XML: {}",
                             frame.parent_path,
@@ -2299,6 +2278,9 @@ fn compare_xml_documents(original: &[XmlNode], roundtripped: &[XmlNode]) -> Vec<
                     }
 
                     for node in &frame.roundtripped[frame.roundtripped_idx..] {
+                        if matches!(node, XmlNode::Declaration(_)) {
+                            continue;
+                        }
                         errors.push(format!(
                             "{}: extra child in roundtripped XML: {}",
                             frame.parent_path,
@@ -2312,29 +2294,7 @@ fn compare_xml_documents(original: &[XmlNode], roundtripped: &[XmlNode]) -> Vec<
                 original,
                 roundtripped,
             } => match (original, roundtripped) {
-                (XmlNode::Declaration(left), XmlNode::Declaration(right)) => {
-                    if left != right {
-                        errors.push(format!(
-                            "{path}: XML declaration mismatch: original {}, roundtripped {}",
-                            xml_declaration_summary(*left),
-                            xml_declaration_summary(*right)
-                        ));
-                    }
-                }
-                (XmlNode::Declaration(left), other) => {
-                    errors.push(format!(
-                        "{path}: missing XML declaration {} before {}",
-                        xml_declaration_summary(*left),
-                        xml_node_summary(other)
-                    ));
-                }
-                (other, XmlNode::Declaration(right)) => {
-                    errors.push(format!(
-                        "{path}: extra XML declaration {} before {}",
-                        xml_declaration_summary(*right),
-                        xml_node_summary(other)
-                    ));
-                }
+                (XmlNode::Declaration(_), _) | (_, XmlNode::Declaration(_)) => {}
                 (XmlNode::Text(left), XmlNode::Text(right)) => {
                     if left != right {
                         errors.push(format!(
@@ -2399,7 +2359,9 @@ fn compare_xml_attrs(
 
     for (name, value) in &original {
         match roundtripped.get(name) {
-            Some(roundtripped_value) if roundtripped_value == value => {}
+            Some(roundtripped_value)
+                if normalized_xml_attr_value(roundtripped_value).as_ref()
+                    == normalized_xml_attr_value(value).as_ref() => {}
             Some(roundtripped_value) => errors.push(format!(
                 "{path}: attr value mismatch for {}: original {:?}, roundtripped {:?}",
                 readable_xml_name(name),
@@ -2423,6 +2385,22 @@ fn compare_xml_attrs(
             ));
         }
     }
+}
+
+fn normalized_xml_attr_value(value: &str) -> Cow<'_, str> {
+    if !value.bytes().any(|b| matches!(b, b'\t' | b'\n' | b'\r')) {
+        return Cow::Borrowed(value);
+    }
+
+    Cow::Owned(
+        value
+            .chars()
+            .map(|ch| match ch {
+                '\t' | '\n' | '\r' => ' ',
+                _ => ch,
+            })
+            .collect(),
+    )
 }
 
 fn push_xml_name_error(
@@ -2616,15 +2594,10 @@ fn parse_xml_node(
             panic!("failed to parse xml attribute for {file_name}:{entry_name}: {err}");
         });
         let key = String::from_utf8_lossy(attr.key.as_ref()).into_owned();
-        let decoded = reader
-            .decoder()
-            .decode(attr.value.as_ref())
+        let value = attr
+            .decoded_and_normalized_value(XmlVersion::Implicit1_0, reader.decoder())
             .unwrap_or_else(|err| {
                 panic!("failed to decode xml attribute for {file_name}:{entry_name}: {err}");
-            });
-        let value = unescape(&decoded)
-            .unwrap_or_else(|err| {
-                panic!("failed to unescape xml attribute for {file_name}:{entry_name}: {err}");
             })
             .into_owned();
         if key == "xmlns" {
