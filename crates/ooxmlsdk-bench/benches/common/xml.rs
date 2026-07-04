@@ -8,8 +8,8 @@ pub const WORDPROCESSING_DOCUMENT_HELLO_WORLD_XML: &str =
     include_str!("../../../../fixtures/perf/xml/wordprocessing_document_hello_world.xml");
 pub const WORDPROCESSING_DOCUMENT_COMPLEX0_XML: &str =
     include_str!("../../../../fixtures/perf/xml/wordprocessing_document_complex0.xml");
-pub const SPREADSHEET_WORKBOOK_XML: &str =
-    include_str!("../../../../fixtures/perf/xml/spreadsheet_workbook.xml");
+pub const SPREADSHEET_WORKSHEET_NO_EXT_DATA_B1_SHEET1_XML: &str =
+    include_str!("../../../../fixtures/perf/xml/spreadsheet_worksheet_no_ext_data_b1_sheet1.xml");
 pub const PRESENTATION_PRESENTATION_XML: &str =
     include_str!("../../../../fixtures/perf/xml/presentation_presentation.xml");
 

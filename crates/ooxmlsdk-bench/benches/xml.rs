@@ -3,11 +3,12 @@ mod xml;
 
 use criterion::{Criterion, criterion_group, criterion_main};
 use ooxmlsdk::schemas::schemas_openxmlformats_org_presentationml_2006_main::Presentation;
-use ooxmlsdk::schemas::schemas_openxmlformats_org_spreadsheetml_2006_main::Workbook;
+use ooxmlsdk::schemas::schemas_openxmlformats_org_spreadsheetml_2006_main::Worksheet;
 use ooxmlsdk::schemas::schemas_openxmlformats_org_wordprocessingml_2006_main::Document;
 use xml::{
-    PRESENTATION_PRESENTATION_XML, SPREADSHEET_WORKBOOK_XML, WORDPROCESSING_DOCUMENT_COMPLEX0_XML,
-    WORDPROCESSING_DOCUMENT_HELLO_WORLD_XML, bench_xml_round_trip,
+    PRESENTATION_PRESENTATION_XML, SPREADSHEET_WORKSHEET_NO_EXT_DATA_B1_SHEET1_XML,
+    WORDPROCESSING_DOCUMENT_COMPLEX0_XML, WORDPROCESSING_DOCUMENT_HELLO_WORLD_XML,
+    bench_xml_round_trip,
 };
 
 fn bench_xml(c: &mut Criterion) {
@@ -21,7 +22,11 @@ fn bench_xml(c: &mut Criterion) {
         "xml/word/document_complex0",
         WORDPROCESSING_DOCUMENT_COMPLEX0_XML,
     );
-    bench_xml_round_trip::<Workbook>(c, "xml/sheet/workbook", SPREADSHEET_WORKBOOK_XML);
+    bench_xml_round_trip::<Worksheet>(
+        c,
+        "xml/sheet/worksheet_no_ext_data_b1_sheet1",
+        SPREADSHEET_WORKSHEET_NO_EXT_DATA_B1_SHEET1_XML,
+    );
     bench_xml_round_trip::<Presentation>(
         c,
         "xml/slides/presentation",

@@ -142,10 +142,81 @@ validation benchmarks.
 XML fixtures live under `fixtures/perf/xml/`. Small XML fixtures are copied from
 local `ooxmlsdk` regression samples. `wordprocessing_document_complex0.xml` is
 extracted from `word/document.xml` in `complex0.docx`.
+`spreadsheet_worksheet_no_ext_data_b1_sheet1.xml` is extracted from
+`xl/worksheets/sheet1.xml` in Open XML SDK's `NoExtDataB1.xlsx`; it replaced the
+old tiny `spreadsheet_workbook.xml` benchmark case because the workbook part did
+not represent numeric/float-heavy spreadsheet XML.
 
 ## Run history
 
+### 2026-07-04 XML numeric write fast paths
+
+Command:
+
+```bash
+cargo bench -p ooxmlsdk-bench --bench xml
+```
+
+Fixture update:
+
+- Retired `xml/sheet/workbook` from the active XML bench set. That fixture was
+  only 810 bytes and had too few numeric attributes to represent spreadsheet XML
+  performance.
+- Added `xml/sheet/worksheet_no_ext_data_b1_sheet1`, parsed as
+  `schemas_openxmlformats_org_spreadsheetml_2006_main::Worksheet`.
+- Source:
+  `corpus/Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/NoExtDataB1.xlsx!xl/worksheets/sheet1.xml`.
+- Extracted XML size: 1,009,993 bytes. Rough scan before adding the fixture:
+  23,888 numeric attributes, 21 float-like attributes, 18,748 numeric text
+  nodes, and 17,491 float-like text nodes.
+
+Fresh baseline after replacing the spreadsheet fixture and clearing
+`target/criterion/xml`:
+
+| Benchmark | Read slice | Read cursor | Read bufreader | Write | Round-trip |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `xml/word/document_hello_world` | 3.6018 us | 4.1754 us | 4.1672 us | 798.17 ns | 4.5607 us |
+| `xml/word/document_complex0` | 1.5709 ms | 1.8600 ms | 1.8546 ms | 186.07 us | 1.8336 ms |
+| `xml/sheet/worksheet_no_ext_data_b1_sheet1` | 6.6547 ms | 8.3342 ms | 8.2693 ms | 856.14 us | 7.5472 ms |
+| `xml/slides/presentation` | 9.5975 us | 11.739 us | 12.225 us | 2.0131 us | 11.940 us |
+
+Change under test:
+
+- Add `itoa` for generated integer attribute serialization.
+- Add `zmij` for generated finite `f32`/`f64` attribute serialization.
+- Keep existing OOXML float special-case output for `NaN`, `INF`, and `-INF`.
+- Keep read-side scalar parsing changes from the previous XML attribute parse
+  work; this run measures the incremental write-side change against the fresh
+  worksheet baseline.
+
+After integer/float write fast paths:
+
+| Benchmark | Read slice | Read cursor | Read bufreader | Write | Round-trip |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `xml/word/document_hello_world` | 3.6871 us | 4.0880 us | 4.2263 us | 757.17 ns | 4.6190 us |
+| `xml/word/document_complex0` | 1.5289 ms | 1.7996 ms | 1.8285 ms | 156.79 us | 1.7588 ms |
+| `xml/sheet/worksheet_no_ext_data_b1_sheet1` | 6.5408 ms | 8.0564 ms | 8.1612 ms | 568.02 us | 7.0343 ms |
+| `xml/slides/presentation` | 9.3837 us | 11.537 us | 11.686 us | 1.4811 us | 11.349 us |
+
+Criterion change summary for the post-change run:
+
+| Benchmark | Read slice | Read cursor | Read bufreader | Write | Round-trip |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `xml/word/document_hello_world` | regressed (+2.94%) | improved (-1.69%) | noise (+0.75%) | improved (-5.42%) | noise (+1.04%) |
+| `xml/word/document_complex0` | no change (-1.29%) | improved (-2.99%) | no change (-0.47%) | improved (-15.68%) | improved (-3.55%) |
+| `xml/sheet/worksheet_no_ext_data_b1_sheet1` | improved (-1.72%) | improved (-4.18%) | no change (-0.81%) | improved (-33.54%) | improved (-6.57%) |
+| `xml/slides/presentation` | improved (-2.10%) | improved (-2.82%) | improved (-4.14%) | improved (-26.22%) | improved (-4.51%) |
+
+Conclusion: keep the integer/float write fast paths. The new worksheet fixture
+hits the numeric spreadsheet path directly, and the write-side gain is large
+enough to be above ordinary Criterion noise. The read-side deltas in this run
+are secondary and mostly noise or indirect effects; the intended win is
+serialization.
+
 ### 2026-07-01 XML lexical integer/float parser experiment
+
+Note: this run used the retired `xml/sheet/workbook` fixture. Its spreadsheet
+numbers are not comparable with the current worksheet benchmark set.
 
 Command:
 
