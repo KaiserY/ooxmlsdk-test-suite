@@ -149,6 +149,55 @@ not represent numeric/float-heavy spreadsheet XML.
 
 ## Run history
 
+### 2026-07-05 XML string read/write cleanup
+
+Command:
+
+```bash
+cargo bench -p ooxmlsdk-bench --bench xml
+```
+
+The command was run three times. The table below is the arithmetic mean of the
+three Criterion median point estimates. The XML write and round-trip benchmarks
+use the existing `to_xml()` harness, so these numbers are comparable with the
+previous documented XML runs.
+
+Current state under test:
+
+- Move owned decoded text into generated `#[sdk(text)]` string fields when the
+  `DeEvent::Text` path already owns the buffer.
+- Write string-like XML list fields through `AsRef<str>` helpers instead of the
+  generic `Display` path.
+- Split XML escaping into attribute and content byte writers aligned with
+  quick-xml's minimal escaping behavior.
+- Keep MCE and generated child write protocol unchanged.
+
+Three-run average medians:
+
+| Benchmark | Read slice | Read cursor | Read bufreader | Write | Round-trip |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `xml/word/document_hello_world` | 3.427 us | 4.031 us | 4.140 us | 613.55 ns | 4.318 us |
+| `xml/word/document_complex0` | 1.453 ms | 1.701 ms | 1.755 ms | 136.26 us | 1.635 ms |
+| `xml/sheet/worksheet_no_ext_data_b1_sheet1` | 5.811 ms | 7.133 ms | 7.308 ms | 484.64 us | 6.346 ms |
+| `xml/slides/presentation` | 8.702 us | 11.105 us | 11.321 us | 1.398 us | 10.512 us |
+
+Compared with the previous documented valid run after the XML text event fast
+path:
+
+| Benchmark | Read slice | Read cursor | Read bufreader | Write | Round-trip |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `xml/word/document_hello_world` | improved (-3.1%) | flat (-0.9%) | noise (+2.1%) | improved (-17.2%) | noise (+1.4%) |
+| `xml/word/document_complex0` | flat (-0.2%) | improved (-1.8%) | flat (-0.8%) | improved (-12.7%) | improved (-1.2%) |
+| `xml/sheet/worksheet_no_ext_data_b1_sheet1` | improved (-5.1%) | improved (-6.1%) | improved (-5.8%) | improved (-11.9%) | improved (-5.1%) |
+| `xml/slides/presentation` | improved (-4.6%) | noise (+1.2%) | improved (-6.5%) | improved (-5.1%) | improved (-5.1%) |
+
+Conclusion: keep the string read/write cleanup. The main write-side gains come
+from avoiding generic formatting for string-like list values and using minimal
+content/attribute escaping, while read-side worksheet and slides results remain
+better than the previous documented run. A discarded `write_to(Vec)` harness
+experiment showed incomparable write numbers; the committed benchmark harness
+continues to use `to_xml()` for historical consistency.
+
 ### 2026-07-04 XML text event fast path
 
 Command:
