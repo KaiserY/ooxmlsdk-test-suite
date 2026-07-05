@@ -51,6 +51,10 @@ fn assert_cell_value_xml(serialized: &str, expected_value: &str) {
     );
 }
 
+fn cell_value_text(value: &CellValue) -> Option<&str> {
+    value.0.xml_content.as_deref()
+}
+
 fn contains_x_start(xml: &str, local_name: &str) -> bool {
     xml.contains(&format!("<x:{local_name}")) || xml.contains(&format!("<{local_name}"))
 }
@@ -75,9 +79,9 @@ fn assert_cell_value_text_round_trip(value: &str) {
     );
     let (parsed, serialized, reparsed) = assert_stable_roundtrip::<CellValue>(&xml);
 
-    assert_eq!(parsed.xml_content.as_deref(), Some(value));
+    assert_eq!(cell_value_text(&parsed), Some(value));
     assert_cell_value_xml(&serialized, value);
-    assert_eq!(reparsed.xml_content.as_deref(), Some(value));
+    assert_eq!(cell_value_text(&reparsed), Some(value));
 }
 
 fn shared_string_items(
@@ -510,9 +514,9 @@ fn cell_value_double_round_trip_from_cell_value_tests() {
     let (parsed, serialized, reparsed) =
         assert_stable_roundtrip::<CellValue>(fixtures::SPREADSHEET_CELL_VALUE_DOUBLE_XML);
 
-    assert_eq!(parsed.xml_content.as_deref(), Some("-1.5"));
+    assert_eq!(cell_value_text(&parsed), Some("-1.5"));
     assert_cell_value_xml(&serialized, "-1.5");
-    assert_eq!(reparsed.xml_content.as_deref(), Some("-1.5"));
+    assert_eq!(cell_value_text(&reparsed), Some("-1.5"));
 }
 
 #[test]
@@ -521,9 +525,9 @@ fn cell_value_double_exponential_round_trip_from_cell_value_tests() {
         fixtures::SPREADSHEET_CELL_VALUE_DOUBLE_EXPONENTIAL_XML,
     );
 
-    assert_eq!(parsed.xml_content.as_deref(), Some("987.6E+30"));
+    assert_eq!(cell_value_text(&parsed), Some("987.6E+30"));
     assert_cell_value_xml(&serialized, "987.6E+30");
-    assert_eq!(reparsed.xml_content.as_deref(), Some("987.6E+30"));
+    assert_eq!(cell_value_text(&reparsed), Some("987.6E+30"));
 }
 
 #[test]
@@ -531,9 +535,9 @@ fn cell_value_int_exponential_round_trip_from_cell_value_tests() {
     let (parsed, serialized, reparsed) =
         assert_stable_roundtrip::<CellValue>(fixtures::SPREADSHEET_CELL_VALUE_INT_EXPONENTIAL_XML);
 
-    assert_eq!(parsed.xml_content.as_deref(), Some("987E+5"));
+    assert_eq!(cell_value_text(&parsed), Some("987E+5"));
     assert_cell_value_xml(&serialized, "987E+5");
-    assert_eq!(reparsed.xml_content.as_deref(), Some("987E+5"));
+    assert_eq!(cell_value_text(&reparsed), Some("987E+5"));
 }
 
 #[test]
@@ -541,9 +545,9 @@ fn cell_value_boolean_round_trip_from_cell_value_tests() {
     let (parsed, serialized, reparsed) =
         assert_stable_roundtrip::<CellValue>(fixtures::SPREADSHEET_CELL_VALUE_BOOLEAN_XML);
 
-    assert_eq!(parsed.xml_content.as_deref(), Some("true"));
+    assert_eq!(cell_value_text(&parsed), Some("true"));
     assert_cell_value_xml(&serialized, "true");
-    assert_eq!(reparsed.xml_content.as_deref(), Some("true"));
+    assert_eq!(cell_value_text(&reparsed), Some("true"));
 }
 
 #[test]
@@ -551,9 +555,9 @@ fn cell_value_int_round_trip_from_cell_value_tests() {
     let (parsed, serialized, reparsed) =
         assert_stable_roundtrip::<CellValue>(fixtures::SPREADSHEET_CELL_VALUE_INT_XML);
 
-    assert_eq!(parsed.xml_content.as_deref(), Some("2147483647"));
+    assert_eq!(cell_value_text(&parsed), Some("2147483647"));
     assert_cell_value_xml(&serialized, "2147483647");
-    assert_eq!(reparsed.xml_content.as_deref(), Some("2147483647"));
+    assert_eq!(cell_value_text(&reparsed), Some("2147483647"));
 }
 
 #[test]
@@ -562,9 +566,9 @@ fn cell_value_decimal_exponential_round_trip_from_cell_value_tests() {
         fixtures::SPREADSHEET_CELL_VALUE_DECIMAL_EXPONENTIAL_XML,
     );
 
-    assert_eq!(parsed.xml_content.as_deref(), Some("987.6E+8"));
+    assert_eq!(cell_value_text(&parsed), Some("987.6E+8"));
     assert_cell_value_xml(&serialized, "987.6E+8");
-    assert_eq!(reparsed.xml_content.as_deref(), Some("987.6E+8"));
+    assert_eq!(cell_value_text(&reparsed), Some("987.6E+8"));
 }
 
 #[test]
@@ -572,15 +576,9 @@ fn cell_value_datetime_round_trip_from_cell_value_tests() {
     let (parsed, serialized, reparsed) =
         assert_stable_roundtrip::<CellValue>(fixtures::SPREADSHEET_CELL_VALUE_DATETIME_XML);
 
-    assert_eq!(
-        parsed.xml_content.as_deref(),
-        Some("2017-11-28T12:25:02.123")
-    );
+    assert_eq!(cell_value_text(&parsed), Some("2017-11-28T12:25:02.123"));
     assert_cell_value_xml(&serialized, "2017-11-28T12:25:02.123");
-    assert_eq!(
-        reparsed.xml_content.as_deref(),
-        Some("2017-11-28T12:25:02.123")
-    );
+    assert_eq!(cell_value_text(&reparsed), Some("2017-11-28T12:25:02.123"));
 }
 
 #[test]
@@ -589,12 +587,12 @@ fn cell_value_datetime_offset_round_trip_from_cell_value_tests() {
         assert_stable_roundtrip::<CellValue>(fixtures::SPREADSHEET_CELL_VALUE_DATETIME_OFFSET_XML);
 
     assert_eq!(
-        parsed.xml_content.as_deref(),
+        cell_value_text(&parsed),
         Some("2017-11-28T12:25:02.123+00:00")
     );
     assert_cell_value_xml(&serialized, "2017-11-28T12:25:02.123+00:00");
     assert_eq!(
-        reparsed.xml_content.as_deref(),
+        cell_value_text(&reparsed),
         Some("2017-11-28T12:25:02.123+00:00")
     );
 }

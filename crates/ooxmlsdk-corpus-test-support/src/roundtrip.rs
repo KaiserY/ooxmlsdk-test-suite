@@ -798,6 +798,7 @@ struct CanonicalOptions {
     normalize_core_property_dcterms_refinements: bool,
     ignore_core_property_whitespace_text_nodes: bool,
     ignore_spreadsheet_fills_text_nodes: bool,
+    ignore_spreadsheet_cell_value_inline_string_type_attr: bool,
     ignore_word_text_leaf_mc_ignorable_attr: bool,
     ignore_word_text_leaf_xsi_nil_true_attr: bool,
     ignore_word_document_invalid_run_container_text_nodes: bool,
@@ -845,6 +846,7 @@ impl CanonicalOptions {
             normalize_core_property_dcterms_refinements: false,
             ignore_core_property_whitespace_text_nodes: false,
             ignore_spreadsheet_fills_text_nodes: false,
+            ignore_spreadsheet_cell_value_inline_string_type_attr: false,
             ignore_word_text_leaf_mc_ignorable_attr: false,
             ignore_word_text_leaf_xsi_nil_true_attr: false,
             ignore_word_document_invalid_run_container_text_nodes: false,
@@ -894,6 +896,9 @@ impl CanonicalOptions {
             normalize_core_property_dcterms_refinements: is_package_properties_entry(entry_name),
             ignore_core_property_whitespace_text_nodes: is_package_properties_entry(entry_name),
             ignore_spreadsheet_fills_text_nodes: is_spreadsheet_styles_entry(entry_name),
+            ignore_spreadsheet_cell_value_inline_string_type_attr: is_spreadsheet_worksheet_entry(
+                entry_name,
+            ),
             ignore_word_text_leaf_mc_ignorable_attr: is_word_document_entry(entry_name),
             ignore_word_text_leaf_xsi_nil_true_attr: is_word_document_entry(entry_name),
             ignore_word_document_invalid_run_container_text_nodes: is_word_document_entry(
@@ -981,6 +986,9 @@ impl CanonicalOptions {
         }
         if self.ignore_spreadsheet_fills_text_nodes {
             enabled.push("spreadsheet fills text nodes");
+        }
+        if self.ignore_spreadsheet_cell_value_inline_string_type_attr {
+            enabled.push("spreadsheet cell value inlineStr type attr");
         }
         if self.ignore_word_text_leaf_mc_ignorable_attr {
             enabled.push("word text leaf mc:Ignorable attr");
@@ -2653,6 +2661,12 @@ fn parse_xml_node(
         {
             continue;
         }
+        if options.ignore_spreadsheet_cell_value_inline_string_type_attr
+            && value == "inlineStr"
+            && is_spreadsheet_cell_value_type_attr(&name, &expanded_key)
+        {
+            continue;
+        }
 
         let value = if is_mc_ignorable_attr(&expanded_key) {
             normalize_ignorable_prefix_list(value, &ns)
@@ -2859,6 +2873,15 @@ fn is_package_properties_entry(entry_name: &str) -> bool {
 
 fn is_spreadsheet_styles_entry(entry_name: &str) -> bool {
     entry_name == "xl/styles.xml"
+}
+
+fn is_spreadsheet_worksheet_entry(entry_name: &str) -> bool {
+    entry_name.starts_with("xl/worksheets/") && entry_name.ends_with(".xml")
+}
+
+fn is_spreadsheet_cell_value_type_attr(element_name: &str, attr_name: &str) -> bool {
+    element_name == "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}v"
+        && attr_name == "t"
 }
 
 fn is_spreadsheet_fills_root(name: &str) -> bool {
