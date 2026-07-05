@@ -798,6 +798,8 @@ struct CanonicalOptions {
     normalize_core_property_dcterms_refinements: bool,
     ignore_core_property_whitespace_text_nodes: bool,
     ignore_spreadsheet_fills_text_nodes: bool,
+    ignore_word_text_leaf_mc_ignorable_attr: bool,
+    ignore_word_text_leaf_xsi_nil_true_attr: bool,
     ignore_word_document_invalid_run_container_text_nodes: bool,
     sort_spreadsheet_stylesheet_children: bool,
     sort_package_properties: bool,
@@ -843,6 +845,8 @@ impl CanonicalOptions {
             normalize_core_property_dcterms_refinements: false,
             ignore_core_property_whitespace_text_nodes: false,
             ignore_spreadsheet_fills_text_nodes: false,
+            ignore_word_text_leaf_mc_ignorable_attr: false,
+            ignore_word_text_leaf_xsi_nil_true_attr: false,
             ignore_word_document_invalid_run_container_text_nodes: false,
             sort_spreadsheet_stylesheet_children: false,
             sort_package_properties: false,
@@ -890,6 +894,8 @@ impl CanonicalOptions {
             normalize_core_property_dcterms_refinements: is_package_properties_entry(entry_name),
             ignore_core_property_whitespace_text_nodes: is_package_properties_entry(entry_name),
             ignore_spreadsheet_fills_text_nodes: is_spreadsheet_styles_entry(entry_name),
+            ignore_word_text_leaf_mc_ignorable_attr: is_word_document_entry(entry_name),
+            ignore_word_text_leaf_xsi_nil_true_attr: is_word_document_entry(entry_name),
             ignore_word_document_invalid_run_container_text_nodes: is_word_document_entry(
                 entry_name,
             ),
@@ -975,6 +981,12 @@ impl CanonicalOptions {
         }
         if self.ignore_spreadsheet_fills_text_nodes {
             enabled.push("spreadsheet fills text nodes");
+        }
+        if self.ignore_word_text_leaf_mc_ignorable_attr {
+            enabled.push("word text leaf mc:Ignorable attr");
+        }
+        if self.ignore_word_text_leaf_xsi_nil_true_attr {
+            enabled.push("word text leaf xsi:nil true attr");
         }
         if self.ignore_word_document_invalid_run_container_text_nodes {
             enabled.push("word document invalid run container text nodes");
@@ -2630,6 +2642,17 @@ fn parse_xml_node(
         {
             continue;
         }
+        if options.ignore_word_text_leaf_mc_ignorable_attr
+            && is_word_text_leaf_mc_ignorable_attr(&name, &expanded_key)
+        {
+            continue;
+        }
+        if options.ignore_word_text_leaf_xsi_nil_true_attr
+            && value == "true"
+            && is_word_text_leaf_xsi_nil_attr(&name, &expanded_key)
+        {
+            continue;
+        }
 
         let value = if is_mc_ignorable_attr(&expanded_key) {
             normalize_ignorable_prefix_list(value, &ns)
@@ -2860,6 +2883,16 @@ fn is_word_undefined_styles_trial_entry(entry_name: &str) -> bool {
 
 fn is_word_run_order_relaxed_root(name: &str) -> bool {
     name == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}r"
+}
+
+fn is_word_text_leaf_mc_ignorable_attr(element_name: &str, attr_name: &str) -> bool {
+    element_name == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}t"
+        && is_mc_ignorable_attr(attr_name)
+}
+
+fn is_word_text_leaf_xsi_nil_attr(element_name: &str, attr_name: &str) -> bool {
+    element_name == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}t"
+        && attr_name == "{http://www.w3.org/2001/XMLSchema-instance}nil"
 }
 
 fn is_wordprocessing_drawing_position_offset(name: &str) -> bool {

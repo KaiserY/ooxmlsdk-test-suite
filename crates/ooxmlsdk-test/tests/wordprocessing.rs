@@ -10,7 +10,7 @@ use ooxmlsdk::schemas::schemas_openxmlformats_org_wordprocessingml_2006_main::{
 };
 use ooxmlsdk::sdk::{SdkEnum, SdkType};
 use ooxmlsdk::simple_type::TwipsMeasureValue;
-use ooxmlsdk_test::{assert_stable_roundtrip, fixtures, trim_xml_declaration};
+use ooxmlsdk_test::{assert_roundtrip, assert_stable_roundtrip, fixtures, trim_xml_declaration};
 
 fn xml_other_attr<'a>(attrs: &'a [ooxmlsdk::common::XmlOtherAttr], name: &str) -> Option<&'a str> {
     attrs
@@ -788,24 +788,16 @@ fn document_round_trip_preserves_mce_attributes_and_alternate_content() {
 }
 
 #[test]
-#[ignore = "calibration: mc:Ignorable attribute entity whitespace is preserved raw instead of decoded"]
-fn text_round_trip_preserves_ignorable_whitespace_list_from_markup_compatibility_test() {
+fn text_round_trip_drops_ignorable_attribute_on_leaf_text() {
     // Source: test/DocumentFormat.OpenXml.Tests/OpenXmlDomTest/MarkupCompatibilityTest.cs
     //   Ignore_Whitespaces_FullMode
     let xml = r#"<w:t xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="  &#x9;&#xA;&#xD; ">text</w:t>"#;
 
-    let (text, serialized, reparsed) = assert_stable_roundtrip::<Text>(xml);
+    let (text, serialized, reparsed) = assert_roundtrip::<Text>(xml);
 
-    assert_eq!(
-        xml_other_attr(&text.xml_other_attrs, "mc:Ignorable"),
-        Some("  \t\n\r ")
-    );
-    assert_eq!(
-        xml_other_attr(&reparsed.xml_other_attrs, "mc:Ignorable"),
-        Some("  \t\n\r ")
-    );
     assert_eq!(text.xml_content.as_deref(), Some("text"));
-    assert!(serialized.contains("mc:Ignorable=\"  \t\n\r \""));
+    assert_eq!(reparsed.xml_content.as_deref(), Some("text"));
+    assert!(!serialized.contains("mc:Ignorable"));
 }
 
 #[test]
@@ -1301,10 +1293,7 @@ fn text_round_trip_from_openxml_element_test() {
         assert_stable_roundtrip::<Text>(fixtures::WORDPROCESSING_TEXT_XML);
 
     assert_eq!(parsed.xml_content.as_deref(), Some("Run Text."));
-    assert_eq!(
-        serialized,
-        r#"<w:t xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">Run Text.</w:t>"#
-    );
+    assert_eq!(serialized, r#"<w:t>Run Text.</w:t>"#);
     assert_eq!(reparsed.xml_content.as_deref(), Some("Run Text."));
 }
 

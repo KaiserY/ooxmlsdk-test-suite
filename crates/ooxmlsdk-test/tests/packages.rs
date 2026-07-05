@@ -4127,7 +4127,7 @@ fn create_apis_create_office_document_packages() {
         .set_root_element(
             &mut spreadsheet,
             Worksheet {
-                sheet_data: Box::new(SheetData::default()),
+                sheet_data: SheetData::default(),
                 ..Default::default()
             },
         )
@@ -4140,14 +4140,14 @@ fn create_apis_create_office_document_packages() {
         .set_root_element(
             &mut spreadsheet,
             SpreadsheetWorkbook {
-                sheets: Box::new(Sheets {
+                sheets: Sheets {
                     sheet: vec![Sheet {
                         name: "mySheet".to_string(),
                         sheet_id: 1,
                         id: worksheet_relationship_id,
                         ..Default::default()
                     }],
-                }),
+                },
                 ..Default::default()
             },
         )
@@ -4367,7 +4367,7 @@ fn create_apis_use_requested_document_type_content_types() {
             .set_root_element(
                 &mut package,
                 SpreadsheetWorkbook {
-                    sheets: Box::new(Sheets::default()),
+                    sheets: Sheets::default(),
                     ..Default::default()
                 },
             )
@@ -5029,7 +5029,7 @@ fn spreadsheet_save_writes_current_state_without_later_mutations() {
         .set_root_element(
             &mut package,
             SpreadsheetWorkbook {
-                sheets: Box::new(Sheets::default()),
+                sheets: Sheets::default(),
                 ..Default::default()
             },
         )
