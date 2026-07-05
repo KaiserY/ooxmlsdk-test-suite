@@ -893,7 +893,7 @@ fn wordprocessing_sdt_alias_mutation_is_saved_from_mc_support_test() {
                 .sdt_properties_choice
                 .iter_mut()
                 .find_map(|choice| match choice {
-                    SdtPropertiesChoice::SdtAlias(alias) => Some(alias.as_mut()),
+                    SdtPropertiesChoice::SdtAlias(alias) => Some(alias),
                     _ => None,
                 })
         })
@@ -4095,10 +4095,10 @@ fn create_apis_create_office_document_packages() {
                 body: Some(Box::new(Body {
                     body_choice: vec![BodyChoice::Paragraph(Box::new(Paragraph {
                         paragraph_choice: vec![ParagraphChoice::WRun(Box::new(Run {
-                            run_choice: vec![RunChoice::Text(Box::new(Text(TextType {
+                            run_choice: vec![RunChoice::Text(Text(TextType {
                                 xml_content: Some("Hello World!".to_string()),
                                 ..Default::default()
-                            })))],
+                            }))],
                             ..Default::default()
                         }))],
                         ..Default::default()
@@ -5000,10 +5000,10 @@ fn wordprocessing_clone_mutation_is_saved_without_changing_source_package() {
         0,
         BodyChoice::Paragraph(Box::new(Paragraph {
             paragraph_choice: vec![ParagraphChoice::WRun(Box::new(Run {
-                run_choice: vec![RunChoice::Text(Box::new(Text(TextType {
+                run_choice: vec![RunChoice::Text(Text(TextType {
                     xml_content: Some("Hello World from clone".to_string()),
                     ..Default::default()
-                })))],
+                }))],
                 ..Default::default()
             }))],
             ..Default::default()
