@@ -925,7 +925,7 @@ fn wordprocessing_sdt_alias_mutation_is_saved_from_mc_support_test() {
                 .sdt_properties_choice
                 .iter()
                 .find_map(|choice| match choice {
-                    SdtPropertiesChoice::SdtAlias(alias) => Some(alias.as_ref()),
+                    SdtPropertiesChoice::SdtAlias(alias) => Some(alias),
                     _ => None,
                 })
         })

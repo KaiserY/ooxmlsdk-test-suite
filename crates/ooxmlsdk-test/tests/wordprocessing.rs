@@ -99,7 +99,7 @@ fn first_text(run: &Run) -> &Text {
     run.run_choice
         .iter()
         .find_map(|child| match child {
-            RunChoice::Text(text) => Some(text.as_ref()),
+            RunChoice::Text(text) => Some(text),
             _ => None,
         })
         .expect("expected run text")
@@ -109,7 +109,7 @@ fn run_texts(run: &Run) -> Vec<&Text> {
     run.run_choice
         .iter()
         .filter_map(|child| match child {
-            RunChoice::Text(text) => Some(text.as_ref()),
+            RunChoice::Text(text) => Some(text),
             _ => None,
         })
         .collect()
