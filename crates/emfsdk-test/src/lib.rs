@@ -1,7 +1,8 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use emfsdk::Metafile;
+use emfsdk::emfplus::{EmfPlusRecord, EmfPlusRecordFlags};
+use emfsdk::{EmfRecordData, EmrComment, Metafile};
 use walkdir::WalkDir;
 
 pub fn workspace_dir() -> PathBuf {
@@ -38,6 +39,7 @@ pub fn is_metafile(path: &Path) -> bool {
 pub fn roundtrip_metafile(path: &Path) -> Result<(), String> {
     let bytes = corpus_bytes(path)?;
     let metafile = Metafile::from_bytes(&bytes).map_err(|err| format!("parse: {err}"))?;
+    validate_typed_record_roundtrips(&metafile)?;
     let roundtripped = metafile.to_bytes().map_err(|err| format!("write: {err}"))?;
     if roundtripped == bytes {
         Ok(())
@@ -47,6 +49,102 @@ pub fn roundtrip_metafile(path: &Path) -> Result<(), String> {
             bytes.len(),
             roundtripped.len()
         ))
+    }
+}
+
+fn validate_typed_record_roundtrips(metafile: &Metafile) -> Result<(), String> {
+    match metafile {
+        Metafile::Emf(value) => {
+            for (index, record) in value.records.iter().enumerate() {
+                let Ok(data) = record.parse_data() else {
+                    continue;
+                };
+                if let EmfRecordData::Comment(EmrComment::EmfPlus { records, .. }) = &data {
+                    validate_emf_plus_record_roundtrips(index, records)?;
+                }
+                let rebuilt = data.to_record().map_err(|err| {
+                    format!(
+                        "write typed EMF record {index} (type {}): {err}",
+                        record.record_type
+                    )
+                })?;
+                if rebuilt != *record {
+                    return Err(format!(
+                        "typed EMF record {index} differs after parse/write (type {}): {}",
+                        record.record_type,
+                        describe_byte_difference(&record.data, &rebuilt.data)
+                    ));
+                }
+            }
+        }
+        Metafile::Wmf(value) => {
+            for (index, record) in value.records.iter().enumerate() {
+                let Ok(data) = record.parse_data() else {
+                    continue;
+                };
+                let rebuilt = data
+                    .to_record_with_function(record.function)
+                    .map_err(|err| {
+                        format!(
+                            "write typed WMF record {index} (function {}): {err}",
+                            record.function
+                        )
+                    })?;
+                if rebuilt != *record {
+                    return Err(format!(
+                        "typed WMF record {index} differs after parse/write (function {}): {}",
+                        record.function,
+                        describe_byte_difference(&record.data, &rebuilt.data)
+                    ));
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+fn validate_emf_plus_record_roundtrips(
+    emf_record_index: usize,
+    records: &[EmfPlusRecord],
+) -> Result<(), String> {
+    for (index, record) in records.iter().enumerate() {
+        let Ok(data) = record.parse_data() else {
+            continue;
+        };
+        let flags = EmfPlusRecordFlags::from_bits_retain(record.flags);
+        let mut rebuilt = EmfPlusRecord::from_data(&data, flags).map_err(|err| {
+            format!(
+                "write typed EMF+ record {index} in EMF record {emf_record_index} (type {}): {err}",
+                record.record_type
+            )
+        })?;
+        rebuilt.padding = record.padding.clone();
+        if rebuilt != *record {
+            return Err(format!(
+                "typed EMF+ record {index} in EMF record {emf_record_index} differs after parse/write (type {}): flags {:#06x}->{:#06x}, data {}, padding {}",
+                record.record_type,
+                record.flags,
+                rebuilt.flags,
+                describe_byte_difference(&record.data, &rebuilt.data),
+                describe_byte_difference(&record.padding, &rebuilt.padding)
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn describe_byte_difference(original: &[u8], rebuilt: &[u8]) -> String {
+    let shared_len = original.len().min(rebuilt.len());
+    if let Some(index) = (0..shared_len).find(|&index| original[index] != rebuilt[index]) {
+        format!(
+            "first byte {index}: {:#04x}->{:#04x}, lengths {}->{}",
+            original[index],
+            rebuilt[index],
+            original.len(),
+            rebuilt.len()
+        )
+    } else {
+        format!("lengths {}->{}", original.len(), rebuilt.len())
     }
 }
 
