@@ -93,6 +93,9 @@ fn generate_corpus_tests(workspace_dir: &Path, out_dir: &Path, config: CorpusCon
         "#[test]\n#[ignore = \"corpus invalid-package tests are run explicitly\"]\nfn invalid_{}_{slug}() {{\n  let path = ooxmlsdk_corpus_test_support::corpus_file_path({file_name:?});\n  ooxmlsdk_corpus_test_support::roundtrip::assert_package_file_invalid(&path, {file_name:?});\n}}\n\n",
         config.fn_prefix
       )),
+      ExpectationMode::Unsupported | ExpectationMode::RequiresPassword => {
+        panic!("OOXML roundtrip expectations do not support unsupported or requires_password for {file_name}")
+      }
       ExpectationMode::KnownFailure => generated.push_str(&format!(
         "#[test]\n#[ignore = \"known corpus failure\"]\nfn known_failure_{}_{slug}() {{\n  let path = ooxmlsdk_corpus_test_support::corpus_file_path({file_name:?});\n  ooxmlsdk_corpus_test_support::roundtrip::assert_package_file_round_trip(&path, {file_name:?});\n}}\n\n",
         config.fn_prefix
@@ -136,6 +139,8 @@ enum ExpectationMode {
     RoundTrip,
     OpenOnly,
     Invalid,
+    Unsupported,
+    RequiresPassword,
     KnownFailure,
 }
 

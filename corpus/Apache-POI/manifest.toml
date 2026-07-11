@@ -4,6 +4,7 @@ name = "Apache POI"
 path = "corpus/Apache-POI"
 license = "Apache-2.0"
 source = "https://github.com/apache/poi"
+source_commit = "dfa53082b3e04412a4440c77862f17061cb2e97f"
 default_roundtrip = false
 
 [[expectation]]
@@ -455,3 +456,237 @@ file = "test-data/spreadsheet/xlsx-corrupted.xlsx"
 test = "roundtrip"
 mode = "invalid"
 reason = "corrupt package relationships"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIHWPFFuzzer-4892412469968896.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIHWPFFuzzer-4947285593948160.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIHWPFFuzzer-5074346559012864.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIHWPFFuzzer-5195207308541952.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIHWPFFuzzer-5418937293340672.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIHWPFFuzzer-5440721166139392.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIHWPFFuzzer-5832867957309440.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-POIHWPFFuzzer-5696094627495936.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/document/word2.doc"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "raw Word 2 document, not a CFB container"
+
+[[expectation]]
+file = "test-data/slideshow/cf5f6fde99a8b3ea5a4946c258b7abad6f30b0c5.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "truncated CFB directory"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIFuzzer-5429732352851968.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIHSLFFuzzer-4624961081573376.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIHSLFFuzzer-4983252485210112.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIHSLFFuzzer-5018229722382336.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIHSLFFuzzer-5306877435838464.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB stream length"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIHSLFFuzzer-5962760801091584.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed miniFAT chain"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIHSLFFuzzer-6028723156746240.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "truncated fuzzed CFB stream"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIHSLFFuzzer-6032591399288832.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed FAT chain"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIHSLFFuzzer-6192650357112832.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIHSLFFuzzer-6360479850954752.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIHSLFFuzzer-6416153805979648.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "invalid fuzzed directory entry"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIHSLFFuzzer-6614960949821440.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "invalid fuzzed CFB header"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIHSLFFuzzer-6710128412590080.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed directory tree"
+
+[[expectation]]
+file = "test-data/spreadsheet/61300.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt directory stream length rejected by POI integration tests"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIHSSFFuzzer-4651309315719168.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed FAT chain"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIHSSFFuzzer-4657005060816896.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "invalid fuzzed directory entry"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIHSSFFuzzer-4734163573080064.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed DIFAT"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIHSSFFuzzer-4819588401201152.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIHSSFFuzzer-5175219985448960.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIHSSFFuzzer-5786329142919168.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIHSSFFuzzer-5816431116615680.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIHSSFFuzzer-5889658057523200.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIHSSFFuzzer-6137883240824832.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "invalid fuzzed CFB header"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIHSSFFuzzer-6322470200934400.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIHSSFFuzzer-6483562584932352.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIHSSFFuzzer-6537773940867072.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/spreadsheet/rde.imf.ru_sites_default_files_rde_documents_vodootvedenie_2020.xlsb.xls"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "ZIP-based XLSB file with a misleading .xls suffix"
+
+[[expectation]]
+file = "test-data/spreadsheet/testEXCEL_3.xls"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "raw BIFF3 stream, not a CFB container"
+
+[[expectation]]
+file = "test-data/spreadsheet/testEXCEL_4.xls"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "raw BIFF4 stream, not a CFB container"

@@ -51,3 +51,27 @@ cargo test -p ooxmlsdk-roundtrip-tests --test apache_poi_roundtrip test_data_int
 
 The round-trip check uses the same high-standard comparison model as the
 Open-XML-SDK corpus lane.
+
+## CFB Round-Trip
+
+| Total files | Round-trip candidates | Unsupported | Invalid | Last run | Passed | Failed |
+| ---: | ---: | ---: | ---: | --- | ---: | ---: |
+| 743 | 704 | 4 | 35 | 2026-07-11 | 743 | 0 |
+
+```sh
+cargo test -p olecfsdk-roundtrip-tests --test apache_poi_cfb_roundtrip -- --ignored
+```
+
+```text
+test result: ok. 743 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.40s
+```
+
+Each valid CFB fixture is opened, rebuilt, reopened, compared by its logical
+storage/stream tree and stream bytes, then rebuilt and checked a second time.
+The four unsupported fixtures are legacy non-CFB or mislabeled files. The 35
+invalid fixtures are corrupt or fuzzed inputs and must be rejected.
+
+The build-time manifest audit rejects missing fixtures, duplicate
+`cfb_roundtrip` entries, unsupported extensions, escaping paths, and empty
+reasons. Files without an exception entry default to round-trip, so every
+scanned fixture generates exactly one test.

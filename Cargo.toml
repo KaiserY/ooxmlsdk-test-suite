@@ -2,6 +2,8 @@
 resolver = "3"
 members = [
   "crates/emfsdk-test",
+  "crates/olecfsdk-corpus-test-support",
+  "crates/olecfsdk-roundtrip-tests",
   "crates/ooxmlsdk-bench",
   "crates/ooxmlsdk-corpus-test-support",
   "crates/ooxmlsdk-fonts-test",
@@ -21,12 +23,14 @@ license = "MIT OR Apache-2.0"
 
 [workspace.dependencies]
 emfsdk = { path = "../emfsdk/crates/emfsdk" }
+olecfsdk = { path = "../olecfsdk/crates/olecfsdk" }
 ooxmlsdk = { path = "../ooxmlsdk/crates/ooxmlsdk", default-features = false }
 ooxmlsdk-fonts = { path = "../ooxmlsdk/crates/ooxmlsdk-fonts" }
 ooxmlsdk-formula = { path = "../ooxmlsdk/crates/ooxmlsdk-formula" }
 ooxmlsdk-layout = { path = "../ooxmlsdk/crates/ooxmlsdk-layout" }
 ooxmlsdk-pdf = { path = "../ooxmlsdk/crates/ooxmlsdk-pdf" }
 ooxmlsdk-corpus-test-support = { path = "crates/ooxmlsdk-corpus-test-support" }
+olecfsdk-corpus-test-support = { path = "crates/olecfsdk-corpus-test-support" }
 criterion = "0.7.0"
 crc32fast = "1.5.0"
 flate2 = "1.1.9"

@@ -48,3 +48,29 @@ Current failures: none.
 Invalid expectations currently cover empty/non-OOXML files, encrypted CDFV2
 packages, corrupt ZIP packages, and LibreOffice fixtures that require repair
 mode rather than normal OOXML package loading.
+
+## CFB Round-Trip
+
+| Total files | Round-trip candidates | Unsupported | Invalid | Last run | Passed | Failed |
+| ---: | ---: | ---: | ---: | --- | ---: | ---: |
+| 790 | 690 | 28 | 72 | 2026-07-11 | 790 | 0 |
+
+```sh
+cargo test -p olecfsdk-roundtrip-tests --test libreoffice_cfb_roundtrip -- --ignored
+```
+
+```text
+test result: ok. 790 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.30s
+```
+
+Each valid CFB fixture is opened, rebuilt, reopened, compared by its logical
+storage/stream tree and stream bytes, then rebuilt and checked a second time.
+LibreOffice's RC4-wrapped regression fixtures are unwrapped in memory with the
+upstream corpus key before applying the same checks. Unsupported entries cover
+raw pre-CFB Office formats and mislabeled non-CFB files; invalid entries cover
+empty, malformed, and deliberately corrupt fixtures.
+
+The build-time manifest audit rejects missing fixtures, duplicate
+`cfb_roundtrip` entries, unsupported extensions, escaping paths, and empty
+reasons. Files without an exception entry default to round-trip, so every
+scanned fixture generates exactly one test.

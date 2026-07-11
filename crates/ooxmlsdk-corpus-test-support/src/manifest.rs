@@ -58,6 +58,8 @@ pub enum ExpectationMode {
     RoundTrip,
     OpenOnly,
     Invalid,
+    Unsupported,
+    RequiresPassword,
     KnownFailure,
 }
 
