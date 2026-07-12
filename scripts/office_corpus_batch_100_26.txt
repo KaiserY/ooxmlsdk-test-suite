@@ -1,0 +1,102 @@
+# Checked Office PDF batch 26: Apache POI 40, LibreOffice 40, Open XML SDK 20.
+# Format mix: DOC 7, DOCX 51, XLS 30, XLSX 12 (PowerPoint recovery fallback).
+Apache-POI/test-data/hpsf/TestNon4ByteBoundary.doc
+Apache-POI/test-data/hpsf/TestChineseProperties.doc
+Apache-POI/test-data/integration/testPDFEmbeddingAndEmbedded.docx
+Apache-POI/test-data/integration/stress015.docx
+Apache-POI/test-data/integration/stress016.docx
+Apache-POI/test-data/integration/stress017.docx
+Apache-POI/test-data/integration/stress018.docx
+Apache-POI/test-data/spreadsheet/SingleLetterRanges.xls
+Apache-POI/test-data/spreadsheet/SquareMacro.xls
+Apache-POI/test-data/spreadsheet/StringContinueRecords.xls
+Apache-POI/test-data/spreadsheet/MatrixFormulaEvalTestData.xls
+Apache-POI/test-data/spreadsheet/MissingBits.xls
+Apache-POI/test-data/spreadsheet/NewStyleConditionalFormattings.xls
+Apache-POI/test-data/spreadsheet/QuotientFunctionTestCaseData.xls
+Apache-POI/test-data/spreadsheet/RangePtg.xls
+Apache-POI/test-data/spreadsheet/ReadOnlyRecommended.xls
+Apache-POI/test-data/spreadsheet/RepeatingRowsCols.xls
+Apache-POI/test-data/spreadsheet/ReptFunctionTestCaseData.xls
+Apache-POI/test-data/spreadsheet/RowFunctionTestCaseData.xls
+Apache-POI/test-data/spreadsheet/SUBSTITUTE.xls
+Apache-POI/test-data/spreadsheet/SampleSS.xls
+Apache-POI/test-data/spreadsheet/SharedFormulaTest.xls
+Apache-POI/test-data/spreadsheet/SheetWithDrawing.xls
+Apache-POI/test-data/spreadsheet/ShrinkToFit.xls
+Apache-POI/test-data/spreadsheet/Simple.xls
+Apache-POI/test-data/spreadsheet/SimpleChart.xls
+Apache-POI/test-data/spreadsheet/SimpleMacro.xls
+Apache-POI/test-data/spreadsheet/SimpleMultiCell.xls
+Apache-POI/test-data/spreadsheet/SimpleScatterChart.xls
+Apache-POI/test-data/spreadsheet/SimpleWithAutofilter.xls
+Apache-POI/test-data/spreadsheet/SimpleWithChoose.xls
+Apache-POI/test-data/spreadsheet/SimpleWithComments.xls
+Apache-POI/test-data/spreadsheet/SimpleWithDataFormat.xls
+Apache-POI/test-data/spreadsheet/SimpleWithFormula.xls
+Apache-POI/test-data/spreadsheet/testSharedFormulasSetBlank.xlsx
+Apache-POI/test-data/spreadsheet/unicodeSheetName.xlsx
+Apache-POI/test-data/spreadsheet/workbookProtection-sheet_password-2013.xlsx
+Apache-POI/test-data/spreadsheet/workbookProtection-workbook_password-2013.xlsx
+Apache-POI/test-data/spreadsheet/workbookProtection-workbook_password_user_range-2010.xlsx
+Apache-POI/test-data/spreadsheet/StringFormulas.xls
+LibreOffice/sc/qa/extras/testdocuments/tdf78897.xls
+LibreOffice/sc/qa/extras/testdocuments/pagesetup.xls
+LibreOffice/sc/qa/unit/data/xlsx/enhancedProtectionRangeShorthand.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/external-refs.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/invalid_ext_data_validation.xlsx
+LibreOffice/sw/qa/core/layout/data/floattable-then-table.docx
+LibreOffice/sw/qa/core/layout/data/floattable-vertoffset.docx
+LibreOffice/sw/qa/core/layout/data/floattable-widow.docx
+LibreOffice/sw/qa/core/layout/data/floattable-wrap-on-all-pages.docx
+LibreOffice/sw/qa/core/layout/data/floattable-wrapped-by-table-nested.docx
+LibreOffice/sw/qa/core/layout/data/floattable-wrapped-by-table.docx
+LibreOffice/sw/qa/core/layout/data/floattable.docx
+LibreOffice/sw/qa/core/layout/data/header-textbox.docx
+LibreOffice/sw/qa/core/layout/data/ignore-top-margin-page-style-change.docx
+LibreOffice/sw/qa/core/layout/data/ignore-top-margin-table.docx
+LibreOffice/sw/qa/extras/layout/data/tdf124601.doc
+LibreOffice/sw/qa/extras/layout/data/tdf124601b.doc
+LibreOffice/sw/qa/extras/odfexport/data/footnote_spacing_hanging_para.doc
+LibreOffice/sw/qa/core/data/ww8/pass/tdf117129_dxagoal0.doc
+LibreOffice/sw/qa/core/data/ww8/pass/tdf57532-1.doc
+LibreOffice/sw/qa/core/layout/data/floattable-anchor-keep-with-next.docx
+LibreOffice/sw/qa/core/layout/data/floattable-compat14-body.docx
+LibreOffice/sw/qa/core/layout/data/floattable-compat14-nosplit.docx
+LibreOffice/sw/qa/core/layout/data/floattable-compat14.docx
+LibreOffice/sw/qa/core/layout/data/floattable-del-empty.docx
+LibreOffice/sw/qa/core/layout/data/floattable-deleted-anchor.docx
+LibreOffice/sw/qa/core/layout/data/floattable-footer-2rows.docx
+LibreOffice/sw/qa/core/layout/data/floattable-footer.docx
+LibreOffice/sw/qa/core/layout/data/floattable-from-bottom.docx
+LibreOffice/sw/qa/core/layout/data/floattable-header.docx
+LibreOffice/sw/qa/core/layout/data/floattable-hori-pos.docx
+LibreOffice/sw/qa/core/layout/data/floattable-in-inlinetable.docx
+LibreOffice/sw/qa/core/layout/data/floattable-in-inltbl-in-sect.docx
+LibreOffice/sw/qa/core/layout/data/floattable-in-section.docx
+LibreOffice/sw/qa/core/layout/data/floattable-in-text-section.docx
+LibreOffice/sw/qa/core/layout/data/floattable-model-position-for-view-point-correction.docx
+LibreOffice/sw/qa/core/layout/data/floattable-move-master.docx
+LibreOffice/sw/qa/core/layout/data/floattable-multi-col.docx
+LibreOffice/sw/qa/core/layout/data/floattable-negative-height.docx
+LibreOffice/sw/qa/core/layout/data/floattable-nested-rowspan.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/table/1.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/NoExtDataA2.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/NoExtDataB1.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/NoExtDataE6.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/NoExtDataE7.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/runstyle/mixed-run.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/section break/paraWithSect.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/section break/sectionBreak.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/smart art/SmartArt.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/smart art/SmartArt1.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/smart tag for splitPara/smartTag 1run.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/smart tag for splitPara/smartTag 3run.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/smart tag for splitPara/smartTag Nesting 2 run.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/smart tag for splitPara/smartTag Nesting.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/smart tag/smartTag.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/style/1.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/style/2.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/style/style.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/style/style1.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/table/2003 Consumer Confidence Report.docx

@@ -1007,3 +1007,63 @@ file = "sw/qa/core/data/ww8/pass/hang-5.doc"
 test = "doc_fib_roundtrip"
 mode = "invalid"
 reason = "Header Plcfld contains fldch 0x0A instead of begin, separator, or end"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2008-4841-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PlfLst LVL data runs through random bytes and beyond the bounded Table stream"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2009-0259-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PlfLst LVL data runs through random bytes and beyond the bounded Table stream"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/EDB-14092-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PlfLst LVL data runs through random bytes and beyond the bounded Table stream"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/hang-4.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PlfLst LVL length fields misframe following levels as a truncated character grpprl"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2014-6356-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PlfLst LVL paragraph grpprl is truncated inside a declared SPRM operand"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2010-3453-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PlfLfo is truncated at the final LFOData CP"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2012-4886-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "SttbfFfn begins with an FFN whose declared Unicode font name contains shellcode bytes and no null terminator"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/hang-7.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "Tcg ends immediately after PlfAcd record id 0x02 without its count, payload, or 0x40 terminator"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2003-0820-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "TcgSttbf declares a 0x0300-character command string that exceeds the bounded Tcg payload"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/EDB-39396-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "Tcg MacroNames consumes the bounded payload without the required Tcg255 0x40 terminator"

@@ -1,0 +1,102 @@
+# Checked Office PDF batch 24: Apache POI 40, LibreOffice 40, Open XML SDK 20.
+# Format mix: DOC 7, DOCX 41, PPT 3, PPTX 11, XLS 26, XLSX 12 (PowerPoint recovery fallback).
+Apache-POI/test-data/hpsf/TestGermanWord90.doc
+Apache-POI/test-data/document/word_with_embeded.doc
+Apache-POI/test-data/integration/stress003.docx
+Apache-POI/test-data/integration/stress004.docx
+Apache-POI/test-data/integration/stress019.docx
+Apache-POI/test-data/integration/stress006.docx
+Apache-POI/test-data/integration/stress007.docx
+Apache-POI/test-data/slideshow/br.com.tvcamboriu.www_pps_Pensar_5b1_5d.ppt
+Apache-POI/test-data/slideshow/bug47261.ppt
+Apache-POI/test-data/slideshow/bug58733_671884.ppt
+Apache-POI/test-data/slideshow/ececapstonespring2012.pptx
+Apache-POI/test-data/spreadsheet/60460.xls
+Apache-POI/test-data/spreadsheet/61045_govdocs1_626534.xls
+Apache-POI/test-data/spreadsheet/61116.xls
+Apache-POI/test-data/spreadsheet/61287.xls
+Apache-POI/test-data/spreadsheet/63819.xls
+Apache-POI/test-data/spreadsheet/WeekNumFunctionTestCaseData2013.xls
+Apache-POI/test-data/spreadsheet/64261.xls
+Apache-POI/test-data/spreadsheet/AbnormalSharedFormulaFlag.xls
+Apache-POI/test-data/spreadsheet/WithCheckBoxes.xls
+Apache-POI/test-data/spreadsheet/AreaErrPtg.xls
+Apache-POI/test-data/spreadsheet/BOOK_in_capitals.xls
+Apache-POI/test-data/spreadsheet/Basic_Expense_Template_2011.xls
+Apache-POI/test-data/spreadsheet/BooleanFunctionsTestCaseData.xls
+Apache-POI/test-data/spreadsheet/CodeFunctionTestCaseData.xls
+Apache-POI/test-data/spreadsheet/ColumnStyle1dp.xls
+Apache-POI/test-data/spreadsheet/ColumnStyleNone.xls
+Apache-POI/test-data/spreadsheet/ComplexFunctionTestCaseData.xls
+Apache-POI/test-data/spreadsheet/ConditionalFormattingSamples.xls
+Apache-POI/test-data/spreadsheet/WithConditionalFormatting.xls
+Apache-POI/test-data/spreadsheet/WithEmbeddedObjects.xls
+Apache-POI/test-data/spreadsheet/DStar.xls
+Apache-POI/test-data/spreadsheet/DateFormats.xls
+Apache-POI/test-data/spreadsheet/DateTimeToNumberTestCases.xls
+Apache-POI/test-data/spreadsheet/DeltaFunctionTestCaseData.xls
+Apache-POI/test-data/spreadsheet/workbookProtection_workbook_structure_protected.xlsx
+Apache-POI/test-data/spreadsheet/right-to-left.xlsx
+Apache-POI/test-data/spreadsheet/sample.strict.xlsx
+Apache-POI/test-data/spreadsheet/shared_formulas.xlsx
+Apache-POI/test-data/spreadsheet/workbookProtection_workbook_windows_protected.xlsx
+LibreOffice/sc/qa/extras/testdocuments/TestIntersection.xls
+LibreOffice/sc/qa/extras/testdocuments/TestUnion.xls
+LibreOffice/sc/qa/unit/data/xlsx/PivotTable_CachedDefinitionAndDataInSync.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/PivotTable_CachedDefinitionAndDataNotInSync_SheetColumnsRemoved_WithCacheData.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/PivotTable_CachedDefinitionAndDataNotInSync_SheetColumnsRemoved_WithoutCacheData.xlsx
+LibreOffice/sw/qa/core/layout/data/table-fly-overlap.docx
+LibreOffice/sw/qa/core/layout/data/table-in-footnote.docx
+LibreOffice/sd/qa/unit/data/pptx/activex_scrollbar.pptx
+LibreOffice/sd/qa/unit/data/pptx/activex_spinbutton.pptx
+LibreOffice/sd/qa/unit/data/pptx/activex_textbox.pptx
+LibreOffice/sd/qa/unit/data/pptx/activex_togglebutton.pptx
+LibreOffice/sd/qa/unit/data/pptx/altdescription.pptx
+LibreOffice/sd/qa/unit/data/pptx/arc-validiert.pptx
+LibreOffice/sd/qa/unit/data/pptx/bnc480256-2.pptx
+LibreOffice/sd/qa/unit/data/pptx/bnc480256.pptx
+LibreOffice/sw/qa/core/data/ww8/pass/CVE-2014-6364.doc
+LibreOffice/sw/qa/core/data/ww8/pass/CVE-2015-0097-1.doc
+LibreOffice/sw/qa/core/data/ww8/pass/CVE-2015-2380-1.doc
+LibreOffice/sw/qa/core/data/ww8/pass/CVE-2016-3133-1.doc
+LibreOffice/sw/qa/core/data/ww8/pass/EDB-18952-1.doc
+LibreOffice/sw/qa/core/doc/data/header-footer-delete.docx
+LibreOffice/sw/qa/core/doc/data/ins-then-del.docx
+LibreOffice/sw/qa/core/doc/data/ins-then-format-self.docx
+LibreOffice/sw/qa/core/doc/data/ins-then-format.docx
+LibreOffice/sw/qa/core/doc/data/ins.docx
+LibreOffice/sw/qa/core/doc/data/num-down-indent.docx
+LibreOffice/sw/qa/core/doc/data/text-box-word-wrap.docx
+LibreOffice/sw/qa/core/doc/data/textbox-makeflyframe.docx
+LibreOffice/sw/qa/core/doc/data/textbox-zorder.docx
+LibreOffice/sw/qa/core/draw/data/as-char-textbox.docx
+LibreOffice/sw/qa/core/draw/data/sdt-textbox-header.docx
+LibreOffice/sw/qa/core/draw/data/textbox-undo-ordnum.docx
+LibreOffice/sw/qa/core/exportdata/ooxml/pass/sdt-around-float-table.docx
+LibreOffice/sw/qa/core/exportdata/ooxml/pass/sdt-before-table.docx
+LibreOffice/sw/qa/core/exportdata/ooxml/pass/sdt-in-shape-with-textbox.docx
+LibreOffice/sw/qa/core/exportdata/ooxml/pass/sdt-sectpr.docx
+LibreOffice/sw/qa/core/exportdata/ooxml/pass/textframe-in-shape.docx
+LibreOffice/sw/qa/core/header_footer/data/SimpleFirst.docx
+LibreOffice/sw/qa/core/header_footer/data/SimpleFirstLeftRight.docx
+LibreOffice/sw/qa/core/layout/data/table-missing-join.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/Robustness/OFCAT/00df219f-f99a-4e93-b049-a666df53894c.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/OlapPivotA3.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/bvt/PerformanceEng.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/LinkedToAPresentation.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/SoundTest.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/PerformanceArabic.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/pagelayout with break in the end/PageBorder-3D.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/pagelayout with break in the end/PageColor-lightgreen.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/pagelayout with break in the end/Size-Tabloid.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/pagelayout with break in the end/Themes-verve.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/pagelayout with break in the end/margin-narrow.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/text direction/text direction-2.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/text direction/textdirection-1.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/paragraph/AdjustRightInd.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/paragraph/AutoSpaceDE.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/paragraph/Para.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/paragraph/Paragraph.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/paragraph/empty.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/paragraph/paragraph-alignment.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/paragraph/paragraph-line space.docx

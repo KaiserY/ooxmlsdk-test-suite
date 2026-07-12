@@ -1,0 +1,102 @@
+# Checked Office PDF batch 22: Apache POI 40, LibreOffice 40, Open XML SDK 20.
+# Format mix: DOC 7, DOCX 41, PPTX 11, XLS 29, XLSX 12 (PowerPoint recovery fallback).
+Apache-POI/test-data/spreadsheet/SubtotalsNested.xls
+Apache-POI/test-data/document/51921-Word-Crash067.doc
+Apache-POI/test-data/document/51921-Word-Crash067.docx
+Apache-POI/test-data/hpsf/TestEditTime.doc
+Apache-POI/test-data/document/documentProtection_comments_no_password.docx
+Apache-POI/test-data/document/documentProtection_forms_no_password.docx
+Apache-POI/test-data/document/documentProtection_no_protection.docx
+Apache-POI/test-data/document/documentProtection_no_protection_tag_existing.docx
+Apache-POI/test-data/spreadsheet/TestRandBetween.xls
+Apache-POI/test-data/spreadsheet/TestValueAsArrayFunction.xls
+Apache-POI/test-data/slideshow/EmbeddedAudio.pptx
+Apache-POI/test-data/spreadsheet/42464-ExpPtg-bad.xls
+Apache-POI/test-data/spreadsheet/51143.xls
+Apache-POI/test-data/spreadsheet/51262.xls
+Apache-POI/test-data/spreadsheet/51461.xls
+Apache-POI/test-data/spreadsheet/51498.xls
+Apache-POI/test-data/spreadsheet/51535.xls
+Apache-POI/test-data/spreadsheet/Themes2.xls
+Apache-POI/test-data/spreadsheet/Trend.xls
+Apache-POI/test-data/spreadsheet/TwoOperandNumericFunctionTestCaseData.xls
+Apache-POI/test-data/spreadsheet/52447.xls
+Apache-POI/test-data/spreadsheet/52527.xls
+Apache-POI/test-data/spreadsheet/52575_source.xls
+Apache-POI/test-data/spreadsheet/53109.xls
+Apache-POI/test-data/spreadsheet/53404.xls
+Apache-POI/test-data/spreadsheet/53433.xls
+Apache-POI/test-data/spreadsheet/53446.xls
+Apache-POI/test-data/spreadsheet/53588.xls
+Apache-POI/test-data/spreadsheet/53691.xls
+Apache-POI/test-data/spreadsheet/53798_shiftNegative_TMPL.xls
+Apache-POI/test-data/spreadsheet/53972.xls
+Apache-POI/test-data/spreadsheet/53984.xls
+Apache-POI/test-data/spreadsheet/54016.xls
+Apache-POI/test-data/spreadsheet/54206.xls
+Apache-POI/test-data/spreadsheet/TwoSheetsNoneHidden.xls
+Apache-POI/test-data/spreadsheet/CVLKRA-KYC_Download_File_Structure_V3.1.xlsx
+Apache-POI/test-data/spreadsheet/link-external-workbook-a.xlsx
+Apache-POI/test-data/spreadsheet/link-external-workbook-b.xlsx
+Apache-POI/test-data/spreadsheet/no_drawing_patriarch.xlsx
+Apache-POI/test-data/spreadsheet/workbookProtection_not_protected.xlsx
+LibreOffice/chart2/qa/extras/data/pptx/testChartTitlePropertiesColorFill.pptx
+LibreOffice/chart2/qa/extras/xshape/data/pptx/tdf149204.pptx
+LibreOffice/chart2/qa/extras/xshape/data/pptx/tdf88154_LabelRotatedLayout.pptx
+LibreOffice/chart2/qa/extras/xshape/data/xlsx/tdf90839-1.xlsx
+LibreOffice/chart2/qa/extras/xshape/data/xlsx/tdf90839-2.xlsx
+LibreOffice/chart2/qa/extras/xshape/data/xlsx/tdf90839-3.xlsx
+LibreOffice/emfio/qa/cppunit/emf/data/pdf-in-emf.pptx
+LibreOffice/sw/qa/core/layout/data/ignore-top-margin.docx
+LibreOffice/package/qa/cppunit/data/dd-deflated.docx
+LibreOffice/sw/qa/core/layout/data/inline-endnote-position.docx
+LibreOffice/package/qa/cppunit/data/overlap.docx
+LibreOffice/sw/qa/core/layout/data/inline-endnote-section-delete.docx
+LibreOffice/sw/qa/core/layout/data/inner-border.docx
+LibreOffice/package/qa/cppunit/data/zip64-eocd.docx
+LibreOffice/sc/qa/extras/testdocuments/Shapes.xls
+LibreOffice/sc/qa/extras/testdocuments/TestAddress.xls
+LibreOffice/sd/qa/filter/eppt/data/video-loop.pptx
+LibreOffice/sd/qa/uitest/data/embedded.pptx
+LibreOffice/sw/qa/core/layout/data/para-border-in-cell-clip.docx
+LibreOffice/sw/qa/core/layout/data/redline-table.docx
+LibreOffice/sd/qa/unit/data/pptx/ShapeTextInflateTop.pptx
+LibreOffice/sd/qa/unit/data/pptx/accent-color.pptx
+LibreOffice/sw/qa/core/data/ooxml/pass/fdo64256.docx
+LibreOffice/sw/qa/core/data/ooxml/pass/fdo73608-1.docx
+LibreOffice/sw/qa/core/data/ooxml/pass/fdo73608-2.docx
+LibreOffice/sw/qa/core/data/ooxml/pass/fdo78885.docx
+LibreOffice/sw/qa/core/data/ooxml/pass/fdo78904_fileHang.docx
+LibreOffice/sw/qa/core/data/ooxml/pass/fdo78906.docx
+LibreOffice/sw/qa/core/layout/data/rtl-table.docx
+LibreOffice/sw/qa/core/data/ooxml/pass/fdo79131.docx
+LibreOffice/sw/qa/core/data/ooxml/pass/fdo79838.docx
+LibreOffice/sw/qa/core/data/ooxml/pass/fdo79940.docx
+LibreOffice/sw/qa/core/data/ooxml/pass/fdo79973.docx
+LibreOffice/sw/qa/core/data/ooxml/pass/fdo80514.docx
+LibreOffice/sw/qa/core/data/ooxml/pass/fdo80580.docx
+LibreOffice/sw/qa/core/exportdata/rtf/pass/fdo67386.doc
+LibreOffice/sw/qa/extras/cjk/data/tdf77964.doc
+LibreOffice/sw/qa/core/data/ww8/pass/CVE-2006-3493-1.doc
+LibreOffice/sw/qa/core/data/ww8/pass/CVE-2008-2752-1.doc
+LibreOffice/sw/qa/core/data/ww8/pass/CVE-2008-2752-2.doc
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/[HC]sndtgt-SoundTarget-builtIn.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/presentation-Zoom of the embedded OLE Object-Server Zoom.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/Robustness/OFCAT/00D4EE78301DA16F3BF92631CA9B68E6.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/Robustness/OFCAT/00a5835d-d770-438a-aa36-c7cdcd4e61d1.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/Robustness/OFCAT/00a5888d-6d63-4643-acbb-35c6f317cd75.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/Robustness/OFCAT/00bd6e64-896c-4ad0-980c-e7abdd4b0a52.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/asSources/wordprocessing/complex1_NOR.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/bvt/complex2005_12rtm.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/mixed features/MSDN - EULA.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/mixed features/webappdis.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/mixed languages/Unit1Translation.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/numbering/numbering-list.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/numbering/numbering-startValue.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/object/object-chart.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/ole/ole.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/page layout(big file)/A4.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/page layout(big file)/A5.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/page layout(big file)/Indent_Spacing.Template.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/page layout(big file)/Indent_Spacing.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/page layout(big file)/column2.docx

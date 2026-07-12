@@ -1,0 +1,102 @@
+# Checked Office PDF batch 23: Apache POI 40, LibreOffice 40, Open XML SDK 20.
+# Format mix: DOC 7, DOCX 41, PPT 1, PPTX 11, XLS 28, XLSX 12 (PowerPoint recovery fallback).
+Apache-POI/test-data/document/documentProtection_readonly_no_password.docx
+Apache-POI/test-data/document/documentProtection_trackedChanges_no_password.docx
+Apache-POI/test-data/document/protected_sample.docx
+Apache-POI/test-data/document/testRangeReplacement.doc
+Apache-POI/test-data/document/two_images.doc
+Apache-POI/test-data/document/zero-length.docx
+Apache-POI/test-data/integration/stress001.docx
+Apache-POI/test-data/spreadsheet/UncalcedRecord.xls
+Apache-POI/test-data/spreadsheet/UnionPtg.xls
+Apache-POI/test-data/slideshow/EmbeddedVideo.pptx
+Apache-POI/test-data/slideshow/badzip.ppt
+Apache-POI/test-data/spreadsheet/54686_fraction_formats.xls
+Apache-POI/test-data/spreadsheet/55341_CellStyleBorder.xls
+Apache-POI/test-data/spreadsheet/55668.xls
+Apache-POI/test-data/spreadsheet/55906-MultiSheetRefs.xls
+Apache-POI/test-data/spreadsheet/55982.xls
+Apache-POI/test-data/spreadsheet/56325a.xls
+Apache-POI/test-data/spreadsheet/56450.xls
+Apache-POI/test-data/spreadsheet/WORKBOOK_in_capitals.xls
+Apache-POI/test-data/spreadsheet/56563a.xls
+Apache-POI/test-data/spreadsheet/56563b.xls
+Apache-POI/test-data/spreadsheet/56737.xls
+Apache-POI/test-data/spreadsheet/57074.xls
+Apache-POI/test-data/spreadsheet/57163.xls
+Apache-POI/test-data/spreadsheet/57231_MixedGasReport.xls
+Apache-POI/test-data/spreadsheet/WeekNumFunctionTestCaseData.xls
+Apache-POI/test-data/spreadsheet/57798.xls
+Apache-POI/test-data/spreadsheet/57925.xls
+Apache-POI/test-data/spreadsheet/59074.xls
+Apache-POI/test-data/spreadsheet/59264.xls
+Apache-POI/test-data/spreadsheet/59830.xls
+Apache-POI/test-data/spreadsheet/59858.xls
+Apache-POI/test-data/spreadsheet/60273.xls
+Apache-POI/test-data/spreadsheet/60284.xls
+Apache-POI/test-data/spreadsheet/60405.xls
+Apache-POI/test-data/spreadsheet/picture.xlsx
+Apache-POI/test-data/spreadsheet/workbookProtection_worksheet_protected.xlsx
+Apache-POI/test-data/spreadsheet/ref-56737.xlsx
+Apache-POI/test-data/spreadsheet/ref2-56737.xlsx
+Apache-POI/test-data/spreadsheet/reordered_sheets.xlsx
+LibreOffice/package/qa/cppunit/data/pass/no_usb_2024-11-06.xlsx
+LibreOffice/sc/qa/extras/testdocuments/TestCalc_Rangetest.xls
+LibreOffice/sc/qa/extras/testdocuments/TestCalc_Rangetest2.xls
+LibreOffice/sc/qa/extras/testdocuments/forcepoint97.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/MissingPathExternal.xlsx
+LibreOffice/sw/qa/core/layout/data/shape-left-padding-off-page.docx
+LibreOffice/sw/qa/core/layout/data/shape-left-padding-wrap-through-off-page.docx
+LibreOffice/sd/qa/unit/data/pptx/activex_checkbox.pptx
+LibreOffice/sd/qa/unit/data/pptx/activex_combobox.pptx
+LibreOffice/sd/qa/unit/data/pptx/activex_commandbutton.pptx
+LibreOffice/sd/qa/unit/data/pptx/activex_fontproperties.pptx
+LibreOffice/sd/qa/unit/data/pptx/activex_label.pptx
+LibreOffice/sd/qa/unit/data/pptx/activex_listbox.pptx
+LibreOffice/sd/qa/unit/data/pptx/activex_optionbutton.pptx
+LibreOffice/sd/qa/unit/data/pptx/activex_picture.pptx
+LibreOffice/sw/qa/core/data/ooxml/pass/fdo81380.docx
+LibreOffice/sw/qa/core/data/ooxml/pass/fdo81491.docx
+LibreOffice/sw/qa/core/data/ooxml/pass/liststyle-gridbefore.docx
+LibreOffice/sw/qa/core/data/ooxml/pass/ofz20801-1.docx
+LibreOffice/sw/qa/core/data/ooxml/pass/tdf108272.docx
+LibreOffice/sw/qa/core/data/ooxml/pass/tdf119136.docx
+LibreOffice/sw/qa/core/data/ooxml/pass/tdf123001.docx
+LibreOffice/sw/qa/core/data/ooxml/pass/tdf161139_orrick-org-min3.docx
+LibreOffice/sw/qa/core/data/ooxml/pass/tdf89088.docx
+LibreOffice/sw/qa/core/layout/data/sorted-objs-insert.docx
+LibreOffice/sw/qa/core/layout/data/table-fly-overlap-spacing.docx
+LibreOffice/sw/qa/core/data/ooxml/pass/tdf96749.docx
+LibreOffice/sw/qa/core/data/ooxml/pass/vml-path.docx
+LibreOffice/sw/qa/core/data/ww8/pass/CVE-2008-2752-3.doc
+LibreOffice/sw/qa/core/data/ww8/pass/CVE-2008-2752-4.doc
+LibreOffice/sw/qa/core/data/ww8/pass/CVE-2009-0200-1.doc
+LibreOffice/sw/qa/core/data/ww8/pass/CVE-2010-3200-1.doc
+LibreOffice/sw/qa/core/data/ww8/pass/CVE-2012-4886-1.doc
+LibreOffice/sw/qa/core/doc/data/bad-heading-indent.docx
+LibreOffice/sw/qa/core/doc/data/copy-bookmarks.docx
+LibreOffice/sw/qa/core/doc/data/del-then-format-own.docx
+LibreOffice/sw/qa/core/doc/data/del-then-format.docx
+LibreOffice/sw/qa/core/doc/data/edit-list-autofmt.docx
+LibreOffice/sw/qa/core/doc/data/floating-table-dummy-text.docx
+LibreOffice/sw/qa/core/doc/data/fmt.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/Robustness/OFCAT/00c6a24e-a99f-42c1-a26b-a086b273f3f4.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/Robustness/OFCAT/00cb49ed-f996-4a3b-9bad-8676e765c4b2.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/Robustness/OFCAT/00d43c8b-890a-4b6c-a101-0fe55f2dd917.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/Robustness/OFCAT/00d63cdd-ee44-4e6a-99af-a7966ffbdda0.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/HasLinkedPresentation.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Image_AnimatedGIF.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/page layout(big file)/landScape.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/page layout(big file)/margin.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/page layout(big file)/pageBorders.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/pagelayout simple/Columns-Right.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/pagelayout simple/Line numbers-Continuous.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/pagelayout simple/Orientation-landscape.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/pagelayout simple/PageBorder-3D.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/pagelayout simple/PageColor-lightgreen.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/pagelayout simple/Size-Tabloid.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/pagelayout simple/Themes-verve.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/pagelayout simple/margin-narrow.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/pagelayout with break in the end/Columns-Right.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/pagelayout with break in the end/Line numbers-Continuous.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/pagelayout with break in the end/Orientation-landscape.docx

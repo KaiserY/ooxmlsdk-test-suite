@@ -1,0 +1,105 @@
+# Apache POI: 40 new spreadsheet and presentation files.
+Apache-POI/test-data/spreadsheet/49761.xls
+Apache-POI/test-data/spreadsheet/49896.xls
+Apache-POI/test-data/spreadsheet/49928.xls
+Apache-POI/test-data/spreadsheet/49931.xls
+Apache-POI/test-data/spreadsheet/50939.xls
+Apache-POI/test-data/spreadsheet/50298.xls
+Apache-POI/test-data/spreadsheet/50426.xls
+Apache-POI/test-data/spreadsheet/50756.xls
+Apache-POI/test-data/spreadsheet/50779_1.xls
+Apache-POI/test-data/spreadsheet/50779_2.xls
+Apache-POI/test-data/spreadsheet/bug65464.xlsx
+Apache-POI/test-data/spreadsheet/bug66215.xlsx
+Apache-POI/test-data/spreadsheet/bug66675.xlsx
+Apache-POI/test-data/spreadsheet/bug66827.xlsx
+Apache-POI/test-data/spreadsheet/bug69769.xlsx
+Apache-POI/test-data/spreadsheet/bug69812.xlsx
+Apache-POI/test-data/spreadsheet/chartTitle_noTitle.xlsx
+Apache-POI/test-data/spreadsheet/chartTitle_withTitle.xlsx
+Apache-POI/test-data/spreadsheet/chartTitle_withTitleFormula.xlsx
+Apache-POI/test-data/spreadsheet/chart_sheet.xlsx
+Apache-POI/test-data/spreadsheet/commentTest.xlsx
+Apache-POI/test-data/spreadsheet/conditional_formatting_cell_is.xlsx
+Apache-POI/test-data/spreadsheet/conditional_formatting_multiple_ranges.xlsx
+Apache-POI/test-data/spreadsheet/conditional_formatting_with_formula_on_second_sheet.xlsx
+Apache-POI/test-data/spreadsheet/craftonhills.edu_programreview_report.aspx_goalpriorityreport_0011d159-1eeb-4b63-8833-867b0926e5f3.xlsx
+Apache-POI/test-data/spreadsheet/noSharedStringTable.xlsx
+Apache-POI/test-data/spreadsheet/evaluate_formula_with_structured_table_references.xlsx
+Apache-POI/test-data/spreadsheet/formula-eval.xlsx
+Apache-POI/test-data/spreadsheet/github-321.xlsx
+Apache-POI/test-data/spreadsheet/headerFooterTest.xlsx
+Apache-POI/test-data/slideshow/br.com.diversas.palestras_Nelson_20-_20Temas_20Diversos_20XXXVI_pmrg_462538ba7a204-programa_alianca_12-04-2007.ppt
+Apache-POI/test-data/slideshow/bug60345_Jankovic_final_Retreat_2002.ppt
+Apache-POI/test-data/slideshow/bug60345_paperfigures.ppt
+Apache-POI/test-data/slideshow/bug62591.ppt
+Apache-POI/test-data/slideshow/bug69697.ppt
+Apache-POI/test-data/slideshow/sample_pptx_grouping_issues.pptx
+Apache-POI/test-data/slideshow/smartart-rotated-text.pptx
+Apache-POI/test-data/slideshow/table-with-no-theme.pptx
+Apache-POI/test-data/slideshow/testPPT.pptx
+Apache-POI/test-data/slideshow/tika-2605.pptx
+
+# LibreOffice: 40 new Writer, Calc, and Impress files.
+LibreOffice/sw/qa/extras/ooxmlexport/data/TCTagMisMatch.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/TOC_field_b.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/TOC_field_f.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/TableWithAboveCaptions.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/Table_cell_auto_width_fdo69656.docx
+LibreOffice/sw/qa/core/data/ooxml/pass/fdo63164-1.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/TestVMLData.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/Test_CharUnderlineThemeColor.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/Test_ThemeBorderColor.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/Test_ThemePortionLevel_CharColor.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/Test_ThemeTextParaBackgroundColor.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/TextEffects_Glow_Shadow_Reflection.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/TextEffects_Groupshapes.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/TextEffects_InStyle.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/TextEffects_Props3d_Ligatures_NumForm_NumSpacing.docx
+LibreOffice/sc/qa/unit/data/xlsx/pivot-table/PivotTableCellFormatsTest_10_FormatDefinitionNotMatchingPivotTable.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot-table/PivotTableCellFormatsTest_11_WholeDataColumnSelected.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot-table/PivotTableCellFormatsTest_12_WholeLabelColumnSelected.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot-table/PivotTableCellFormatsTest_13_SelectionInLabelAndData.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot-table/PivotTableCellFormatsTest_14_TwoRowsDataFieldInColumn_LabelColor.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot-table/PivotTableCellFormatsTest_15_TwoDataFieldColumns_WholeDataColumnSelected.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot-table/PivotTableCellFormatsTest_1_DataFieldInRow_RowLabelColor.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot-table/PivotTableCellFormatsTest_2_DataFieldInRow_ColumnLabelColor.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot-table/PivotTableCellFormatsTest_3_DataFieldInColumn_ColumnLabelColor.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot-table/PivotTableCellFormatsTest_4_DataFieldInColumn_DataColor.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot-table/PivotTableCellFormatsTest_5_DataFieldInColumnAndTwoRowFields_DataColor.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot-table/PivotTableCellFormatsTest_6_SingleDataFieldInColumn_DataColor.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot-table/PivotTableCellFormatsTest_7_TwoRowTwoColumnFields_DataColor.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot-table/PivotTableCellFormatsTest_8_DataFieldInRow_DataColor.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot-table/PivotTableCellFormatsTest_9_MultipleSelections.xlsx
+LibreOffice/sd/qa/unit/data/n759180.pptx
+LibreOffice/sd/qa/unit/data/n762695.pptx
+LibreOffice/sd/qa/unit/data/n819614.pptx
+LibreOffice/sd/qa/unit/data/n820786.pptx
+LibreOffice/sd/qa/unit/data/n902652.pptx
+LibreOffice/sd/qa/unit/data/ppt/placeholder-priority.pptx
+LibreOffice/sd/qa/unit/data/pptx/3columns.pptx
+LibreOffice/sd/qa/unit/data/pptx/NumberedList-12ab-ab-34.pptx
+LibreOffice/sd/qa/unit/data/pptx/ShapeLineProperties.pptx
+LibreOffice/sd/qa/unit/data/pptx/ShapePlusImage.pptx
+
+# Open XML SDK: 20 new DOCX files; XLSX remains excluded.
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/format/format-paragrapsimple.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/hyperlink for splitPara/632404333468899776 PFVI_Nutrition.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/hyperlink for splitPara/Hyperlink - internal.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/hyperlink for splitPara/doclocation.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/hyperlink for splitPara/hyperlink.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/hyperlink for splitPara/test10.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/numbering/numbering-simple.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/hyperlink/632399964516872542 1.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/hyperlink/632404333468899776 PFVI_Nutrition.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/hyperlink/Hyperlink - external.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/hyperlink/Hyperlink - internal.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/numbering/numbering-newformat.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/hyperlink/doclocation.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/hyperlink/hyperlink-complex.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/hyperlink/hyperlink-in shapes.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/hyperlink/hyperlink-in table.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/hyperlink/hyperlink.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/hyperlink/simple-hyper.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/hyperlink/test10.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/mixed features/BackgroundReport - THE WORKING GROUP ON INTERNET GOVERNANCE.docx

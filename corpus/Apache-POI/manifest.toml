@@ -887,3 +887,21 @@ file = "test-data/document/testCroppedPictures.doc"
 test = "doc_fib_roundtrip"
 mode = "invalid"
 reason = "The final LPStd declares a 90-byte STD with only 68 bytes remaining in STSH"
+
+[[expectation]]
+file = "test-data/document/Fuzzed.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "An LVL paragraph grpprl contains random non-SPRM data followed by a truncated operand"
+
+[[expectation]]
+file = "test-data/document/Bug48075.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PlfLfo ends after 44 bytes but its FIB lcb overreports 687 bytes across unrelated Table Stream data"
+
+[[expectation]]
+file = "test-data/document/test.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "Tcg contains version 0 instead of the required nTcgVer 255"
