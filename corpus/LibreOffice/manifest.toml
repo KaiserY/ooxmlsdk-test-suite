@@ -995,3 +995,15 @@ file = "sw/qa/core/data/ww8/pass/crash-3.doc"
 test = "doc_fib_roundtrip"
 mode = "invalid"
 reason = "STSH contains a zero-length STSHI instead of the required Stshif"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/EDB-37909-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "Main Plcfld contains fldch 0x01 instead of begin, separator, or end"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/hang-5.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "Header Plcfld contains fldch 0x0A instead of begin, separator, or end"

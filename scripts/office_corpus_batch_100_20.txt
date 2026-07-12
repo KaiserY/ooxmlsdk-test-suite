@@ -1,0 +1,105 @@
+# Apache POI: 40 new spreadsheet and presentation files.
+Apache-POI/test-data/spreadsheet/49751.xls
+Apache-POI/test-data/spreadsheet/48968.xls
+Apache-POI/test-data/spreadsheet/49096.xls
+Apache-POI/test-data/spreadsheet/49219.xls
+Apache-POI/test-data/spreadsheet/49237.xls
+Apache-POI/test-data/spreadsheet/49423.xls
+Apache-POI/test-data/spreadsheet/49524.xls
+Apache-POI/test-data/spreadsheet/49529.xls
+Apache-POI/test-data/spreadsheet/49581.xls
+Apache-POI/test-data/spreadsheet/49612.xls
+Apache-POI/test-data/spreadsheet/StructuredRefs-lots-with-lookups.xlsx
+Apache-POI/test-data/spreadsheet/TablesWithDifferentHeaders.xlsx
+Apache-POI/test-data/spreadsheet/TextFormatTests.xlsx
+Apache-POI/test-data/spreadsheet/Themes2.xlsx
+Apache-POI/test-data/spreadsheet/TwoSheetsNoneHidden.xlsx
+Apache-POI/test-data/spreadsheet/ValueFunctionOfBlank.xlsx
+Apache-POI/test-data/spreadsheet/WithChartSheet.xlsx
+Apache-POI/test-data/spreadsheet/WithDrawing.xlsx
+Apache-POI/test-data/spreadsheet/WithEmbeded.xlsx
+Apache-POI/test-data/spreadsheet/WithMoreVariousData.xlsx
+Apache-POI/test-data/spreadsheet/WithTable.xlsx
+Apache-POI/test-data/spreadsheet/WithTextBox2.xlsx
+Apache-POI/test-data/spreadsheet/WithThreeCharts.xlsx
+Apache-POI/test-data/spreadsheet/WithTwoCharts.xlsx
+Apache-POI/test-data/spreadsheet/WithVariousData.xlsx
+Apache-POI/test-data/spreadsheet/absolute-anchor-over-empty-sheet.xlsx
+Apache-POI/test-data/spreadsheet/atp.xlsx
+Apache-POI/test-data/spreadsheet/bug54803.xlsx
+Apache-POI/test-data/spreadsheet/bug62181.xlsx
+Apache-POI/test-data/spreadsheet/bug64512_embed.xlsx
+Apache-POI/test-data/slideshow/alterman_security.ppt
+Apache-POI/test-data/slideshow/bug55902-mixedFontChineseCharacters.ppt
+Apache-POI/test-data/slideshow/bug58718_008495.ppt
+Apache-POI/test-data/slideshow/bug58718_008524.ppt
+Apache-POI/test-data/slideshow/bug58718_008558.ppt
+Apache-POI/test-data/slideshow/radar-chart.pptx
+Apache-POI/test-data/slideshow/highlight-test-case.pptx
+Apache-POI/test-data/slideshow/scatter-chart.pptx
+Apache-POI/test-data/slideshow/pptx2svg.pptx
+Apache-POI/test-data/slideshow/present1.pptx
+
+# LibreOffice: 40 new Writer, Calc, and Impress files.
+LibreOffice/sw/qa/extras/ooxmlexport/data/LineStyle_DashType.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/LineStyle_DashType_VML.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/LinkedTextBoxes.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/NoFillAttrInImagedata.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/NumberedList.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/PreserveWfieldTOC.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/PreserveXfieldTOC.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/SdtContent.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/Shape.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/ShapeOverlappingWithSdt.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/StyleRef-DE.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/TC-table-DnD-move.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/TC-table-Separate-Move.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/TC-table-rowDND-front.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/TC-table-rowDND.docx
+LibreOffice/sc/qa/unit/data/xlsx/miscrowheights.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/named-ranges-global.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/named-ranges-hidden.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/new_cond_format_test.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/new_cond_format_test_export.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/open-as-read-only.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/orderOfCNumFmtElements.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot-table/shared-dategroup.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot-table/calcfields.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot-table/first_header_row_zero.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot-table/groupwithcalcfields.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot-table/many-fields-in-cache.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot-table/onlycalcfields.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot-table/pivot_calcfield_nameerror.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot-table/pivotcompact.xlsx
+LibreOffice/sd/qa/unit/data/TextDistancesInsets2.pptx
+LibreOffice/sd/qa/unit/data/TextDistancesInsets3.pptx
+LibreOffice/sd/qa/unit/data/TextFittingComparisonWithMSO_1.pptx
+LibreOffice/sd/qa/unit/data/TextFittingComparisonWithMSO_2.pptx
+LibreOffice/sd/qa/unit/data/TextFittingComparisonWithMSO_3.pptx
+LibreOffice/sd/qa/unit/data/TextFittingComparisonWithMSO_TopBottomMiddleAlignment.pptx
+LibreOffice/sd/qa/unit/data/fdo47434.pptx
+LibreOffice/sd/qa/unit/data/fdo71434.pptx
+LibreOffice/sd/qa/unit/data/fdo90607.pptx
+LibreOffice/sd/qa/unit/data/n593612.pptx
+
+# Open XML SDK: 20 new DOCX files; XLSX remains excluded.
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/field/simple-field.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/footer & header/40101 2004.Rules and Regulations of the Board of Regents.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/footer & header/BackgroundReport - THE WORKING GROUP ON INTERNET GOVERNANCE.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/footer & header/Business Plan for a Startup Business_July.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/footer & header/Outreach_Toolkit_2007_After_the_Flood_Fact_Sheet[1].docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/footer & header/footer header - plaintext.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/footer & header/footer header empty.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/footer & header/footer header even.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/footer & header/footer header-fisrt.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/footer & header/footer header-odd.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/footer & header/footer header.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/footer & header/no footer header.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/footnote & endnote/endnote at end of section and restart for each section.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/footnote & endnote/endnote.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/footnote & endnote/footnote at bottom of paget and resart for each page.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/footnote & endnote/footnote below text and resart for each section.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/footnote & endnote/footnote.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/footnote & endnote/ftEdNote.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/format/format-font1.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/format/format-font2.docx

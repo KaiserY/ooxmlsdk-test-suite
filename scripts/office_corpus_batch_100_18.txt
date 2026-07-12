@@ -1,0 +1,105 @@
+# Apache POI: 40 new spreadsheet and presentation files.
+Apache-POI/test-data/spreadsheet/45761.xls
+Apache-POI/test-data/spreadsheet/45784.xls
+Apache-POI/test-data/spreadsheet/46136-NoWarnings.xls
+Apache-POI/test-data/spreadsheet/46136-WithWarnings.xls
+Apache-POI/test-data/spreadsheet/46137.xls
+Apache-POI/test-data/spreadsheet/46250.xls
+Apache-POI/test-data/spreadsheet/46670_ref_airline.xls
+Apache-POI/test-data/spreadsheet/46515.xls
+Apache-POI/test-data/spreadsheet/46670_http.xls
+Apache-POI/test-data/spreadsheet/46670_local.xls
+Apache-POI/test-data/spreadsheet/51585.xlsx
+Apache-POI/test-data/spreadsheet/64508.xlsx
+Apache-POI/test-data/spreadsheet/64667.xlsx
+Apache-POI/test-data/spreadsheet/64759.xlsx
+Apache-POI/test-data/spreadsheet/FormatChoiceTests.xlsx
+Apache-POI/test-data/spreadsheet/70005-countifs.xlsx
+Apache-POI/test-data/spreadsheet/FormatConditionTests.xlsx
+Apache-POI/test-data/spreadsheet/Booleans.xlsx
+Apache-POI/test-data/spreadsheet/FormatKM.xlsx
+Apache-POI/test-data/spreadsheet/ConditionalFormattingSamples.xlsx
+Apache-POI/test-data/spreadsheet/CustomXMLMapping-singleattributenamespace.xlsx
+Apache-POI/test-data/spreadsheet/CustomXMLMappings.xlsx
+Apache-POI/test-data/spreadsheet/CustomXmlMappings-inverse-order.xlsx
+Apache-POI/test-data/spreadsheet/DataValidationEvaluations.xlsx
+Apache-POI/test-data/spreadsheet/DateFormatNumberTests.xlsx
+Apache-POI/test-data/spreadsheet/DateFormatTests.xlsx
+Apache-POI/test-data/spreadsheet/ExcelTables.xlsx
+Apache-POI/test-data/spreadsheet/Excel_file_with_trash_item.xlsx
+Apache-POI/test-data/spreadsheet/FillWithoutColor.xlsx
+Apache-POI/test-data/spreadsheet/ForShifting.xlsx
+Apache-POI/test-data/slideshow/45543.ppt
+Apache-POI/test-data/slideshow/ParagraphStylesShorterThanCharStyles.ppt
+Apache-POI/test-data/slideshow/PictureTypeZero.ppt
+Apache-POI/test-data/slideshow/SimpleMacro.ppt
+Apache-POI/test-data/slideshow/WithComments.ppt
+Apache-POI/test-data/slideshow/LIBRE_OFFICE-100610-0.pptx
+Apache-POI/test-data/slideshow/OverlappingRelations.pptx
+Apache-POI/test-data/slideshow/aascu.org_hbcu_leadershipsummit_cooper_.pptx
+Apache-POI/test-data/slideshow/alterman_security.pptx
+Apache-POI/test-data/slideshow/aptia.pptx
+
+# LibreOffice: 40 new Writer, Calc, and Impress files.
+LibreOffice/sw/qa/extras/ooxmlexport/data/2col-header.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/99_Fields.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/A019_min.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/AnchorId.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/CT-with-frame.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/Chart_BorderLine_Style.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/Chart_Plot_BorderLine_Style.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/ColorOverwritten.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/CommentDone.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/CommentReply.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/Cool15788_symbolContentControl.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/EmbeddedExcelChart.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/EquationAsScientificNumbering.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/EquationWithAboveAndBelowCaption.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/FDO73034.docx
+LibreOffice/sc/qa/unit/data/xlsx/chart_hyperlink.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/check-boolean.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/checkbox-form-control.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/colorscale.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/colorscale_num_with_ref.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/column-style-autofilter.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/conditional_fmt_origin.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/customxml.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/complex_icon_set.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/cond_format_theme_color2.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/cond_format_theme_color3.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/cond_parent.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/database.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/condformat_theme_color.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/conditional_fmt_checkpriority.xlsx
+LibreOffice/oox/qa/unit/data/tdf144742_mathEqual_mathNotEqual.pptx
+LibreOffice/oox/qa/unit/data/tdf147978_enhancedPath_subpath.pptx
+LibreOffice/oox/qa/unit/data/tdf149538_upright.pptx
+LibreOffice/oox/qa/unit/data/tdf149551_TextRot.pptx
+LibreOffice/oox/qa/unit/data/tdf149551_vert270AndTextRot.pptx
+LibreOffice/oox/qa/unit/data/tdf149551_vert_and_padding.pptx
+LibreOffice/oox/qa/unit/data/tdf151008_eaVertAnchor.pptx
+LibreOffice/oox/qa/unit/data/tdf155327_WordArtDefaultColor.pptx
+LibreOffice/oox/qa/unit/data/tdf155412_typeface.pptx
+LibreOffice/oox/qa/unit/data/tdf163803_image_with_fill.pptx
+
+# Open XML SDK: 20 new DOCX files; XLSX remains excluded.
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/chart/chart-Area.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/chart/chart-Bubble.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/chart/chart-Column.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/chart/chart-Line.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/chart/chart-Pie.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/chart/chart-Radar.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/chart/chart-X-y.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/chart/chart.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/chart/chart1.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/chart/chart2.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/chart/chart3.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/chart/chart4.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/columns/columns1.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/columns/columns2.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/comment/1 Comment.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/comment/2 Comments.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/comment/Comment for comment.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/comment/Comments with paragraph.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/comment/Comments with table.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/comment/comments by another person.docx

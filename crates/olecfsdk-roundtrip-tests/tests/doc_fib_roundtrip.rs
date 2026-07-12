@@ -7,11 +7,15 @@ use std::{
 use olecfsdk::{
     cfb::CompoundFile,
     doc::{
-        Bookmarks, ChpxFkp, Clx, Fib, FibBase, FibBaseFlags, FieldCharacter, FieldDocumentPart,
-        FieldTable, PapxFkp, PapxLengthEncoding, PlcBte, PlcfSed, Prm, Sepx, SprmGroup, SprmKind,
-        SprmOperand, StyleFormatting, StyleKind, StyleSheet, TextPieceCharacters,
-        WORD97_FILE_IDENTIFIER,
+        AnnotationBookmarks, AnnotationOwners, AnnotationReferenceTable, Bookmarks, ChpxFkp, Clx,
+        CpOnlyTable, DocOfficeArtContent, Fib, FibBase, FibBaseFlags, FieldCharacter,
+        FieldDocumentPart, FieldTable, HeaderStoryBoundary, HeaderTextTable, ListDefinitions,
+        NoteReferenceTable, PapxFkp, PapxLengthEncoding, PlcBte, PlcfSed, Prm, Sepx,
+        ShapeAnchorTable, SprmGroup, SprmKind, SprmOperand, StyleFormatting, StyleKind, StyleSheet,
+        TextPieceCharacters, TextboxBreakTable, TextboxDocumentPart, TextboxStoryChain,
+        TextboxStoryTable, WORD97_FILE_IDENTIFIER,
     },
+    office_art::OfficeArtRecordData,
 };
 use olecfsdk_corpus_test_support::{
     corpus_bytes,
@@ -115,6 +119,58 @@ fn legacy_word_fibs_round_trip() {
     let mut bookmark_name_units = 0usize;
     let mut hidden_bookmarks = 0usize;
     let mut column_bookmarks = 0usize;
+    let mut header_tables = 0usize;
+    let mut header_boundaries = 0usize;
+    let mut missing_header_boundaries = 0usize;
+    let mut footnote_sets = 0usize;
+    let mut footnote_references = 0usize;
+    let mut footnote_custom_references = 0usize;
+    let mut endnote_sets = 0usize;
+    let mut endnote_references = 0usize;
+    let mut endnote_custom_references = 0usize;
+    let mut annotation_sets = 0usize;
+    let mut annotation_references = 0usize;
+    let mut annotation_initial_units = 0usize;
+    let mut annotation_empty_range_tags = 0usize;
+    let mut annotation_unused_words = BTreeMap::<(u16, u16), usize>::new();
+    let mut annotation_owner_sets = 0usize;
+    let mut annotation_owners = 0usize;
+    let mut annotation_owner_name_units = 0usize;
+    let mut annotation_bookmark_sets = 0usize;
+    let mut annotation_bookmarks = 0usize;
+    let mut textbox_story_sets = BTreeMap::<TextboxDocumentPart, usize>::new();
+    let mut textbox_stories = 0usize;
+    let mut reusable_textbox_stories = 0usize;
+    let mut textbox_break_sets = BTreeMap::<TextboxDocumentPart, usize>::new();
+    let mut textbox_breaks = 0usize;
+    let mut textbox_overflows = 0usize;
+    let mut shape_anchor_sets = BTreeMap::<TextboxDocumentPart, usize>::new();
+    let mut shape_anchors = 0usize;
+    let mut below_text_shapes = 0usize;
+    let mut locked_shape_anchors = 0usize;
+    let mut textbox_stories_without_anchor = 0usize;
+    let mut office_art_contents = 0usize;
+    let mut office_art_drawings = BTreeMap::<TextboxDocumentPart, usize>::new();
+    let mut office_art_records = 0usize;
+    let mut office_art_atom_bytes = 0usize;
+    let mut office_art_atom_shapes = BTreeMap::<(u16, usize), usize>::new();
+    let mut office_art_partial_trees = 0usize;
+    let mut word_client_anchors = 0usize;
+    let mut word_client_data = 0usize;
+    let mut word_client_textboxes = 0usize;
+    let mut word_client_anchor_invalid_indexes = 0usize;
+    let mut word_client_textbox_invalid_indexes = 0usize;
+    let mut list_definition_sets = 0usize;
+    let mut list_definitions = 0usize;
+    let mut simple_list_definitions = 0usize;
+    let mut list_levels = 0usize;
+    let mut list_level_paragraph_prls = 0usize;
+    let mut list_level_character_prls = 0usize;
+    let mut list_level_text_units = 0usize;
+    let mut list_level_bytes = 0usize;
+    let mut list_level_to_override_gaps = BTreeMap::<i64, usize>::new();
+    let mut shape_anchors_without_fsp = 0usize;
+    let mut textbox_stories_without_fsp = 0usize;
     let mut failures = Vec::new();
 
     for path in files {
@@ -185,6 +241,73 @@ fn legacy_word_fibs_round_trip() {
             } else {
                 &cfb.entry("/0Table").expect("presence checked above").data
             };
+            if let Some(location) = fib.list_definition_location()
+                && location.lcb != 0
+            {
+                let definitions =
+                    ListDefinitions::from_table_stream(table, location).map_err(|error| {
+                        let start = usize::try_from(location.fc).unwrap_or(usize::MAX);
+                        let prefix = table
+                            .get(start..table.len().min(start.saturating_add(32)))
+                            .unwrap_or_default();
+                        let count = prefix
+                            .get(..2)
+                            .and_then(|value| <[u8; 2]>::try_from(value).ok())
+                            .map(u16::from_le_bytes)
+                            .unwrap_or(0);
+                        let level_start = start.saturating_add(2 + usize::from(count) * 28);
+                        let level_prefix = table
+                            .get(level_start..table.len().min(level_start.saturating_add(96)))
+                            .unwrap_or_default();
+                        format!(
+                            "PlfLst fc={:#x} lcb={:#x} PlfLfo={:?} prefix={prefix:02x?} level={level_prefix:02x?}: {error}",
+                            location.fc,
+                            location.lcb,
+                            fib.list_override_location()
+                        )
+                    })?;
+                let written = definitions.to_bytes().map_err(|error| error.to_string())?;
+                let base = bounded_slice(table, location.fc, location.lcb, "PlfLst")?;
+                if written.0 != base {
+                    return Err("PlfLst writer changed physical bytes".to_owned());
+                }
+                let level_start = usize::try_from(location.fc)
+                    .map_err(|_| "PlfLst fc exceeds usize".to_owned())?
+                    .checked_add(
+                        usize::try_from(location.lcb)
+                            .map_err(|_| "PlfLst lcb exceeds usize".to_owned())?,
+                    )
+                    .ok_or_else(|| "PlfLst level offset overflow".to_owned())?;
+                let level_end = level_start
+                    .checked_add(written.1.len())
+                    .ok_or_else(|| "PlfLst level end overflow".to_owned())?;
+                if table.get(level_start..level_end) != Some(written.1.as_slice()) {
+                    return Err("LVL writer changed physical bytes".to_owned());
+                }
+                if let Some(override_location) = fib.list_override_location()
+                    && override_location.lcb != 0
+                {
+                    *list_level_to_override_gaps
+                        .entry(i64::from(override_location.fc) - level_end as i64)
+                        .or_default() += 1;
+                }
+                list_definition_sets += 1;
+                list_definitions += definitions.definitions.len();
+                simple_list_definitions += definitions
+                    .definitions
+                    .iter()
+                    .filter(|definition| definition.info.simple)
+                    .count();
+                list_level_bytes += written.1.len();
+                for definition in definitions.definitions {
+                    list_levels += definition.levels.len();
+                    for level in definition.levels {
+                        list_level_paragraph_prls += level.paragraph_properties.properties.len();
+                        list_level_character_prls += level.number_properties.properties.len();
+                        list_level_text_units += level.number_text.len();
+                    }
+                }
+            }
             for (part, location) in fib.field_table_locations() {
                 if location.lcb == 0 {
                     continue;
@@ -216,41 +339,26 @@ fn legacy_word_fibs_round_trip() {
             if let Some((name_location, start_location, end_location)) = fib.bookmark_locations() {
                 let lengths = [name_location.lcb, start_location.lcb, end_location.lcb];
                 if lengths.iter().any(|length| *length != 0) {
-                    if lengths.iter().any(|length| *length == 0) {
+                    if lengths.contains(&0) {
                         return Err("parallel standard bookmark table is missing".to_owned());
                     }
-                    let name_bytes = bounded_slice(
-                        table,
-                        name_location.fc,
-                        name_location.lcb,
-                        "SttbfBkmk",
-                    )?;
-                    let start_bytes = bounded_slice(
-                        table,
-                        start_location.fc,
-                        start_location.lcb,
-                        "Plcfbkf",
-                    )?;
-                    let end_bytes = bounded_slice(
-                        table,
-                        end_location.fc,
-                        end_location.lcb,
-                        "Plcfbkl",
-                    )?;
+                    let name_bytes =
+                        bounded_slice(table, name_location.fc, name_location.lcb, "SttbfBkmk")?;
+                    let start_bytes =
+                        bounded_slice(table, start_location.fc, start_location.lcb, "Plcfbkf")?;
+                    let end_bytes =
+                        bounded_slice(table, end_location.fc, end_location.lcb, "Plcfbkl")?;
                     let bookmarks = Bookmarks::from_bytes(name_bytes, start_bytes, end_bytes)
                         .map_err(|error| format!("bookmarks: {error}"))?;
                     let written = bookmarks.to_bytes().map_err(|error| error.to_string())?;
-                    if written.0 != name_bytes || written.1 != start_bytes || written.2 != end_bytes {
+                    if written.0 != name_bytes || written.1 != start_bytes || written.2 != end_bytes
+                    {
                         return Err("bookmark writer changed physical bytes".to_owned());
                     }
                     bookmark_sets += 1;
                     bookmarks_count += bookmarks.names.names.len();
-                    bookmark_name_units += bookmarks
-                        .names
-                        .names
-                        .iter()
-                        .map(Vec::len)
-                        .sum::<usize>();
+                    bookmark_name_units +=
+                        bookmarks.names.names.iter().map(Vec::len).sum::<usize>();
                     hidden_bookmarks += bookmarks
                         .names
                         .names
@@ -264,6 +372,428 @@ fn legacy_word_fibs_round_trip() {
                         .filter(|bookmark| bookmark.column)
                         .count();
                 }
+            }
+            if let Some(location) = fib.header_text_location()
+                && location.lcb != 0
+            {
+                let bytes = bounded_slice(table, location.fc, location.lcb, "Plcfhdd")?;
+                let headers = HeaderTextTable::from_bytes(bytes)
+                    .map_err(|error| format!("Plcfhdd: {error}"))?;
+                if headers.to_bytes().map_err(|error| error.to_string())? != bytes {
+                    return Err("Plcfhdd writer changed physical bytes".to_owned());
+                }
+                header_tables += 1;
+                header_boundaries += headers.boundaries.len();
+                missing_header_boundaries += headers
+                    .boundaries
+                    .iter()
+                    .filter(|boundary| matches!(boundary, HeaderStoryBoundary::Missing))
+                    .count();
+            }
+            if let Some((reference_location, text_location)) = fib.footnote_locations() {
+                let lengths = [reference_location.lcb, text_location.lcb];
+                if lengths.iter().any(|length| *length != 0) {
+                    if lengths.contains(&0) {
+                        return Err("parallel footnote PLC is missing".to_owned());
+                    }
+                    let reference_bytes = bounded_slice(
+                        table,
+                        reference_location.fc,
+                        reference_location.lcb,
+                        "PlcffndRef",
+                    )?;
+                    let text_bytes =
+                        bounded_slice(table, text_location.fc, text_location.lcb, "PlcffndTxt")?;
+                    let references = NoteReferenceTable::from_bytes(reference_bytes)
+                        .map_err(|error| format!("PlcffndRef: {error}"))?;
+                    let text = CpOnlyTable::from_bytes(text_bytes)
+                        .map_err(|error| format!("PlcffndTxt: {error}"))?;
+                    if text.positions.len() != references.indices.len() + 2 {
+                        return Err("footnote reference/text cardinality differs".to_owned());
+                    }
+                    if references.to_bytes().map_err(|error| error.to_string())? != reference_bytes
+                        || text.to_bytes().map_err(|error| error.to_string())? != text_bytes
+                    {
+                        return Err("footnote PLC writer changed physical bytes".to_owned());
+                    }
+                    footnote_sets += 1;
+                    footnote_references += references.indices.len();
+                    footnote_custom_references += references
+                        .indices
+                        .iter()
+                        .filter(|value| **value == 0)
+                        .count();
+                }
+            }
+            if let Some((reference_location, text_location)) = fib.endnote_locations() {
+                let lengths = [reference_location.lcb, text_location.lcb];
+                if lengths.iter().any(|length| *length != 0) {
+                    if lengths.contains(&0) {
+                        return Err("parallel endnote PLC is missing".to_owned());
+                    }
+                    let reference_bytes = bounded_slice(
+                        table,
+                        reference_location.fc,
+                        reference_location.lcb,
+                        "PlcfendRef",
+                    )?;
+                    let text_bytes =
+                        bounded_slice(table, text_location.fc, text_location.lcb, "PlcfendTxt")?;
+                    let references = NoteReferenceTable::from_bytes(reference_bytes)
+                        .map_err(|error| format!("PlcfendRef: {error}"))?;
+                    let text = CpOnlyTable::from_bytes(text_bytes)
+                        .map_err(|error| format!("PlcfendTxt: {error}"))?;
+                    if text.positions.len() != references.indices.len() + 2 {
+                        return Err("endnote reference/text cardinality differs".to_owned());
+                    }
+                    if references.to_bytes().map_err(|error| error.to_string())? != reference_bytes
+                        || text.to_bytes().map_err(|error| error.to_string())? != text_bytes
+                    {
+                        return Err("endnote PLC writer changed physical bytes".to_owned());
+                    }
+                    endnote_sets += 1;
+                    endnote_references += references.indices.len();
+                    endnote_custom_references += references
+                        .indices
+                        .iter()
+                        .filter(|value| **value == 0)
+                        .count();
+                }
+            }
+            let mut annotation_metadata_references = None;
+            if let Some((reference_location, text_location)) = fib.annotation_locations() {
+                let lengths = [reference_location.lcb, text_location.lcb];
+                if lengths.iter().any(|length| *length != 0) {
+                    if lengths.contains(&0) {
+                        return Err("parallel annotation PLC is missing".to_owned());
+                    }
+                    let reference_bytes = bounded_slice(
+                        table,
+                        reference_location.fc,
+                        reference_location.lcb,
+                        "PlcfandRef",
+                    )?;
+                    let text_bytes =
+                        bounded_slice(table, text_location.fc, text_location.lcb, "PlcfandTxt")?;
+                    let references = AnnotationReferenceTable::from_bytes(reference_bytes)
+                        .map_err(|error| format!("PlcfandRef: {error}"))?;
+                    let text = CpOnlyTable::from_bytes(text_bytes)
+                        .map_err(|error| format!("PlcfandTxt: {error}"))?;
+                    if text.positions.len() != references.annotations.len() + 2 {
+                        return Err("annotation reference/text cardinality differs".to_owned());
+                    }
+                    if references.to_bytes().map_err(|error| error.to_string())? != reference_bytes
+                        || text.to_bytes().map_err(|error| error.to_string())? != text_bytes
+                    {
+                        return Err("annotation PLC writer changed physical bytes".to_owned());
+                    }
+                    annotation_sets += 1;
+                    annotation_references += references.annotations.len();
+                    for annotation in &references.annotations {
+                        annotation_initial_units += usize::from(annotation.initials_length);
+                        annotation_empty_range_tags += usize::from(annotation.bookmark_tag == -1);
+                        *annotation_unused_words
+                            .entry((annotation.bits_not_used, annotation.flags_not_used))
+                            .or_default() += 1;
+                    }
+                    annotation_metadata_references = Some(references);
+                }
+            }
+            let mut parsed_annotation_owners = None;
+            if let Some(location) = fib.annotation_owner_location()
+                && location.lcb != 0
+            {
+                let bytes = bounded_slice(table, location.fc, location.lcb, "GrpXstAtnOwners")?;
+                let owners = AnnotationOwners::from_bytes(bytes)
+                    .map_err(|error| format!("GrpXstAtnOwners: {error}"))?;
+                if owners.to_bytes().map_err(|error| error.to_string())? != bytes {
+                    return Err("GrpXstAtnOwners writer changed physical bytes".to_owned());
+                }
+                annotation_owner_sets += 1;
+                annotation_owners += owners.names.len();
+                annotation_owner_name_units += owners.names.iter().map(Vec::len).sum::<usize>();
+                parsed_annotation_owners = Some(owners);
+            }
+            if let Some(references) = &annotation_metadata_references {
+                let owners = parsed_annotation_owners
+                    .as_ref()
+                    .ok_or_else(|| "annotations are missing GrpXstAtnOwners".to_owned())?;
+                for annotation in &references.annotations {
+                    let author_index = usize::try_from(annotation.author_index).map_err(|_| {
+                        format!(
+                            "negative ATRDPre10 author index {}",
+                            annotation.author_index
+                        )
+                    })?;
+                    if author_index >= owners.names.len() {
+                        return Err(format!(
+                            "ATRDPre10 author index {author_index} is outside {} owners",
+                            owners.names.len()
+                        ));
+                    }
+                }
+            }
+            if let Some((info_location, start_location, end_location)) =
+                fib.annotation_bookmark_locations()
+            {
+                let lengths = [info_location.lcb, start_location.lcb, end_location.lcb];
+                if annotation_metadata_references.is_some()
+                    && lengths.iter().any(|length| *length != 0)
+                {
+                    if start_location.lcb == 0 || end_location.lcb == 0 {
+                        return Err(format!(
+                            "parallel annotation bookmark table is missing: {lengths:?}"
+                        ));
+                    }
+                    let info_bytes =
+                        bounded_slice(table, info_location.fc, info_location.lcb, "SttbfAtnBkmk")?;
+                    let start_bytes =
+                        bounded_slice(table, start_location.fc, start_location.lcb, "PlcfAtnBkf")?;
+                    let end_bytes =
+                        bounded_slice(table, end_location.fc, end_location.lcb, "PlcfAtnBkl")?;
+                    let bookmarks =
+                        AnnotationBookmarks::from_bytes(info_bytes, start_bytes, end_bytes)
+                            .map_err(|error| format!("annotation bookmarks: {error}"))?;
+                    let written = bookmarks.to_bytes().map_err(|error| error.to_string())?;
+                    if written.0 != info_bytes || written.1 != start_bytes || written.2 != end_bytes
+                    {
+                        return Err("annotation bookmark writer changed physical bytes".to_owned());
+                    }
+                    let references = annotation_metadata_references.as_ref().ok_or_else(|| {
+                        "annotation bookmarks are missing annotation references".to_owned()
+                    })?;
+                    let mut tags = bookmarks
+                        .infos
+                        .entries
+                        .iter()
+                        .map(|entry| entry.tag)
+                        .collect::<BTreeSet<_>>();
+                    for annotation in &references.annotations {
+                        if annotation.bookmark_tag != -1 && !tags.remove(&annotation.bookmark_tag) {
+                            return Err(format!(
+                                "ATRDPre10 bookmark tag {} has no unique ATNBE",
+                                annotation.bookmark_tag
+                            ));
+                        }
+                    }
+                    if !tags.is_empty() {
+                        return Err(format!("ATNBE tags have no ATRDPre10: {tags:?}"));
+                    }
+                    annotation_bookmark_sets += 1;
+                    annotation_bookmarks += bookmarks.infos.entries.len();
+                }
+            }
+            let mut parsed_textbox_stories = BTreeMap::new();
+            for (part, location) in fib.textbox_story_locations() {
+                let character_count = match part {
+                    TextboxDocumentPart::Main => fib.rg_lw.ccp_textbox,
+                    TextboxDocumentPart::Header => fib.rg_lw.ccp_header_textbox,
+                };
+                if character_count <= 0 {
+                    continue;
+                }
+                if location.lcb == 0 {
+                    return Err(format!("{part:?} textbox story table is missing"));
+                }
+                let bytes = bounded_slice(table, location.fc, location.lcb, "PlcftxbxTxt")?;
+                let stories = TextboxStoryTable::from_bytes(bytes)
+                    .map_err(|error| format!("{part:?} PlcftxbxTxt: {error}"))?;
+                if stories.to_bytes().map_err(|error| error.to_string())? != bytes {
+                    return Err(format!(
+                        "{part:?} textbox story writer changed physical bytes"
+                    ));
+                }
+                *textbox_story_sets.entry(part).or_default() += 1;
+                textbox_stories += stories.stories.len();
+                reusable_textbox_stories += stories
+                    .stories
+                    .iter()
+                    .filter(|story| matches!(story.chain, TextboxStoryChain::Reusable { .. }))
+                    .count();
+                parsed_textbox_stories.insert(part, stories);
+            }
+            for (part, location) in fib.textbox_break_locations() {
+                let Some(stories) = parsed_textbox_stories.get(&part) else {
+                    continue;
+                };
+                if location.lcb == 0 {
+                    return Err(format!("{part:?} textbox break table is missing"));
+                }
+                let bytes = bounded_slice(table, location.fc, location.lcb, "PlcfTxbxBkd")?;
+                let breaks = TextboxBreakTable::from_bytes(bytes)
+                    .map_err(|error| format!("{part:?} PlcfTxbxBkd: {error}"))?;
+                if breaks.to_bytes().map_err(|error| error.to_string())? != bytes {
+                    return Err(format!(
+                        "{part:?} textbox break writer changed physical bytes"
+                    ));
+                }
+                for record in breaks
+                    .breaks
+                    .iter()
+                    .take(breaks.breaks.len().saturating_sub(1))
+                {
+                    let story_index = usize::try_from(record.story_index).map_err(|_| {
+                        format!("{part:?} Tbkd has negative nonterminal story index")
+                    })?;
+                    if story_index >= stories.stories.len() {
+                        return Err(format!(
+                            "{part:?} Tbkd story index {story_index} is outside {} stories",
+                            stories.stories.len()
+                        ));
+                    }
+                }
+                *textbox_break_sets.entry(part).or_default() += 1;
+                textbox_breaks += breaks.breaks.len();
+                textbox_overflows += breaks
+                    .breaks
+                    .iter()
+                    .filter(|record| record.text_overflow)
+                    .count();
+            }
+            let mut parsed_shape_anchor_ids = BTreeMap::new();
+            let mut parsed_shape_anchor_counts = BTreeMap::new();
+            for (part, location) in fib.shape_anchor_locations() {
+                if location.lcb == 0 {
+                    continue;
+                }
+                let bytes = bounded_slice(table, location.fc, location.lcb, "PlcfSpa")?;
+                let anchors = ShapeAnchorTable::from_bytes(bytes)
+                    .map_err(|error| format!("{part:?} PlcfSpa: {error}"))?;
+                if anchors.to_bytes().map_err(|error| error.to_string())? != bytes {
+                    return Err(format!("{part:?} PlcfSpa writer changed physical bytes"));
+                }
+                if let Some(stories) = parsed_textbox_stories.get(&part) {
+                    let anchor_ids = anchors
+                        .anchors
+                        .iter()
+                        .map(|anchor| anchor.shape_id)
+                        .collect::<BTreeSet<_>>();
+                    for story in &stories.stories {
+                        if matches!(story.chain, TextboxStoryChain::NonReusable { .. })
+                            && !anchor_ids.contains(&story.shape_id)
+                        {
+                            textbox_stories_without_anchor += 1;
+                        }
+                    }
+                }
+                *shape_anchor_sets.entry(part).or_default() += 1;
+                shape_anchors += anchors.anchors.len();
+                below_text_shapes += anchors
+                    .anchors
+                    .iter()
+                    .filter(|anchor| anchor.below_text)
+                    .count();
+                locked_shape_anchors += anchors
+                    .anchors
+                    .iter()
+                    .filter(|anchor| anchor.anchor_locked)
+                    .count();
+                parsed_shape_anchor_ids.insert(
+                    part,
+                    anchors
+                        .anchors
+                        .iter()
+                        .map(|anchor| anchor.shape_id)
+                        .collect::<BTreeSet<_>>(),
+                );
+                parsed_shape_anchor_counts.insert(part, anchors.anchors.len());
+            }
+            if let Some(location) = fib.office_art_content_location()
+                && location.lcb != 0
+            {
+                let bytes = bounded_slice(table, location.fc, location.lcb, "OfficeArtContent")?;
+                let content = DocOfficeArtContent::from_bytes(bytes).map_err(|error| {
+                    format!(
+                        "OfficeArtContent fc={:#x} lcb={:#x} prefix={:02x?}: {error}",
+                        location.fc,
+                        location.lcb,
+                        &bytes[..bytes.len().min(16)]
+                    )
+                })?;
+                if content.to_bytes().map_err(|error| error.to_string())? != bytes {
+                    return Err("OfficeArtContent writer changed physical bytes".to_owned());
+                }
+                let mut fsp_ids = BTreeMap::<TextboxDocumentPart, BTreeSet<u32>>::new();
+                office_art_partial_trees += usize::from(content.drawing_group.is_partial());
+                content.drawing_group.visit_complete(|record| {
+                    office_art_records += 1;
+                    match &record.data {
+                        OfficeArtRecordData::Atom(bytes) => {
+                            office_art_atom_bytes += bytes.len();
+                            *office_art_atom_shapes
+                                .entry((record.header.record_type, bytes.len()))
+                                .or_default() += 1;
+                        }
+                        OfficeArtRecordData::WordClientAnchor(_) => word_client_anchors += 1,
+                        OfficeArtRecordData::WordClientData(_) => word_client_data += 1,
+                        OfficeArtRecordData::WordClientTextbox(_) => word_client_textboxes += 1,
+                        _ => {}
+                    }
+                });
+                for drawing in &content.drawings {
+                    *office_art_drawings
+                        .entry(drawing.document_part)
+                        .or_default() += 1;
+                    office_art_partial_trees += usize::from(drawing.container.is_partial());
+                    drawing.container.visit_complete(|record| {
+                        office_art_records += 1;
+                        match &record.data {
+                            OfficeArtRecordData::Shape(shape) => {
+                                fsp_ids
+                                    .entry(drawing.document_part)
+                                    .or_default()
+                                    .insert(shape.shape_id);
+                            }
+                            OfficeArtRecordData::Atom(bytes) => {
+                                office_art_atom_bytes += bytes.len();
+                                *office_art_atom_shapes
+                                    .entry((record.header.record_type, bytes.len()))
+                                    .or_default() += 1;
+                            }
+                            OfficeArtRecordData::WordClientAnchor(index) => {
+                                word_client_anchors += 1;
+                                let valid = *index == -1
+                                    || usize::try_from(*index).is_ok_and(|index| {
+                                        parsed_shape_anchor_counts
+                                            .get(&drawing.document_part)
+                                            .is_some_and(|count| index < *count)
+                                    });
+                                word_client_anchor_invalid_indexes += usize::from(!valid);
+                            }
+                            OfficeArtRecordData::WordClientData(_) => word_client_data += 1,
+                            OfficeArtRecordData::WordClientTextbox(value) => {
+                                word_client_textboxes += 1;
+                                let valid = value.story_index != 0
+                                    && parsed_textbox_stories
+                                        .get(&drawing.document_part)
+                                        .is_some_and(|stories| {
+                                            usize::from(value.story_index) <= stories.stories.len()
+                                        });
+                                word_client_textbox_invalid_indexes += usize::from(!valid);
+                            }
+                            _ => {}
+                        }
+                    });
+                }
+                for (part, ids) in &parsed_shape_anchor_ids {
+                    let drawing_ids = fsp_ids.get(part);
+                    shape_anchors_without_fsp += ids
+                        .iter()
+                        .filter(|shape_id| drawing_ids.is_none_or(|ids| !ids.contains(shape_id)))
+                        .count();
+                }
+                for (part, stories) in &parsed_textbox_stories {
+                    let drawing_ids = fsp_ids.get(part);
+                    textbox_stories_without_fsp += stories
+                        .stories
+                        .iter()
+                        .filter(|story| {
+                            matches!(story.chain, TextboxStoryChain::NonReusable { .. })
+                                && drawing_ids.is_none_or(|ids| !ids.contains(&story.shape_id))
+                        })
+                        .count();
+                }
+                office_art_contents += 1;
             }
             let style_location = fib
                 .style_sheet_location()
@@ -745,17 +1275,17 @@ fn legacy_word_fibs_round_trip() {
     );
     assert_eq!(observed_exclusions.len(), exclusions.len());
     assert_eq!(encrypted_exclusions, 3);
-    assert_eq!(invalid_exclusions, 21);
-    assert_eq!(checked, 418);
-    assert_eq!(style_sheets, 418);
+    assert_eq!(invalid_exclusions, 23);
+    assert_eq!(checked, 416);
+    assert_eq!(style_sheets, 416);
     assert_eq!(
         style_sheet_info_shapes,
         BTreeMap::from([
             ((18, 10), 94),
             ((18, 18), 1),
             ((20, 10), 29),
-            ((20, 18), 18),
-            ((646, 18), 54),
+            ((20, 18), 17),
+            ((646, 18), 53),
             ((1062, 18), 1),
             ((1114, 18), 1),
             ((1118, 18), 47),
@@ -776,25 +1306,185 @@ fn legacy_word_fibs_round_trip() {
             ((1570, 18), 7),
         ])
     );
-    assert_eq!(styles, 12_881);
-    assert_eq!(empty_styles, 4_113);
-    assert_eq!(style_definition_bytes, 628_042);
-    assert_eq!(style_name_units, 104_282);
-    assert_eq!(style_upx_prls, 44_532);
-    assert!(field_tables.is_empty(), "{field_tables:?}");
-    assert_eq!(field_records, 0);
-    assert!(field_character_counts.is_empty(), "{field_character_counts:#x?}");
-    assert!(field_reserved_counts.is_empty(), "{field_reserved_counts:#x?}");
-    assert!(field_type_counts.is_empty(), "{field_type_counts:#x?}");
-    assert_eq!(bookmark_sets, 0);
-    assert_eq!(bookmarks_count, 0);
-    assert_eq!(bookmark_name_units, 0);
-    assert_eq!(hidden_bookmarks, 0);
+    assert_eq!(styles, 12_834);
+    assert_eq!(empty_styles, 4_098);
+    assert_eq!(style_definition_bytes, 625_498);
+    assert_eq!(style_name_units, 103_919);
+    assert_eq!(style_upx_prls, 44_341);
+    assert_eq!(
+        field_tables,
+        BTreeMap::from([
+            (FieldDocumentPart::Main, 97),
+            (FieldDocumentPart::Header, 79),
+            (FieldDocumentPart::Footnote, 2),
+            (FieldDocumentPart::Comment, 1),
+            (FieldDocumentPart::Endnote, 1),
+            (FieldDocumentPart::Textbox, 11),
+            (FieldDocumentPart::HeaderTextbox, 6),
+        ])
+    );
+    assert_eq!(field_records, 4_940);
+    assert_eq!(
+        field_character_counts,
+        BTreeMap::from([
+            ((FieldDocumentPart::Main, 0x13), 1_316),
+            ((FieldDocumentPart::Main, 0x14), 1_239),
+            ((FieldDocumentPart::Main, 0x15), 1_316),
+            ((FieldDocumentPart::Header, 0x13), 197),
+            ((FieldDocumentPart::Header, 0x14), 174),
+            ((FieldDocumentPart::Header, 0x15), 197),
+            ((FieldDocumentPart::Footnote, 0x13), 5),
+            ((FieldDocumentPart::Footnote, 0x14), 5),
+            ((FieldDocumentPart::Footnote, 0x15), 5),
+            ((FieldDocumentPart::Comment, 0x13), 1),
+            ((FieldDocumentPart::Comment, 0x14), 1),
+            ((FieldDocumentPart::Comment, 0x15), 1),
+            ((FieldDocumentPart::Endnote, 0x13), 1),
+            ((FieldDocumentPart::Endnote, 0x14), 1),
+            ((FieldDocumentPart::Endnote, 0x15), 1),
+            ((FieldDocumentPart::Textbox, 0x13), 153),
+            ((FieldDocumentPart::Textbox, 0x14), 153),
+            ((FieldDocumentPart::Textbox, 0x15), 153),
+            ((FieldDocumentPart::HeaderTextbox, 0x13), 7),
+            ((FieldDocumentPart::HeaderTextbox, 0x14), 7),
+            ((FieldDocumentPart::HeaderTextbox, 0x15), 7),
+        ])
+    );
+    assert_eq!(
+        field_reserved_counts,
+        BTreeMap::from([
+            (0, 3_240),
+            (1, 22),
+            (2, 22),
+            (3, 129),
+            (4, 1_451),
+            (5, 9),
+            (6, 10),
+            (7, 57)
+        ])
+    );
+    assert_eq!(
+        field_type_counts,
+        BTreeMap::from([
+            (2, 1),
+            (3, 11),
+            (7, 3),
+            (10, 10),
+            (12, 6),
+            (13, 11),
+            (15, 1),
+            (16, 2),
+            (17, 6),
+            (20, 1),
+            (21, 4),
+            (22, 4),
+            (23, 2),
+            (25, 1),
+            (26, 11),
+            (29, 11),
+            (31, 7),
+            (32, 5),
+            (33, 150),
+            (35, 4),
+            (37, 396),
+            (39, 7),
+            (51, 12),
+            (56, 1),
+            (58, 138),
+            (59, 1),
+            (60, 1),
+            (64, 1),
+            (66, 1),
+            (67, 21),
+            (69, 1),
+            (70, 129),
+            (71, 68),
+            (83, 8),
+            (85, 11),
+            (87, 124),
+            (88, 353),
+            (95, 156),
+        ])
+    );
+    assert_eq!(bookmark_sets, 80);
+    assert_eq!(bookmarks_count, 1_946);
+    assert_eq!(bookmark_name_units, 23_737);
+    assert_eq!(hidden_bookmarks, 1_720);
     assert_eq!(column_bookmarks, 0);
-    assert_eq!(style_upx_padding, BTreeMap::from([(0x00, 3_587)]));
+    assert_eq!(header_tables, 215);
+    assert_eq!(header_boundaries, 3_385);
+    assert_eq!(missing_header_boundaries, 4);
+    assert_eq!(footnote_sets, 14);
+    assert_eq!(footnote_references, 73);
+    assert_eq!(footnote_custom_references, 0);
+    assert_eq!(endnote_sets, 7);
+    assert_eq!(endnote_references, 10);
+    assert_eq!(endnote_custom_references, 0);
+    assert_eq!(annotation_sets, 14);
+    assert_eq!(annotation_references, 87);
+    assert_eq!(annotation_initial_units, 167);
+    assert_eq!(annotation_empty_range_tags, 13);
+    assert_eq!(annotation_unused_words, BTreeMap::from([((0, 0), 87)]));
+    assert_eq!(annotation_owner_sets, 14);
+    assert_eq!(annotation_owners, 17);
+    assert_eq!(annotation_owner_name_units, 152);
+    assert_eq!(annotation_bookmark_sets, 10);
+    assert_eq!(annotation_bookmarks, 74);
+    assert_eq!(
+        textbox_story_sets,
+        BTreeMap::from([
+            (TextboxDocumentPart::Main, 49),
+            (TextboxDocumentPart::Header, 14),
+        ])
+    );
+    assert_eq!(textbox_stories, 1_036);
+    assert_eq!(reusable_textbox_stories, 261);
+    assert_eq!(
+        textbox_break_sets,
+        BTreeMap::from([
+            (TextboxDocumentPart::Main, 49),
+            (TextboxDocumentPart::Header, 14),
+        ])
+    );
+    assert_eq!(textbox_breaks, 1_036);
+    assert_eq!(textbox_overflows, 5);
+    assert_eq!(
+        shape_anchor_sets,
+        BTreeMap::from([
+            (TextboxDocumentPart::Main, 95),
+            (TextboxDocumentPart::Header, 28),
+        ])
+    );
+    assert_eq!(shape_anchors, 453);
+    assert_eq!(below_text_shapes, 45);
+    assert_eq!(locked_shape_anchors, 168);
+    assert_eq!(textbox_stories_without_anchor, 577);
+    assert_eq!(office_art_contents, 308);
+    assert_eq!(
+        office_art_drawings,
+        BTreeMap::from([
+            (TextboxDocumentPart::Main, 308),
+            (TextboxDocumentPart::Header, 71),
+        ])
+    );
+    assert_eq!(office_art_records, 19_116);
+    assert_eq!(office_art_atom_bytes, 66);
+    assert_eq!(office_art_atom_shapes, BTreeMap::from([((0xf004, 66), 1)]));
+    assert_eq!(word_client_anchors, 447);
+    assert_eq!(word_client_data, 2_551);
+    assert_eq!(word_client_textboxes, 623);
+    assert_eq!(word_client_anchor_invalid_indexes, 0);
+    assert_eq!(word_client_textbox_invalid_indexes, 0);
+    eprintln!(
+        "lists: sets={list_definition_sets}, definitions={list_definitions} ({simple_list_definitions} simple), levels={list_levels}, papx={list_level_paragraph_prls}, chpx={list_level_character_prls}, text={list_level_text_units}, level bytes={list_level_bytes}, gaps={list_level_to_override_gaps:?}"
+    );
+    assert_eq!(office_art_partial_trees, 1);
+    assert_eq!(shape_anchors_without_fsp, 0);
+    assert_eq!(textbox_stories_without_fsp, 0);
+    assert_eq!(style_upx_padding, BTreeMap::from([(0x00, 3_574)]));
     assert_eq!(
         style_upx_index_mismatches,
-        BTreeMap::from([((0x000c, 0x0000), 34)])
+        BTreeMap::from([((0x000c, 0x0000), 33)])
     );
     assert_eq!(
         style_upx_unknown_sprms,
@@ -813,41 +1503,41 @@ fn legacy_word_fibs_round_trip() {
         style_upx_static_variable_operands,
         BTreeMap::from([
             ("auto-numbered-list-data", 31),
-            ("border", 966),
+            ("border", 962),
             ("conditional-formatting", 389),
             ("paragraph-change-tabs", 181),
-            ("paragraph-change-tabs-papx", 840),
-            ("shading", 293),
-            ("table-borders", 110),
-            ("table-cell-spacing", 598),
+            ("paragraph-change-tabs-papx", 834),
+            ("shading", 291),
+            ("table-borders", 109),
+            ("table-cell-spacing", 594),
         ])
     );
     assert_eq!(
         style_kind_counts,
         BTreeMap::from([
-            (StyleKind::Paragraph, 5_142),
-            (StyleKind::Character, 2_917),
-            (StyleKind::Table, 411),
-            (StyleKind::Numbering, 298),
+            (StyleKind::Paragraph, 5_120),
+            (StyleKind::Character, 2_912),
+            (StyleKind::Table, 408),
+            (StyleKind::Numbering, 296),
         ])
     );
     assert_eq!(
         style_cupx_shapes,
         BTreeMap::from([
-            ((StyleKind::Paragraph, 2, false), 5_142),
-            ((StyleKind::Character, 1, false), 2_917),
-            ((StyleKind::Table, 3, false), 411),
-            ((StyleKind::Numbering, 1, false), 298),
+            ((StyleKind::Paragraph, 2, false), 5_120),
+            ((StyleKind::Character, 1, false), 2_912),
+            ((StyleKind::Table, 3, false), 408),
+            ((StyleKind::Numbering, 1, false), 296),
         ])
     );
-    assert_eq!(latent_style_entries, 78_090);
+    assert_eq!(latent_style_entries, 77_934);
     assert_eq!(standard_style_prls, 1_546);
     assert!(style_alignment_padding.is_empty());
-    assert_eq!(section_tables, 418);
-    assert_eq!(sections, 500);
+    assert_eq!(section_tables, 416);
+    assert_eq!(sections, 498);
     assert_eq!(default_sections, 0);
-    assert_eq!(sepx_count, 500);
-    assert_eq!(sepx_prls, 6_149);
+    assert_eq!(sepx_count, 498);
+    assert_eq!(sepx_prls, 6_124);
     assert_eq!(
         sepx_unknown_sprms,
         BTreeSet::from([0x3014, 0x4231, 0xd1ff, 0xd202, 0xd238])
@@ -859,13 +1549,13 @@ fn legacy_word_fibs_round_trip() {
     );
     assert!(sepx_trailing_bytes.is_empty());
     assert_eq!(table0, 5);
-    assert_eq!(table1, 413);
+    assert_eq!(table1, 411);
     assert_eq!(versions.get(&0x00c1), Some(&25));
     assert_eq!(versions.get(&0x00c2), Some(&1));
     assert_eq!(versions.get(&0x00c3), Some(&1));
     assert_eq!(versions.get(&0x00d9), Some(&39));
-    assert_eq!(versions.get(&0x0101), Some(&76));
-    assert_eq!(versions.get(&0x010c), Some(&59));
+    assert_eq!(versions.get(&0x0101), Some(&75));
+    assert_eq!(versions.get(&0x010c), Some(&58));
     assert_eq!(versions.get(&0x0112), Some(&217));
     assert_eq!(
         fc_lcb_shapes,
@@ -875,9 +1565,9 @@ fn legacy_word_fibs_round_trip() {
             ((0x00c2, 0x005d), 1),
             ((0x00c3, 0x006c), 1),
             ((0x00d9, 0x006c), 39),
-            ((0x0101, 0x0088), 76),
+            ((0x0101, 0x0088), 75),
             ((0x010c, 0x0085), 1),
-            ((0x010c, 0x00a4), 56),
+            ((0x010c, 0x00a4), 55),
             ((0x010c, 0x00b7), 2),
             ((0x0112, 0x00b7), 217),
         ])
@@ -890,40 +1580,36 @@ fn legacy_word_fibs_round_trip() {
             ((0x00c3, 4), 1),
             ((0x00d9, 2), 39),
             ((0x0101, 0), 55),
-            ((0x0101, 2), 20),
+            ((0x0101, 2), 19),
             ((0x0101, 4), 1),
-            ((0x010c, 2), 57),
+            ((0x010c, 2), 56),
             ((0x010c, 7), 2),
             ((0x0112, 5), 217),
         ])
     );
-    assert_eq!(chpx_bte_count, 418);
-    assert_eq!(chpx_pages, 1_384);
-    assert_eq!(chpx_runs, 46_359);
+    assert_eq!(chpx_bte_count, 416);
+    assert_eq!(chpx_pages, 1_361);
+    assert_eq!(chpx_runs, 45_799);
     assert_eq!(chpx_default_runs, 2_442);
-    assert_eq!(chpx_prls, 200_114);
-    assert_eq!(chpx_sprm_frequencies.len(), 75);
-    assert_eq!(
-        chpx_unknown_sprms,
-        BTreeSet::from([0x0000, 0x024a, 0x2a03, 0x5a5e, 0xca4f])
-    );
-    assert_eq!(chpx_raw_variable_operands, 1);
-    assert_eq!(chpx_raw_variable_frequencies, BTreeMap::from([(0xca4f, 1)]));
+    assert_eq!(chpx_prls, 195_967);
+    assert_eq!(chpx_sprm_frequencies.len(), 71);
+    assert_eq!(chpx_unknown_sprms, BTreeSet::from([0x0000, 0x2a03]));
+    assert_eq!(chpx_raw_variable_operands, 0);
+    assert!(chpx_raw_variable_frequencies.is_empty());
     assert_eq!(
         chpx_static_variable_operands,
         BTreeMap::from([
-            ("border", 53),
-            ("character-fit-text", 1),
+            ("border", 21),
             ("property-revision-mark", 554),
             ("shading", 61),
         ])
     );
-    assert_eq!(chpx_unused_bytes, 153_749);
-    assert_eq!(papx_bte_count, 418);
-    assert_eq!(papx_pages, 3_153);
-    assert_eq!(papx_runs, 33_392);
+    assert_eq!(chpx_unused_bytes, 152_803);
+    assert_eq!(papx_bte_count, 416);
+    assert_eq!(papx_pages, 3_082);
+    assert_eq!(papx_runs, 32_961);
     assert_eq!(papx_default_runs, 19);
-    assert_eq!(papx_prls, 139_401);
+    assert_eq!(papx_prls, 136_431);
     assert_eq!(papx_sprm_frequencies.len(), 120);
     assert_eq!(papx_unknown_sprms, BTreeSet::from([0x0000, 0xd5ff]));
     assert_eq!(papx_raw_variable_operands, 1);
@@ -932,34 +1618,34 @@ fn legacy_word_fibs_round_trip() {
         papx_static_variable_operands,
         BTreeMap::from([
             ("border", 350),
-            ("paragraph-change-tabs-papx", 6_368),
+            ("paragraph-change-tabs-papx", 6_364),
             ("paragraph-number-revision", 237),
-            ("paragraph-table-style-info", 380),
+            ("paragraph-table-style-info", 256),
             ("property-revision-mark", 316),
             ("shading", 239),
-            ("table-border-colors", 5_744),
+            ("table-border-colors", 5_544),
             ("table-border", 239),
-            ("table-borders", 884),
-            ("table-borders-80", 1_117),
+            ("table-borders", 867),
+            ("table-borders-80", 1_100),
             ("table-cell-hide-mark", 5),
-            ("table-cell-spacing", 5_257),
-            ("table-definition", 2_465),
+            ("table-cell-spacing", 5_136),
+            ("table-definition", 2_415),
             ("table-shading", 854),
             ("table-shading-80", 340),
         ])
     );
-    assert_eq!(papx_short_lengths, 11_625);
-    assert_eq!(papx_extended_lengths, 21_748);
+    assert_eq!(papx_short_lengths, 11_538);
+    assert_eq!(papx_extended_lengths, 21_404);
     assert_eq!(
         papx_trailing_bytes,
         BTreeMap::from([(0x00, 25), (0x09, 1), (0x12, 1)])
     );
-    assert_eq!(papx_unused_bytes, 311_233);
-    assert_eq!(clx_count, 418);
+    assert_eq!(papx_unused_bytes, 301_077);
+    assert_eq!(clx_count, 416);
     assert_eq!(property_runs, 21);
-    assert_eq!(pieces, 1_500);
-    assert_eq!(compressed_pieces, 346);
-    assert_eq!(simple_property_modifiers, 1_056);
+    assert_eq!(pieces, 1_495);
+    assert_eq!(compressed_pieces, 345);
+    assert_eq!(simple_property_modifiers, 1_051);
     assert_eq!(complex_property_modifiers, 444);
     assert_eq!(prl_count, 55);
     assert_eq!(
@@ -998,9 +1684,9 @@ fn legacy_word_fibs_round_trip() {
         ])
     );
     assert_eq!(variable_operand_bytes, 694);
-    assert_eq!(text_characters, 1_470_246);
-    assert_eq!(compressed_text_bytes, 1_243_435);
-    assert_eq!(utf16_text_units, 226_811);
+    assert_eq!(text_characters, 1_465_329);
+    assert_eq!(compressed_text_bytes, 1_241_655);
+    assert_eq!(utf16_text_units, 223_674);
     assert!(
         unknown_sprm_kinds.is_empty(),
         "CLX PRCs contain untyped known SPRMs: {unknown_sprm_kinds:#x?}"

@@ -1,0 +1,105 @@
+# Apache POI: 40 new spreadsheet and presentation files.
+Apache-POI/test-data/spreadsheet/47034.xls
+Apache-POI/test-data/spreadsheet/47154.xls
+Apache-POI/test-data/spreadsheet/47245_test.xls
+Apache-POI/test-data/spreadsheet/47251.xls
+Apache-POI/test-data/spreadsheet/47251_1.xls
+Apache-POI/test-data/spreadsheet/47701.xls
+Apache-POI/test-data/spreadsheet/48703.xls
+Apache-POI/test-data/spreadsheet/47920.xls
+Apache-POI/test-data/spreadsheet/48026.xls
+Apache-POI/test-data/spreadsheet/48180.xls
+Apache-POI/test-data/spreadsheet/Formatting.xlsx
+Apache-POI/test-data/spreadsheet/FormulaEvalTestData_Copy.xlsx
+Apache-POI/test-data/spreadsheet/FormulaSheetRange.xlsx
+Apache-POI/test-data/spreadsheet/GeneralFormatTests.xlsx
+Apache-POI/test-data/spreadsheet/GroupTest.xlsx
+Apache-POI/test-data/spreadsheet/StructuredReferences.xlsx
+Apache-POI/test-data/spreadsheet/HsGetVal.xlsx
+Apache-POI/test-data/spreadsheet/Intersection-52111-xssf.xlsx
+Apache-POI/test-data/spreadsheet/MatrixFormulaEvalTestData.xlsx
+Apache-POI/test-data/spreadsheet/NewStyleConditionalFormattings.xlsx
+Apache-POI/test-data/spreadsheet/NewlineInFormulas.xlsx
+Apache-POI/test-data/spreadsheet/NumberFormatApproxTests.xlsx
+Apache-POI/test-data/spreadsheet/NumberFormatTests.xlsx
+Apache-POI/test-data/spreadsheet/Tables.xlsx
+Apache-POI/test-data/spreadsheet/ShrinkToFit.xlsx
+Apache-POI/test-data/spreadsheet/SimpleMultiCell.xlsx
+Apache-POI/test-data/spreadsheet/SimpleNormal.xlsx
+Apache-POI/test-data/spreadsheet/SimpleScatterChart.xlsx
+Apache-POI/test-data/spreadsheet/SimpleStrict.xlsx
+Apache-POI/test-data/spreadsheet/SimpleWithComments.xlsx
+Apache-POI/test-data/slideshow/WithLinks.ppt
+Apache-POI/test-data/slideshow/WithMacros.ppt
+Apache-POI/test-data/slideshow/backgrounds.ppt
+Apache-POI/test-data/slideshow/bug-41015.ppt
+Apache-POI/test-data/slideshow/bug45124.ppt
+Apache-POI/test-data/slideshow/aascu.org_workarea_downloadasset.aspx_id=5864.pptx
+Apache-POI/test-data/slideshow/ae.ac.uaeu.faculty_nafaachbili_GeomLec1.pptx
+Apache-POI/test-data/slideshow/at.ecodesign.www_downloads_Vertiefungsvortrag_elektronik.pptx
+Apache-POI/test-data/slideshow/copy-slide-demo.pptx
+Apache-POI/test-data/slideshow/backgrounds.pptx
+
+# LibreOffice: 40 new Writer, Calc, and Impress files.
+LibreOffice/sw/qa/extras/ooxmlexport/data/FDO73546.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/FDO74105.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/FDO74106.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/FDO74215.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/FDO74774.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/FDO74775.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/FDO75133.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/FDO76248.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/FDO76312.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/FDO77715.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/FDO78292.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/FDO78590.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/FigureAsLabelPicture.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/ImageCrop.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/IndexFieldFlagF.docx
+LibreOffice/sc/qa/unit/data/xlsx/data-table/multi-table.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/data-table/one-variable.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/dateAutofilter.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/hiddenButton.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/embedded-text-in-decimal.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/hyperlinks.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/empty.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/image_hyperlink.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/fontSize.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/functions-excel-2010.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/hyperlink.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/forum-mso-de-104083.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/forum-mso-en4-134670.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/forum-mso-en4-145327.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/hyperlink_export.xlsx
+LibreOffice/sd/qa/unit/data/BoldonseFontEmbedded.pptx
+LibreOffice/oox/qa/unit/data/tdf170095.pptx
+LibreOffice/oox/qa/unit/data/testTdf132557_footerCustomShapes.pptx
+LibreOffice/oox/qa/unit/data/testTdf157019_objPlaceholderCustomShape.pptx
+LibreOffice/oox/qa/unit/data/theme-tint.pptx
+LibreOffice/oox/qa/unit/data/theme.pptx
+LibreOffice/oox/qa/unit/data/transparent-text.pptx
+LibreOffice/oox/source/drawingml/customshapes/cshape.pptx
+LibreOffice/sd/qa/filter/eppt/data/custom-shape-bitmap-fill.pptx
+LibreOffice/sd/qa/unit/data/TextDistancesInsets1.pptx
+
+# Open XML SDK: 20 new DOCX files; XLSX remains excluded.
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/complex0.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/complexDocx/complex table3.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/complexDocx/complex tables.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/complexDocx/complex0.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/complexDocx/complexity - part 1.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/complexDocx/complexity - part 2.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/complexDocx/complexity.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/content control/SDT - Copy.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/content control/SDT.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/content control/sdtcontents.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/cover page/coverpage1.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/cover page/coverpage2.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/cover page/coverpage3.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/cover page/covwepage4.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/equation/equation-1.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/equation/equation.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/field/Field-Create date.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/field/Field-more field.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/field/Field-more field2.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/field/field.docx
