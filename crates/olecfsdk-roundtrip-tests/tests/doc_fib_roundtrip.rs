@@ -7,24 +7,31 @@ use std::{
 use olecfsdk::{
     cfb::CompoundFile,
     doc::{
-        AnnotationBookmarks, AnnotationOwners, AnnotationReferenceTable, AssociatedStrings,
+        AnnotationBookmarks, AnnotationExtendedData, AnnotationOwners, AnnotationReferenceTable,
+        AssociatedStrings, AutoSummaryDesiredSize, AutoSummaryRangeTable, AutoSummaryView,
         Bookmarks, ChpxFkp, Clx, CommandCustomizationRecord, CommandCustomizations, CpOnlyTable,
         DocOfficeArtContent, DocumentProperties, FIB_LAST_SAVED_FILETIME_INDEX, Fib, FibBase,
         FibBaseFlags, FieldCharacter, FieldDocumentPart, FieldTable, FontTable, FrameAndListRecord,
         FrameAndListRecords, GrammarCheckerCookieTable, GrammarCookieErrorType, GrammarOptionSets,
         GrammarStateKind, GrammarStateTable, HeaderStoryBoundary, HeaderTextTable, HtmlBlockType,
-        LanguageDetectionStateKind, LanguageDetectionStateTable, ListDefinitions,
-        ListLevelTemplateCode, ListNamesTable, ListOverrides, ListStyleTemplates,
-        NoteReferenceTable, PapxFkp, PapxLengthEncoding, ParagraphGroupProperties, PlcBte, PlcfSed,
-        Prm, PropertyBagString, RevisionAuthors, RevisionMessageThreading, RevisionSaveIdTable,
-        SaveHistory, SelectionRange, SelectionState, SelectionStateExtension, SelectionStyle, Sepx,
+        LanguageDetectionStateKind, LanguageDetectionStateTable, LegacyGrammarOptionSets,
+        ListDefinitions, ListLevelTemplateCode, ListNamesTable, ListOverrides, ListStyleTemplates,
+        NoteReferenceTable, OleControlDocumentPart, OleControlInfos, PapxFkp, PapxLengthEncoding,
+        ParagraphGroupProperties, PlcBte, PlcfSed, PrinterDriverInfo, Prm, PropertyBagString,
+        RevisionAuthors, RevisionMessageThreading, RevisionSaveIdTable, SaveHistory,
+        SelectionRange, SelectionState, SelectionStateExtension, SelectionStyle, Sepx,
         ShapeAnchorTable, SmartTagBookmarks, SmartTagData, SmartTagFactoidTypeId,
         SmartTagRecognizerStateKind, SmartTagRecognizerStateTable, SmartTagSource,
         SpellingStateKind, SpellingStateTable, SprmGroup, SprmKind, SprmOperand, StyleFormatting,
         StyleKind, StyleSheet, TableCharacterCacheTable, TextPieceCharacters, TextboxBreakTable,
-        TextboxDocumentPart, TextboxStoryChain, TextboxStoryTable, WORD97_FILE_IDENTIFIER,
+        TextboxDocumentPart, TextboxStoryChain, TextboxStoryTable, UserInputMethods,
+        UserVariableKind, UserVariables, WORD97_FILE_IDENTIFIER,
     },
     office_art::OfficeArtRecordData,
+    shared::{
+        EnvelopeFlagStatus, EnvelopeImportance, EnvelopeRecipientPropertyValue,
+        EnvelopeSensitivity, MsoEnvelopeClsid, MsoEnvelopeData, MsoEnvelopeVersion,
+    },
 };
 use olecfsdk_corpus_test_support::{
     corpus_bytes,
@@ -39,7 +46,9 @@ fn legacy_word_fibs_round_trip() {
     collect(&corpus.join("Apache-POI"), &mut files);
     collect(&corpus.join("LibreOffice"), &mut files);
     let exclusions = excluded_files(&corpus);
+    let atrd_extra_exclusions = excluded_files_for_test(&corpus, "doc_atrd_extra_roundtrip");
     let mut observed_exclusions = BTreeSet::new();
+    let mut observed_atrd_extra_exclusions = BTreeSet::new();
 
     let mut checked = 0usize;
     let mut legacy = BTreeMap::<u16, usize>::new();
@@ -150,6 +159,79 @@ fn legacy_word_fibs_round_trip() {
     let mut annotation_initial_units = 0usize;
     let mut annotation_empty_range_tags = 0usize;
     let mut annotation_unused_words = BTreeMap::<(u16, u16), usize>::new();
+    let mut annotation_extended_tables = 0usize;
+    let mut annotation_extended_records = 0usize;
+    let mut annotation_extended_count_mismatches = 0usize;
+    let mut annotation_extended_depths = BTreeMap::<u32, usize>::new();
+    let mut annotation_extended_parent_offsets = BTreeMap::<i32, usize>::new();
+    let mut annotation_extended_ink = 0usize;
+    let mut annotation_extended_ows = 0usize;
+    let mut annotation_extended_nonzero_padding1 = 0usize;
+    let mut annotation_extended_nonzero_padding2 = 0usize;
+    let mut annotation_extended_zero_dates = 0usize;
+    let mut user_input_method_tables = 0usize;
+    let mut user_input_methods = 0usize;
+    let mut user_input_method_guids = 0usize;
+    let mut user_input_method_service_bytes = 0usize;
+    let mut user_input_method_empty_service_data = 0usize;
+    let mut user_input_method_duplicate_positions = 0usize;
+    let mut user_input_method_descending_positions = 0usize;
+    let mut user_input_method_negative_character_counts = 0usize;
+    let mut user_input_method_nonzero_private_data = 0usize;
+    let mut user_input_method_reference_pairs = BTreeMap::<(i16, i16), usize>::new();
+    let mut user_input_method_character_counts = BTreeMap::<i32, usize>::new();
+    let mut user_input_method_service_sizes = BTreeMap::<u32, usize>::new();
+    let mut user_input_method_private_values = BTreeMap::<u32, usize>::new();
+    let mut user_input_method_guid_values = BTreeSet::<[u8; 16]>::new();
+    let mut mso_envelope_tables = 0usize;
+    let mut mso_envelope_typed = 0usize;
+    let mut mso_envelope_out_of_scope = 0usize;
+    let mut mso_envelope_versions = BTreeMap::<MsoEnvelopeVersion, usize>::new();
+    let mut mso_envelope_subject_units = 0usize;
+    let mut mso_envelope_recipients = 0usize;
+    let mut mso_envelope_recipient_properties = 0usize;
+    let mut mso_envelope_property_types = BTreeMap::<&'static str, usize>::new();
+    let mut mso_envelope_attachments = 0usize;
+    let mut mso_envelope_attachment_bytes = 0usize;
+    let mut mso_envelope_attachment_name_units = 0usize;
+    let mut mso_envelope_attachment_methods = BTreeMap::<u32, usize>::new();
+    let mut mso_envelope_intro_units = 0usize;
+    let mut mso_envelope_shapes = BTreeMap::<
+        (
+            EnvelopeFlagStatus,
+            EnvelopeSensitivity,
+            EnvelopeImportance,
+            u32,
+            bool,
+            bool,
+            bool,
+        ),
+        usize,
+    >::new();
+    let mut printer_driver_info_tables = 0usize;
+    let mut printer_driver_info_total_bytes = 0usize;
+    let mut printer_driver_info_empty_fields = 0usize;
+    let mut printer_driver_info_length_shapes =
+        BTreeMap::<(usize, usize, usize, usize), usize>::new();
+    let mut printer_driver_names = BTreeSet::<Vec<u8>>::new();
+    let mut printer_port_names = BTreeSet::<Vec<u8>>::new();
+    let mut printer_driver_file_names = BTreeSet::<Vec<u8>>::new();
+    let mut printer_product_names = BTreeSet::<Vec<u8>>::new();
+    let mut ole_control_info_tables = 0usize;
+    let mut ole_control_infos = 0usize;
+    let mut ole_control_cookie_index_mismatches = 0usize;
+    let mut ole_control_duplicate_cookies = 0usize;
+    let mut ole_control_field_reference_mismatches = 0usize;
+    let mut ole_control_document_parts = BTreeMap::<OleControlDocumentPart, usize>::new();
+    let mut ole_control_nonzero_accelerator_handles = 0usize;
+    let mut ole_control_nonzero_accelerator_counts = 0usize;
+    let mut ole_control_unlinked_fields = 0usize;
+    let mut ole_control_compatibility_document_parts = 0usize;
+    let mut ole_control_failed_load = 0usize;
+    let mut ole_control_corrupt = 0usize;
+    let mut ole_control_behavior_flags = BTreeMap::<(bool, bool, bool, bool, bool), usize>::new();
+    let mut ole_control_nonzero_reserved1 = 0usize;
+    let mut ole_control_nonzero_reserved2 = 0usize;
     let mut annotation_owner_sets = 0usize;
     let mut annotation_owners = 0usize;
     let mut annotation_owner_name_units = 0usize;
@@ -203,6 +285,22 @@ fn legacy_word_fibs_round_trip() {
     let mut list_override_text_units = 0usize;
     let mut list_override_missing_definitions = 0usize;
     let mut document_property_shapes = BTreeMap::<(u16, u32), usize>::new();
+    let mut auto_summary_info_shapes = BTreeMap::<
+        (
+            bool,
+            bool,
+            AutoSummaryView,
+            bool,
+            AutoSummaryDesiredSize,
+            i32,
+            i32,
+        ),
+        usize,
+    >::new();
+    let mut auto_summary_range_tables = 0usize;
+    let mut auto_summary_ranges = 0usize;
+    let mut auto_summary_range_count_shapes = BTreeMap::<usize, usize>::new();
+    let mut auto_summary_priority_shapes = BTreeMap::<i32, usize>::new();
     let mut font_tables = 0usize;
     let mut fonts = 0usize;
     let mut alternate_font_names = 0usize;
@@ -216,6 +314,14 @@ fn legacy_word_fibs_round_trip() {
     let mut nonempty_associated_strings = BTreeMap::<usize, usize>::new();
     let mut maximum_associated_string_lengths = BTreeMap::<usize, usize>::new();
     let mut associated_string_padding = BTreeMap::<u8, usize>::new();
+    let mut user_variable_tables = 0usize;
+    let mut user_variables = 0usize;
+    let mut user_variable_name_units = 0usize;
+    let mut user_variable_value_units = 0usize;
+    let mut maximum_user_variable_value_units = 0usize;
+    let mut user_variable_nonzero_metadata = 0usize;
+    let mut user_variable_kinds = BTreeMap::<UserVariableKind, usize>::new();
+    let mut user_variable_table_shapes = BTreeMap::<(usize, u32), usize>::new();
     let mut revision_author_tables = 0usize;
     let mut revision_authors = 0usize;
     let mut revision_author_units = 0usize;
@@ -251,6 +357,9 @@ fn legacy_word_fibs_round_trip() {
     let mut grammar_option_tables = 0usize;
     let mut grammar_options = 0usize;
     let mut grammar_option_shapes = BTreeMap::<(u16, u16, u32, u16), usize>::new();
+    let mut legacy_grammar_option_tables = 0usize;
+    let mut legacy_grammar_options = 0usize;
+    let mut legacy_grammar_option_shapes = BTreeMap::<(u16, u16, u16, u16), usize>::new();
     let mut smart_tag_state_tables = 0usize;
     let mut smart_tag_state_ranges = 0usize;
     let mut smart_tag_duplicate_positions = 0usize;
@@ -439,7 +548,120 @@ fn legacy_word_fibs_round_trip() {
             } else {
                 &cfb.entry("/0Table").expect("presence checked above").data
             };
+            if let Some(location) = fib.mso_envelope_location()
+                && location.lcb != 0
+            {
+                let physical = bounded_slice(table, location.fc, location.lcb, "MsoEnvelope")?;
+                let envelope = MsoEnvelopeClsid::from_bytes(physical)
+                    .map_err(|error| format!("MsoEnvelope: {error}"))?;
+                if envelope.to_bytes().map_err(|error| error.to_string())? != physical {
+                    return Err("MsoEnvelope writer changed physical bytes".to_owned());
+                }
+                mso_envelope_tables += 1;
+                match envelope.data {
+                    MsoEnvelopeData::OutOfScope(_) => mso_envelope_out_of_scope += 1,
+                    MsoEnvelopeData::Envelope(envelope) => {
+                        mso_envelope_typed += 1;
+                        *mso_envelope_versions.entry(envelope.version).or_default() += 1;
+                        *mso_envelope_shapes
+                            .entry((
+                                envelope.flag_status,
+                                envelope.sensitivity,
+                                envelope.importance,
+                                envelope.security.bits(),
+                                envelope.delete_after_submit,
+                                envelope.originator_delivery_report_requested,
+                                envelope.read_receipt_requested,
+                            ))
+                            .or_default() += 1;
+                        mso_envelope_subject_units += envelope.subject.len();
+                        for collection in [
+                            Some(&envelope.reply_recipients),
+                            envelope.contact_link_recipients.as_ref(),
+                            Some(&envelope.recipients),
+                        ]
+                        .into_iter()
+                        .flatten()
+                        {
+                            mso_envelope_recipients += collection.recipients.len();
+                            for recipient in &collection.recipients {
+                                mso_envelope_recipient_properties += recipient.properties.len();
+                                for property in &recipient.properties {
+                                    let kind = match property.value {
+                                        EnvelopeRecipientPropertyValue::Long(_) => "long",
+                                        EnvelopeRecipientPropertyValue::Null(_) => "null",
+                                        EnvelopeRecipientPropertyValue::Boolean(_) => "boolean",
+                                        EnvelopeRecipientPropertyValue::SystemTime(_) => "systime",
+                                        EnvelopeRecipientPropertyValue::Error(_) => "error",
+                                        EnvelopeRecipientPropertyValue::String8(_) => "string8",
+                                        EnvelopeRecipientPropertyValue::Unicode(_) => "unicode",
+                                        EnvelopeRecipientPropertyValue::Binary(_) => "binary",
+                                        EnvelopeRecipientPropertyValue::MultiString8(_) => {
+                                            "multi-string8"
+                                        }
+                                        EnvelopeRecipientPropertyValue::MultiBinary(_) => {
+                                            "multi-binary"
+                                        }
+                                    };
+                                    *mso_envelope_property_types.entry(kind).or_default() += 1;
+                                }
+                            }
+                        }
+                        mso_envelope_attachments += envelope.attachments.len();
+                        mso_envelope_attachment_bytes += envelope
+                            .attachments
+                            .iter()
+                            .map(|attachment| attachment.data.len())
+                            .sum::<usize>();
+                        mso_envelope_attachment_name_units += envelope
+                            .attachments
+                            .iter()
+                            .map(|attachment| attachment.name.len())
+                            .sum::<usize>();
+                        for attachment in &envelope.attachments {
+                            *mso_envelope_attachment_methods
+                                .entry(attachment.method)
+                                .or_default() += 1;
+                        }
+                        mso_envelope_intro_units +=
+                            envelope.intro_text.as_ref().map_or(0, Vec::len);
+                    }
+                }
+            }
             let mut current_revision_author_count = None;
+            if let Some(location) = fib.printer_driver_info_location()
+                && location.lcb != 0
+            {
+                let physical = bounded_slice(table, location.fc, location.lcb, "PrDrvr")?;
+                let info = PrinterDriverInfo::from_bytes(physical)
+                    .map_err(|error| format!("PrDrvr: {error}"))?;
+                if info.to_bytes().map_err(|error| error.to_string())? != physical {
+                    return Err("PrDrvr writer changed physical bytes".to_owned());
+                }
+                printer_driver_info_tables += 1;
+                printer_driver_info_total_bytes += physical.len();
+                printer_driver_info_empty_fields += [
+                    &info.printer_name,
+                    &info.port_name,
+                    &info.driver_name,
+                    &info.product_name,
+                ]
+                .into_iter()
+                .filter(|value| value.is_empty())
+                .count();
+                *printer_driver_info_length_shapes
+                    .entry((
+                        info.printer_name.len(),
+                        info.port_name.len(),
+                        info.driver_name.len(),
+                        info.product_name.len(),
+                    ))
+                    .or_default() += 1;
+                printer_driver_names.insert(info.printer_name);
+                printer_port_names.insert(info.port_name);
+                printer_driver_file_names.insert(info.driver_name);
+                printer_product_names.insert(info.product_name);
+            }
             if let Some(location) = fib.fc_lcb(24)
                 && location.lcb != 0
             {
@@ -532,6 +754,7 @@ fn legacy_word_fibs_round_trip() {
                     *font_character_sets.entry(font.character_set).or_default() += 1;
                 }
             }
+            let mut auto_summary_info = None;
             if let Some(location) = fib.document_properties_location()
                 && location.lcb != 0
             {
@@ -544,6 +767,45 @@ fn legacy_word_fibs_round_trip() {
                 *document_property_shapes
                     .entry((fib.version().n_fib(), location.lcb))
                     .or_default() += 1;
+                let info = properties.word97.auto_summary;
+                *auto_summary_info_shapes
+                    .entry((
+                        info.valid,
+                        info.view_active,
+                        info.view_by,
+                        info.update_properties,
+                        info.desired_size,
+                        info.highest_level,
+                        info.current_level,
+                    ))
+                    .or_default() += 1;
+                auto_summary_info = Some(info);
+            }
+            if let Some(location) = fib.auto_summary_ranges_location()
+                && location.lcb != 0
+            {
+                let physical = bounded_slice(table, location.fc, location.lcb, "PlcfAsumy")?;
+                let ranges = AutoSummaryRangeTable::from_bytes(physical)
+                    .map_err(|error| format!("PlcfAsumy: {error}"))?;
+                if ranges.to_bytes().map_err(|error| error.to_string())? != physical {
+                    return Err("PlcfAsumy write did not reproduce its physical bytes".to_owned());
+                }
+                let info = auto_summary_info
+                    .as_ref()
+                    .ok_or_else(|| "PlcfAsumy has no corresponding Dop Asumyi".to_owned())?;
+                ranges
+                    .validate_against(info)
+                    .map_err(|error| format!("PlcfAsumy/Asumyi: {error}"))?;
+                auto_summary_range_tables += 1;
+                auto_summary_ranges += ranges.priorities.len();
+                *auto_summary_range_count_shapes
+                    .entry(ranges.priorities.len())
+                    .or_default() += 1;
+                for priority in ranges.priorities {
+                    *auto_summary_priority_shapes
+                        .entry(priority.level)
+                        .or_default() += 1;
+                }
             }
             if let Some(location) = fib.associated_strings_location()
                 && location.lcb != 0
@@ -571,6 +833,30 @@ fn legacy_word_fibs_round_trip() {
                         .entry(index)
                         .and_modify(|length| *length = (*length).max(string.len()))
                         .or_insert(string.len());
+                }
+            }
+            if let Some(location) = fib.user_variables_location()
+                && location.lcb != 0
+            {
+                let physical = bounded_slice(table, location.fc, location.lcb, "StwUser")?;
+                let variables = UserVariables::from_bytes(physical)
+                    .map_err(|error| format!("StwUser: {error}"))?;
+                if variables.to_bytes().map_err(|error| error.to_string())? != physical {
+                    return Err("StwUser write did not reproduce its physical bytes".to_owned());
+                }
+                user_variable_tables += 1;
+                user_variables += variables.variables.len();
+                *user_variable_table_shapes
+                    .entry((variables.variables.len(), location.lcb))
+                    .or_default() += 1;
+                for variable in variables.variables {
+                    user_variable_name_units += variable.name.len();
+                    user_variable_value_units += variable.value.len();
+                    maximum_user_variable_value_units =
+                        maximum_user_variable_value_units.max(variable.value.len());
+                    user_variable_nonzero_metadata +=
+                        usize::from(variable.ignored_name_metadata != 0);
+                    *user_variable_kinds.entry(variable.kind()).or_default() += 1;
                 }
             }
             if let Some(location) = fib.revision_authors_location()
@@ -755,6 +1041,28 @@ fn legacy_word_fibs_round_trip() {
                 grammar_options += sets.options.len();
                 for option in sets.options {
                     *grammar_option_shapes
+                        .entry((
+                            option.option_set,
+                            option.language_id,
+                            option.checker_version,
+                            option.company_id,
+                        ))
+                        .or_default() += 1;
+                }
+            }
+            if let Some(location) = fib.legacy_grammar_option_sets_location()
+                && location.lcb != 0
+            {
+                let physical = bounded_slice(table, location.fc, location.lcb, "PlfGosl")?;
+                let sets = LegacyGrammarOptionSets::from_bytes(physical)
+                    .map_err(|error| format!("PlfGosl: {error}"))?;
+                if sets.to_bytes().map_err(|error| error.to_string())? != physical {
+                    return Err("PlfGosl writer changed physical bytes".to_owned());
+                }
+                legacy_grammar_option_tables += 1;
+                legacy_grammar_options += sets.options.len();
+                for option in sets.options {
+                    *legacy_grammar_option_shapes
                         .entry((
                             option.option_set,
                             option.language_id,
@@ -1282,6 +1590,7 @@ fn legacy_word_fibs_round_trip() {
                     }
                 }
             }
+            let mut current_field_counts = BTreeMap::<FieldDocumentPart, usize>::new();
             for (part, location) in fib.field_table_locations() {
                 if location.lcb == 0 {
                     continue;
@@ -1294,6 +1603,7 @@ fn legacy_word_fibs_round_trip() {
                 }
                 *field_tables.entry(part).or_default() += 1;
                 field_records += fields.fields.len();
+                current_field_counts.insert(part, fields.fields.len());
                 for field in fields.fields {
                     let (character, reserved, field_type) = match field.character {
                         FieldCharacter::Begin {
@@ -1308,6 +1618,73 @@ fn legacy_word_fibs_round_trip() {
                     if let Some(field_type) = field_type {
                         *field_type_counts.entry(field_type).or_default() += 1;
                     }
+                }
+            }
+            if let Some(location) = fib.ole_control_info_location()
+                && location.lcb != 0
+            {
+                let physical = bounded_slice(table, location.fc, location.lcb, "RgxOcxInfo")?;
+                let infos = OleControlInfos::from_bytes(physical)
+                    .map_err(|error| format!("RgxOcxInfo: {error}"))?;
+                if infos.to_bytes().map_err(|error| error.to_string())? != physical {
+                    return Err("RgxOcxInfo writer changed physical bytes".to_owned());
+                }
+                ole_control_info_tables += 1;
+                ole_control_infos += infos.controls.len();
+                let mut seen_cookies = BTreeSet::new();
+                for (index, control) in infos.controls.into_iter().enumerate() {
+                    ole_control_duplicate_cookies +=
+                        usize::from(!seen_cookies.insert(control.cookie));
+                    ole_control_cookie_index_mismatches +=
+                        usize::from(usize::try_from(control.cookie).ok() != Some(index));
+                    let field_part = match control.document_part {
+                        OleControlDocumentPart::Main => Some(FieldDocumentPart::Main),
+                        OleControlDocumentPart::Header => Some(FieldDocumentPart::Header),
+                        OleControlDocumentPart::Footnote => Some(FieldDocumentPart::Footnote),
+                        OleControlDocumentPart::Textbox => Some(FieldDocumentPart::Textbox),
+                        OleControlDocumentPart::Endnote => Some(FieldDocumentPart::Endnote),
+                        OleControlDocumentPart::Comment => Some(FieldDocumentPart::Comment),
+                        OleControlDocumentPart::HeaderTextbox => {
+                            Some(FieldDocumentPart::HeaderTextbox)
+                        }
+                        OleControlDocumentPart::Compatibility(_) => {
+                            ole_control_compatibility_document_parts += 1;
+                            None
+                        }
+                    };
+                    if control.field_linked {
+                        ole_control_field_reference_mismatches +=
+                            usize::from(field_part.is_none_or(|field_part| {
+                                current_field_counts
+                                    .get(&field_part)
+                                    .is_none_or(|field_count| {
+                                        usize::try_from(control.field_index)
+                                            .map_or(true, |field_index| field_index >= *field_count)
+                                    })
+                            }));
+                    } else {
+                        ole_control_unlinked_fields += 1;
+                    }
+                    *ole_control_document_parts
+                        .entry(control.document_part)
+                        .or_default() += 1;
+                    ole_control_nonzero_accelerator_handles +=
+                        usize::from(control.ignored_accelerator_handle != 0);
+                    ole_control_nonzero_accelerator_counts +=
+                        usize::from(control.accelerator_count != 0);
+                    ole_control_failed_load += usize::from(control.failed_load);
+                    ole_control_corrupt += usize::from(control.corrupt);
+                    *ole_control_behavior_flags
+                        .entry((
+                            control.eats_return,
+                            control.eats_escape,
+                            control.default_button,
+                            control.cancel_button,
+                            control.right_to_left,
+                        ))
+                        .or_default() += 1;
+                    ole_control_nonzero_reserved1 += usize::from(control.reserved1 != 0);
+                    ole_control_nonzero_reserved2 += usize::from(control.reserved2 != 0);
                 }
             }
             if let Some((name_location, start_location, end_location)) = fib.bookmark_locations() {
@@ -1471,6 +1848,101 @@ fn legacy_word_fibs_round_trip() {
                             .or_default() += 1;
                     }
                     annotation_metadata_references = Some(references);
+                }
+            }
+            if let Some(location) = fib.annotation_extended_data_location()
+                && location.lcb != 0
+            {
+                if atrd_extra_exclusions.contains_key(&path) {
+                    observed_atrd_extra_exclusions.insert(path.clone());
+                } else {
+                    let physical = bounded_slice(table, location.fc, location.lcb, "AtrdExtra")?;
+                    let extended = AnnotationExtendedData::from_bytes(physical)
+                        .map_err(|error| format!("AtrdExtra: {error}"))?;
+                    if extended.to_bytes().map_err(|error| error.to_string())? != physical {
+                        return Err("AtrdExtra writer changed physical bytes".to_owned());
+                    }
+                    annotation_extended_tables += 1;
+                    annotation_extended_records += extended.comments.len();
+                    annotation_extended_count_mismatches +=
+                        usize::from(annotation_metadata_references.as_ref().is_none_or(
+                            |references| references.annotations.len() != extended.comments.len(),
+                        ));
+                    for comment in extended.comments {
+                        *annotation_extended_depths.entry(comment.depth).or_default() += 1;
+                        *annotation_extended_parent_offsets
+                            .entry(comment.parent_offset)
+                            .or_default() += 1;
+                        annotation_extended_ink += usize::from(comment.ink);
+                        annotation_extended_ows += usize::from(comment.ows_discussion_item);
+                        annotation_extended_nonzero_padding1 += usize::from(comment.padding1 != 0);
+                        annotation_extended_nonzero_padding2 += usize::from(comment.padding2 != 0);
+                        annotation_extended_zero_dates += usize::from(
+                            comment.modified.minute == 0
+                                && comment.modified.hour == 0
+                                && comment.modified.day == 0
+                                && comment.modified.month == 0
+                                && comment.modified.year_offset == 0
+                                && comment.modified.weekday == 0,
+                        );
+                    }
+                }
+            }
+            if let Some([method_location, guid_location]) = fib.user_input_method_locations() {
+                let lengths = [method_location.lcb, guid_location.lcb];
+                if lengths.iter().any(|length| *length != 0) {
+                    if lengths.contains(&0) {
+                        return Err("parallel Plcfuim/PlfguidUim table is missing".to_owned());
+                    }
+                    let method_physical =
+                        bounded_slice(table, method_location.fc, method_location.lcb, "Plcfuim")?;
+                    let guid_physical =
+                        bounded_slice(table, guid_location.fc, guid_location.lcb, "PlfguidUim")?;
+                    let methods = UserInputMethods::from_bytes(method_physical, guid_physical)
+                        .map_err(|error| format!("Plcfuim/PlfguidUim: {error}"))?;
+                    let (written_methods, written_guids) =
+                        methods.to_bytes().map_err(|error| error.to_string())?;
+                    if written_methods != method_physical || written_guids != guid_physical {
+                        return Err("Plcfuim/PlfguidUim writer changed physical bytes".to_owned());
+                    }
+                    user_input_method_tables += 1;
+                    user_input_methods += methods.methods.len();
+                    user_input_method_guids += methods.service_guids.len();
+                    user_input_method_guid_values.extend(methods.service_guids.iter().copied());
+                    user_input_method_duplicate_positions += methods
+                        .positions
+                        .windows(2)
+                        .filter(|positions| positions[0] == positions[1])
+                        .count();
+                    user_input_method_descending_positions += methods
+                        .positions
+                        .windows(2)
+                        .filter(|positions| positions[0] > positions[1])
+                        .count();
+                    for method in methods.methods {
+                        let service_data = method
+                            .service_data(table)
+                            .map_err(|error| format!("UIM service data: {error}"))?;
+                        user_input_method_service_bytes += service_data.len();
+                        user_input_method_empty_service_data +=
+                            usize::from(service_data.is_empty());
+                        user_input_method_negative_character_counts +=
+                            usize::from(method.character_count < 0);
+                        user_input_method_nonzero_private_data +=
+                            usize::from(method.private_data != 0);
+                        *user_input_method_reference_pairs
+                            .entry((method.service_category_index, method.service_clsid_index))
+                            .or_default() += 1;
+                        *user_input_method_character_counts
+                            .entry(method.character_count)
+                            .or_default() += 1;
+                        *user_input_method_service_sizes
+                            .entry(method.service_data_size)
+                            .or_default() += 1;
+                        *user_input_method_private_values
+                            .entry(method.private_data)
+                            .or_default() += 1;
+                    }
                 }
             }
             let mut parsed_annotation_owners = None;
@@ -2296,6 +2768,10 @@ fn legacy_word_fibs_round_trip() {
         ])
     );
     assert_eq!(observed_exclusions.len(), exclusions.len());
+    assert_eq!(
+        observed_atrd_extra_exclusions.len(),
+        atrd_extra_exclusions.len()
+    );
     assert_eq!(encrypted_exclusions, 3);
     assert_eq!(invalid_exclusions, 36);
     assert_eq!(checked, 403);
@@ -2452,6 +2928,26 @@ fn legacy_word_fibs_round_trip() {
         associated_string_padding,
         BTreeMap::from([(0, 350), (15, 1)])
     );
+    assert_eq!(user_variable_tables, 5);
+    assert_eq!(user_variables, 42);
+    assert_eq!(user_variable_name_units, 425);
+    assert_eq!(user_variable_value_units, 76_585);
+    assert_eq!(maximum_user_variable_value_units, 65_280);
+    assert_eq!(user_variable_nonzero_metadata, 22);
+    assert_eq!(
+        user_variable_kinds,
+        BTreeMap::from([(UserVariableKind::Ordinary, 42)])
+    );
+    assert_eq!(
+        user_variable_table_shapes,
+        BTreeMap::from([
+            ((2, 92), 1),
+            ((3, 112), 1),
+            ((8, 153_236), 1),
+            ((10, 458), 1),
+            ((19, 488), 1),
+        ])
+    );
     assert_eq!(revision_author_tables, 319);
     assert_eq!(revision_authors, 343);
     assert_eq!(revision_author_units, 2_441);
@@ -2527,6 +3023,19 @@ fn legacy_word_fibs_round_trip() {
     assert_eq!(out_of_range_custom_list_style_references, 0);
     assert_eq!(grammar_option_tables, 6);
     assert_eq!(grammar_options, 27);
+    assert_eq!(legacy_grammar_option_tables, 5);
+    assert_eq!(legacy_grammar_options, 6);
+    assert_eq!(
+        legacy_grammar_option_shapes,
+        BTreeMap::from([
+            ((0, 1036, 512, 9), 1),
+            ((0, 1049, 512, 1), 1),
+            ((1, 1033, 513, 8), 1),
+            ((1, 1036, 512, 9), 1),
+            ((1, 1049, 512, 1), 1),
+            ((1, 2057, 513, 8), 1),
+        ])
+    );
     assert_eq!(
         grammar_option_shapes,
         BTreeMap::from([
@@ -2921,6 +3430,63 @@ fn legacy_word_fibs_round_trip() {
             ((0x0112, 694), 97),
         ])
     );
+    assert_eq!(
+        auto_summary_info_shapes,
+        BTreeMap::from([
+            (
+                (
+                    false,
+                    false,
+                    AutoSummaryView::Highlight,
+                    false,
+                    AutoSummaryDesiredSize::Percentage(0),
+                    0,
+                    0,
+                ),
+                344,
+            ),
+            (
+                (
+                    false,
+                    false,
+                    AutoSummaryView::Highlight,
+                    true,
+                    AutoSummaryDesiredSize::Percentage(25),
+                    100,
+                    25,
+                ),
+                57,
+            ),
+            (
+                (
+                    false,
+                    false,
+                    AutoSummaryView::CreateDocument,
+                    true,
+                    AutoSummaryDesiredSize::Percentage(25),
+                    3_655,
+                    914,
+                ),
+                1,
+            ),
+            (
+                (
+                    true,
+                    false,
+                    AutoSummaryView::Highlight,
+                    true,
+                    AutoSummaryDesiredSize::Percentage(25),
+                    100,
+                    25,
+                ),
+                1,
+            ),
+        ])
+    );
+    assert_eq!(auto_summary_range_tables, 0);
+    assert_eq!(auto_summary_ranges, 0);
+    assert!(auto_summary_range_count_shapes.is_empty());
+    assert!(auto_summary_priority_shapes.is_empty());
     assert_eq!(style_sheets, 403);
     assert_eq!(
         style_sheet_info_shapes,
@@ -3068,6 +3634,128 @@ fn legacy_word_fibs_round_trip() {
     assert_eq!(annotation_initial_units, 164);
     assert_eq!(annotation_empty_range_tags, 13);
     assert_eq!(annotation_unused_words, BTreeMap::from([((0, 0), 86)]));
+    assert_eq!(annotation_extended_tables, 13);
+    assert_eq!(annotation_extended_records, 86);
+    assert_eq!(annotation_extended_count_mismatches, 0);
+    assert_eq!(annotation_extended_depths, BTreeMap::from([(0, 86)]));
+    assert_eq!(
+        annotation_extended_parent_offsets,
+        BTreeMap::from([(0, 86)])
+    );
+    assert_eq!(annotation_extended_ink, 0);
+    assert_eq!(annotation_extended_ows, 0);
+    assert_eq!(annotation_extended_nonzero_padding1, 0);
+    assert_eq!(annotation_extended_nonzero_padding2, 0);
+    assert_eq!(annotation_extended_zero_dates, 9);
+    assert_eq!(user_input_method_tables, 2);
+    assert_eq!(user_input_methods, 3);
+    assert_eq!(user_input_method_guids, 4);
+    assert_eq!(user_input_method_service_bytes, 48);
+    assert_eq!(user_input_method_empty_service_data, 0);
+    assert_eq!(user_input_method_duplicate_positions, 0);
+    assert_eq!(user_input_method_descending_positions, 0);
+    assert_eq!(user_input_method_negative_character_counts, 0);
+    assert_eq!(user_input_method_nonzero_private_data, 3);
+    assert_eq!(
+        user_input_method_reference_pairs,
+        BTreeMap::from([((0, 1), 3)])
+    );
+    assert_eq!(
+        user_input_method_character_counts,
+        BTreeMap::from([(1, 1), (5, 1), (11, 1)])
+    );
+    assert_eq!(user_input_method_service_sizes, BTreeMap::from([(16, 3)]));
+    assert_eq!(user_input_method_private_values, BTreeMap::from([(3, 3)]));
+    assert_eq!(
+        user_input_method_guid_values,
+        BTreeSet::from([
+            [
+                0x20, 0xd5, 0xe2, 0xf1, 0x69, 0x09, 0xd3, 0x11, 0x8d, 0xf0, 0x00, 0x10, 0x5a, 0x27,
+                0x99, 0xb5,
+            ],
+            [
+                0x60, 0xbc, 0xa4, 0xb6, 0x49, 0x07, 0xd3, 0x11, 0x8d, 0xef, 0x00, 0x10, 0x5a, 0x27,
+                0x99, 0xb5,
+            ],
+        ])
+    );
+    assert_eq!(mso_envelope_tables, 1);
+    assert_eq!(mso_envelope_typed, 1);
+    assert_eq!(mso_envelope_out_of_scope, 0);
+    assert_eq!(
+        mso_envelope_versions,
+        BTreeMap::from([(MsoEnvelopeVersion::Unicode8, 1)])
+    );
+    assert_eq!(
+        mso_envelope_shapes,
+        BTreeMap::from([(
+            (
+                EnvelopeFlagStatus::NotFlagged,
+                EnvelopeSensitivity::Normal,
+                EnvelopeImportance::Normal,
+                0,
+                false,
+                false,
+                false,
+            ),
+            1
+        )])
+    );
+    assert_eq!(mso_envelope_subject_units, 19);
+    assert_eq!(mso_envelope_recipients, 0);
+    assert_eq!(mso_envelope_recipient_properties, 0);
+    assert_eq!(mso_envelope_property_types, BTreeMap::new());
+    assert_eq!(mso_envelope_attachments, 1);
+    assert_eq!(mso_envelope_attachment_bytes, 345);
+    assert_eq!(mso_envelope_attachment_name_units, 16);
+    assert_eq!(mso_envelope_attachment_methods, BTreeMap::from([(1, 1)]));
+    assert_eq!(mso_envelope_intro_units, 0);
+    assert_eq!(printer_driver_info_tables, 8);
+    assert_eq!(printer_driver_info_total_bytes, 523);
+    assert_eq!(printer_driver_info_empty_fields, 0);
+    assert_eq!(
+        printer_driver_info_length_shapes,
+        BTreeMap::from([
+            ((11, 16, 8, 11), 1),
+            ((14, 5, 8, 14), 1),
+            ((17, 5, 8, 26), 1),
+            ((17, 33, 8, 25), 1),
+            ((20, 5, 8, 26), 1),
+            ((21, 5, 5, 21), 1),
+            ((27, 5, 8, 34), 1),
+            ((39, 5, 8, 28), 1),
+        ])
+    );
+    assert_eq!(printer_driver_names.len(), 8);
+    assert_eq!(printer_port_names.len(), 7);
+    assert_eq!(printer_driver_file_names.len(), 4);
+    assert_eq!(printer_product_names.len(), 8);
+    assert_eq!(ole_control_info_tables, 8);
+    assert_eq!(ole_control_infos, 141);
+    assert_eq!(ole_control_cookie_index_mismatches, 17);
+    assert_eq!(ole_control_duplicate_cookies, 14);
+    assert_eq!(ole_control_field_reference_mismatches, 0);
+    assert_eq!(ole_control_unlinked_fields, 17);
+    assert_eq!(ole_control_compatibility_document_parts, 2);
+    assert_eq!(
+        ole_control_document_parts,
+        BTreeMap::from([
+            (OleControlDocumentPart::Main, 23),
+            (OleControlDocumentPart::Textbox, 116),
+            (OleControlDocumentPart::Compatibility(0), 1),
+            (OleControlDocumentPart::Compatibility(13_182), 1),
+        ])
+    );
+    assert_eq!(ole_control_nonzero_accelerator_handles, 1);
+    assert_eq!(ole_control_nonzero_accelerator_counts, 1);
+    assert_eq!(ole_control_failed_load, 0);
+    assert_eq!(ole_control_corrupt, 0);
+    assert_eq!(
+        ole_control_behavior_flags,
+        BTreeMap::from([((false, false, false, false, false), 141)])
+    );
+    assert_eq!(ole_control_nonzero_reserved1, 0);
+    assert_eq!(ole_control_nonzero_reserved2, 8);
     assert_eq!(annotation_owner_sets, 13);
     assert_eq!(annotation_owners, 16);
     assert_eq!(annotation_owner_name_units, 142);
@@ -3448,13 +4136,17 @@ fn static_variable_shape(operand: &SprmOperand) -> Option<&'static str> {
 }
 
 fn excluded_files(corpus: &Path) -> BTreeMap<PathBuf, ExpectationMode> {
+    excluded_files_for_test(corpus, "doc_fib_roundtrip")
+}
+
+fn excluded_files_for_test(corpus: &Path, test: &str) -> BTreeMap<PathBuf, ExpectationMode> {
     let mut exclusions = BTreeMap::new();
     for source in ["Apache-POI", "LibreOffice"] {
         let root = corpus.join(source);
         let manifest = read_manifest(&root.join("manifest.toml"))
             .unwrap_or_else(|error| panic!("read {source} manifest: {error}"));
         for expectation in manifest.expectation {
-            if expectation.test == "doc_fib_roundtrip"
+            if expectation.test == test
                 && matches!(
                     expectation.mode,
                     ExpectationMode::Invalid | ExpectationMode::RequiresPassword
