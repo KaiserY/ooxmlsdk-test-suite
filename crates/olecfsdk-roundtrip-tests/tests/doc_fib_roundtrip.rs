@@ -11,17 +11,18 @@ use olecfsdk::{
         Bookmarks, ChpxFkp, Clx, CommandCustomizationRecord, CommandCustomizations, CpOnlyTable,
         DocOfficeArtContent, DocumentProperties, FIB_LAST_SAVED_FILETIME_INDEX, Fib, FibBase,
         FibBaseFlags, FieldCharacter, FieldDocumentPart, FieldTable, FontTable, FrameAndListRecord,
-        FrameAndListRecords, GrammarOptionSets, GrammarStateKind, GrammarStateTable,
-        HeaderStoryBoundary, HeaderTextTable, HtmlBlockType, LanguageDetectionStateKind,
-        LanguageDetectionStateTable, ListDefinitions, ListLevelTemplateCode, ListNamesTable,
-        ListOverrides, ListStyleTemplates, NoteReferenceTable, PapxFkp, PapxLengthEncoding,
-        ParagraphGroupProperties, PlcBte, PlcfSed, Prm, RevisionAuthors, RevisionMessageThreading,
-        RevisionSaveIdTable, SaveHistory, SelectionRange, SelectionState, SelectionStateExtension,
-        SelectionStyle, Sepx, ShapeAnchorTable, SmartTagRecognizerStateKind,
-        SmartTagRecognizerStateTable, SpellingStateKind, SpellingStateTable, SprmGroup, SprmKind,
-        SprmOperand, StyleFormatting, StyleKind, StyleSheet, TableCharacterCacheTable,
-        TextPieceCharacters, TextboxBreakTable, TextboxDocumentPart, TextboxStoryChain,
-        TextboxStoryTable, WORD97_FILE_IDENTIFIER,
+        FrameAndListRecords, GrammarCheckerCookieTable, GrammarCookieErrorType, GrammarOptionSets,
+        GrammarStateKind, GrammarStateTable, HeaderStoryBoundary, HeaderTextTable, HtmlBlockType,
+        LanguageDetectionStateKind, LanguageDetectionStateTable, ListDefinitions,
+        ListLevelTemplateCode, ListNamesTable, ListOverrides, ListStyleTemplates,
+        NoteReferenceTable, PapxFkp, PapxLengthEncoding, ParagraphGroupProperties, PlcBte, PlcfSed,
+        Prm, PropertyBagString, RevisionAuthors, RevisionMessageThreading, RevisionSaveIdTable,
+        SaveHistory, SelectionRange, SelectionState, SelectionStateExtension, SelectionStyle, Sepx,
+        ShapeAnchorTable, SmartTagBookmarks, SmartTagData, SmartTagFactoidTypeId,
+        SmartTagRecognizerStateKind, SmartTagRecognizerStateTable, SmartTagSource,
+        SpellingStateKind, SpellingStateTable, SprmGroup, SprmKind, SprmOperand, StyleFormatting,
+        StyleKind, StyleSheet, TableCharacterCacheTable, TextPieceCharacters, TextboxBreakTable,
+        TextboxDocumentPart, TextboxStoryChain, TextboxStoryTable, WORD97_FILE_IDENTIFIER,
     },
     office_art::OfficeArtRecordData,
 };
@@ -268,6 +269,32 @@ fn legacy_word_fibs_round_trip() {
     let mut save_history_maximum_author_length = 0usize;
     let mut save_history_maximum_path_length = 0usize;
     let mut save_history_entry_counts = BTreeMap::<usize, usize>::new();
+    let mut smart_tag_bookmark_tables = 0usize;
+    let mut smart_tag_bookmarks = 0usize;
+    let mut smart_tag_sub_entities = 0usize;
+    let mut smart_tag_nonzero_unused = 0usize;
+    let mut smart_tag_nonzero_property_bag_pointers = 0usize;
+    let mut smart_tag_sources = BTreeMap::<SmartTagSource, usize>::new();
+    let mut smart_tag_start_depths = BTreeMap::<u16, usize>::new();
+    let mut smart_tag_end_depths = BTreeMap::<u16, usize>::new();
+    let mut grammar_cookie_tables = 0usize;
+    let mut grammar_cookies = 0usize;
+    let mut grammar_cookie_headers = 0usize;
+    let mut grammar_cookie_errors = 0usize;
+    let mut grammar_cookie_duplicate_positions = 0usize;
+    let mut grammar_cookie_error_types = BTreeMap::<GrammarCookieErrorType, usize>::new();
+    let mut grammar_cookie_languages = BTreeMap::<(u8, u8), usize>::new();
+    let mut grammar_cookie_shapes =
+        BTreeMap::<(i16, i16, u32, GrammarCookieErrorType, bool, u8, u8, bool), usize>::new();
+    let mut smart_tag_data_tables = 0usize;
+    let mut smart_tag_factoid_types = 0usize;
+    let mut smart_tag_malformed_cve_factoid_types = 0usize;
+    let mut smart_tag_property_bags = 0usize;
+    let mut smart_tag_properties = 0usize;
+    let mut smart_tag_ansi_strings = 0usize;
+    let mut smart_tag_unicode_strings = 0usize;
+    let mut smart_tag_reserved_factoid_counts = BTreeMap::<u32, usize>::new();
+    let mut smart_tag_property_bag_count_mismatches = 0usize;
     let mut table_character_cache_tables = 0usize;
     let mut table_character_cache_ranges = 0usize;
     let mut table_character_unknown_ranges = 0usize;
@@ -356,6 +383,7 @@ fn legacy_word_fibs_round_trip() {
                 Fib::from_word_document(&word_document.data).map_err(|error| error.to_string())?;
             let mut current_list_style_template_count = None;
             let mut current_custom_list_style_indices = Vec::new();
+            let mut current_smart_tag_bookmark_count = None;
             let encoded = fib.to_bytes().map_err(|error| error.to_string())?;
             if word_document.data.get(..encoded.len()) != Some(encoded.as_slice()) {
                 return Err("FIB write did not reproduce its physical prefix".to_owned());
@@ -816,6 +844,135 @@ fn legacy_word_fibs_round_trip() {
                     save_history_maximum_path_length =
                         save_history_maximum_path_length.max(entry.path.len());
                 }
+            }
+            if let Some([info_location, start_location, end_location]) =
+                fib.smart_tag_bookmark_locations()
+                && [info_location, start_location, end_location]
+                    .iter()
+                    .any(|location| location.lcb != 0)
+            {
+                if [info_location, start_location, end_location]
+                    .iter()
+                    .any(|location| location.lcb == 0)
+                {
+                    return Err("smart-tag bookmark tables are only partially present".to_owned());
+                }
+                let info_bytes = bounded_slice(
+                    table,
+                    info_location.fc,
+                    info_location.lcb,
+                    "SttbfBkmkFactoid",
+                )?;
+                let start_bytes = bounded_slice(
+                    table,
+                    start_location.fc,
+                    start_location.lcb,
+                    "PlcfBkfFactoid",
+                )?;
+                let end_bytes =
+                    bounded_slice(table, end_location.fc, end_location.lcb, "PlcfBklFactoid")?;
+                let bookmarks = SmartTagBookmarks::from_bytes(info_bytes, start_bytes, end_bytes)
+                    .map_err(|error| format!("smart-tag bookmarks: {error}"))?;
+                let written = bookmarks.to_bytes().map_err(|error| error.to_string())?;
+                if written.0 != info_bytes || written.1 != start_bytes || written.2 != end_bytes {
+                    return Err("smart-tag bookmark writers changed physical bytes".to_owned());
+                }
+                smart_tag_bookmark_tables += 1;
+                smart_tag_bookmarks += bookmarks.infos.len();
+                current_smart_tag_bookmark_count = Some(bookmarks.infos.len());
+                for info in bookmarks.infos {
+                    smart_tag_sub_entities += usize::from(info.sub_entity);
+                    smart_tag_nonzero_unused += usize::from(info.unused != 0);
+                    smart_tag_nonzero_property_bag_pointers +=
+                        usize::from(info.ignored_property_bag_pointer != 0);
+                    *smart_tag_sources.entry(info.source).or_default() += 1;
+                }
+                for start in bookmarks.starts.bookmarks {
+                    *smart_tag_start_depths.entry(start.depth).or_default() += 1;
+                }
+                for end in bookmarks.ends.bookmarks {
+                    *smart_tag_end_depths.entry(end.depth).or_default() += 1;
+                }
+            }
+            if let Some(location) = fib.grammar_checker_cookies_location()
+                && location.lcb != 0
+            {
+                let physical = bounded_slice(table, location.fc, location.lcb, "Plcfcookie")?;
+                let cookies = GrammarCheckerCookieTable::from_bytes(physical)
+                    .map_err(|error| format!("Plcfcookie: {error}"))?;
+                if cookies.to_bytes().map_err(|error| error.to_string())? != physical {
+                    return Err("Plcfcookie writer changed physical bytes".to_owned());
+                }
+                grammar_cookie_tables += 1;
+                grammar_cookies += cookies.cookies.len();
+                grammar_cookie_duplicate_positions += cookies
+                    .positions
+                    .windows(2)
+                    .filter(|positions| positions[0] == positions[1])
+                    .count();
+                for cookie in cookies.cookies {
+                    grammar_cookie_headers += usize::from(cookie.header);
+                    grammar_cookie_errors += usize::from(cookie.error);
+                    *grammar_cookie_error_types
+                        .entry(cookie.error_type)
+                        .or_default() += 1;
+                    *grammar_cookie_languages
+                        .entry((cookie.language_sub, cookie.language_primary))
+                        .or_default() += 1;
+                    *grammar_cookie_shapes
+                        .entry((
+                            cookie.character_count,
+                            cookie.sentence_offset,
+                            cookie.data_offset,
+                            cookie.error_type,
+                            cookie.error,
+                            cookie.language_sub,
+                            cookie.language_primary,
+                            cookie.header,
+                        ))
+                        .or_default() += 1;
+                }
+            }
+            if let Some(location) = fib.smart_tag_data_location()
+                && location.lcb != 0
+            {
+                let physical = bounded_slice(table, location.fc, location.lcb, "SmartTagData")?;
+                let data = SmartTagData::from_bytes(physical)
+                    .map_err(|error| format!("SmartTagData: {error}"))?;
+                if data.to_bytes().map_err(|error| error.to_string())? != physical {
+                    return Err("SmartTagData writer changed physical bytes".to_owned());
+                }
+                smart_tag_data_tables += 1;
+                smart_tag_factoid_types += data.factoid_types.len();
+                smart_tag_malformed_cve_factoid_types += data
+                    .factoid_types
+                    .iter()
+                    .filter(|value| value.id == SmartTagFactoidTypeId::MalformedCve20163133)
+                    .count();
+                smart_tag_property_bags += data.property_bags.len();
+                *smart_tag_reserved_factoid_counts
+                    .entry(data.reserved_factoid_count)
+                    .or_default() += 1;
+                if let Some(bookmark_count) = current_smart_tag_bookmark_count {
+                    smart_tag_property_bag_count_mismatches +=
+                        usize::from(bookmark_count != data.property_bags.len());
+                }
+                for value in data
+                    .factoid_types
+                    .iter()
+                    .flat_map(|value| [&value.uri, &value.tag, &value.download_url])
+                    .chain(data.strings.iter())
+                {
+                    match value {
+                        PropertyBagString::Ansi(_) => smart_tag_ansi_strings += 1,
+                        PropertyBagString::Unicode(_) => smart_tag_unicode_strings += 1,
+                    }
+                }
+                smart_tag_properties += data
+                    .property_bags
+                    .iter()
+                    .map(|bag| bag.properties.len())
+                    .sum::<usize>();
             }
             if let Some(location) = fib.table_character_cache_location()
                 && location.lcb != 0
@@ -2456,6 +2613,47 @@ fn legacy_word_fibs_round_trip() {
             (10, 21)
         ])
     );
+    assert_eq!(smart_tag_bookmark_tables, 16);
+    assert_eq!(smart_tag_bookmarks, 339);
+    assert_eq!(smart_tag_sub_entities, 71);
+    assert_eq!(smart_tag_nonzero_unused, 322);
+    assert_eq!(smart_tag_nonzero_property_bag_pointers, 160);
+    assert_eq!(
+        smart_tag_sources,
+        BTreeMap::from([
+            (SmartTagSource::Unknown, 1),
+            (SmartTagSource::Grammar, 140),
+            (SmartTagSource::ScanDll, 198),
+        ])
+    );
+    assert_eq!(smart_tag_start_depths, BTreeMap::from([(1, 214), (2, 125)]));
+    assert_eq!(smart_tag_end_depths, BTreeMap::from([(0, 326), (1, 13)]));
+    assert_eq!(grammar_cookie_tables, 1);
+    assert_eq!(grammar_cookies, 1);
+    assert_eq!(grammar_cookie_headers, 1);
+    assert_eq!(grammar_cookie_errors, 1);
+    assert_eq!(grammar_cookie_duplicate_positions, 0);
+    assert_eq!(
+        grammar_cookie_error_types,
+        BTreeMap::from([(GrammarCookieErrorType::Typo, 1)])
+    );
+    assert_eq!(grammar_cookie_languages, BTreeMap::from([((1, 17), 1)]));
+    assert_eq!(
+        grammar_cookie_shapes,
+        BTreeMap::from([(
+            (
+                16,
+                3_479,
+                8,
+                GrammarCookieErrorType::Typo,
+                true,
+                1,
+                17,
+                true
+            ),
+            1
+        )])
+    );
     assert_eq!(table_character_cache_tables, 345);
     assert_eq!(table_character_cache_ranges, 5_845);
     assert_eq!(table_character_unknown_ranges, 355);
@@ -2500,6 +2698,34 @@ fn legacy_word_fibs_round_trip() {
             (2_274, 1),
         ])
     );
+    assert_eq!(smart_tag_data_tables, 16);
+    assert_eq!(smart_tag_factoid_types, 54);
+    assert_eq!(smart_tag_malformed_cve_factoid_types, 1);
+    assert_eq!(smart_tag_property_bags, 339);
+    assert_eq!(smart_tag_properties, 16);
+    assert_eq!(smart_tag_ansi_strings, 182);
+    assert_eq!(smart_tag_unicode_strings, 7);
+    assert_eq!(
+        smart_tag_reserved_factoid_counts,
+        BTreeMap::from([
+            (0, 1),
+            (1, 1),
+            (18, 1),
+            (654, 1),
+            (1_856_816, 1),
+            (71_280_872, 1),
+            (73_524_768, 1),
+            (93_529_752, 1),
+            (146_562_804, 2),
+            (168_487_032, 1),
+            (203_835_684, 1),
+            (209_832_440, 1),
+            (252_695_824, 1),
+            (259_139_680, 1),
+            (280_216_412, 1),
+        ])
+    );
+    assert_eq!(smart_tag_property_bag_count_mismatches, 0);
     assert_eq!(revision_threading_tables, 313);
     assert_eq!(revision_thread_messages, 329);
     assert_eq!(revision_thread_message_units, 0);
