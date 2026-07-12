@@ -138,6 +138,7 @@ Use `-Force` to re-export every selected file. Without it, the converter applies
 the source/output/environment checks above. `-RecycleEvery 25` is the default.
 
 After a run, validate manifest JSON, resolve every converted output path, parse
-every PDF, and ensure there are no PDFs without manifest records. The forty-six
-checked 100-file batches and their repeated all-skipped runs are the current
-smoke test for this workflow.
+every PDF, and ensure there are no PDFs without manifest records. The first
+fifty-one checked batches contain 100 valid references each. The final
+complete-corpus batches contain 100, 96, 100, 99, and 99 valid references;
+their repeated all-skipped runs are the current smoke test for this workflow.

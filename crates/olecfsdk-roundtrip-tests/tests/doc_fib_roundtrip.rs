@@ -8,28 +8,31 @@ use olecfsdk::{
     cfb::CompoundFile,
     doc::{
         AnnotationBookmarks, AnnotationExtendedData, AnnotationOwners, AnnotationReferenceTable,
-        AssociatedStrings, AutoSummaryDesiredSize, AutoSummaryRangeTable, AutoSummaryView,
-        Bookmarks, ChpxFkp, Clx, CommandCustomizationRecord, CommandCustomizations, CpOnlyTable,
-        DocOfficeArtContent, DocumentProperties, EmbeddedFontSubset, EmbeddedFontTable,
-        EmbeddedFontTableOffset, FIB_LAST_SAVED_FILETIME_INDEX, Fib, FibBase, FibBaseFlags,
-        FieldCharacter, FieldDocumentPart, FieldTable, FontTable, FrameAndListRecord,
+        AssociatedStrings, AutoCaptionDefinitions, AutoSummaryDesiredSize, AutoSummaryRangeTable,
+        AutoSummaryView, Bookmarks, CaptionDefinitions, ChpxFkp, Clx, CommandCustomizationRecord,
+        CommandCustomizations, CpOnlyTable, DocOfficeArtContent, DocumentProperties,
+        EmbeddedFontSubset, EmbeddedFontTable, EmbeddedFontTableOffset, ExternalFileNameTable,
+        FIB_LAST_SAVED_FILETIME_INDEX, Fib, FibBase, FibBaseFlags, FieldCharacter,
+        FieldDocumentPart, FieldTable, FontTable, FormatConsistencyBookmarks, FrameAndListRecord,
         FrameAndListRecords, GrammarCheckerCookieTable, GrammarCookieErrorType, GrammarCookieStore,
         GrammarOptionSets, GrammarStateKind, GrammarStateTable, HeaderStoryBoundary,
         HeaderTextTable, HtmlBlockType, LanguageDetectionStateKind, LanguageDetectionStateTable,
-        LegacyGrammarOptionSets, ListDefinitions, ListLevelTemplateCode, ListNamesTable,
-        ListOverrides, ListStyleTemplates, MailMergeDestination, MailMergeDocumentType,
-        MailMergeErrorHandling, MailMergeFileReference, MailMergeSourceKind, MailMergeState,
-        NoteReferenceTable, OleControlDocumentPart, OleControlInfos, PapxFkp, PapxLengthEncoding,
+        LegacyGrammarCheckerCookieTable, LegacyGrammarOptionSets, ListDefinitions,
+        ListLevelTemplateCode, ListNamesTable, ListOverrides, ListStyleTemplates,
+        MailMergeDestination, MailMergeDocumentType, MailMergeErrorHandling,
+        MailMergeFileReference, MailMergeSourceKind, MailMergeState, NoteReferenceTable,
+        OfficeDataSource, OleControlDocumentPart, OleControlInfos, PapxFkp, PapxLengthEncoding,
         ParagraphGroupProperties, PlcBte, PlcfSed, PrinterDriverInfo, Prm, PropertyBagString,
-        RevisionAuthors, RevisionMessageThreading, RevisionSaveIdTable, SaveHistory,
-        SelectionRange, SelectionState, SelectionStateExtension, SelectionStyle, Sepx,
-        ShapeAnchorTable, SmartTagBookmarks, SmartTagData, SmartTagFactoidTypeId,
-        SmartTagRecognizerStateKind, SmartTagRecognizerStateTable, SmartTagSource,
-        SpellingStateKind, SpellingStateTable, SprmGroup, SprmKind, SprmOperand, StyleFormatting,
-        StyleKind, StyleSheet, SubdocumentTable, TableCharacterCacheTable, TextPieceCharacters,
+        ProtectedUsers, RangeProtection, RepairBookmarks, RevisionAuthors,
+        RevisionMessageThreading, RevisionSaveIdTable, SaveHistory, SelectionRange, SelectionState,
+        SelectionStateExtension, SelectionStyle, Sepx, ShapeAnchorTable, SmartTagBookmarks,
+        SmartTagData, SmartTagFactoidTypeId, SmartTagRecognizerStateKind,
+        SmartTagRecognizerStateTable, SmartTagSource, SpellingStateKind, SpellingStateTable,
+        SprmGroup, SprmKind, SprmOperand, StructuredTagBookmarks, StyleFormatting, StyleKind,
+        StyleSheet, SubdocumentTable, TableCharacterCacheTable, TextPieceCharacters,
         TextboxBreakTable, TextboxDocumentPart, TextboxStoryChain, TextboxStoryTable,
-        UserInputMethods,
-        UserVariableKind, UserVariables, WORD97_FILE_IDENTIFIER,
+        UserInputMethods, UserVariableKind, UserVariables, WORD97_FILE_IDENTIFIER,
+        XmlSchemaReferences, XmlSchemaStringTable, XmlTransformPath,
     },
     office_art::OfficeArtRecordData,
     shared::{
@@ -335,6 +338,9 @@ fn legacy_word_fibs_round_trip() {
     let mut user_variable_kinds = BTreeMap::<UserVariableKind, usize>::new();
     let mut user_variable_table_shapes = BTreeMap::<(usize, u32), usize>::new();
     let mut mail_merge_tables = 0usize;
+    let mut new_mail_merge_tables = 0usize;
+    let mut office_data_source_tables = 0usize;
+    let mut office_data_source_properties = 0usize;
     let mut mail_merge_sql_units = 0usize;
     let mut mail_merge_string_tables = 0usize;
     let mut mail_merge_document_type_records = 0usize;
@@ -347,6 +353,32 @@ fn legacy_word_fibs_round_trip() {
     let mut subdocument_tables = 0usize;
     let mut subdocument_references = 0usize;
     let mut subdocument_nonzero_ignored_flags = 0usize;
+    let mut external_file_name_tables = 0usize;
+    let mut external_file_names = 0usize;
+    let mut format_consistency_bookmark_tables = 0usize;
+    let mut format_consistency_bookmarks = 0usize;
+    let mut repair_bookmark_tables = 0usize;
+    let mut repair_bookmarks = 0usize;
+    let mut xml_schema_tables = 0usize;
+    let mut xml_schema_references = 0usize;
+    let mut xml_schema_element_names = 0usize;
+    let mut xml_schema_attribute_names = 0usize;
+    let mut xml_schema_ansi_tables = 0usize;
+    let mut structured_tag_bookmark_tables = 0usize;
+    let mut structured_tag_bookmarks = 0usize;
+    let mut structured_tag_attributes = 0usize;
+    let mut structured_tag_placeholder_units = 0usize;
+    let mut xml_transform_paths = 0usize;
+    let mut xml_transform_path_units = 0usize;
+    let mut range_protection_tables = 0usize;
+    let mut range_permissions = 0usize;
+    let mut protected_user_tables = 0usize;
+    let mut protected_users = 0usize;
+    let mut caption_tables = 0usize;
+    let mut caption_definitions = 0usize;
+    let mut auto_caption_tables = 0usize;
+    let mut auto_caption_definitions = 0usize;
+    let mut ignored_non_template_caption_pairs = 0usize;
     let mut revision_author_tables = 0usize;
     let mut revision_authors = 0usize;
     let mut revision_author_units = 0usize;
@@ -425,6 +457,24 @@ fn legacy_word_fibs_round_trip() {
     let mut grammar_cookie_provider_bytes = 0usize;
     let mut grammar_cookie_data_shapes = BTreeMap::<(usize, u32), usize>::new();
     let mut grammar_cookie_unreferenced_data = 0usize;
+    let mut legacy_grammar_cookie_tables = 0usize;
+    let mut legacy_grammar_cookies = 0usize;
+    let mut legacy_grammar_cookie_errors = 0usize;
+    let mut legacy_grammar_cookie_duplicate_positions = 0usize;
+    let mut legacy_grammar_cookie_shapes = BTreeMap::<
+        (
+            u16,
+            i16,
+            i16,
+            u16,
+            GrammarCookieErrorType,
+            u16,
+            bool,
+            u16,
+            u32,
+        ),
+        usize,
+    >::new();
     let mut smart_tag_data_tables = 0usize;
     let mut smart_tag_factoid_types = 0usize;
     let mut smart_tag_malformed_cve_factoid_types = 0usize;
@@ -578,6 +628,256 @@ fn legacy_word_fibs_round_trip() {
             } else {
                 &cfb.entry("/0Table").expect("presence checked above").data
             };
+            if let Some([metadata_location, starts_location, ends_location]) =
+                fib.format_consistency_bookmark_locations()
+                && (metadata_location.lcb != 0
+                    || starts_location.lcb != 0
+                    || ends_location.lcb != 0)
+            {
+                if metadata_location.lcb == 0 || starts_location.lcb == 0 || ends_location.lcb == 0
+                {
+                    return Err("format-consistency bookmark tables are incomplete".to_owned());
+                }
+                let metadata = bounded_slice(
+                    table,
+                    metadata_location.fc,
+                    metadata_location.lcb,
+                    "SttbfBkmkFcc",
+                )?;
+                let starts =
+                    bounded_slice(table, starts_location.fc, starts_location.lcb, "PlcfBkfFcc")?;
+                let ends = bounded_slice(table, ends_location.fc, ends_location.lcb, "PlcfBklFcc")?;
+                let bookmarks = FormatConsistencyBookmarks::from_bytes(metadata, starts, ends)
+                    .map_err(|error| format!("FCC bookmarks: {error}"))?;
+                let character_count = u32::try_from(fib.rg_lw.ccp_text)
+                    .map_err(|_| "FCC bookmarks have negative ccpText".to_owned())?;
+                bookmarks
+                    .validate_main_document(character_count)
+                    .map_err(|error| format!("FCC bookmarks/FibRgLw97: {error}"))?;
+                let written = bookmarks.to_bytes().map_err(|error| error.to_string())?;
+                if written.metadata != metadata || written.starts != starts || written.ends != ends
+                {
+                    return Err("FCC bookmark writer changed physical bytes".to_owned());
+                }
+                format_consistency_bookmark_tables += 1;
+                format_consistency_bookmarks += bookmarks.records.len();
+            }
+            if let Some([metadata_location, starts_location, ends_location]) =
+                fib.repair_bookmark_locations()
+                && (metadata_location.lcb != 0
+                    || starts_location.lcb != 0
+                    || ends_location.lcb != 0)
+            {
+                if metadata_location.lcb == 0 || starts_location.lcb == 0 || ends_location.lcb == 0
+                {
+                    return Err("repair bookmark tables are incomplete".to_owned());
+                }
+                let metadata = bounded_slice(
+                    table,
+                    metadata_location.fc,
+                    metadata_location.lcb,
+                    "SttbfBkmkBPRepairs",
+                )?;
+                let starts = bounded_slice(
+                    table,
+                    starts_location.fc,
+                    starts_location.lcb,
+                    "PlcfBkfBPRepairs",
+                )?;
+                let ends = bounded_slice(
+                    table,
+                    ends_location.fc,
+                    ends_location.lcb,
+                    "PlcfBklBPRepairs",
+                )?;
+                let bookmarks = RepairBookmarks::from_bytes(metadata, starts, ends)
+                    .map_err(|error| format!("repair bookmarks: {error}"))?;
+                let character_count = u32::try_from(fib.rg_lw.ccp_text)
+                    .map_err(|_| "repair bookmarks have negative ccpText".to_owned())?;
+                bookmarks
+                    .validate_main_document(character_count)
+                    .map_err(|error| format!("repair bookmarks/FibRgLw97: {error}"))?;
+                let written = bookmarks.to_bytes().map_err(|error| error.to_string())?;
+                if written.metadata != metadata || written.starts != starts || written.ends != ends
+                {
+                    return Err("repair bookmark writer changed physical bytes".to_owned());
+                }
+                repair_bookmark_tables += 1;
+                repair_bookmarks += bookmarks.descriptions.len();
+            }
+            let external_files = if let Some(location) = fib.external_file_names_location()
+                && location.lcb != 0
+            {
+                let physical = bounded_slice(table, location.fc, location.lcb, "SttbFnm")?;
+                let files = ExternalFileNameTable::from_bytes(physical)
+                    .map_err(|error| format!("SttbFnm: {error}"))?;
+                if files.to_bytes().map_err(|error| error.to_string())? != physical {
+                    return Err("SttbFnm writer changed physical bytes".to_owned());
+                }
+                external_file_name_tables += 1;
+                external_file_names += files.files.len();
+                Some(files)
+            } else {
+                None
+            };
+            let xml_schemas = if let Some(location) = fib.xml_schema_references_location()
+                && location.lcb != 0
+            {
+                let physical = bounded_slice(table, location.fc, location.lcb, "Hplxsdr")?;
+                let schemas = XmlSchemaReferences::from_bytes(physical)
+                    .map_err(|error| format!("Hplxsdr: {error}"))?;
+                if schemas.to_bytes().map_err(|error| error.to_string())? != physical {
+                    return Err("Hplxsdr writer changed physical bytes".to_owned());
+                }
+                xml_schema_tables += 1;
+                xml_schema_references += schemas.schemas.len();
+                for schema in &schemas.schemas {
+                    xml_schema_element_names += match &schema.elements {
+                        XmlSchemaStringTable::Ansi(values) => {
+                            xml_schema_ansi_tables += 1;
+                            values.len()
+                        }
+                        XmlSchemaStringTable::Utf16(values) => values.len(),
+                    };
+                    xml_schema_attribute_names += match &schema.attributes {
+                        XmlSchemaStringTable::Ansi(values) => {
+                            xml_schema_ansi_tables += 1;
+                            values.len()
+                        }
+                        XmlSchemaStringTable::Utf16(values) => values.len(),
+                    };
+                }
+                Some(schemas)
+            } else {
+                None
+            };
+            if let Some([tags_location, starts_location, ends_location]) =
+                fib.structured_tag_bookmark_locations()
+                && (tags_location.lcb != 0 || starts_location.lcb != 0 || ends_location.lcb != 0)
+            {
+                if tags_location.lcb == 0 || starts_location.lcb == 0 || ends_location.lcb == 0 {
+                    return Err("structured-tag bookmark tables are incomplete".to_owned());
+                }
+                let tags_physical =
+                    bounded_slice(table, tags_location.fc, tags_location.lcb, "SttbfBkmkSdt")?;
+                let starts_physical =
+                    bounded_slice(table, starts_location.fc, starts_location.lcb, "PlcfBkfSdt")?;
+                let ends_physical =
+                    bounded_slice(table, ends_location.fc, ends_location.lcb, "PlcfBklSdt")?;
+                let bookmarks = StructuredTagBookmarks::from_bytes(
+                    tags_physical,
+                    starts_physical,
+                    ends_physical,
+                )
+                .map_err(|error| format!("structured-tag bookmarks: {error}"))?;
+                bookmarks
+                    .validate_schema_references(xml_schemas.as_ref().ok_or_else(|| {
+                        "structured-tag bookmarks exist but Hplxsdr is absent".to_owned()
+                    })?)
+                    .map_err(|error| format!("structured-tag schemas: {error}"))?;
+                let written = bookmarks.to_bytes().map_err(|error| error.to_string())?;
+                if written.tags != tags_physical
+                    || written.starts != starts_physical
+                    || written.ends != ends_physical
+                {
+                    return Err("structured-tag bookmark writer changed physical bytes".to_owned());
+                }
+                structured_tag_bookmark_tables += 1;
+                structured_tag_bookmarks += bookmarks.tags.len();
+                structured_tag_attributes += bookmarks
+                    .tags
+                    .iter()
+                    .map(|tag| tag.attributes.len())
+                    .sum::<usize>();
+                structured_tag_placeholder_units += bookmarks
+                    .tags
+                    .iter()
+                    .map(|tag| tag.placeholder.len())
+                    .sum::<usize>();
+            }
+            if let Some(location) = fib.xml_transform_path_location()
+                && location.lcb != 0
+            {
+                let physical = bounded_slice(table, location.fc, location.lcb, "CustomXForm")?;
+                let transform = XmlTransformPath::from_bytes(physical)
+                    .map_err(|error| format!("CustomXForm: {error}"))?;
+                if transform.to_bytes().map_err(|error| error.to_string())? != physical {
+                    return Err("CustomXForm writer changed physical bytes".to_owned());
+                }
+                xml_transform_paths += 1;
+                xml_transform_path_units += transform.path.len();
+            }
+            if let Some(
+                [
+                    permissions_location,
+                    starts_location,
+                    ends_location,
+                    users_location,
+                ],
+            ) = fib.range_protection_locations()
+                && (permissions_location.lcb != 0
+                    || starts_location.lcb != 0
+                    || ends_location.lcb != 0
+                    || users_location.lcb != 0)
+            {
+                let user_physical = if users_location.lcb == 0 {
+                    &[][..]
+                } else {
+                    bounded_slice(table, users_location.fc, users_location.lcb, "SttbProtUser")?
+                };
+                let users = ProtectedUsers::from_bytes(user_physical)
+                    .map_err(|error| format!("SttbProtUser: {error}"))?;
+                if users.to_bytes().map_err(|error| error.to_string())? != user_physical {
+                    return Err("SttbProtUser writer changed physical bytes".to_owned());
+                }
+                if users_location.lcb != 0 {
+                    protected_user_tables += 1;
+                    protected_users += users.users.len();
+                }
+
+                if permissions_location.lcb != 0
+                    || starts_location.lcb != 0
+                    || ends_location.lcb != 0
+                {
+                    if permissions_location.lcb == 0
+                        || starts_location.lcb == 0
+                        || ends_location.lcb == 0
+                    {
+                        return Err("range-protection bookmark tables are incomplete".to_owned());
+                    }
+                    let permissions_physical = bounded_slice(
+                        table,
+                        permissions_location.fc,
+                        permissions_location.lcb,
+                        "SttbfBkmkProt",
+                    )?;
+                    let starts_physical = bounded_slice(
+                        table,
+                        starts_location.fc,
+                        starts_location.lcb,
+                        "PlcfBkfProt",
+                    )?;
+                    let ends_physical =
+                        bounded_slice(table, ends_location.fc, ends_location.lcb, "PlcfBklProt")?;
+                    let protection = RangeProtection::from_bytes(
+                        permissions_physical,
+                        starts_physical,
+                        ends_physical,
+                        user_physical,
+                    )
+                    .map_err(|error| format!("range protection: {error}"))?;
+                    let written = protection.to_bytes().map_err(|error| error.to_string())?;
+                    if written.permissions != permissions_physical
+                        || written.starts != starts_physical
+                        || written.ends != ends_physical
+                        || written.users != user_physical
+                    {
+                        return Err("range-protection writer changed physical bytes".to_owned());
+                    }
+                    range_protection_tables += 1;
+                    range_permissions += protection.permissions.len();
+                }
+            }
             if let Some(location) = fib.mail_merge_state_location()
                 && location.lcb != 0
             {
@@ -614,6 +914,59 @@ fn legacy_word_fibs_round_trip() {
                     mail_merge_compatibility_sources +=
                         usize::from(source.file == MailMergeFileReference::NilCompatibility);
                 }
+                if let Some(files) = &external_files {
+                    state
+                        .validate_file_references(files)
+                        .map_err(|error| format!("Pms/SttbFnm: {error}"))?;
+                } else if state
+                    .sources
+                    .iter()
+                    .any(|source| matches!(source.file, MailMergeFileReference::Identifier(_)))
+                {
+                    return Err("Pms has an FNPI reference but SttbFnm is absent".to_owned());
+                }
+            }
+            let new_mail_merge_state = if let Some(location) = fib.new_mail_merge_state_location()
+                && location.lcb != 0
+            {
+                let physical = bounded_slice(table, location.fc, location.lcb, "PmsNew")?;
+                let state = MailMergeState::from_bytes(physical)
+                    .map_err(|error| format!("PmsNew: {error}"))?;
+                if state.to_bytes().map_err(|error| error.to_string())? != physical {
+                    return Err("PmsNew writer changed physical bytes".to_owned());
+                }
+                if let Some(files) = &external_files {
+                    state
+                        .validate_file_references(files)
+                        .map_err(|error| format!("PmsNew/SttbFnm: {error}"))?;
+                } else if state
+                    .sources
+                    .iter()
+                    .any(|source| matches!(source.file, MailMergeFileReference::Identifier(_)))
+                {
+                    return Err("PmsNew has an FNPI reference but SttbFnm is absent".to_owned());
+                }
+                new_mail_merge_tables += 1;
+                Some(state)
+            } else {
+                None
+            };
+            if let Some(location) = fib.office_data_source_location()
+                && location.lcb != 0
+            {
+                let physical = bounded_slice(table, location.fc, location.lcb, "ODSO")?;
+                let source = OfficeDataSource::from_bytes(physical)
+                    .map_err(|error| format!("ODSO: {error}"))?;
+                if source.to_bytes().map_err(|error| error.to_string())? != physical {
+                    return Err("ODSO writer changed physical bytes".to_owned());
+                }
+                if let Some(state) = &new_mail_merge_state {
+                    source
+                        .validate_mail_merge_state(state)
+                        .map_err(|error| format!("ODSO/PmsNew: {error}"))?;
+                }
+                office_data_source_tables += 1;
+                office_data_source_properties += source.properties.len();
             }
             if let Some(location) = fib.subdocuments_location()
                 && location.lcb != 0
@@ -632,12 +985,64 @@ fn legacy_word_fibs_round_trip() {
                     subdocuments
                         .validate_main_document_length(character_count)
                         .map_err(|error| format!("PlcfWKB/FibRgLw97: {error}"))?;
+                    subdocuments
+                        .validate_file_references(external_files.as_ref().ok_or_else(|| {
+                            "PlcfWKB has FNPI references but SttbFnm is absent".to_owned()
+                        })?)
+                        .map_err(|error| format!("PlcfWKB/SttbFnm: {error}"))?;
                     subdocument_tables += 1;
                     subdocument_references += subdocuments.subdocuments.len();
                     for subdocument in subdocuments.subdocuments {
-                        subdocument_nonzero_ignored_flags += usize::from(
-                            subdocument.ignored_flag3 || subdocument.ignored_flag8,
-                        );
+                        subdocument_nonzero_ignored_flags +=
+                            usize::from(subdocument.ignored_flag3 || subdocument.ignored_flag8);
+                    }
+                }
+            }
+            if let Some((caption_location, automatic_location)) = fib.caption_locations()
+                && (caption_location.lcb != 0 || automatic_location.lcb != 0)
+            {
+                if !fib.base.flags.contains(FibBaseFlags::DOCUMENT_TEMPLATE) {
+                    ignored_non_template_caption_pairs += 1;
+                } else {
+                    let captions = if caption_location.lcb == 0 {
+                        None
+                    } else {
+                        let physical = bounded_slice(
+                            table,
+                            caption_location.fc,
+                            caption_location.lcb,
+                            "SttbfCaption",
+                        )?;
+                        let captions = CaptionDefinitions::from_bytes(physical)
+                            .map_err(|error| format!("SttbfCaption: {error}"))?;
+                        if captions.to_bytes().map_err(|error| error.to_string())? != physical {
+                            return Err("SttbfCaption writer changed physical bytes".to_owned());
+                        }
+                        caption_tables += 1;
+                        caption_definitions += captions.captions.len();
+                        Some(captions)
+                    };
+                    if automatic_location.lcb != 0 {
+                        let physical = bounded_slice(
+                            table,
+                            automatic_location.fc,
+                            automatic_location.lcb,
+                            "SttbfAutoCaption",
+                        )?;
+                        let automatic = AutoCaptionDefinitions::from_bytes(physical)
+                            .map_err(|error| format!("SttbfAutoCaption: {error}"))?;
+                        if automatic.to_bytes().map_err(|error| error.to_string())? != physical {
+                            return Err("SttbfAutoCaption writer changed physical bytes".to_owned());
+                        }
+                        automatic
+                            .validate_against(
+                                captions.as_ref().ok_or_else(|| {
+                                    "SttbfAutoCaption has no SttbfCaption".to_owned()
+                                })?,
+                            )
+                            .map_err(|error| format!("caption tables: {error}"))?;
+                        auto_caption_tables += 1;
+                        auto_caption_definitions += automatic.entries.len();
                     }
                 }
             }
@@ -1346,6 +1751,47 @@ fn legacy_word_fibs_round_trip() {
                     *smart_tag_end_depths.entry(end.depth).or_default() += 1;
                 }
             }
+            let mut grammar_cookie_references = BTreeSet::new();
+            if let Some(location) = fib.legacy_grammar_checker_cookies_location()
+                && location.lcb != 0
+            {
+                let physical = bounded_slice(table, location.fc, location.lcb, "PlcfcookieOld")?;
+                let cookies = LegacyGrammarCheckerCookieTable::from_bytes(physical)
+                    .map_err(|error| format!("PlcfcookieOld: {error}"))?;
+                if cookies.to_bytes().map_err(|error| error.to_string())? != physical {
+                    return Err("PlcfcookieOld writer changed physical bytes".to_owned());
+                }
+                let store = current_grammar_cookie_store
+                    .as_ref()
+                    .ok_or_else(|| "PlcfcookieOld has no corresponding RgCdb".to_owned())?;
+                store
+                    .validate_legacy_references(&cookies)
+                    .map_err(|error| format!("PlcfcookieOld/RgCdb: {error}"))?;
+                legacy_grammar_cookie_tables += 1;
+                legacy_grammar_cookies += cookies.cookies.len();
+                legacy_grammar_cookie_duplicate_positions += cookies
+                    .positions
+                    .windows(2)
+                    .filter(|positions| positions[0] == positions[1])
+                    .count();
+                for cookie in cookies.cookies {
+                    grammar_cookie_references.insert(cookie.data_offset);
+                    legacy_grammar_cookie_errors += usize::from(cookie.error);
+                    *legacy_grammar_cookie_shapes
+                        .entry((
+                            cookie.language_id,
+                            cookie.character_count,
+                            cookie.sentence_offset,
+                            cookie.padding1,
+                            cookie.error_type,
+                            cookie.spare,
+                            cookie.error,
+                            cookie.padding2,
+                            cookie.data_offset,
+                        ))
+                        .or_default() += 1;
+                }
+            }
             if let Some(location) = fib.grammar_checker_cookies_location()
                 && location.lcb != 0
             {
@@ -1361,17 +1807,6 @@ fn legacy_word_fibs_round_trip() {
                 store
                     .validate_references(&cookies)
                     .map_err(|error| format!("Plcfcookie/RgCdb: {error}"))?;
-                let referenced = cookies
-                    .cookies
-                    .iter()
-                    .map(|cookie| cookie.data_offset)
-                    .collect::<BTreeSet<_>>();
-                grammar_cookie_unreferenced_data += store
-                    .entry_offsets()
-                    .map_err(|error| error.to_string())?
-                    .into_iter()
-                    .filter(|offset| !referenced.contains(offset))
-                    .count();
                 grammar_cookie_tables += 1;
                 grammar_cookies += cookies.cookies.len();
                 grammar_cookie_duplicate_positions += cookies
@@ -1380,6 +1815,7 @@ fn legacy_word_fibs_round_trip() {
                     .filter(|positions| positions[0] == positions[1])
                     .count();
                 for cookie in cookies.cookies {
+                    grammar_cookie_references.insert(cookie.data_offset);
                     grammar_cookie_headers += usize::from(cookie.header);
                     grammar_cookie_errors += usize::from(cookie.error);
                     *grammar_cookie_error_types
@@ -1401,6 +1837,14 @@ fn legacy_word_fibs_round_trip() {
                         ))
                         .or_default() += 1;
                 }
+            }
+            if let Some(store) = current_grammar_cookie_store.as_ref() {
+                grammar_cookie_unreferenced_data += store
+                    .entry_offsets()
+                    .map_err(|error| error.to_string())?
+                    .into_iter()
+                    .filter(|offset| !grammar_cookie_references.contains(offset))
+                    .count();
             }
             if let Some(location) = fib.smart_tag_data_location()
                 && location.lcb != 0
@@ -2933,6 +3377,11 @@ fn legacy_word_fibs_round_trip() {
         observed_atrd_extra_exclusions.len(),
         atrd_extra_exclusions.len()
     );
+    assert_eq!(
+        observed_plcf_wkb_exclusions.len(),
+        plcf_wkb_exclusions.len()
+    );
+    assert_eq!(observed_plcf_wkb_exclusions.len(), 1);
     assert_eq!(encrypted_exclusions, 3);
     assert_eq!(invalid_exclusions, 36);
     assert_eq!(checked, 403);
@@ -3119,6 +3568,9 @@ fn legacy_word_fibs_round_trip() {
         ])
     );
     assert_eq!(mail_merge_tables, 1);
+    assert_eq!(new_mail_merge_tables, 0);
+    assert_eq!(office_data_source_tables, 0);
+    assert_eq!(office_data_source_properties, 0);
     assert_eq!(mail_merge_sql_units, 50);
     assert_eq!(mail_merge_string_tables, 0);
     assert_eq!(mail_merge_document_type_records, 1);
@@ -3143,6 +3595,35 @@ fn legacy_word_fibs_round_trip() {
         mail_merge_shapes,
         BTreeMap::from([((136, 50, false, true), 1)])
     );
+    assert_eq!(subdocument_tables, 0);
+    assert_eq!(subdocument_references, 0);
+    assert_eq!(subdocument_nonzero_ignored_flags, 0);
+    assert_eq!(external_file_name_tables, 0);
+    assert_eq!(external_file_names, 0);
+    assert_eq!(format_consistency_bookmark_tables, 0);
+    assert_eq!(format_consistency_bookmarks, 0);
+    assert_eq!(repair_bookmark_tables, 0);
+    assert_eq!(repair_bookmarks, 0);
+    assert_eq!(xml_schema_tables, 0);
+    assert_eq!(xml_schema_references, 0);
+    assert_eq!(xml_schema_element_names, 0);
+    assert_eq!(xml_schema_attribute_names, 0);
+    assert_eq!(xml_schema_ansi_tables, 0);
+    assert_eq!(structured_tag_bookmark_tables, 0);
+    assert_eq!(structured_tag_bookmarks, 0);
+    assert_eq!(structured_tag_attributes, 0);
+    assert_eq!(structured_tag_placeholder_units, 0);
+    assert_eq!(xml_transform_paths, 0);
+    assert_eq!(xml_transform_path_units, 0);
+    assert_eq!(range_protection_tables, 0);
+    assert_eq!(range_permissions, 0);
+    assert_eq!(protected_user_tables, 0);
+    assert_eq!(protected_users, 0);
+    assert_eq!(caption_tables, 0);
+    assert_eq!(caption_definitions, 0);
+    assert_eq!(auto_caption_tables, 0);
+    assert_eq!(auto_caption_definitions, 0);
+    assert_eq!(ignored_non_template_caption_pairs, 1);
     assert_eq!(revision_author_tables, 319);
     assert_eq!(revision_authors, 343);
     assert_eq!(revision_author_units, 2_441);
@@ -3337,6 +3818,11 @@ fn legacy_word_fibs_round_trip() {
     assert_eq!(grammar_cookie_provider_bytes, 4);
     assert_eq!(grammar_cookie_data_shapes, BTreeMap::from([((1, 16), 1)]));
     assert_eq!(grammar_cookie_unreferenced_data, 0);
+    assert_eq!(legacy_grammar_cookie_tables, 0);
+    assert_eq!(legacy_grammar_cookies, 0);
+    assert_eq!(legacy_grammar_cookie_errors, 0);
+    assert_eq!(legacy_grammar_cookie_duplicate_positions, 0);
+    assert_eq!(legacy_grammar_cookie_shapes, BTreeMap::new());
     assert_eq!(grammar_cookie_tables, 1);
     assert_eq!(grammar_cookies, 1);
     assert_eq!(grammar_cookie_headers, 1);
