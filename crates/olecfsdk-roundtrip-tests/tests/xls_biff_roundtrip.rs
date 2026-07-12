@@ -206,6 +206,7 @@ fn legacy_office_workbook_streams_round_trip() {
     let mut office_art_property_table_trailing_bytes = 0usize;
     let mut office_art_emf_typed = 0usize;
     let mut office_art_wmf_typed = 0usize;
+    let mut office_art_pict_typed = 0usize;
     let mut office_art_dib_typed = 0usize;
     let mut office_art_dib_opaque = 0usize;
     let mut office_art_metafile_opaque = BTreeMap::<u16, UnknownStats>::new();
@@ -1055,6 +1056,9 @@ fn legacy_office_workbook_streams_round_trip() {
                                                 OfficeArtMetafileData::Wmf { .. } => {
                                                     office_art_wmf_typed += 1;
                                                 }
+                                                OfficeArtMetafileData::Pict { .. } => {
+                                                    office_art_pict_typed += 1;
+                                                }
                                                 OfficeArtMetafileData::Opaque {
                                                     reason,
                                                     decoded,
@@ -1502,6 +1506,9 @@ fn legacy_office_workbook_streams_round_trip() {
                                                     }
                                                     OfficeArtMetafileData::Wmf { .. } => {
                                                         office_art_wmf_typed += 1;
+                                                    }
+                                                    OfficeArtMetafileData::Pict { .. } => {
+                                                        office_art_pict_typed += 1;
                                                     }
                                                     OfficeArtMetafileData::Opaque {
                                                         reason,
@@ -2046,6 +2053,18 @@ fn legacy_office_workbook_streams_round_trip() {
         "truncated URL-moniker typed address coverage changed"
     );
     assert_eq!(drawing_obj_raw, 0, "Obj records fell back to raw payloads");
+    assert_eq!(
+        formula_unparsed_rgce_bytes, 0,
+        "Formula records retained unparsed rgce bytes"
+    );
+    assert_eq!(formula_rgcb_bytes, 0, "Formula records retained rgcb bytes");
+    assert_eq!(
+        formula_missing_extra, 1,
+        "Formula missing-extra compatibility coverage changed"
+    );
+    assert_eq!(shared_formula_records, 1_346);
+    assert_eq!(shared_formula_unparsed_rgce_bytes, 0);
+    assert_eq!(shared_formula_rgcb_bytes, 0);
     assert_eq!(array_records, 145, "Array formula corpus coverage changed");
     assert_eq!(
         array_unparsed_rgce_bytes, 0,
@@ -2079,6 +2098,16 @@ fn legacy_office_workbook_streams_round_trip() {
         linked_data_missing_extra, 0,
         "LinkedData formulas require unsupported extra-data structures"
     );
+    assert_eq!(sup_book_records, 779);
+    assert_eq!(sup_book_compatibility, 0);
+    assert_eq!(sup_book_trailing_bytes, 0);
+    assert_eq!(extern_name_records, 730);
+    assert_eq!(extern_name_compatibility_records, 0);
+    assert_eq!(extern_name_compatibility_bytes, 0);
+    assert_eq!(hyperlink_records, 409);
+    assert_eq!(hyperlink_compatibility_records, 0);
+    assert_eq!(hyperlink_compatibility_bytes, 0);
+    assert_eq!(hyperlink_trailing_bytes, 0);
     assert_eq!(
         feature_header_malformed, 1,
         "FeatHdr malformed-state count changed"
@@ -2294,6 +2323,7 @@ fn legacy_office_workbook_streams_round_trip() {
         xf_ext_compatibility_full_colors, 1,
         "XFExt compatibility FullColor coverage changed"
     );
+    assert_eq!(style_ext_unparsed_bytes, 0);
     assert_eq!(
         sst_extension_unparsed_bytes, 0,
         "SST ExtRst values retained unparsed bytes"
@@ -2316,6 +2346,13 @@ fn legacy_office_workbook_streams_round_trip() {
         drawing_txo_undetermined_contexts, 0,
         "TxO records lost their preceding FtCmo context"
     );
+    assert_eq!(drawing_txo_formula_opaque, 0);
+    assert_eq!(drawing_txo_trailing_bytes, 0);
+    assert_eq!(name_records, 8_126);
+    assert_eq!(name_continued_records, 0);
+    assert_eq!(name_unparsed_rgce_bytes, 0);
+    assert_eq!(name_rgcb_tail_bytes, 0);
+    assert_eq!(name_missing_extra, 0);
     assert!(
         drawing_obj_subrecord_raw.is_empty(),
         "Obj subrecords fell back to raw payloads: {drawing_obj_subrecord_raw:?}"
@@ -2483,12 +2520,10 @@ fn legacy_office_workbook_streams_round_trip() {
     );
     assert_eq!(
         office_art_metafile_opaque_reasons.len(),
-        2,
+        1,
         "OfficeArt opaque-metafile reason coverage changed"
     );
-    let pict = &office_art_metafile_opaque_reasons[&OfficeArtMetafileOpaqueReason::Pict];
-    assert_eq!((pict.records, pict.bytes), (3, 89_978));
-    assert_eq!(pict.lengths, BTreeSet::from([23_028, 25_048, 41_902]));
+    assert_eq!(office_art_pict_typed, 3, "typed PICT coverage changed");
     let decode_failed =
         &office_art_metafile_opaque_reasons[&OfficeArtMetafileOpaqueReason::DecodeFailed];
     assert_eq!((decode_failed.records, decode_failed.bytes), (1, 12_045));
@@ -2624,7 +2659,7 @@ fn legacy_office_workbook_streams_round_trip() {
             );
         }
         eprintln!(
-            "OfficeArt embedded graphics: {office_art_emf_typed} typed EMF, {office_art_wmf_typed} typed WMF, {office_art_dib_typed} typed/{office_art_dib_opaque} opaque DIB"
+            "OfficeArt embedded graphics: {office_art_emf_typed} typed EMF, {office_art_wmf_typed} typed WMF, {office_art_pict_typed} typed PICT, {office_art_dib_typed} typed/{office_art_dib_opaque} opaque DIB"
         );
         eprintln!(
             "SoftMaker native properties: {office_art_softmaker_native_records} records/{office_art_softmaker_native_properties} properties/{office_art_softmaker_native_payload_bytes} payload bytes/{office_art_softmaker_native_unparsed_bytes} unparsed, shapes {office_art_softmaker_native_shapes:?}"

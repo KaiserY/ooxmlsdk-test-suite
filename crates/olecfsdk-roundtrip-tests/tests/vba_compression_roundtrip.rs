@@ -3,7 +3,8 @@ use std::{collections::BTreeSet, fs, path::Path};
 use olecfsdk::{
     cfb::CompoundFile,
     vba::{
-        cache::VbaProjectStream,
+        VbaProject,
+        cache::{SrpStreamName, VbaProjectStream},
         compression::CompressedContainer,
         directory::DirStream,
         module::ModuleStream,
@@ -27,6 +28,9 @@ fn legacy_office_vba_dir_streams_round_trip() {
     let mut project_checked = 0usize;
     let mut project_wm_checked = 0usize;
     let mut project_lk_checked = 0usize;
+    let mut srp_checked = 0usize;
+    let mut interoperable_write_checked = 0usize;
+    let mut source_edit_checked = 0usize;
     let mut failures = Vec::new();
     let filter = std::env::var("VBA_FILTER").ok();
     for path in files {
@@ -181,6 +185,25 @@ fn legacy_office_vba_dir_streams_round_trip() {
                     ));
                 }
                 project_cache_checked += 1;
+                for srp_entry in compound.entries().iter().filter(|candidate| {
+                    candidate.is_stream()
+                        && candidate.path.parent() == Some(parent)
+                        && candidate
+                            .name
+                            .get(..6)
+                            .is_some_and(|prefix| prefix.eq_ignore_ascii_case("__SRP_"))
+                }) {
+                    let srp_name = SrpStreamName::parse(&srp_entry.name)?.ok_or_else(|| {
+                        olecfsdk::Error::invalid(0, "VBA SRP prefix was not recognized")
+                    })?;
+                    if srp_name.cfb_name() != srp_entry.name {
+                        return Err(olecfsdk::Error::invalid(
+                            0,
+                            "VBA SRP stream name changed after typed round-trip",
+                        ));
+                    }
+                    srp_checked += 1;
+                }
                 for descriptor in directory.modules() {
                     let stream_name = descriptor.stream_name().ok_or_else(|| {
                         olecfsdk::Error::invalid(0, "VBA module has no usable stream name")
@@ -212,6 +235,69 @@ fn legacy_office_vba_dir_streams_round_trip() {
                     let _ = module.source_bytes()?;
                     module_checked += 1;
                 }
+
+                let mut typed_project = VbaProject::from_compound_file_at(&compound, parent)?;
+                let mut source_expected = typed_project
+                    .modules
+                    .iter()
+                    .map(|module| module.stream.source_bytes())
+                    .collect::<Result<Vec<_>, _>>()?;
+                if let Some(first_module) = typed_project.modules.first() {
+                    let stream_name = first_module
+                        .stream_path
+                        .file_name()
+                        .and_then(|value| value.to_str())
+                        .ok_or_else(|| {
+                            olecfsdk::Error::invalid(0, "VBA module stream name is not Unicode")
+                        })?
+                        .to_owned();
+                    let mut edited = source_expected[0].clone();
+                    edited.extend_from_slice(b"\r\n' olecfsdk semantic edit");
+                    let previous = typed_project.replace_module_source(&stream_name, &edited)?;
+                    if previous != source_expected[0] {
+                        return Err(olecfsdk::Error::invalid(
+                            0,
+                            "VBA source edit returned the wrong previous source",
+                        ));
+                    }
+                    source_expected[0] = edited;
+                    source_edit_checked += 1;
+                }
+                let mut interoperable = compound.clone();
+                typed_project.write_interoperable_to_compound_file(&mut interoperable)?;
+                let saved = interoperable.to_bytes()?;
+                let reopened_compound = CompoundFile::from_bytes(&saved)?;
+                let reopened_project =
+                    VbaProject::from_compound_file_at(&reopened_compound, parent)?;
+                if reopened_project.cache.version != VbaProjectStream::INTEROPERABLE_VERSION
+                    || !reopened_project.cache.performance_cache.is_empty()
+                    || !reopened_project.srp_streams.is_empty()
+                    || reopened_project
+                        .directory
+                        .module_offsets()
+                        .any(|offset| offset != 0)
+                    || reopened_project
+                        .modules
+                        .iter()
+                        .any(|module| !module.stream.performance_cache.is_empty())
+                {
+                    return Err(olecfsdk::Error::invalid(
+                        0,
+                        "VBA interoperable write retained a performance cache",
+                    ));
+                }
+                let source_after = reopened_project
+                    .modules
+                    .iter()
+                    .map(|module| module.stream.source_bytes())
+                    .collect::<Result<Vec<_>, _>>()?;
+                if source_after != source_expected {
+                    return Err(olecfsdk::Error::invalid(
+                        0,
+                        "VBA interoperable write did not preserve the requested module source",
+                    ));
+                }
+                interoperable_write_checked += 1;
                 Ok::<_, olecfsdk::Error>(())
             })();
             if let Err(error) = result {
@@ -240,8 +326,17 @@ fn legacy_office_vba_dir_streams_round_trip() {
         project_checked > 0,
         "no PROJECT streams found in legacy corpus"
     );
+    assert!(srp_checked > 0, "no VBA SRP streams found in legacy corpus");
+    assert!(
+        interoperable_write_checked > 0,
+        "no VBA projects passed interoperable semantic write"
+    );
+    assert!(
+        source_edit_checked > 0,
+        "no VBA module source edits were tested"
+    );
     eprintln!(
-        "checked {checked} dir, {project_cache_checked} _VBA_PROJECT, {project_checked} PROJECT, {project_wm_checked} PROJECTwm, {project_lk_checked} PROJECTlk, and {module_checked} module streams"
+        "checked {checked} dir, {project_cache_checked} _VBA_PROJECT, {project_checked} PROJECT, {project_wm_checked} PROJECTwm, {project_lk_checked} PROJECTlk, {srp_checked} SRP, {module_checked} module streams, {interoperable_write_checked} interoperable writes, and {source_edit_checked} source edits"
     );
     let missing: Vec<_> = expected_invalid.difference(&observed_invalid).collect();
     assert!(

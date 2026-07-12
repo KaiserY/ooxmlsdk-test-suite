@@ -10,30 +10,36 @@ use olecfsdk::{
         AnnotationBookmarks, AnnotationExtendedData, AnnotationOwners, AnnotationReferenceTable,
         AssociatedStrings, AutoCaptionDefinitions, AutoSummaryDesiredSize, AutoSummaryRangeTable,
         AutoSummaryView, Bookmarks, CaptionDefinitions, ChpxFkp, Clx, CommandCustomizationRecord,
-        CommandCustomizations, CpOnlyTable, DocOfficeArtContent, DocumentProperties,
-        EmbeddedFontSubset, EmbeddedFontTable, EmbeddedFontTableOffset, ExternalFileNameTable,
+        CommandCustomizations, CpOnlyTable, CustomKinsokuLanguage, DocOfficeArtContent,
+        DocumentClassification, DocumentProperties, DocumentProtectionMode, EmbeddedFontSubset,
+        EmbeddedFontTable, EmbeddedFontTableOffset, ExternalFileNameTable,
         FIB_LAST_SAVED_FILETIME_INDEX, Fib, FibBase, FibBaseFlags, FieldCharacter,
         FieldDocumentPart, FieldTable, FontTable, FormatConsistencyBookmarks, FrameAndListRecord,
         FrameAndListRecords, GrammarCheckerCookieTable, GrammarCookieErrorType, GrammarCookieStore,
-        GrammarOptionSets, GrammarStateKind, GrammarStateTable, HeaderStoryBoundary,
-        HeaderTextTable, HtmlBlockType, LanguageDetectionStateKind, LanguageDetectionStateTable,
-        LegacyGrammarCheckerCookieTable, LegacyGrammarOptionSets, ListDefinitions,
-        ListLevelTemplateCode, ListNamesTable, ListOverrides, ListStyleTemplates,
-        MailMergeDestination, MailMergeDocumentType, MailMergeErrorHandling,
-        MailMergeFileReference, MailMergeSourceKind, MailMergeState, NoteReferenceTable,
-        OfficeDataSource, OleControlDocumentPart, OleControlInfos, PapxFkp, PapxLengthEncoding,
-        ParagraphGroupProperties, PlcBte, PlcfSed, PrinterDriverInfo, Prm, PropertyBagString,
+        GrammarOptionSets, GrammarStateKind, GrammarStateTable, GridDisplayFrequency,
+        HeaderStoryBoundary, HeaderTextTable, HtmlBlockType, KinsokuLevel,
+        LanguageDetectionStateKind, LanguageDetectionStateTable, LegacyGrammarCheckerCookieTable,
+        LegacyGrammarOptionSets, ListDefinitions, ListLevelTemplateCode, ListNamesTable,
+        ListOverrides, ListStyleTemplates, MailMergeDestination, MailMergeDocumentType,
+        MailMergeErrorHandling, MailMergeFileReference, MailMergeSourceKind, MailMergeState,
+        MathBinaryOperatorBreak, MathBinarySubtractionBreak, MathFixedConstants, MathJustification,
+        NoteReferenceTable, OfficeDataSource, OleControlDocumentPart, OleControlInfos,
+        OleObjectDescriptor, PapxFkp, PapxLengthEncoding, ParagraphGroupProperties,
+        ParagraphIdentifierContext, PlcBte, PlcfSed, PrinterDriverInfo, Prm, PropertyBagString,
         ProtectedUsers, RangeProtection, RepairBookmarks, RevisionAuthors,
-        RevisionMessageThreading, RevisionSaveIdTable, SaveHistory, SelectionRange, SelectionState,
-        SelectionStateExtension, SelectionStyle, Sepx, ShapeAnchorTable, SmartTagBookmarks,
-        SmartTagData, SmartTagFactoidTypeId, SmartTagRecognizerStateKind,
-        SmartTagRecognizerStateTable, SmartTagSource, SpellingStateKind, SpellingStateTable,
-        SprmGroup, SprmKind, SprmOperand, StructuredTagBookmarks, StyleFormatting, StyleKind,
-        StyleSheet, SubdocumentTable, TableCharacterCacheTable, TextPieceCharacters,
+        RevisionMessageThreading, RevisionSaveIdTable, SaveHistory, SavedOutlineLevel,
+        SavedViewKind, SelectionRange, SelectionState, SelectionStateExtension, SelectionStyle,
+        Sepx, ShapeAnchorTable, SmartTagBookmarks, SmartTagData, SmartTagFactoidTypeId,
+        SmartTagRecognizerStateKind, SmartTagRecognizerStateTable, SmartTagSource,
+        SpellingStateKind, SpellingStateTable, SprmGroup, SprmKind, SprmOperand,
+        StructuredTagBookmarks, StyleFormatting, StyleKind, StyleSheet, StyleSortMethod,
+        SubdocumentTable, TableCharacterCacheTable, TextLineEnding, TextPieceCharacters,
         TextboxBreakTable, TextboxDocumentPart, TextboxStoryChain, TextboxStoryTable,
-        UserInputMethods, UserVariableKind, UserVariables, WORD97_FILE_IDENTIFIER,
-        XmlSchemaReferences, XmlSchemaStringTable, XmlTransformPath,
+        TypographyJustification, UserInputMethods, UserVariableKind, UserVariables,
+        WORD97_FILE_IDENTIFIER, WebTargetScreenSize, XmlSchemaReferences, XmlSchemaStringTable,
+        XmlTransformPath,
     },
+    forms::MorphDataControlEnvelope,
     office_art::OfficeArtRecordData,
     shared::{
         EnvelopeFlagStatus, EnvelopeImportance, EnvelopeRecipientPropertyValue,
@@ -122,8 +128,15 @@ fn legacy_word_fibs_round_trip() {
     let mut sepx_count = 0usize;
     let mut sepx_prls = 0usize;
     let mut sepx_unknown_sprms = BTreeSet::<u16>::new();
+    let mut sepx_unknown_fixed_shapes = BTreeMap::<(u16, u32), usize>::new();
     let mut sepx_raw_variable_operands = 0usize;
     let mut sepx_raw_variable_frequencies = BTreeMap::<u16, usize>::new();
+    let mut sepx_raw_variable_shapes = BTreeMap::<(u16, usize), usize>::new();
+    let mut sepx_static_variable_operands = BTreeMap::<&'static str, usize>::new();
+    let mut outline_list_restart_values = BTreeMap::<u8, usize>::new();
+    let mut outline_list_reserved_shapes = BTreeSet::<[u8; 3]>::new();
+    let mut outline_list_nonzero_text_units = 0usize;
+    let mut section_header_footer_flag_shapes = BTreeMap::<u8, usize>::new();
     let mut sepx_trailing_bytes = BTreeMap::<u8, usize>::new();
     let mut style_sheets = 0usize;
     let mut style_sheet_info_shapes = BTreeMap::<(usize, u16), usize>::new();
@@ -241,6 +254,16 @@ fn legacy_word_fibs_round_trip() {
     let mut ole_control_behavior_flags = BTreeMap::<(bool, bool, bool, bool, bool), usize>::new();
     let mut ole_control_nonzero_reserved1 = 0usize;
     let mut ole_control_nonzero_reserved2 = 0usize;
+    let mut ole_object_descriptors = 0usize;
+    let mut ole_object_descriptor_shapes = BTreeMap::<(u16, u16, Option<u16>, usize), usize>::new();
+    let mut ole_object_control_descriptors = 0usize;
+    let mut ole_object_control_streams = 0usize;
+    let mut ole_object_control_missing_payloads = 0usize;
+    let mut ole_object_control_storage_shapes = BTreeMap::<(bool, Vec<String>), usize>::new();
+    let mut ole_object_control_classes =
+        BTreeMap::<(String, bool), (usize, BTreeSet<usize>)>::new();
+    let mut morph_data_controls = 0usize;
+    let mut morph_data_shapes = BTreeMap::<(String, u64, usize, usize), usize>::new();
     let mut annotation_owner_sets = 0usize;
     let mut annotation_owners = 0usize;
     let mut annotation_owner_name_units = 0usize;
@@ -294,6 +317,159 @@ fn legacy_word_fibs_round_trip() {
     let mut list_override_text_units = 0usize;
     let mut list_override_missing_definitions = 0usize;
     let mut document_property_shapes = BTreeMap::<(u16, u32), usize>::new();
+    let mut document_typography_shapes = BTreeMap::<
+        (
+            TypographyJustification,
+            KinsokuLevel,
+            CustomKinsokuLanguage,
+            bool,
+            bool,
+            bool,
+            bool,
+            u16,
+            u16,
+        ),
+        usize,
+    >::new();
+    let mut document_typography_following_units = 0usize;
+    let mut document_typography_leading_units = 0usize;
+    let mut document_typography_nonzero_unused_following_slots = 0usize;
+    let mut document_typography_nonzero_unused_leading_slots = 0usize;
+    let mut document_compatibility_option_shapes = BTreeMap::<(u16, u32), usize>::new();
+    let mut document_compatibility_option_mismatches = BTreeMap::<u16, usize>::new();
+    let mut document_format_flag_shapes = BTreeMap::<u8, usize>::new();
+    let mut document_footnote_numbering_shapes = BTreeMap::<u16, usize>::new();
+    let mut document_state_flag_shapes = BTreeMap::<u32, usize>::new();
+    let mut document_endnote_numbering_shapes = BTreeMap::<u16, usize>::new();
+    let mut document_endnote_option_shapes = BTreeMap::<u16, usize>::new();
+    let mut document_saved_view_shapes = BTreeMap::<u16, usize>::new();
+    let mut document_saved_view_kinds = BTreeMap::<SavedViewKind, usize>::new();
+    let mut document_saved_zoom_kinds = BTreeMap::<u8, usize>::new();
+    let mut document_saved_zoom_percentages = BTreeSet::<u16>::new();
+    let mut document_display_flag_shapes = BTreeMap::<u16, usize>::new();
+    let mut document_outline_levels = BTreeMap::<SavedOutlineLevel, usize>::new();
+    let mut document_version_flag_shapes = BTreeMap::<u16, usize>::new();
+    let mut document_event_shapes = BTreeMap::<u32, usize>::new();
+    let mut document_virus_flag_shapes = BTreeMap::<(bool, bool), usize>::new();
+    let mut document_virus_session_keys = BTreeSet::<u32>::new();
+    let mut document_drawing_grid_shapes = BTreeMap::<
+        (
+            u16,
+            u16,
+            u16,
+            u16,
+            GridDisplayFrequency,
+            bool,
+            GridDisplayFrequency,
+            bool,
+        ),
+        usize,
+    >::new();
+    let mut document_2000_extensions = 0usize;
+    let mut document_2000_level_shapes = BTreeMap::<(u8, u8), usize>::new();
+    let mut document_2000_flag_shapes = BTreeMap::<u32, usize>::new();
+    let mut document_2000_screen_sizes = BTreeMap::<WebTargetScreenSize, usize>::new();
+    let mut document_2000_initialized_web_options = 0usize;
+    let mut document_2000_initialized_ppi = BTreeMap::<u16, usize>::new();
+    let mut document_copts_named_shapes = BTreeMap::<u32, usize>::new();
+    let mut document_copts_cached_column_balance = 0usize;
+    let mut document_copts_nonzero_empty1 = 0usize;
+    let mut document_copts_nonzero_empty_dwords = 0usize;
+    let mut document_copts_word8_mismatches = 0usize;
+    let mut document_2000_pre_word10_shapes = BTreeMap::<u16, usize>::new();
+    let mut document_2000_flag2_shapes = BTreeMap::<u16, usize>::new();
+    let mut document_2002_extensions = 0usize;
+    let mut document_2002_flag_shapes = BTreeMap::<u16, usize>::new();
+    let mut document_2002_line_endings = BTreeMap::<TextLineEnding, usize>::new();
+    let mut document_2002_feature_shapes = BTreeMap::<u16, usize>::new();
+    let mut document_2002_default_table_styles = BTreeSet::<u16>::new();
+    let mut document_2002_style_filters = BTreeMap::<u16, usize>::new();
+    let mut document_2002_booklet_pages = BTreeMap::<u16, usize>::new();
+    let mut document_2002_code_pages = BTreeMap::<u32, usize>::new();
+    let mut document_2002_nonzero_unused = 0usize;
+    let mut document_2002_nonzero_revision_positions = [0usize; 7];
+    let mut document_2002_maximum_revision_positions = [0u32; 7];
+    let mut document_2002_nonzero_root_revision_ids = 0usize;
+    let mut document_2002_root_revision_ids = BTreeSet::<u32>::new();
+    let mut document_2003_extensions = 0usize;
+    let mut document_2003_flag_shapes = BTreeMap::<u32, usize>::new();
+    let mut document_2003_protection_shapes = BTreeMap::<u16, usize>::new();
+    let mut document_2003_protection_modes = BTreeMap::<DocumentProtectionMode, usize>::new();
+    let mut document_2003_page_widths = BTreeMap::<u32, usize>::new();
+    let mut document_2003_page_heights = BTreeMap::<u32, usize>::new();
+    let mut document_2003_font_percentages = BTreeMap::<u32, usize>::new();
+    let mut document_2003_toolbar_shapes = BTreeMap::<u8, usize>::new();
+    let mut document_2003_cleanup_limits = BTreeMap::<u16, usize>::new();
+    let mut document_2007_extensions = 0usize;
+    let mut document_2007_reserved_values = BTreeMap::<u32, usize>::new();
+    let mut document_2007_flag_shapes = BTreeMap::<u32, usize>::new();
+    let mut document_2007_style_sort_methods = BTreeMap::<StyleSortMethod, usize>::new();
+    let mut document_math_flag_shapes = BTreeMap::<u32, usize>::new();
+    let mut document_math_enum_shapes = BTreeMap::<
+        (
+            MathBinaryOperatorBreak,
+            MathBinarySubtractionBreak,
+            MathJustification,
+        ),
+        usize,
+    >::new();
+    let mut document_math_fixed_constants = BTreeMap::<MathFixedConstants, usize>::new();
+    let mut document_math_font_indexes = BTreeMap::<u16, usize>::new();
+    let mut document_math_left_margins = BTreeMap::<i32, usize>::new();
+    let mut document_math_right_margins = BTreeMap::<i32, usize>::new();
+    let mut document_math_wrapped_indents = BTreeMap::<i32, usize>::new();
+    let mut document_2010_extensions = 0usize;
+    let mut document_2010_compatibility_zero_contexts = 0usize;
+    let mut document_2010_standard_contexts = BTreeSet::<u32>::new();
+    let mut document_2010_reserved_values = BTreeMap::<u32, usize>::new();
+    let mut document_2010_discard_image_data = BTreeMap::<bool, usize>::new();
+    let mut document_2010_image_resolutions = BTreeMap::<u32, usize>::new();
+    let mut document_2013_chart_tracking = BTreeMap::<bool, usize>::new();
+    let mut document_classifications = BTreeMap::<DocumentClassification, usize>::new();
+    let mut document_undefined_space_shapes = BTreeSet::<[u8; 30]>::new();
+    let mut document_nonzero_undefined_spaces = 0usize;
+    let mut document_nonzero_undefined_space_bytes = 0usize;
+    let mut document_last_list_indexes = BTreeSet::<(u16, u16)>::new();
+    let mut document_nonzero_last_list_indexes = 0usize;
+    let mut document_last_list_index_matches = 0usize;
+    let mut document_last_list_index_mismatches = BTreeMap::<(u16, u16, usize), usize>::new();
+    let mut document_cleanup_limit_matches = 0usize;
+    let mut document_cleanup_limit_mismatches = BTreeMap::<(u16, usize), usize>::new();
+    let mut document_numbering_cache_states = BTreeMap::<(bool, bool), usize>::new();
+    let mut document_numbering_cache_lengths = BTreeMap::<u32, usize>::new();
+    let mut document_numbering_cache_present_max_positions = BTreeSet::<i32>::new();
+    let mut document_numbering_cache_absent_max_positions = BTreeSet::<i32>::new();
+    let mut document_note_number_formats = BTreeMap::<(u8, u8), usize>::new();
+    let mut document_pagination_display_shapes = BTreeMap::<(u16, u16), usize>::new();
+    let mut document_characters_with_spaces_shapes = BTreeSet::<(i32, i32)>::new();
+    let mut document_double_byte_character_shapes = BTreeSet::<(i32, i32)>::new();
+    let mut document_negative_character_count_pairs = 0usize;
+    let mut document_character_count_relation_mismatches = 0usize;
+    let mut document_character_statistic_states =
+        BTreeMap::<(bool, bool, bool, bool), usize>::new();
+    let mut document_main_statistic_shapes = BTreeSet::<(i32, i32, i16, i32, i32)>::new();
+    let mut document_subdocument_statistic_shapes = BTreeSet::<(i32, i32, i16, i32, i32)>::new();
+    let mut document_negative_statistics = 0usize;
+    let mut document_statistic_relation_mismatches = 0usize;
+    let mut document_statistic_states = BTreeMap::<(bool, bool, bool), usize>::new();
+    let mut document_exact_statistic_character_bound_mismatches = 0usize;
+    let mut document_created_timestamps = BTreeSet::new();
+    let mut document_revised_timestamps = BTreeSet::new();
+    let mut document_last_printed_timestamps = BTreeSet::new();
+    let mut document_ignored_timestamp_counts = [0usize; 3];
+    let mut document_revision_counts = BTreeSet::<i16>::new();
+    let mut document_editing_times = BTreeSet::<i32>::new();
+    let mut document_negative_editing_times = 0usize;
+    let mut document_protection_hashes = BTreeSet::<i32>::new();
+    let mut document_protection_hash_states = BTreeMap::<(bool, bool), usize>::new();
+    let mut document_default_tab_widths = BTreeSet::<i16>::new();
+    let mut document_web_code_pages = BTreeMap::<u16, usize>::new();
+    let mut document_hyphenation_zones = BTreeSet::<u16>::new();
+    let mut document_consecutive_hyphen_limits = BTreeSet::<u16>::new();
+    let mut document_reserved2_values = BTreeMap::<u16, usize>::new();
+    let mut document_lock_revision_marking_mismatches = 0usize;
+    let mut document_lock_revision_annotation_conflicts = 0usize;
+    let mut document_reserved3a_values = BTreeMap::<u32, usize>::new();
     let mut auto_summary_info_shapes = BTreeMap::<
         (
             bool,
@@ -566,6 +742,131 @@ fn legacy_word_fibs_round_trip() {
                 return Err(
                     "encrypted DOC is missing a requires_password manifest entry".to_owned(),
                 );
+            }
+
+            for obj_info in cfb
+                .entries()
+                .iter()
+                .filter(|entry| entry.is_stream() && entry.name == "\u{3}ObjInfo")
+            {
+                let descriptor = OleObjectDescriptor::from_bytes(&obj_info.data)
+                    .map_err(|error| format!("{}: {error}", obj_info.path.display()))?;
+                if descriptor.to_bytes() != obj_info.data {
+                    return Err(format!(
+                        "{}: ODT writer changed physical bytes",
+                        obj_info.path.display()
+                    ));
+                }
+                ole_object_descriptors += 1;
+                *ole_object_descriptor_shapes
+                    .entry((
+                        descriptor.persist1.bits(),
+                        descriptor.clipboard_format.raw(),
+                        descriptor.persist2.map(|value| value.bits()),
+                        obj_info.data.len(),
+                    ))
+                    .or_default() += 1;
+                if !descriptor.is_ole_control() {
+                    continue;
+                }
+                ole_object_control_descriptors += 1;
+                let uses_stream = descriptor.control_uses_stream();
+                ole_object_control_streams += usize::from(uses_stream);
+                let parent = obj_info
+                    .path
+                    .parent()
+                    .ok_or_else(|| "ObjInfo stream has no parent storage".to_owned())?;
+                let parent_entry = cfb
+                    .entry(parent)
+                    .ok_or_else(|| "ObjInfo parent storage is missing".to_owned())?;
+                let mut children = cfb
+                    .entries()
+                    .iter()
+                    .filter(|entry| {
+                        entry.path.parent() == Some(parent) && entry.path != obj_info.path
+                    })
+                    .map(|entry| {
+                        format!(
+                            "{}:{}",
+                            if entry.is_stream() {
+                                "stream"
+                            } else {
+                                "storage"
+                            },
+                            entry.name
+                        )
+                    })
+                    .collect::<Vec<_>>();
+                children.sort();
+                let has_payload = if uses_stream {
+                    cfb.entries().iter().any(|entry| {
+                        entry.is_stream()
+                            && entry.path.parent() == Some(parent)
+                            && entry.name == "\u{3}OCXDATA"
+                    })
+                } else {
+                    cfb.entries().iter().any(|entry| {
+                        entry.is_stream()
+                            && entry.path.parent() == Some(parent)
+                            && matches!(entry.name.as_str(), "contents" | "f")
+                    })
+                };
+                let payload_length = cfb
+                    .entries()
+                    .iter()
+                    .find(|entry| {
+                        entry.is_stream()
+                            && entry.path.parent() == Some(parent)
+                            && if uses_stream {
+                                entry.name == "\u{3}OCXDATA"
+                            } else {
+                                matches!(entry.name.as_str(), "contents" | "f")
+                            }
+                    })
+                    .map_or(0, |entry| entry.data.len());
+                let class_id = parent_entry.clsid.to_string();
+                if matches!(
+                    class_id.as_str(),
+                    "8bd21d10-ec42-11ce-9e0d-00aa006002f3"
+                        | "8bd21d40-ec42-11ce-9e0d-00aa006002f3"
+                        | "8bd21d50-ec42-11ce-9e0d-00aa006002f3"
+                ) {
+                    let payload = cfb
+                        .entries()
+                        .iter()
+                        .find(|entry| {
+                            entry.is_stream()
+                                && entry.path.parent() == Some(parent)
+                                && entry.name == "contents"
+                        })
+                        .ok_or_else(|| "MorphData control has no contents stream".to_owned())?;
+                    let morph = MorphDataControlEnvelope::from_bytes(&payload.data)
+                        .map_err(|error| format!("{}: {error}", payload.path.display()))?;
+                    if morph.to_bytes().map_err(|error| error.to_string())? != payload.data {
+                        return Err(format!(
+                            "{}: MorphData writer changed physical bytes",
+                            payload.path.display()
+                        ));
+                    }
+                    morph_data_controls += 1;
+                    *morph_data_shapes
+                        .entry((
+                            class_id.clone(),
+                            morph.property_mask.bits(),
+                            morph.data_and_extra.len(),
+                            morph.following_data.len(),
+                        ))
+                        .or_default() += 1;
+                }
+                let class = ole_object_control_classes
+                    .entry((class_id, uses_stream))
+                    .or_default();
+                class.0 += 1;
+                class.1.insert(payload_length);
+                ole_object_control_missing_payloads += usize::from(!has_payload);
+                *ole_object_control_storage_shapes
+                    .entry((uses_stream, children))
+                    .or_default() += 1;
             }
 
             let fib =
@@ -1304,6 +1605,8 @@ fn legacy_word_fibs_round_trip() {
                 current_grammar_cookie_store = Some(store);
             }
             let mut auto_summary_info = None;
+            let mut current_last_list_indexes = None;
+            let mut current_word2003 = None;
             if let Some(location) = fib.document_properties_location()
                 && location.lcb != 0
             {
@@ -1316,6 +1619,479 @@ fn legacy_word_fibs_round_trip() {
                 *document_property_shapes
                     .entry((fib.version().n_fib(), location.lcb))
                     .or_default() += 1;
+                *document_classifications
+                    .entry(properties.word97.document_classification)
+                    .or_default() += 1;
+                let undefined_space = *properties.word97.undefined_space.bytes();
+                document_undefined_space_shapes.insert(undefined_space);
+                let nonzero_space_bytes = undefined_space
+                    .into_iter()
+                    .filter(|byte| *byte != 0)
+                    .count();
+                document_nonzero_undefined_spaces += usize::from(nonzero_space_bytes != 0);
+                document_nonzero_undefined_space_bytes += nonzero_space_bytes;
+                let list_indexes = properties.word97.last_list_indexes;
+                current_last_list_indexes = Some(list_indexes);
+                document_last_list_indexes.insert((list_indexes.bullet, list_indexes.numbering));
+                document_nonzero_last_list_indexes +=
+                    usize::from(list_indexes.bullet != 0 || list_indexes.numbering != 0);
+                *document_note_number_formats
+                    .entry((
+                        properties.word97.footnote_number_format.code(),
+                        properties.word97.endnote_number_format.code(),
+                    ))
+                    .or_default() += 1;
+                *document_pagination_display_shapes
+                    .entry((
+                        properties.word97.pagination_zoom_font_size,
+                        properties.word97.pagination_screen_height,
+                    ))
+                    .or_default() += 1;
+                let characters_with_spaces = properties.word97.characters_with_spaces;
+                let double_byte_characters = properties.word97.double_byte_characters;
+                document_characters_with_spaces_shapes.insert((
+                    characters_with_spaces.main,
+                    characters_with_spaces.with_subdocuments,
+                ));
+                document_double_byte_character_shapes.insert((
+                    double_byte_characters.main,
+                    double_byte_characters.with_subdocuments,
+                ));
+                document_negative_character_count_pairs += usize::from(
+                    !characters_with_spaces.is_nonnegative()
+                        || !double_byte_characters.is_nonnegative(),
+                );
+                document_character_count_relation_mismatches += usize::from(
+                    !characters_with_spaces.includes_main()
+                        || !double_byte_characters.includes_main(),
+                );
+                *document_character_statistic_states
+                    .entry((
+                        properties.word97.base.document_flags.exact_statistics,
+                        properties
+                            .word97
+                            .base
+                            .endnote_options
+                            .include_subdocuments_in_statistics,
+                        characters_with_spaces.includes_main(),
+                        double_byte_characters.includes_main(),
+                    ))
+                    .or_default() += 1;
+                let base = &properties.word97.base;
+                let statistics = base.statistics;
+                document_main_statistic_shapes.insert((
+                    statistics.main.words,
+                    statistics.main.characters,
+                    statistics.main.pages,
+                    statistics.main.paragraphs,
+                    statistics.main.lines,
+                ));
+                document_subdocument_statistic_shapes.insert((
+                    statistics.with_subdocuments.words,
+                    statistics.with_subdocuments.characters,
+                    statistics.with_subdocuments.pages,
+                    statistics.with_subdocuments.paragraphs,
+                    statistics.with_subdocuments.lines,
+                ));
+                document_negative_statistics += usize::from(!statistics.is_nonnegative());
+                document_statistic_relation_mismatches += usize::from(!statistics.includes_main());
+                let statistics_are_exact = base.document_flags.exact_statistics;
+                let include_subdocuments = base.endnote_options.include_subdocuments_in_statistics;
+                *document_statistic_states
+                    .entry((
+                        statistics_are_exact,
+                        include_subdocuments,
+                        statistics.includes_main(),
+                    ))
+                    .or_default() += 1;
+                if let Some(exact) = base.exact_statistics() {
+                    let character_bound = if include_subdocuments {
+                        i64::from(fib.rg_lw.ccp_text)
+                            + i64::from(fib.rg_lw.ccp_footnote)
+                            + i64::from(fib.rg_lw.ccp_endnote)
+                            + i64::from(fib.rg_lw.ccp_textbox)
+                    } else {
+                        i64::from(fib.rg_lw.ccp_text)
+                    };
+                    document_exact_statistic_character_bound_mismatches += usize::from(
+                        exact.characters < 0 || i64::from(exact.characters) > character_bound,
+                    );
+                }
+                document_created_timestamps.insert(base.created);
+                document_revised_timestamps.insert(base.revised);
+                document_last_printed_timestamps.insert(base.last_printed);
+                document_ignored_timestamp_counts[0] += usize::from(base.created.is_ignored());
+                document_ignored_timestamp_counts[1] += usize::from(base.revised.is_ignored());
+                document_ignored_timestamp_counts[2] += usize::from(base.last_printed.is_ignored());
+                document_revision_counts.insert(base.revision_count);
+                document_editing_times.insert(base.editing_time);
+                document_negative_editing_times += usize::from(base.editing_time < 0);
+                let protection_hash = base.protection_password_hash.0;
+                document_protection_hashes.insert(protection_hash);
+                let protection_enabled = base.document_flags.lock_revisions
+                    || base.document_flags.form_protection
+                    || base.document_flags.lock_annotations
+                    || base.document_flags.revision_marking;
+                *document_protection_hash_states
+                    .entry((protection_enabled, protection_hash != 0))
+                    .or_default() += 1;
+                document_default_tab_widths.insert(base.default_tab_width);
+                *document_web_code_pages
+                    .entry(base.web_code_page.0)
+                    .or_default() += 1;
+                document_hyphenation_zones.insert(base.hyphenation_zone);
+                document_consecutive_hyphen_limits.insert(base.consecutive_hyphen_limit);
+                *document_reserved2_values.entry(base.reserved2).or_default() += 1;
+                document_lock_revision_marking_mismatches += usize::from(
+                    base.document_flags.lock_revisions && !base.document_flags.revision_marking,
+                );
+                document_lock_revision_annotation_conflicts += usize::from(
+                    base.document_flags.lock_revisions && base.document_flags.lock_annotations,
+                );
+                *document_reserved3a_values
+                    .entry(properties.word97.reserved3a)
+                    .or_default() += 1;
+                let numbering_cache = properties.word97.deprecated_numbering_field_cache_metadata(
+                    fib.deprecated_numbering_field_cache_location(),
+                );
+                let numbering_cache_present = numbering_cache.is_present();
+                *document_numbering_cache_states
+                    .entry((numbering_cache_present, numbering_cache.invalid))
+                    .or_default() += 1;
+                if let Some(location) = numbering_cache.location
+                    && location.lcb != 0
+                {
+                    bounded_slice(table, location.fc, location.lcb, "PlcfBteLvc")?;
+                    *document_numbering_cache_lengths
+                        .entry(location.lcb)
+                        .or_default() += 1;
+                    document_numbering_cache_present_max_positions
+                        .insert(numbering_cache.maximum_valid_position);
+                } else {
+                    document_numbering_cache_absent_max_positions
+                        .insert(numbering_cache.maximum_valid_position);
+                }
+                let typography = &properties.word97.typography;
+                *document_typography_shapes
+                    .entry((
+                        typography.justification,
+                        typography.kinsoku_level,
+                        typography.custom_kinsoku_language,
+                        typography.kern_punctuation,
+                        typography.print_two_on_one,
+                        typography.unused,
+                        typography.japanese_use_level2,
+                        typography.following_punctuation_count,
+                        typography.leading_punctuation_count,
+                    ))
+                    .or_default() += 1;
+                document_typography_following_units += typography
+                    .following_punctuation()
+                    .map_err(|error| error.to_string())?
+                    .len();
+                document_typography_leading_units += typography
+                    .leading_punctuation()
+                    .map_err(|error| error.to_string())?
+                    .len();
+                document_typography_nonzero_unused_following_slots += typography
+                    .following_punctuation_slots
+                    [usize::from(typography.following_punctuation_count)..]
+                    .iter()
+                    .filter(|unit| **unit != 0)
+                    .count();
+                document_typography_nonzero_unused_leading_slots += typography
+                    .leading_punctuation_slots[usize::from(typography.leading_punctuation_count)..]
+                    .iter()
+                    .filter(|unit| **unit != 0)
+                    .count();
+                let options60 = properties.word97.base.compatibility_options_60;
+                let options80 = properties.word97.compatibility_options_80;
+                *document_compatibility_option_shapes
+                    .entry((options60.bits(), options80.bits()))
+                    .or_default() += 1;
+                if !properties.word97.compatibility_options_match() {
+                    *document_compatibility_option_mismatches
+                        .entry(options60.bits() ^ options80.word6.bits())
+                        .or_default() += 1;
+                }
+                *document_format_flag_shapes
+                    .entry(
+                        properties
+                            .word97
+                            .base
+                            .format_flags
+                            .bits()
+                            .map_err(|error| error.to_string())?,
+                    )
+                    .or_default() += 1;
+                *document_footnote_numbering_shapes
+                    .entry(
+                        properties
+                            .word97
+                            .base
+                            .footnote_numbering
+                            .bits()
+                            .map_err(|error| error.to_string())?,
+                    )
+                    .or_default() += 1;
+                *document_state_flag_shapes
+                    .entry(
+                        properties
+                            .word97
+                            .base
+                            .document_flags
+                            .bits()
+                            .map_err(|error| error.to_string())?,
+                    )
+                    .or_default() += 1;
+                *document_endnote_numbering_shapes
+                    .entry(
+                        properties
+                            .word97
+                            .base
+                            .endnote_numbering
+                            .bits()
+                            .map_err(|error| error.to_string())?,
+                    )
+                    .or_default() += 1;
+                *document_endnote_option_shapes
+                    .entry(
+                        properties
+                            .word97
+                            .base
+                            .endnote_options
+                            .bits()
+                            .map_err(|error| error.to_string())?,
+                    )
+                    .or_default() += 1;
+                let saved_view_bits = properties
+                    .word97
+                    .base
+                    .saved_view
+                    .bits()
+                    .map_err(|error| error.to_string())?;
+                *document_saved_view_shapes
+                    .entry(saved_view_bits)
+                    .or_default() += 1;
+                *document_saved_view_kinds
+                    .entry(properties.word97.base.saved_view.kind)
+                    .or_default() += 1;
+                *document_saved_zoom_kinds
+                    .entry(((saved_view_bits >> 12) & 3) as u8)
+                    .or_default() += 1;
+                document_saved_zoom_percentages.insert((saved_view_bits >> 3) & 0x01ff);
+                *document_display_flag_shapes
+                    .entry(properties.word97.display_flags.bits())
+                    .or_default() += 1;
+                *document_outline_levels
+                    .entry(properties.word97.display_flags.outline_level)
+                    .or_default() += 1;
+                *document_version_flag_shapes
+                    .entry(properties.word97.version_flags.bits())
+                    .or_default() += 1;
+                *document_event_shapes
+                    .entry(properties.word97.document_events.bits())
+                    .or_default() += 1;
+                *document_virus_flag_shapes
+                    .entry((
+                        properties.word97.virus_info.prompted,
+                        properties.word97.virus_info.load_safe,
+                    ))
+                    .or_default() += 1;
+                document_virus_session_keys.insert(properties.word97.virus_info.session_key);
+                let grid = properties.word97.drawing_grid;
+                *document_drawing_grid_shapes
+                    .entry((
+                        grid.horizontal_origin,
+                        grid.vertical_origin,
+                        grid.horizontal_spacing,
+                        grid.vertical_spacing,
+                        grid.vertical_display_frequency,
+                        grid.unused,
+                        grid.horizontal_display_frequency,
+                        grid.follow_margins,
+                    ))
+                    .or_default() += 1;
+                if let Some(word2000) = properties.extension.word2000() {
+                    document_2000_extensions += 1;
+                    *document_2000_level_shapes
+                        .entry((word2000.last_bullet_level, word2000.last_numbering_level))
+                        .or_default() += 1;
+                    *document_2000_flag_shapes
+                        .entry(word2000.flags.bits().map_err(|error| error.to_string())?)
+                        .or_default() += 1;
+                    *document_2000_screen_sizes
+                        .entry(word2000.flags.target_screen_size)
+                        .or_default() += 1;
+                    if word2000.flags.web_options_initialized {
+                        document_2000_initialized_web_options += 1;
+                        *document_2000_initialized_ppi
+                            .entry(word2000.flags.pixels_per_inch)
+                            .or_default() += 1;
+                    }
+                    *document_copts_named_shapes
+                        .entry(word2000.compatibility_options.named_bits())
+                        .or_default() += 1;
+                    document_copts_cached_column_balance +=
+                        usize::from(word2000.compatibility_options.cached_column_balance);
+                    document_copts_nonzero_empty1 +=
+                        usize::from(word2000.compatibility_options.empty1 != 0);
+                    document_copts_nonzero_empty_dwords += word2000
+                        .compatibility_options
+                        .empty
+                        .iter()
+                        .filter(|value| **value != 0)
+                        .count();
+                    document_copts_word8_mismatches +=
+                        usize::from(!word2000.compatibility_options_match(&properties.word97));
+                    *document_2000_pre_word10_shapes
+                        .entry(
+                            word2000
+                                .pre_word10_features
+                                .bits()
+                                .map_err(|error| error.to_string())?,
+                        )
+                        .or_default() += 1;
+                    *document_2000_flag2_shapes
+                        .entry(word2000.flags2.bits().map_err(|error| error.to_string())?)
+                        .or_default() += 1;
+                }
+                if let Some(word2002) = properties.extension.word2002() {
+                    document_2002_extensions += 1;
+                    *document_2002_flag_shapes
+                        .entry(word2002.flags.bits().map_err(|error| error.to_string())?)
+                        .or_default() += 1;
+                    *document_2002_line_endings
+                        .entry(word2002.flags.text_line_ending)
+                        .or_default() += 1;
+                    *document_2002_feature_shapes
+                        .entry(
+                            word2002
+                                .feature_compatibility
+                                .bits()
+                                .map_err(|error| error.to_string())?,
+                        )
+                        .or_default() += 1;
+                    document_2002_default_table_styles.insert(word2002.default_table_style);
+                    *document_2002_style_filters
+                        .entry(word2002.style_filter)
+                        .or_default() += 1;
+                    *document_2002_booklet_pages
+                        .entry(word2002.booklet_pages)
+                        .or_default() += 1;
+                    *document_2002_code_pages
+                        .entry(word2002.text_code_page)
+                        .or_default() += 1;
+                    document_2002_nonzero_unused += usize::from(word2002.unused != 0);
+                    let positions = [
+                        word2002.minimum_revision_positions.main,
+                        word2002.minimum_revision_positions.footnote,
+                        word2002.minimum_revision_positions.header,
+                        word2002.minimum_revision_positions.comment,
+                        word2002.minimum_revision_positions.endnote,
+                        word2002.minimum_revision_positions.textbox,
+                        word2002.minimum_revision_positions.header_textbox,
+                    ];
+                    for (index, position) in positions.into_iter().enumerate() {
+                        document_2002_nonzero_revision_positions[index] +=
+                            usize::from(position != 0);
+                        document_2002_maximum_revision_positions[index] =
+                            document_2002_maximum_revision_positions[index].max(position);
+                    }
+                    document_2002_nonzero_root_revision_ids +=
+                        usize::from(word2002.root_revision_save_id != 0);
+                    document_2002_root_revision_ids.insert(word2002.root_revision_save_id);
+                }
+                if let Some(word2003) = properties.extension.word2003() {
+                    current_word2003 = Some(*word2003);
+                    document_2003_extensions += 1;
+                    *document_2003_flag_shapes
+                        .entry(word2003.flags.bits().map_err(|error| error.to_string())?)
+                        .or_default() += 1;
+                    *document_2003_protection_shapes
+                        .entry(word2003.protection.bits())
+                        .or_default() += 1;
+                    *document_2003_protection_modes
+                        .entry(word2003.protection.mode)
+                        .or_default() += 1;
+                    *document_2003_page_widths
+                        .entry(word2003.page_lock_width)
+                        .or_default() += 1;
+                    *document_2003_page_heights
+                        .entry(word2003.page_lock_height)
+                        .or_default() += 1;
+                    *document_2003_font_percentages
+                        .entry(word2003.locked_font_percentage)
+                        .or_default() += 1;
+                    *document_2003_toolbar_shapes
+                        .entry(word2003.state_toolbars.bits())
+                        .or_default() += 1;
+                    *document_2003_cleanup_limits
+                        .entry(word2003.list_override_cleanup_limit)
+                        .or_default() += 1;
+                }
+                if let Some(word2007) = properties.extension.word2007() {
+                    document_2007_extensions += 1;
+                    *document_2007_reserved_values
+                        .entry(word2007.reserved)
+                        .or_default() += 1;
+                    *document_2007_flag_shapes
+                        .entry(word2007.flags.bits())
+                        .or_default() += 1;
+                    *document_2007_style_sort_methods
+                        .entry(word2007.flags.style_sort_method)
+                        .or_default() += 1;
+                    *document_math_flag_shapes
+                        .entry(word2007.math.flag_bits())
+                        .or_default() += 1;
+                    *document_math_enum_shapes
+                        .entry((
+                            word2007.math.binary_operator_break,
+                            word2007.math.binary_subtraction_break,
+                            word2007.math.justification,
+                        ))
+                        .or_default() += 1;
+                    *document_math_fixed_constants
+                        .entry(word2007.math.fixed_constants)
+                        .or_default() += 1;
+                    *document_math_font_indexes
+                        .entry(word2007.math.font_index)
+                        .or_default() += 1;
+                    *document_math_left_margins
+                        .entry(word2007.math.left_margin)
+                        .or_default() += 1;
+                    *document_math_right_margins
+                        .entry(word2007.math.right_margin)
+                        .or_default() += 1;
+                    *document_math_wrapped_indents
+                        .entry(word2007.math.wrapped_line_indent)
+                        .or_default() += 1;
+                }
+                if let Some(word2010) = properties.extension.word2010() {
+                    document_2010_extensions += 1;
+                    match word2010.paragraph_identifier_context {
+                        ParagraphIdentifierContext::Standard(value) => {
+                            document_2010_standard_contexts.insert(value);
+                        }
+                        ParagraphIdentifierContext::ProducerCompatibilityZero => {
+                            document_2010_compatibility_zero_contexts += 1;
+                        }
+                    }
+                    *document_2010_reserved_values
+                        .entry(word2010.reserved)
+                        .or_default() += 1;
+                    *document_2010_discard_image_data
+                        .entry(word2010.discard_image_editing_data)
+                        .or_default() += 1;
+                    *document_2010_image_resolutions
+                        .entry(word2010.image_resolution_dpi)
+                        .or_default() += 1;
+                }
+                if let Some(word2013) = properties.extension.word2013() {
+                    *document_2013_chart_tracking
+                        .entry(word2013.chart_tracking_reference_based)
+                        .or_default() += 1;
+                }
                 let info = properties.word97.auto_summary;
                 *auto_summary_info_shapes
                     .entry((
@@ -2163,6 +2939,7 @@ fn legacy_word_fibs_round_trip() {
                 .iter()
                 .filter(|index| usize::from(**index) >= current_list_definition_count)
                 .count();
+            let mut current_list_override_count = 0usize;
             if let Some(location) = fib.list_override_location()
                 && location.lcb != 0
             {
@@ -2179,6 +2956,7 @@ fn legacy_word_fibs_round_trip() {
                 if overrides.to_bytes().map_err(|error| error.to_string())? != bytes {
                     return Err("PlfLfo writer changed physical bytes".to_owned());
                 }
+                current_list_override_count = overrides.overrides.len();
                 list_override_sets += 1;
                 list_overrides += overrides.overrides.len();
                 for value in overrides.overrides {
@@ -2193,6 +2971,31 @@ fn legacy_word_fibs_round_trip() {
                             list_override_text_units += level.number_text.len();
                         }
                     }
+                }
+            }
+            if let Some(indexes) = current_last_list_indexes {
+                if indexes.matches_override_count(current_list_override_count) {
+                    document_last_list_index_matches += 1;
+                } else {
+                    *document_last_list_index_mismatches
+                        .entry((
+                            indexes.bullet,
+                            indexes.numbering,
+                            current_list_override_count,
+                        ))
+                        .or_default() += 1;
+                }
+            }
+            if let Some(word2003) = current_word2003 {
+                if word2003.cleanup_limit_matches_override_count(current_list_override_count) {
+                    document_cleanup_limit_matches += 1;
+                } else {
+                    *document_cleanup_limit_mismatches
+                        .entry((
+                            word2003.list_override_cleanup_limit,
+                            current_list_override_count,
+                        ))
+                        .or_default() += 1;
                 }
             }
             let mut current_field_counts = BTreeMap::<FieldDocumentPart, usize>::new();
@@ -3038,8 +3841,32 @@ fn legacy_word_fibs_round_trip() {
                 }
                 for property in &sepx.properties.properties {
                     sepx_prls += 1;
+                    if let Some(shape) = static_variable_shape(&property.operand) {
+                        *sepx_static_variable_operands.entry(shape).or_default() += 1;
+                    }
+                    if let SprmOperand::OutlineListData(value) = &property.operand {
+                        *outline_list_restart_values
+                            .entry(value.restart_heading)
+                            .or_default() += 1;
+                        outline_list_reserved_shapes.insert(value.reserved);
+                        outline_list_nonzero_text_units +=
+                            value.display_text.iter().filter(|unit| **unit != 0).count();
+                    }
+                    if let SprmOperand::SectionHeaderFooterFlags(value) = &property.operand {
+                        *section_header_footer_flag_shapes
+                            .entry(value.bits().map_err(|error| error.to_string())?)
+                            .or_default() += 1;
+                    }
                     if let SprmKind::Other(opcode) = property.sprm.kind() {
                         sepx_unknown_sprms.insert(opcode);
+                        let value = match &property.operand {
+                            SprmOperand::Byte(value) => u32::from(*value),
+                            SprmOperand::Word(value) => u32::from(u16::from_le_bytes(*value)),
+                            _ => u32::MAX,
+                        };
+                        *sepx_unknown_fixed_shapes
+                            .entry((opcode, value))
+                            .or_default() += 1;
                     }
                     if matches!(
                         property.operand,
@@ -3048,6 +3875,14 @@ fn legacy_word_fibs_round_trip() {
                         sepx_raw_variable_operands += 1;
                         *sepx_raw_variable_frequencies
                             .entry(property.sprm.opcode().unwrap())
+                            .or_default() += 1;
+                        let length = match &property.operand {
+                            SprmOperand::Variable8(value)
+                            | SprmOperand::Variable16PlusOne(value) => value.len(),
+                            _ => unreachable!(),
+                        };
+                        *sepx_raw_variable_shapes
+                            .entry((property.sprm.opcode().unwrap(), length))
                             .or_default() += 1;
                     }
                 }
@@ -3267,6 +4102,10 @@ fn legacy_word_fibs_round_trip() {
                             2 + value.properties.to_bytes().unwrap().len(),
                         ),
                         SprmOperand::AutoNumberedListData(_) => ("auto-numbered-list-data", 84),
+                        SprmOperand::OutlineListData(_) => ("outline-list-data", 212),
+                        SprmOperand::SectionHeaderFooterFlags(_) => {
+                            ("section-header-footer-flags", 0)
+                        }
                         SprmOperand::Variable16PlusOne(value) => ("variable16+1", value.len()),
                         SprmOperand::ThreeBytes(_) => ("three-bytes", 0),
                     };
@@ -4117,6 +4956,852 @@ fn legacy_word_fibs_round_trip() {
         ])
     );
     assert_eq!(
+        document_classifications,
+        BTreeMap::from([(DocumentClassification::NotSpecified, 403)])
+    );
+    assert_eq!(document_undefined_space_shapes, BTreeSet::from([[0; 30]]));
+    assert_eq!(document_nonzero_undefined_spaces, 0);
+    assert_eq!(document_nonzero_undefined_space_bytes, 0);
+    assert_eq!(
+        document_last_list_indexes,
+        BTreeSet::from([(0, 0), (0, 1), (0, 5), (0, 19)])
+    );
+    assert_eq!(document_nonzero_last_list_indexes, 3);
+    assert_eq!(document_last_list_index_matches, 401);
+    assert_eq!(
+        document_last_list_index_mismatches,
+        BTreeMap::from([((0, 1, 1), 1), ((0, 19, 19), 1)])
+    );
+    assert_eq!(document_cleanup_limit_matches, 264);
+    assert_eq!(
+        document_cleanup_limit_mismatches,
+        BTreeMap::from([
+            ((1, 1), 1),
+            ((4, 4), 1),
+            ((5, 5), 1),
+            ((10, 10), 1),
+            ((11, 11), 1),
+            ((14, 14), 1),
+            ((21, 21), 1),
+            ((27, 27), 1),
+        ])
+    );
+    assert_eq!(
+        document_numbering_cache_states,
+        BTreeMap::from([
+            ((false, false), 265),
+            ((false, true), 24),
+            ((true, false), 45),
+            ((true, true), 69),
+        ])
+    );
+    assert_eq!(
+        document_numbering_cache_lengths,
+        BTreeMap::from([
+            (12, 107),
+            (28, 2),
+            (36, 1),
+            (44, 1),
+            (60, 1),
+            (108, 1),
+            (364, 1),
+        ])
+    );
+    assert_eq!(
+        document_numbering_cache_present_max_positions,
+        BTreeSet::from([
+            0, 7, 91, 168, 934, 3932, 7200, 7919, 9728, 14943, 16495, 30574
+        ])
+    );
+    assert_eq!(
+        document_numbering_cache_absent_max_positions,
+        BTreeSet::from([0])
+    );
+    assert_eq!(
+        document_note_number_formats,
+        BTreeMap::from([
+            ((0x00, 0x00), 9),
+            ((0x00, 0x02), 392),
+            ((0x00, 0x04), 1),
+            ((0x04, 0x04), 1)
+        ])
+    );
+    assert_eq!(
+        document_pagination_display_shapes,
+        BTreeMap::from([
+            ((0, 0), 389),
+            ((0, 368), 4),
+            ((0, 448), 1),
+            ((0, 506), 1),
+            ((0, 578), 1),
+            ((0, 605), 1),
+            ((0, 648), 1),
+            ((0, 653), 1),
+            ((0, 805), 1),
+            ((0, 820), 1),
+            ((0, 824), 1),
+            ((0, 829), 1),
+        ])
+    );
+    assert_eq!(document_characters_with_spaces_shapes.len(), 233);
+    assert_eq!(
+        document_characters_with_spaces_shapes.first(),
+        Some(&(0, 0))
+    );
+    assert_eq!(
+        document_characters_with_spaces_shapes.last(),
+        Some(&(289_840, 289_840))
+    );
+    assert_eq!(
+        document_double_byte_character_shapes,
+        BTreeSet::from([(0, 0), (1, 1)])
+    );
+    assert_eq!(document_negative_character_count_pairs, 0);
+    assert_eq!(document_character_count_relation_mismatches, 32);
+    assert_eq!(
+        document_character_statistic_states,
+        BTreeMap::from([
+            ((false, false, false, true), 32),
+            ((false, false, true, true), 118),
+            ((false, true, true, true), 247),
+            ((true, false, true, true), 6),
+        ])
+    );
+    assert_eq!(document_reserved3a_values, BTreeMap::from([(0, 403)]));
+    assert_eq!(document_main_statistic_shapes.len(), 296);
+    assert_eq!(document_subdocument_statistic_shapes.len(), 276);
+    assert_eq!(document_negative_statistics, 0);
+    assert_eq!(document_statistic_relation_mismatches, 29);
+    assert_eq!(
+        document_statistic_states,
+        BTreeMap::from([
+            ((false, false, false), 29),
+            ((false, false, true), 121),
+            ((false, true, true), 247),
+            ((true, false, true), 6),
+        ])
+    );
+    assert_eq!(document_exact_statistic_character_bound_mismatches, 0);
+    assert_eq!(document_created_timestamps.len(), 381);
+    assert_eq!(document_revised_timestamps.len(), 367);
+    assert_eq!(document_last_printed_timestamps.len(), 89);
+    assert_eq!(document_ignored_timestamp_counts, [6, 25, 294]);
+    assert_eq!(document_revision_counts.len(), 33);
+    assert_eq!(document_revision_counts.first(), Some(&1));
+    assert_eq!(document_revision_counts.last(), Some(&135));
+    assert_eq!(document_editing_times.len(), 63);
+    assert_eq!(document_editing_times.first(), Some(&0));
+    assert_eq!(document_editing_times.last(), Some(&4_287));
+    assert_eq!(document_negative_editing_times, 0);
+    assert_eq!(document_protection_hashes.len(), 6);
+    assert_eq!(document_protection_hashes.first(), Some(&-2_041_130_755));
+    assert_eq!(document_protection_hashes.last(), Some(&609_995_782));
+    assert_eq!(
+        document_protection_hash_states,
+        BTreeMap::from([
+            ((false, false), 383),
+            ((true, false), 13),
+            ((true, true), 7),
+        ])
+    );
+    assert_eq!(
+        document_default_tab_widths,
+        BTreeSet::from([
+            284, 360, 420, 432, 480, 576, 624, 706, 708, 709, 710, 720, 794, 851, 1_298, 1_304,
+        ])
+    );
+    assert_eq!(
+        document_web_code_pages,
+        BTreeMap::from([
+            (0, 360),
+            (932, 1),
+            (950, 1),
+            (1_250, 2),
+            (1_251, 3),
+            (1_252, 29),
+            (1_253, 2),
+            (10_000, 1),
+            (20_127, 1),
+            (65_001, 3),
+        ])
+    );
+    assert_eq!(
+        document_hyphenation_zones,
+        BTreeSet::from([0, 357, 360, 420, 425, 950, 1_026])
+    );
+    assert_eq!(
+        document_consecutive_hyphen_limits,
+        BTreeSet::from([0, 28_257])
+    );
+    assert_eq!(document_reserved2_values, BTreeMap::from([(0, 403)]));
+    assert_eq!(document_lock_revision_marking_mismatches, 0);
+    assert_eq!(document_lock_revision_annotation_conflicts, 0);
+    assert_eq!(
+        document_typography_shapes,
+        BTreeMap::from([
+            (
+                (
+                    TypographyJustification::DoNotCompress,
+                    KinsokuLevel::LanguageDefault,
+                    CustomKinsokuLanguage::None,
+                    false,
+                    false,
+                    false,
+                    false,
+                    0,
+                    0,
+                ),
+                118,
+            ),
+            (
+                (
+                    TypographyJustification::DoNotCompress,
+                    KinsokuLevel::LanguageDefault,
+                    CustomKinsokuLanguage::None,
+                    false,
+                    false,
+                    false,
+                    true,
+                    0,
+                    0,
+                ),
+                72,
+            ),
+            (
+                (
+                    TypographyJustification::DoNotCompress,
+                    KinsokuLevel::LanguageDefault,
+                    CustomKinsokuLanguage::None,
+                    true,
+                    false,
+                    false,
+                    false,
+                    0,
+                    0,
+                ),
+                191,
+            ),
+            (
+                (
+                    TypographyJustification::DoNotCompress,
+                    KinsokuLevel::LanguageDefault,
+                    CustomKinsokuLanguage::None,
+                    true,
+                    false,
+                    false,
+                    false,
+                    63,
+                    28,
+                ),
+                1,
+            ),
+            (
+                (
+                    TypographyJustification::CompressPunctuation,
+                    KinsokuLevel::LanguageDefault,
+                    CustomKinsokuLanguage::None,
+                    true,
+                    false,
+                    false,
+                    false,
+                    0,
+                    0,
+                ),
+                16,
+            ),
+            (
+                (
+                    TypographyJustification::CompressPunctuation,
+                    KinsokuLevel::LanguageDefault,
+                    CustomKinsokuLanguage::None,
+                    true,
+                    false,
+                    false,
+                    false,
+                    51,
+                    22,
+                ),
+                1,
+            ),
+            (
+                (
+                    TypographyJustification::CompressPunctuation,
+                    KinsokuLevel::LanguageDefault,
+                    CustomKinsokuLanguage::None,
+                    true,
+                    false,
+                    false,
+                    false,
+                    63,
+                    27,
+                ),
+                2,
+            ),
+            (
+                (
+                    TypographyJustification::CompressPunctuation,
+                    KinsokuLevel::LanguageDefault,
+                    CustomKinsokuLanguage::None,
+                    true,
+                    false,
+                    false,
+                    false,
+                    90,
+                    38,
+                ),
+                1,
+            ),
+            (
+                (
+                    TypographyJustification::CompressPunctuation,
+                    KinsokuLevel::Custom,
+                    CustomKinsokuLanguage::ChineseTraditional,
+                    true,
+                    false,
+                    false,
+                    false,
+                    61,
+                    28,
+                ),
+                1,
+            ),
+        ])
+    );
+    assert_eq!(document_typography_following_units, 391);
+    assert_eq!(document_typography_leading_units, 170);
+    assert_eq!(document_typography_nonzero_unused_following_slots, 0);
+    assert_eq!(document_typography_nonzero_unused_leading_slots, 0);
+    assert_eq!(
+        document_compatibility_option_shapes,
+        BTreeMap::from([
+            ((0x0000, 0x0000_0000), 42),
+            ((0x0000, 0x0000_2000), 41),
+            ((0x0000, 0x0000_3000), 1),
+            ((0x0000, 0x0008_0000), 3),
+            ((0x0000, 0x0010_f000), 11),
+            ((0x0000, 0x0400_0000), 1),
+            ((0x0000, 0x0408_0000), 1),
+            ((0x0000, 0x0410_0000), 1),
+            ((0x0000, 0x8000_0000), 2),
+            ((0x0000, 0x8410_0000), 1),
+            ((0x0029, 0x8040_0029), 1),
+            ((0x0c56, 0x8400_0c56), 1),
+            ((0x0cd6, 0x8400_0cd6), 1),
+            ((0x2000, 0x0000_2000), 22),
+            ((0xf000, 0x0010_f000), 263),
+            ((0xf000, 0x0410_f000), 1),
+            ((0xf000, 0x8410_f000), 3),
+            ((0xf029, 0x0410_f029), 1),
+            ((0xf229, 0x8410_f229), 1),
+            ((0xf580, 0x843b_f580), 1),
+            ((0xfc56, 0x0410_fc56), 2),
+            ((0xfc56, 0x8010_fc56), 1),
+            ((0xfc56, 0x8410_fc56), 1),
+        ])
+    );
+    assert_eq!(
+        document_compatibility_option_mismatches,
+        BTreeMap::from([(0x2000, 41), (0x3000, 1), (0xf000, 11)])
+    );
+    assert_eq!(
+        document_format_flag_shapes,
+        BTreeMap::from([
+            (0x20, 9),
+            (0x21, 1),
+            (0x22, 304),
+            (0x23, 16),
+            (0x26, 1),
+            (0x42, 72),
+        ])
+    );
+    assert_eq!(
+        document_footnote_numbering_shapes,
+        BTreeMap::from([(0x0004, 397), (0x0005, 2), (0x0006, 4)])
+    );
+    assert_eq!(document_state_flag_shapes.len(), 75);
+    let document_state_bit_frequencies: [usize; 32] = std::array::from_fn(|bit| {
+        document_state_flag_shapes
+            .iter()
+            .filter(|(bits, _)| (*bits >> bit) & 1 != 0)
+            .map(|(_, count)| *count)
+            .sum()
+    });
+    assert_eq!(
+        document_state_bit_frequencies,
+        [
+            394, 6, 0, 0, 262, 262, 163, 108, 7, 5, 0, 384, 6, 0, 3, 7, 77, 6, 185, 352, 0, 3, 0,
+            398, 1, 13, 5, 398, 386, 0, 1, 0,
+        ]
+    );
+    assert_eq!(
+        document_endnote_numbering_shapes,
+        BTreeMap::from([(0x0004, 403)])
+    );
+    assert_eq!(
+        document_endnote_option_shapes,
+        BTreeMap::from([
+            (0x0003, 14),
+            (0x0083, 7),
+            (0x0113, 1),
+            (0x1000, 1),
+            (0x1003, 124),
+            (0x1083, 9),
+            (0x8003, 1),
+            (0x9000, 1),
+            (0x9003, 146),
+            (0x9080, 3),
+            (0x9083, 96),
+        ])
+    );
+    assert_eq!(document_saved_view_shapes.len(), 59);
+    assert_eq!(
+        document_saved_view_kinds,
+        BTreeMap::from([
+            (SavedViewKind::Print, 322),
+            (SavedViewKind::Normal, 11),
+            (SavedViewKind::Web, 2),
+            (SavedViewKind::Compatibility7, 68),
+        ])
+    );
+    assert_eq!(
+        document_saved_zoom_kinds,
+        BTreeMap::from([(0, 391), (1, 2), (2, 9), (3, 1)])
+    );
+    assert_eq!(document_saved_zoom_percentages.len(), 47);
+    assert_eq!(document_saved_zoom_percentages.first(), Some(&0));
+    assert_eq!(document_saved_zoom_percentages.last(), Some(&348));
+    assert_eq!(
+        document_display_flag_shapes,
+        BTreeMap::from([
+            (0x0012, 6),
+            (0x0032, 5),
+            (0x0072, 8),
+            (0x0412, 3),
+            (0x0432, 1),
+            (0x043e, 1),
+            (0x0472, 2),
+            (0x3012, 179),
+            (0x3032, 26),
+            (0x303e, 1),
+            (0x3072, 85),
+            (0x3412, 41),
+            (0x3432, 16),
+            (0x3472, 29),
+        ])
+    );
+    assert_eq!(
+        document_outline_levels,
+        BTreeMap::from([
+            (SavedOutlineLevel::All9, 401),
+            (SavedOutlineLevel::All15, 2)
+        ])
+    );
+    assert_eq!(document_version_flag_shapes, BTreeMap::from([(0, 403)]));
+    assert_eq!(document_event_shapes, BTreeMap::from([(0, 401), (2, 2)]));
+    assert_eq!(
+        document_virus_flag_shapes,
+        BTreeMap::from([
+            ((false, false), 383),
+            ((true, false), 17),
+            ((true, true), 3)
+        ])
+    );
+    assert_eq!(document_virus_session_keys.len(), 17);
+    assert_eq!(document_virus_session_keys.first(), Some(&0));
+    assert_eq!(document_virus_session_keys.last(), Some(&0x360a_ec15));
+    let mut drawing_grid_vertical_frequencies = BTreeMap::<GridDisplayFrequency, usize>::new();
+    let mut drawing_grid_horizontal_frequencies = BTreeMap::<GridDisplayFrequency, usize>::new();
+    let mut drawing_grid_flag_shapes = BTreeMap::<(bool, bool), usize>::new();
+    let mut drawing_grid_horizontal_origins = BTreeSet::new();
+    let mut drawing_grid_vertical_origins = BTreeSet::new();
+    let mut drawing_grid_horizontal_spacings = BTreeSet::new();
+    let mut drawing_grid_vertical_spacings = BTreeSet::new();
+    for (
+        (
+            horizontal_origin,
+            vertical_origin,
+            horizontal_spacing,
+            vertical_spacing,
+            vertical_frequency,
+            unused,
+            horizontal_frequency,
+            follow_margins,
+        ),
+        count,
+    ) in &document_drawing_grid_shapes
+    {
+        *drawing_grid_vertical_frequencies
+            .entry(*vertical_frequency)
+            .or_default() += *count;
+        *drawing_grid_horizontal_frequencies
+            .entry(*horizontal_frequency)
+            .or_default() += *count;
+        *drawing_grid_flag_shapes
+            .entry((*unused, *follow_margins))
+            .or_default() += *count;
+        drawing_grid_horizontal_origins.insert(*horizontal_origin);
+        drawing_grid_vertical_origins.insert(*vertical_origin);
+        drawing_grid_horizontal_spacings.insert(*horizontal_spacing);
+        drawing_grid_vertical_spacings.insert(*vertical_spacing);
+    }
+    assert_eq!(document_drawing_grid_shapes.len(), 80);
+    assert_eq!(
+        drawing_grid_vertical_frequencies,
+        BTreeMap::from([
+            (GridDisplayFrequency::DisabledCompatibility, 161),
+            (GridDisplayFrequency::Every(1), 211),
+            (GridDisplayFrequency::Every(2), 26),
+            (GridDisplayFrequency::Every(3), 5),
+        ])
+    );
+    assert_eq!(
+        drawing_grid_horizontal_frequencies,
+        BTreeMap::from([
+            (GridDisplayFrequency::DisabledCompatibility, 177),
+            (GridDisplayFrequency::Every(1), 195),
+            (GridDisplayFrequency::Every(2), 31),
+        ])
+    );
+    assert_eq!(
+        drawing_grid_flag_shapes,
+        BTreeMap::from([
+            ((false, false), 110),
+            ((false, true), 5),
+            ((true, false), 52),
+            ((true, true), 236),
+        ])
+    );
+    assert_eq!(drawing_grid_horizontal_origins.len(), 27);
+    assert_eq!(drawing_grid_horizontal_origins.first(), Some(&0));
+    assert_eq!(drawing_grid_horizontal_origins.last(), Some(&2_160));
+    assert_eq!(drawing_grid_vertical_origins.len(), 35);
+    assert_eq!(drawing_grid_vertical_origins.first(), Some(&0));
+    assert_eq!(drawing_grid_vertical_origins.last(), Some(&2_999));
+    assert_eq!(drawing_grid_horizontal_spacings.len(), 13);
+    assert_eq!(drawing_grid_horizontal_spacings.first(), Some(&0));
+    assert_eq!(drawing_grid_horizontal_spacings.last(), Some(&360));
+    assert_eq!(drawing_grid_vertical_spacings.len(), 10);
+    assert_eq!(drawing_grid_vertical_spacings.first(), Some(&0));
+    assert_eq!(drawing_grid_vertical_spacings.last(), Some(&360));
+    assert_eq!(document_2000_extensions, 383);
+    assert_eq!(document_2000_level_shapes, BTreeMap::from([((0, 0), 383)]));
+    let dop2000_flag_bit_frequencies: [usize; 32] = std::array::from_fn(|bit| {
+        document_2000_flag_shapes
+            .iter()
+            .filter(|(bits, _)| (*bits >> bit) & 1 != 0)
+            .map(|(_, count)| *count)
+            .sum()
+    });
+    assert_eq!(document_2000_flag_shapes.len(), 72);
+    assert_eq!(
+        dop2000_flag_bit_frequencies,
+        [
+            76, 0, 56, 64, 0, 0, 0, 0, 132, 308, 7, 117, 165, 165, 143, 0, 308, 308, 0, 0, 0, 11,
+            6, 303, 308, 0, 0, 0, 307, 38, 88, 0,
+        ]
+    );
+    assert_eq!(
+        document_2000_screen_sizes,
+        BTreeMap::from([
+            (WebTargetScreenSize::Size544x376, 75),
+            (WebTargetScreenSize::Size800x600, 165),
+            (WebTargetScreenSize::Size1024x768, 143),
+        ])
+    );
+    assert_eq!(document_2000_initialized_web_options, 307);
+    assert_eq!(
+        document_2000_initialized_ppi,
+        BTreeMap::from([(72, 5), (96, 296), (120, 6)])
+    );
+    let copts_named_bit_frequencies: [usize; 32] = std::array::from_fn(|bit| {
+        document_copts_named_shapes
+            .iter()
+            .filter(|(bits, _)| (*bits >> bit) & 1 != 0)
+            .map(|(_, count)| *count)
+            .sum()
+    });
+    assert_eq!(document_copts_named_shapes.len(), 41);
+    assert_eq!(
+        copts_named_bit_frequencies,
+        [
+            43, 43, 110, 282, 43, 2, 43, 43, 42, 43, 58, 59, 55, 7, 60, 59, 97, 98, 247, 247, 247,
+            247, 247, 247, 247, 17, 247, 247, 248, 247, 247, 247,
+        ]
+    );
+    assert_eq!(document_copts_cached_column_balance, 236);
+    assert_eq!(document_copts_nonzero_empty1, 1);
+    assert_eq!(document_copts_nonzero_empty_dwords, 1);
+    assert_eq!(document_copts_word8_mismatches, 0);
+    assert_eq!(
+        document_2000_pre_word10_shapes,
+        BTreeMap::from([(0x0000, 173), (0x0200, 1), (0x0800, 209)])
+    );
+    assert_eq!(
+        document_2000_flag2_shapes,
+        BTreeMap::from([
+            (0x0000, 91),
+            (0x0008, 2),
+            (0x0040, 1),
+            (0x0048, 9),
+            (0x004c, 1),
+            (0x00c0, 1),
+            (0x0258, 1),
+            (0x5000, 1),
+            (0x5008, 10),
+            (0x500c, 1),
+            (0x5040, 42),
+            (0x5048, 78),
+            (0x504b, 3),
+            (0x50c0, 3),
+            (0x50c8, 7),
+            (0x5800, 1),
+            (0x5808, 19),
+            (0x5848, 97),
+            (0x584b, 1),
+            (0x58c8, 10),
+            (0x5a18, 1),
+            (0x5a58, 3),
+        ])
+    );
+    assert_eq!(document_2002_extensions, 356);
+    assert_eq!(
+        document_2002_flag_shapes,
+        BTreeMap::from([
+            (0x0000, 11),
+            (0x3000, 57),
+            (0x3008, 1),
+            (0xe000, 1),
+            (0xe008, 1),
+            (0xe028, 1),
+            (0xf000, 27),
+            (0xf001, 2),
+            (0xf008, 15),
+            (0xf009, 203),
+            (0xf00c, 1),
+            (0xf00d, 1),
+            (0xf020, 6),
+            (0xf028, 8),
+            (0xf029, 17),
+            (0xf02d, 1),
+            (0xf108, 1),
+            (0xf109, 1),
+            (0xf10b, 1),
+        ])
+    );
+    assert_eq!(
+        document_2002_line_endings,
+        BTreeMap::from([(TextLineEnding::CrLf, 353), (TextLineEnding::Cr, 3)])
+    );
+    assert_eq!(
+        document_2002_feature_shapes,
+        BTreeMap::from([
+            (0x0000, 80),
+            (0x0001, 57),
+            (0x0100, 10),
+            (0x0800, 17),
+            (0x0801, 54),
+            (0x0900, 138),
+        ])
+    );
+    assert_eq!(
+        document_2002_default_table_styles,
+        BTreeSet::from([0, 0x0fff])
+    );
+    assert_eq!(
+        document_2002_style_filters,
+        BTreeMap::from([
+            (0x0000, 99),
+            (0x0004, 3),
+            (0x0808, 1),
+            (0x1f08, 2),
+            (0x2801, 2),
+            (0x3001, 1),
+            (0x3f01, 79),
+            (0x5024, 169),
+        ])
+    );
+    assert_eq!(document_2002_booklet_pages, BTreeMap::from([(0, 356)]));
+    assert_eq!(
+        document_2002_code_pages,
+        BTreeMap::from([
+            (0, 112),
+            (936, 3),
+            (950, 1),
+            (1250, 37),
+            (1251, 13),
+            (1252, 180),
+            (1253, 2),
+            (1255, 1),
+            (1257, 1),
+            (10_000, 3),
+            (u32::MAX, 3),
+        ])
+    );
+    assert_eq!(document_2002_nonzero_unused, 0);
+    assert_eq!(
+        document_2002_nonzero_revision_positions,
+        [282, 286, 285, 284, 286, 286, 286]
+    );
+    assert_eq!(
+        document_2002_maximum_revision_positions,
+        [i32::MAX as u32; 7]
+    );
+    assert_eq!(document_2002_nonzero_root_revision_ids, 286);
+    assert_eq!(document_2002_root_revision_ids.len(), 263);
+    assert_eq!(document_2002_root_revision_ids.first(), Some(&0));
+    assert_eq!(document_2002_root_revision_ids.last(), Some(&3_745_368_673));
+    assert_eq!(document_2003_extensions, 272);
+    assert_eq!(
+        document_2003_flag_shapes,
+        BTreeMap::from([(0x0000, 40), (0x0400, 196), (0x0600, 36)])
+    );
+    assert_eq!(
+        document_2003_protection_shapes,
+        BTreeMap::from([
+            (0x000a, 1),
+            (0x002a, 5),
+            (0x002e, 1),
+            (0x0030, 3),
+            (0x0032, 194),
+            (0x0036, 19),
+            (0x003e, 1),
+            (0x00aa, 3),
+            (0x00b0, 1),
+            (0x00b2, 44),
+        ])
+    );
+    assert_eq!(
+        document_2003_protection_modes,
+        BTreeMap::from([
+            (DocumentProtectionMode::TrackedChanges, 1),
+            (DocumentProtectionMode::Forms, 9),
+            (DocumentProtectionMode::RangePermissions, 262),
+        ])
+    );
+    assert_eq!(document_2003_page_widths, BTreeMap::from([(0, 272)]));
+    assert_eq!(document_2003_page_heights, BTreeMap::from([(0, 272)]));
+    assert_eq!(document_2003_font_percentages, BTreeMap::from([(0, 272)]));
+    assert_eq!(
+        document_2003_toolbar_shapes,
+        BTreeMap::from([(0x00, 266), (0x01, 3), (0x02, 2), (0x03, 1)])
+    );
+    assert_eq!(
+        document_2003_cleanup_limits,
+        BTreeMap::from([
+            (0, 259),
+            (1, 1),
+            (3, 1),
+            (4, 1),
+            (5, 1),
+            (10, 1),
+            (11, 2),
+            (13, 1),
+            (14, 1),
+            (21, 1),
+            (27, 1),
+            (32, 1),
+            (52, 1),
+        ])
+    );
+    assert_eq!(document_2007_extensions, 220);
+    assert_eq!(document_2007_reserved_values, BTreeMap::from([(0, 220)]));
+    assert_eq!(
+        document_2007_flag_shapes,
+        BTreeMap::from([
+            (0x0000, 1),
+            (0x0001, 2),
+            (0x0021, 17),
+            (0x0401, 1),
+            (0x0421, 199),
+        ])
+    );
+    assert_eq!(
+        document_2007_style_sort_methods,
+        BTreeMap::from([
+            (StyleSortMethod::Name, 4),
+            (StyleSortMethod::ApplicationDefault, 216),
+        ])
+    );
+    assert_eq!(
+        document_math_flag_shapes,
+        BTreeMap::from([(0x0000, 2), (0x1410, 2), (0x1c10, 214), (0x1d10, 2),])
+    );
+    assert_eq!(
+        document_math_enum_shapes,
+        BTreeMap::from([
+            (
+                (
+                    MathBinaryOperatorBreak::Before,
+                    MathBinarySubtractionBreak::MinusMinus,
+                    MathJustification::ProducerCompatibilityZero,
+                ),
+                2,
+            ),
+            (
+                (
+                    MathBinaryOperatorBreak::Before,
+                    MathBinarySubtractionBreak::MinusMinus,
+                    MathJustification::CenteredAsGroup,
+                ),
+                218,
+            ),
+        ])
+    );
+    assert_eq!(
+        document_math_fixed_constants,
+        BTreeMap::from([
+            (MathFixedConstants::Standard120, 217),
+            (MathFixedConstants::ProducerCompatibilityZero, 3),
+        ])
+    );
+    assert_eq!(
+        document_math_font_indexes,
+        BTreeMap::from([
+            (0, 1),
+            (3, 6),
+            (4, 55),
+            (5, 52),
+            (6, 33),
+            (7, 26),
+            (8, 17),
+            (9, 9),
+            (10, 5),
+            (11, 7),
+            (12, 4),
+            (13, 1),
+            (14, 2),
+            (18, 1),
+            (34, 1),
+        ])
+    );
+    assert_eq!(document_math_left_margins, BTreeMap::from([(0, 220)]));
+    assert_eq!(document_math_right_margins, BTreeMap::from([(0, 220)]));
+    assert_eq!(
+        document_math_wrapped_indents,
+        BTreeMap::from([(0, 2), (1440, 218)])
+    );
+    assert_eq!(document_2010_extensions, 158);
+    assert_eq!(document_2010_compatibility_zero_contexts, 101);
+    assert_eq!(document_2010_standard_contexts.len(), 57);
+    assert_eq!(document_2010_standard_contexts.first(), Some(&30_159_384));
+    assert_eq!(document_2010_standard_contexts.last(), Some(&2_142_460_963));
+    assert_eq!(
+        document_2010_reserved_values,
+        BTreeMap::from([(0x0000_000b, 158)])
+    );
+    assert_eq!(
+        document_2010_discard_image_data,
+        BTreeMap::from([(false, 157), (true, 1)])
+    );
+    assert_eq!(
+        document_2010_image_resolutions,
+        BTreeMap::from([(0, 11), (220, 145), (300, 1), (32_767, 1)])
+    );
+    assert_eq!(
+        document_2013_chart_tracking,
+        BTreeMap::from([(false, 18), (true, 79)])
+    );
+    assert_eq!(
         auto_summary_info_shapes,
         BTreeMap::from([
             (
@@ -4442,6 +6127,164 @@ fn legacy_word_fibs_round_trip() {
     );
     assert_eq!(ole_control_nonzero_reserved1, 0);
     assert_eq!(ole_control_nonzero_reserved2, 8);
+    assert_eq!(ole_object_descriptors, 255);
+    assert_eq!(ole_object_control_descriptors, 124);
+    assert_eq!(ole_object_control_streams, 1);
+    assert_eq!(ole_object_control_missing_payloads, 0);
+    assert_eq!(
+        ole_object_descriptor_shapes,
+        BTreeMap::from([
+            ((0, 3, None, 4), 38),
+            ((0, 3, Some(0), 6), 1),
+            ((0, 3, Some(4), 6), 41),
+            ((0, 3, Some(13), 6), 24),
+            ((16, 3, None, 4), 1),
+            ((64, 3, Some(1), 6), 1),
+            ((128, 3, None, 4), 1),
+            ((512, 3, None, 4), 2),
+            ((512, 3, Some(1), 6), 11),
+            ((512, 3, Some(13), 6), 11),
+            ((4608, 3, Some(4), 6), 123),
+            ((12800, 3, Some(4), 6), 1),
+        ])
+    );
+    assert_eq!(
+        ole_object_control_storage_shapes,
+        BTreeMap::from([
+            (
+                (
+                    false,
+                    vec![
+                        "stream:\u{1}CompObj".into(),
+                        "stream:\u{1}Ole".into(),
+                        "stream:\u{3}OCXNAME".into(),
+                        "stream:\u{3}PRINT".into(),
+                        "stream:contents".into()
+                    ]
+                ),
+                116
+            ),
+            (
+                (
+                    false,
+                    vec![
+                        "stream:\u{1}CompObj".into(),
+                        "stream:\u{3}OCXNAME".into(),
+                        "stream:\u{3}PRINT".into(),
+                        "stream:contents".into()
+                    ]
+                ),
+                6
+            ),
+            (
+                (
+                    false,
+                    vec![
+                        "stream:\u{1}CompObj".into(),
+                        "stream:\u{3}OCXNAME".into(),
+                        "stream:contents".into()
+                    ]
+                ),
+                1
+            ),
+            (
+                (
+                    true,
+                    vec![
+                        "stream:\u{1}CompObj".into(),
+                        "stream:\u{3}OCXDATA".into(),
+                        "stream:\u{3}OCXNAME".into()
+                    ]
+                ),
+                1
+            ),
+        ])
+    );
+    assert_eq!(
+        ole_object_control_classes,
+        BTreeMap::from([
+            (
+                ("8bd21d10-ec42-11ce-9e0d-00aa006002f3".into(), false),
+                (116, BTreeSet::from([76]))
+            ),
+            (
+                ("8bd21d40-ec42-11ce-9e0d-00aa006002f3".into(), false),
+                (4, BTreeSet::from([84, 96, 100]))
+            ),
+            (
+                ("8bd21d50-ec42-11ce-9e0d-00aa006002f3".into(), false),
+                (2, BTreeSet::from([100, 104]))
+            ),
+            (
+                ("ae24fdae-03c6-11d1-8b76-0080c744f389".into(), true),
+                (1, BTreeSet::from([146]))
+            ),
+            (
+                ("d7053240-ce69-11cd-a777-00dd01143c57".into(), false),
+                (1, BTreeSet::from([68]))
+            ),
+        ])
+    );
+    assert_eq!(morph_data_controls, 122);
+    assert_eq!(
+        morph_data_shapes,
+        BTreeMap::from([
+            (
+                (
+                    "8bd21d10-ec42-11ce-9e0d-00aa006002f3".into(),
+                    0x8600_0117,
+                    32,
+                    32
+                ),
+                116
+            ),
+            (
+                (
+                    "8bd21d40-ec42-11ce-9e0d-00aa006002f3".into(),
+                    0x80c0_0146,
+                    44,
+                    28
+                ),
+                2
+            ),
+            (
+                (
+                    "8bd21d40-ec42-11ce-9e0d-00aa006002f3".into(),
+                    0x80c0_0146,
+                    56,
+                    28
+                ),
+                1
+            ),
+            (
+                (
+                    "8bd21d40-ec42-11ce-9e0d-00aa006002f3".into(),
+                    0x80c0_0146,
+                    60,
+                    28
+                ),
+                1
+            ),
+            (
+                (
+                    "8bd21d50-ec42-11ce-9e0d-00aa006002f3".into(),
+                    0x80c0_0146,
+                    60,
+                    28
+                ),
+                1
+            ),
+            (
+                (
+                    "8bd21d50-ec42-11ce-9e0d-00aa006002f3".into(),
+                    0x80c0_0146,
+                    64,
+                    28
+                ),
+                1
+            ),
+        ])
+    );
     assert_eq!(annotation_owner_sets, 13);
     assert_eq!(annotation_owners, 16);
     assert_eq!(annotation_owner_name_units, 142);
@@ -4627,14 +6470,39 @@ fn legacy_word_fibs_round_trip() {
     assert_eq!(default_sections, 0);
     assert_eq!(sepx_count, 484);
     assert_eq!(sepx_prls, 5_969);
+    assert_eq!(sepx_unknown_sprms, BTreeSet::from([0x4231, 0xd238]));
     assert_eq!(
-        sepx_unknown_sprms,
-        BTreeSet::from([0x3014, 0x4231, 0xd202, 0xd238])
+        sepx_unknown_fixed_shapes,
+        BTreeMap::from([((0x4231, 360), 1), ((0xd238, u32::MAX), 2)])
     );
-    assert_eq!(sepx_raw_variable_operands, 5);
+    assert_eq!(sepx_raw_variable_operands, 2);
+    assert_eq!(sepx_raw_variable_frequencies, BTreeMap::from([(0xd238, 2)]));
     assert_eq!(
-        sepx_raw_variable_frequencies,
-        BTreeMap::from([(0xd202, 3), (0xd238, 2)])
+        sepx_raw_variable_shapes,
+        BTreeMap::from([((0xd238, 36), 2)])
+    );
+    assert_eq!(
+        sepx_static_variable_operands,
+        BTreeMap::from([
+            ("border", 20),
+            ("outline-list-data", 3),
+            ("section-header-footer-flags", 9),
+        ])
+    );
+    assert_eq!(outline_list_restart_values, BTreeMap::from([(0, 3)]));
+    assert_eq!(outline_list_reserved_shapes, BTreeSet::from([[0, 0, 0]]));
+    assert_eq!(outline_list_nonzero_text_units, 37);
+    assert_eq!(
+        section_header_footer_flag_shapes,
+        BTreeMap::from([
+            (0x02, 1),
+            (0x08, 2),
+            (0x0a, 1),
+            (0x20, 1),
+            (0x38, 1),
+            (0x3a, 2),
+            (0x3f, 1),
+        ])
     );
     assert!(sepx_trailing_bytes.is_empty());
     assert_eq!(table0, 4);
@@ -4817,6 +6685,8 @@ fn static_variable_shape(operand: &SprmOperand) -> Option<&'static str> {
         }
         SprmOperand::ConditionalFormatting(_) => Some("conditional-formatting"),
         SprmOperand::AutoNumberedListData(_) => Some("auto-numbered-list-data"),
+        SprmOperand::OutlineListData(_) => Some("outline-list-data"),
+        SprmOperand::SectionHeaderFooterFlags(_) => Some("section-header-footer-flags"),
         _ => None,
     }
 }
