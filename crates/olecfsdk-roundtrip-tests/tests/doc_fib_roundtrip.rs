@@ -10,12 +10,15 @@ use olecfsdk::{
         AnnotationBookmarks, AnnotationExtendedData, AnnotationOwners, AnnotationReferenceTable,
         AssociatedStrings, AutoSummaryDesiredSize, AutoSummaryRangeTable, AutoSummaryView,
         Bookmarks, ChpxFkp, Clx, CommandCustomizationRecord, CommandCustomizations, CpOnlyTable,
-        DocOfficeArtContent, DocumentProperties, FIB_LAST_SAVED_FILETIME_INDEX, Fib, FibBase,
-        FibBaseFlags, FieldCharacter, FieldDocumentPart, FieldTable, FontTable, FrameAndListRecord,
-        FrameAndListRecords, GrammarCheckerCookieTable, GrammarCookieErrorType, GrammarOptionSets,
-        GrammarStateKind, GrammarStateTable, HeaderStoryBoundary, HeaderTextTable, HtmlBlockType,
-        LanguageDetectionStateKind, LanguageDetectionStateTable, LegacyGrammarOptionSets,
-        ListDefinitions, ListLevelTemplateCode, ListNamesTable, ListOverrides, ListStyleTemplates,
+        DocOfficeArtContent, DocumentProperties, EmbeddedFontSubset, EmbeddedFontTable,
+        EmbeddedFontTableOffset, FIB_LAST_SAVED_FILETIME_INDEX, Fib, FibBase, FibBaseFlags,
+        FieldCharacter, FieldDocumentPart, FieldTable, FontTable, FrameAndListRecord,
+        FrameAndListRecords, GrammarCheckerCookieTable, GrammarCookieErrorType, GrammarCookieStore,
+        GrammarOptionSets, GrammarStateKind, GrammarStateTable, HeaderStoryBoundary,
+        HeaderTextTable, HtmlBlockType, LanguageDetectionStateKind, LanguageDetectionStateTable,
+        LegacyGrammarOptionSets, ListDefinitions, ListLevelTemplateCode, ListNamesTable,
+        ListOverrides, ListStyleTemplates, MailMergeDestination, MailMergeDocumentType,
+        MailMergeErrorHandling, MailMergeFileReference, MailMergeSourceKind, MailMergeState,
         NoteReferenceTable, OleControlDocumentPart, OleControlInfos, PapxFkp, PapxLengthEncoding,
         ParagraphGroupProperties, PlcBte, PlcfSed, PrinterDriverInfo, Prm, PropertyBagString,
         RevisionAuthors, RevisionMessageThreading, RevisionSaveIdTable, SaveHistory,
@@ -23,8 +26,9 @@ use olecfsdk::{
         ShapeAnchorTable, SmartTagBookmarks, SmartTagData, SmartTagFactoidTypeId,
         SmartTagRecognizerStateKind, SmartTagRecognizerStateTable, SmartTagSource,
         SpellingStateKind, SpellingStateTable, SprmGroup, SprmKind, SprmOperand, StyleFormatting,
-        StyleKind, StyleSheet, TableCharacterCacheTable, TextPieceCharacters, TextboxBreakTable,
-        TextboxDocumentPart, TextboxStoryChain, TextboxStoryTable, UserInputMethods,
+        StyleKind, StyleSheet, SubdocumentTable, TableCharacterCacheTable, TextPieceCharacters,
+        TextboxBreakTable, TextboxDocumentPart, TextboxStoryChain, TextboxStoryTable,
+        UserInputMethods,
         UserVariableKind, UserVariables, WORD97_FILE_IDENTIFIER,
     },
     office_art::OfficeArtRecordData,
@@ -47,8 +51,10 @@ fn legacy_word_fibs_round_trip() {
     collect(&corpus.join("LibreOffice"), &mut files);
     let exclusions = excluded_files(&corpus);
     let atrd_extra_exclusions = excluded_files_for_test(&corpus, "doc_atrd_extra_roundtrip");
+    let plcf_wkb_exclusions = excluded_files_for_test(&corpus, "doc_plcf_wkb_roundtrip");
     let mut observed_exclusions = BTreeSet::new();
     let mut observed_atrd_extra_exclusions = BTreeSet::new();
+    let mut observed_plcf_wkb_exclusions = BTreeSet::new();
 
     let mut checked = 0usize;
     let mut legacy = BTreeMap::<u16, usize>::new();
@@ -309,6 +315,12 @@ fn legacy_word_fibs_round_trip() {
     let mut font_name_padding_units = 0usize;
     let mut font_family_shapes = BTreeMap::<(u8, bool, u8), usize>::new();
     let mut font_character_sets = BTreeMap::<u8, usize>::new();
+    let mut embedded_font_tables = 0usize;
+    let mut embedded_font_references = 0usize;
+    let mut embedded_font_table_offsets = BTreeMap::<EmbeddedFontTableOffset, usize>::new();
+    let mut embedded_font_table_shapes = BTreeMap::<(usize, u32), usize>::new();
+    let mut embedded_font_subsets = BTreeMap::<EmbeddedFontSubset, usize>::new();
+    let mut embedded_font_nonzero_ignored_flags = 0usize;
     let mut associated_string_tables = 0usize;
     let mut associated_string_units = 0usize;
     let mut nonempty_associated_strings = BTreeMap::<usize, usize>::new();
@@ -322,6 +334,19 @@ fn legacy_word_fibs_round_trip() {
     let mut user_variable_nonzero_metadata = 0usize;
     let mut user_variable_kinds = BTreeMap::<UserVariableKind, usize>::new();
     let mut user_variable_table_shapes = BTreeMap::<(usize, u32), usize>::new();
+    let mut mail_merge_tables = 0usize;
+    let mut mail_merge_sql_units = 0usize;
+    let mut mail_merge_string_tables = 0usize;
+    let mut mail_merge_document_type_records = 0usize;
+    let mut mail_merge_compatibility_sources = 0usize;
+    let mut mail_merge_document_types = BTreeMap::<MailMergeDocumentType, usize>::new();
+    let mut mail_merge_destinations = BTreeMap::<MailMergeDestination, usize>::new();
+    let mut mail_merge_source_kinds = BTreeMap::<MailMergeSourceKind, usize>::new();
+    let mut mail_merge_error_handling = BTreeMap::<MailMergeErrorHandling, usize>::new();
+    let mut mail_merge_shapes = BTreeMap::<(u32, usize, bool, bool), usize>::new();
+    let mut subdocument_tables = 0usize;
+    let mut subdocument_references = 0usize;
+    let mut subdocument_nonzero_ignored_flags = 0usize;
     let mut revision_author_tables = 0usize;
     let mut revision_authors = 0usize;
     let mut revision_author_units = 0usize;
@@ -395,6 +420,11 @@ fn legacy_word_fibs_round_trip() {
     let mut grammar_cookie_languages = BTreeMap::<(u8, u8), usize>::new();
     let mut grammar_cookie_shapes =
         BTreeMap::<(i16, i16, u32, GrammarCookieErrorType, bool, u8, u8, bool), usize>::new();
+    let mut grammar_cookie_data_tables = 0usize;
+    let mut grammar_cookie_data_entries = 0usize;
+    let mut grammar_cookie_provider_bytes = 0usize;
+    let mut grammar_cookie_data_shapes = BTreeMap::<(usize, u32), usize>::new();
+    let mut grammar_cookie_unreferenced_data = 0usize;
     let mut smart_tag_data_tables = 0usize;
     let mut smart_tag_factoid_types = 0usize;
     let mut smart_tag_malformed_cve_factoid_types = 0usize;
@@ -548,6 +578,69 @@ fn legacy_word_fibs_round_trip() {
             } else {
                 &cfb.entry("/0Table").expect("presence checked above").data
             };
+            if let Some(location) = fib.mail_merge_state_location()
+                && location.lcb != 0
+            {
+                let physical = bounded_slice(table, location.fc, location.lcb, "Pms")?;
+                let state = MailMergeState::from_bytes(physical)
+                    .map_err(|error| format!("Pms: {error}"))?;
+                if state.to_bytes().map_err(|error| error.to_string())? != physical {
+                    return Err("Pms writer changed physical bytes".to_owned());
+                }
+                mail_merge_tables += 1;
+                let sql_units = state.sql_query.as_ref().map_or(0, Vec::len);
+                mail_merge_sql_units += sql_units;
+                mail_merge_string_tables += usize::from(state.strings.is_some());
+                mail_merge_document_type_records += usize::from(state.document_type.is_some());
+                *mail_merge_document_types
+                    .entry(state.status.document_type)
+                    .or_default() += 1;
+                *mail_merge_destinations
+                    .entry(state.status.destination)
+                    .or_default() += 1;
+                *mail_merge_error_handling
+                    .entry(state.filter.error_handling)
+                    .or_default() += 1;
+                *mail_merge_shapes
+                    .entry((
+                        location.lcb,
+                        sql_units,
+                        state.strings.is_some(),
+                        state.document_type.is_some(),
+                    ))
+                    .or_default() += 1;
+                for source in state.sources {
+                    *mail_merge_source_kinds.entry(source.kind).or_default() += 1;
+                    mail_merge_compatibility_sources +=
+                        usize::from(source.file == MailMergeFileReference::NilCompatibility);
+                }
+            }
+            if let Some(location) = fib.subdocuments_location()
+                && location.lcb != 0
+            {
+                if plcf_wkb_exclusions.contains_key(&path) {
+                    observed_plcf_wkb_exclusions.insert(path.clone());
+                } else {
+                    let physical = bounded_slice(table, location.fc, location.lcb, "PlcfWKB")?;
+                    let subdocuments = SubdocumentTable::from_bytes(physical)
+                        .map_err(|error| format!("PlcfWKB: {error}"))?;
+                    if subdocuments.to_bytes().map_err(|error| error.to_string())? != physical {
+                        return Err("PlcfWKB writer changed physical bytes".to_owned());
+                    }
+                    let character_count = u32::try_from(fib.rg_lw.ccp_text)
+                        .map_err(|_| "PlcfWKB has a negative ccpText".to_owned())?;
+                    subdocuments
+                        .validate_main_document_length(character_count)
+                        .map_err(|error| format!("PlcfWKB/FibRgLw97: {error}"))?;
+                    subdocument_tables += 1;
+                    subdocument_references += subdocuments.subdocuments.len();
+                    for subdocument in subdocuments.subdocuments {
+                        subdocument_nonzero_ignored_flags += usize::from(
+                            subdocument.ignored_flag3 || subdocument.ignored_flag8,
+                        );
+                    }
+                }
+            }
             if let Some(location) = fib.mso_envelope_location()
                 && location.lcb != 0
             {
@@ -727,6 +820,7 @@ fn legacy_word_fibs_round_trip() {
                     }
                 }
             }
+            let mut current_font_count = None;
             if let Some(location) = fib.font_table_location()
                 && location.lcb != 0
             {
@@ -742,6 +836,7 @@ fn legacy_word_fibs_round_trip() {
                 }
                 font_tables += 1;
                 fonts += font_table.fonts.len();
+                current_font_count = Some(font_table.fonts.len());
                 for font in font_table.fonts {
                     alternate_font_names += usize::from(font.alternate_name().is_some());
                     font_name_units +=
@@ -753,6 +848,55 @@ fn legacy_word_fibs_round_trip() {
                         .or_default() += 1;
                     *font_character_sets.entry(font.character_set).or_default() += 1;
                 }
+            }
+            if let Some(location) = fib.embedded_fonts_location()
+                && location.lcb != 0
+            {
+                let physical = bounded_slice(table, location.fc, location.lcb, "SttbTtmbd")?;
+                let embedded = EmbeddedFontTable::from_bytes(physical)
+                    .map_err(|error| format!("SttbTtmbd: {error}"))?;
+                if embedded.to_bytes().map_err(|error| error.to_string())? != physical {
+                    return Err("SttbTtmbd write did not reproduce its physical bytes".to_owned());
+                }
+                let font_count = current_font_count
+                    .ok_or_else(|| "SttbTtmbd has no corresponding SttbfFfn".to_owned())?;
+                embedded
+                    .validate_against_font_table(font_count)
+                    .map_err(|error| format!("SttbTtmbd/SttbfFfn: {error}"))?;
+                embedded_font_tables += 1;
+                embedded_font_references += embedded.fonts.len();
+                *embedded_font_table_offsets
+                    .entry(embedded.producer_offset)
+                    .or_default() += 1;
+                *embedded_font_table_shapes
+                    .entry((embedded.fonts.len(), location.lcb))
+                    .or_default() += 1;
+                for font in embedded.fonts {
+                    *embedded_font_subsets.entry(font.subset).or_default() += 1;
+                    embedded_font_nonzero_ignored_flags += usize::from(font.ignored_flags != 0);
+                }
+            }
+            let mut current_grammar_cookie_store = None;
+            if let Some(location) = fib.grammar_cookie_data_location()
+                && location.lcb != 0
+            {
+                let physical = bounded_slice(table, location.fc, location.lcb, "RgCdb")?;
+                let store = GrammarCookieStore::from_bytes(physical)
+                    .map_err(|error| format!("RgCdb: {error}"))?;
+                if store.to_bytes().map_err(|error| error.to_string())? != physical {
+                    return Err("RgCdb writer changed physical bytes".to_owned());
+                }
+                grammar_cookie_data_tables += 1;
+                grammar_cookie_data_entries += store.cookies.len();
+                grammar_cookie_provider_bytes += store
+                    .cookies
+                    .iter()
+                    .map(|cookie| cookie.provider_data.len())
+                    .sum::<usize>();
+                *grammar_cookie_data_shapes
+                    .entry((store.cookies.len(), location.lcb))
+                    .or_default() += 1;
+                current_grammar_cookie_store = Some(store);
             }
             let mut auto_summary_info = None;
             if let Some(location) = fib.document_properties_location()
@@ -1211,6 +1355,23 @@ fn legacy_word_fibs_round_trip() {
                 if cookies.to_bytes().map_err(|error| error.to_string())? != physical {
                     return Err("Plcfcookie writer changed physical bytes".to_owned());
                 }
+                let store = current_grammar_cookie_store
+                    .as_ref()
+                    .ok_or_else(|| "Plcfcookie has no corresponding RgCdb".to_owned())?;
+                store
+                    .validate_references(&cookies)
+                    .map_err(|error| format!("Plcfcookie/RgCdb: {error}"))?;
+                let referenced = cookies
+                    .cookies
+                    .iter()
+                    .map(|cookie| cookie.data_offset)
+                    .collect::<BTreeSet<_>>();
+                grammar_cookie_unreferenced_data += store
+                    .entry_offsets()
+                    .map_err(|error| error.to_string())?
+                    .into_iter()
+                    .filter(|offset| !referenced.contains(offset))
+                    .count();
                 grammar_cookie_tables += 1;
                 grammar_cookies += cookies.cookies.len();
                 grammar_cookie_duplicate_positions += cookies
@@ -2887,6 +3048,15 @@ fn legacy_word_fibs_round_trip() {
     assert_eq!(font_name_units, 33_001);
     assert_eq!(padded_font_names, 2);
     assert_eq!(font_name_padding_units, 5);
+    assert_eq!(embedded_font_tables, 1);
+    assert_eq!(embedded_font_references, 0);
+    assert_eq!(
+        embedded_font_table_offsets,
+        BTreeMap::from([(EmbeddedFontTableOffset::Word97Compatibility, 1)])
+    );
+    assert_eq!(embedded_font_table_shapes, BTreeMap::from([((0, 10), 1)]));
+    assert!(embedded_font_subsets.is_empty());
+    assert_eq!(embedded_font_nonzero_ignored_flags, 0);
     assert_eq!(associated_string_tables, 351);
     assert_eq!(associated_string_units, 13_593);
     assert_eq!(
@@ -2947,6 +3117,31 @@ fn legacy_word_fibs_round_trip() {
             ((10, 458), 1),
             ((19, 488), 1),
         ])
+    );
+    assert_eq!(mail_merge_tables, 1);
+    assert_eq!(mail_merge_sql_units, 50);
+    assert_eq!(mail_merge_string_tables, 0);
+    assert_eq!(mail_merge_document_type_records, 1);
+    assert_eq!(mail_merge_compatibility_sources, 2);
+    assert_eq!(
+        mail_merge_document_types,
+        BTreeMap::from([(MailMergeDocumentType::Letters, 1)])
+    );
+    assert_eq!(
+        mail_merge_destinations,
+        BTreeMap::from([(MailMergeDestination::None, 1)])
+    );
+    assert_eq!(
+        mail_merge_source_kinds,
+        BTreeMap::from([(MailMergeSourceKind::DataFile, 2)])
+    );
+    assert_eq!(
+        mail_merge_error_handling,
+        BTreeMap::from([(MailMergeErrorHandling::CompleteAndPause, 1)])
+    );
+    assert_eq!(
+        mail_merge_shapes,
+        BTreeMap::from([((136, 50, false, true), 1)])
     );
     assert_eq!(revision_author_tables, 319);
     assert_eq!(revision_authors, 343);
@@ -3137,6 +3332,11 @@ fn legacy_word_fibs_round_trip() {
     );
     assert_eq!(smart_tag_start_depths, BTreeMap::from([(1, 214), (2, 125)]));
     assert_eq!(smart_tag_end_depths, BTreeMap::from([(0, 326), (1, 13)]));
+    assert_eq!(grammar_cookie_data_tables, 1);
+    assert_eq!(grammar_cookie_data_entries, 1);
+    assert_eq!(grammar_cookie_provider_bytes, 4);
+    assert_eq!(grammar_cookie_data_shapes, BTreeMap::from([((1, 16), 1)]));
+    assert_eq!(grammar_cookie_unreferenced_data, 0);
     assert_eq!(grammar_cookie_tables, 1);
     assert_eq!(grammar_cookies, 1);
     assert_eq!(grammar_cookie_headers, 1);

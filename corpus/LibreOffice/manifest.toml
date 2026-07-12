@@ -841,6 +841,12 @@ mode = "invalid"
 reason = "FIB AtrdExtra range extends beyond the Table stream"
 
 [[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2007-1347-1.doc"
+test = "doc_plcf_wkb_roundtrip"
+mode = "invalid"
+reason = "FIB PlcfWKB payload has a length that cannot contain 12-byte WKB records"
+
+[[expectation]]
 file = "sw/qa/core/data/ww8/pass/hang-4.doc"
 test = "oleps_roundtrip"
 mode = "invalid"
