@@ -9,14 +9,19 @@ use olecfsdk::{
     doc::{
         AnnotationBookmarks, AnnotationOwners, AnnotationReferenceTable, AssociatedStrings,
         Bookmarks, ChpxFkp, Clx, CommandCustomizationRecord, CommandCustomizations, CpOnlyTable,
-        DocOfficeArtContent, DocumentProperties, Fib, FibBase, FibBaseFlags, FieldCharacter,
-        FieldDocumentPart, FieldTable, FontTable, HeaderStoryBoundary, HeaderTextTable,
-        ListDefinitions, ListOverrides, NoteReferenceTable, PapxFkp, PapxLengthEncoding, PlcBte,
-        PlcfSed, Prm, RevisionAuthors, SelectionRange, SelectionState, SelectionStateExtension,
-        SelectionStyle, Sepx, ShapeAnchorTable, SpellingStateKind, SpellingStateTable, SprmGroup,
-        SprmKind, SprmOperand, StyleFormatting, StyleKind, StyleSheet, TextPieceCharacters,
-        TextboxBreakTable, TextboxDocumentPart, TextboxStoryChain, TextboxStoryTable,
-        WORD97_FILE_IDENTIFIER,
+        DocOfficeArtContent, DocumentProperties, FIB_LAST_SAVED_FILETIME_INDEX, Fib, FibBase,
+        FibBaseFlags, FieldCharacter, FieldDocumentPart, FieldTable, FontTable, FrameAndListRecord,
+        FrameAndListRecords, GrammarOptionSets, GrammarStateKind, GrammarStateTable,
+        HeaderStoryBoundary, HeaderTextTable, HtmlBlockType, LanguageDetectionStateKind,
+        LanguageDetectionStateTable, ListDefinitions, ListLevelTemplateCode, ListNamesTable,
+        ListOverrides, ListStyleTemplates, NoteReferenceTable, PapxFkp, PapxLengthEncoding,
+        ParagraphGroupProperties, PlcBte, PlcfSed, Prm, RevisionAuthors, RevisionMessageThreading,
+        RevisionSaveIdTable, SaveHistory, SelectionRange, SelectionState, SelectionStateExtension,
+        SelectionStyle, Sepx, ShapeAnchorTable, SmartTagRecognizerStateKind,
+        SmartTagRecognizerStateTable, SpellingStateKind, SpellingStateTable, SprmGroup, SprmKind,
+        SprmOperand, StyleFormatting, StyleKind, StyleSheet, TableCharacterCacheTable,
+        TextPieceCharacters, TextboxBreakTable, TextboxDocumentPart, TextboxStoryChain,
+        TextboxStoryTable, WORD97_FILE_IDENTIFIER,
     },
     office_art::OfficeArtRecordData,
 };
@@ -40,7 +45,14 @@ fn legacy_word_fibs_round_trip() {
     let mut versions = BTreeMap::<u16, usize>::new();
     let mut fc_lcb_shapes = BTreeMap::<(u16, usize), usize>::new();
     let mut csw_new_shapes = BTreeMap::<(u16, usize), usize>::new();
-    let mut nonempty_fc_lcb = BTreeMap::<usize, usize>::new();
+    let mut nonzero_fib_pairs = BTreeMap::<usize, usize>::new();
+    let mut zero_last_saved_file_times = 0usize;
+    let mut nonzero_last_saved_file_times = 0usize;
+    let mut distinct_last_saved_file_times = BTreeSet::<u64>::new();
+    let mut minimum_last_saved_file_time = u64::MAX;
+    let mut maximum_last_saved_file_time = 0u64;
+    let mut last_saved_file_time_part_mismatches = 0usize;
+    let mut last_saved_high_zero_nonzero = 0usize;
     let mut table0 = 0usize;
     let mut table1 = 0usize;
     let mut encrypted_exclusions = 0usize;
@@ -175,6 +187,13 @@ fn legacy_word_fibs_round_trip() {
     let mut list_level_to_override_gaps = BTreeMap::<i64, usize>::new();
     let mut list_levels_in_declared_length = 0usize;
     let mut list_level_incomplete_tails = BTreeMap::<(&'static str, usize), usize>::new();
+    let mut list_name_tables = 0usize;
+    let mut list_name_entries = 0usize;
+    let mut nonempty_list_names = 0usize;
+    let mut list_name_units = 0usize;
+    let mut maximum_list_name_length = 0usize;
+    let mut list_name_count_shapes = BTreeMap::<usize, usize>::new();
+    let mut list_name_definition_count_differences = BTreeMap::<i64, usize>::new();
     let mut list_override_sets = 0usize;
     let mut list_overrides = 0usize;
     let mut list_override_levels = 0usize;
@@ -206,6 +225,78 @@ fn legacy_word_fibs_round_trip() {
     let mut spelling_ranges = 0usize;
     let mut spelling_duplicate_positions = 0usize;
     let mut spelling_state_shapes = BTreeMap::<(SpellingStateKind, bool), usize>::new();
+    let mut grammar_state_tables = 0usize;
+    let mut grammar_ranges = 0usize;
+    let mut grammar_duplicate_positions = 0usize;
+    let mut grammar_state_shapes = BTreeMap::<(GrammarStateKind, bool, bool, bool), usize>::new();
+    let mut language_detection_state_tables = 0usize;
+    let mut language_detection_ranges = 0usize;
+    let mut language_detection_duplicate_positions = 0usize;
+    let mut language_detection_state_shapes =
+        BTreeMap::<(LanguageDetectionStateKind, bool), usize>::new();
+    let mut list_style_template_tables = 0usize;
+    let mut list_style_template_lists = 0usize;
+    let mut empty_list_style_templates = 0usize;
+    let mut built_in_list_level_templates = 0usize;
+    let mut user_list_level_templates = 0usize;
+    let mut list_style_template_count_mismatches = 0usize;
+    let mut extra_list_style_template_counts = BTreeMap::<usize, usize>::new();
+    let mut frame_and_list_tables = 0usize;
+    let mut frame_and_list_records = 0usize;
+    let mut list_style_references = 0usize;
+    let mut custom_list_style_references = 0usize;
+    let mut standard_list_style_references = 0usize;
+    let mut out_of_range_custom_list_style_references = 0usize;
+    let mut grammar_option_tables = 0usize;
+    let mut grammar_options = 0usize;
+    let mut grammar_option_shapes = BTreeMap::<(u16, u16, u32, u16), usize>::new();
+    let mut smart_tag_state_tables = 0usize;
+    let mut smart_tag_state_ranges = 0usize;
+    let mut smart_tag_duplicate_positions = 0usize;
+    let mut smart_tag_state_shapes = BTreeMap::<SmartTagRecognizerStateKind, usize>::new();
+    let mut paragraph_group_tables = 0usize;
+    let mut paragraph_group_entries = 0usize;
+    let mut paragraph_group_root_entries = 0usize;
+    let mut paragraph_group_maximum_depth = 0u32;
+    let mut paragraph_group_missing_parents = 0usize;
+    let mut paragraph_group_option_shapes = BTreeMap::<u16, usize>::new();
+    let mut paragraph_group_html_types = BTreeMap::<HtmlBlockType, usize>::new();
+    let mut save_history_tables = 0usize;
+    let mut save_history_entries = 0usize;
+    let mut save_history_author_units = 0usize;
+    let mut save_history_path_units = 0usize;
+    let mut save_history_maximum_author_length = 0usize;
+    let mut save_history_maximum_path_length = 0usize;
+    let mut save_history_entry_counts = BTreeMap::<usize, usize>::new();
+    let mut table_character_cache_tables = 0usize;
+    let mut table_character_cache_ranges = 0usize;
+    let mut table_character_unknown_ranges = 0usize;
+    let mut table_character_nonzero_unused = 0usize;
+    let mut table_character_cache_shapes = BTreeMap::<usize, usize>::new();
+    let mut table_character_canonical_undefined = 0usize;
+    let mut revision_threading_tables = 0usize;
+    let mut revision_thread_messages = 0usize;
+    let mut revision_thread_message_units = 0usize;
+    let mut revision_thread_style_units = 0usize;
+    let mut revision_thread_nonempty_messages = 0usize;
+    let mut revision_thread_nonempty_styles = 0usize;
+    let mut revision_thread_nonzero_dates = 0usize;
+    let mut revision_thread_nonzero_reserved = 0usize;
+    let mut revision_thread_author_indexes = BTreeMap::<i16, usize>::new();
+    let mut revision_thread_author_attributes = 0usize;
+    let mut revision_thread_message_attributes = 0usize;
+    let mut revision_thread_attribute_units = 0usize;
+    let mut revision_thread_value_units = 0usize;
+    let mut revision_thread_message_count_shapes = BTreeMap::<usize, usize>::new();
+    let mut revision_thread_author_count_mismatches = 0usize;
+    let mut revision_save_id_tables = 0usize;
+    let mut revision_save_ids = 0usize;
+    let mut zero_revision_save_ids = 0usize;
+    let mut duplicate_revision_save_ids = 0usize;
+    let mut distinct_revision_save_ids = BTreeSet::<u32>::new();
+    let mut revision_save_id_count_shapes = BTreeMap::<usize, usize>::new();
+    let mut revision_save_id_reserved2 = BTreeMap::<u32, usize>::new();
+    let mut nonzero_revision_save_id_reserved3 = 0usize;
     let mut selection_state_shapes = BTreeMap::<u32, usize>::new();
     let mut selection_states = 0usize;
     let mut selection_ranges = BTreeMap::<&'static str, usize>::new();
@@ -263,6 +354,8 @@ fn legacy_word_fibs_round_trip() {
 
             let fib =
                 Fib::from_word_document(&word_document.data).map_err(|error| error.to_string())?;
+            let mut current_list_style_template_count = None;
+            let mut current_custom_list_style_indices = Vec::new();
             let encoded = fib.to_bytes().map_err(|error| error.to_string())?;
             if word_document.data.get(..encoded.len()) != Some(encoded.as_slice()) {
                 return Err("FIB write did not reproduce its physical prefix".to_owned());
@@ -276,8 +369,26 @@ fn legacy_word_fibs_round_trip() {
                 .or_default() += 1;
             for (index, location) in fib.fc_lcb.iter().enumerate() {
                 if location.lcb != 0 {
-                    *nonempty_fc_lcb.entry(index).or_default() += 1;
+                    *nonzero_fib_pairs.entry(index).or_default() += 1;
                 }
+            }
+            let last_saved = fib
+                .last_saved_file_time()
+                .ok_or_else(|| "FIB is missing its last-saved FILETIME pair".to_owned())?;
+            let raw_last_saved = fib
+                .fc_lcb(FIB_LAST_SAVED_FILETIME_INDEX)
+                .ok_or_else(|| "FIB is missing pair 87".to_owned())?;
+            last_saved_file_time_part_mismatches += usize::from(
+                last_saved.low() != raw_last_saved.fc || last_saved.high() != raw_last_saved.lcb,
+            );
+            if last_saved.ticks() == 0 {
+                zero_last_saved_file_times += 1;
+            } else {
+                nonzero_last_saved_file_times += 1;
+                last_saved_high_zero_nonzero += usize::from(last_saved.high() == 0);
+                distinct_last_saved_file_times.insert(last_saved.ticks());
+                minimum_last_saved_file_time = minimum_last_saved_file_time.min(last_saved.ticks());
+                maximum_last_saved_file_time = maximum_last_saved_file_time.max(last_saved.ticks());
             }
             if let Some(location) = fib.fc_lcb(30)
                 && location.lcb != 0
@@ -300,6 +411,7 @@ fn legacy_word_fibs_round_trip() {
             } else {
                 &cfb.entry("/0Table").expect("presence checked above").data
             };
+            let mut current_revision_author_count = None;
             if let Some(location) = fib.fc_lcb(24)
                 && location.lcb != 0
             {
@@ -446,6 +558,9 @@ fn legacy_word_fibs_round_trip() {
                 if authors.to_bytes().map_err(|error| error.to_string())? != physical {
                     return Err("SttbfRMark write did not reproduce its physical bytes".to_owned());
                 }
+                if let RevisionAuthors::Standard { names } = &authors {
+                    current_revision_author_count = Some(names.len());
+                }
                 revision_author_tables += 1;
                 revision_author_zero_placeholders += usize::from(matches!(
                     authors,
@@ -487,6 +602,346 @@ fn legacy_word_fibs_round_trip() {
                         .or_default() += 1;
                 }
             }
+            if let Some(location) = fib.grammar_state_location()
+                && location.lcb != 0
+            {
+                let physical = bounded_slice(table, location.fc, location.lcb, "Plcfgram")?;
+                let states = GrammarStateTable::from_bytes(physical).map_err(|error| {
+                    format!(
+                        "Plcfgram fc={:#x} lcb={:#x}: {error}",
+                        location.fc, location.lcb
+                    )
+                })?;
+                if states.to_bytes().map_err(|error| error.to_string())? != physical {
+                    return Err("Plcfgram write did not reproduce its physical bytes".to_owned());
+                }
+                grammar_state_tables += 1;
+                grammar_ranges += states.states.len();
+                grammar_duplicate_positions += states
+                    .positions
+                    .windows(2)
+                    .filter(|positions| positions[0] == positions[1])
+                    .count();
+                for state in states.states {
+                    *grammar_state_shapes
+                        .entry((state.kind, state.error, state.extend, state.typo))
+                        .or_default() += 1;
+                }
+            }
+            if let Some(location) = fib.language_detection_state_location()
+                && location.lcb != 0
+            {
+                let physical = bounded_slice(table, location.fc, location.lcb, "Plcflad")?;
+                let states =
+                    LanguageDetectionStateTable::from_bytes(physical).map_err(|error| {
+                        format!(
+                            "Plcflad fc={:#x} lcb={:#x}: {error}",
+                            location.fc, location.lcb
+                        )
+                    })?;
+                if states.to_bytes().map_err(|error| error.to_string())? != physical {
+                    return Err("Plcflad write did not reproduce its physical bytes".to_owned());
+                }
+                language_detection_state_tables += 1;
+                language_detection_ranges += states.states.len();
+                language_detection_duplicate_positions += states
+                    .positions
+                    .windows(2)
+                    .filter(|positions| positions[0] == positions[1])
+                    .count();
+                for state in states.states {
+                    *language_detection_state_shapes
+                        .entry((state.kind, state.error))
+                        .or_default() += 1;
+                }
+            }
+            if let Some(location) = fib.list_style_templates_location()
+                && location.lcb != 0
+            {
+                let physical = bounded_slice(table, location.fc, location.lcb, "SttbRgtplc")?;
+                let templates = ListStyleTemplates::from_bytes(physical).map_err(|error| {
+                    format!(
+                        "SttbRgtplc fc={:#x} lcb={:#x}: {error}",
+                        location.fc, location.lcb
+                    )
+                })?;
+                if templates.to_bytes().map_err(|error| error.to_string())? != physical {
+                    return Err("SttbRgtplc write did not reproduce its physical bytes".to_owned());
+                }
+                list_style_template_tables += 1;
+                list_style_template_lists += templates.lists.len();
+                current_list_style_template_count = Some(templates.lists.len());
+                for list in templates.lists {
+                    if let Some(levels) = list {
+                        for level in levels {
+                            match level {
+                                ListLevelTemplateCode::BuiltIn { .. } => {
+                                    built_in_list_level_templates += 1;
+                                }
+                                ListLevelTemplateCode::UserDefined { .. } => {
+                                    user_list_level_templates += 1;
+                                }
+                            }
+                        }
+                    } else {
+                        empty_list_style_templates += 1;
+                    }
+                }
+            }
+            if let Some(location) = fib.frame_and_list_records_location()
+                && location.lcb != 0
+            {
+                let physical = bounded_slice(table, location.fc, location.lcb, "RgDofr")?;
+                let records = FrameAndListRecords::from_bytes(physical)
+                    .map_err(|error| format!("RgDofr: {error}"))?;
+                if records.to_bytes().map_err(|error| error.to_string())? != physical {
+                    return Err("RgDofr write did not reproduce its physical bytes".to_owned());
+                }
+                frame_and_list_tables += 1;
+                frame_and_list_records += records.records.len();
+                for record in records.records {
+                    let FrameAndListRecord::ListStyles(styles) = record else {
+                        return Err("RgDofr corpus contains a non-list-style record".to_owned());
+                    };
+                    list_style_references += styles.len();
+                    for style in styles {
+                        if style.style_definition {
+                            custom_list_style_references += 1;
+                            current_custom_list_style_indices.push(style.list_index);
+                        } else {
+                            standard_list_style_references += 1;
+                        }
+                    }
+                }
+            }
+            if let Some(location) = fib.grammar_option_sets_location()
+                && location.lcb != 0
+            {
+                let physical = bounded_slice(table, location.fc, location.lcb, "PlfCosl")?;
+                let sets = GrammarOptionSets::from_bytes(physical)
+                    .map_err(|error| format!("PlfCosl: {error}"))?;
+                if sets.to_bytes().map_err(|error| error.to_string())? != physical {
+                    return Err("PlfCosl write did not reproduce its physical bytes".to_owned());
+                }
+                grammar_option_tables += 1;
+                grammar_options += sets.options.len();
+                for option in sets.options {
+                    *grammar_option_shapes
+                        .entry((
+                            option.option_set,
+                            option.language_id,
+                            option.checker_version,
+                            option.company_id,
+                        ))
+                        .or_default() += 1;
+                }
+            }
+            if let Some(location) = fib.smart_tag_recognizer_state_location()
+                && location.lcb != 0
+            {
+                let physical = bounded_slice(table, location.fc, location.lcb, "Plcffactoid")?;
+                let states = SmartTagRecognizerStateTable::from_bytes(physical)
+                    .map_err(|error| format!("Plcffactoid: {error}"))?;
+                if states.to_bytes().map_err(|error| error.to_string())? != physical {
+                    return Err("Plcffactoid write did not reproduce its physical bytes".to_owned());
+                }
+                smart_tag_state_tables += 1;
+                smart_tag_state_ranges += states.states.len();
+                smart_tag_duplicate_positions += states
+                    .positions
+                    .windows(2)
+                    .filter(|positions| positions[0] == positions[1])
+                    .count();
+                for state in states.states {
+                    *smart_tag_state_shapes.entry(state.kind).or_default() += 1;
+                }
+            }
+            if let Some(location) = fib.paragraph_group_properties_location()
+                && location.lcb != 0
+            {
+                let physical = bounded_slice(table, location.fc, location.lcb, "PGPArray")?;
+                let properties = ParagraphGroupProperties::from_bytes(physical)
+                    .map_err(|error| format!("PGPArray: {error}"))?;
+                if properties.to_bytes().map_err(|error| error.to_string())? != physical {
+                    return Err("PGPArray write did not reproduce its physical bytes".to_owned());
+                }
+                paragraph_group_tables += 1;
+                paragraph_group_entries += properties.entries.len();
+                let ids = properties
+                    .entries
+                    .iter()
+                    .map(|entry| entry.id)
+                    .collect::<BTreeSet<_>>();
+                for entry in properties.entries {
+                    paragraph_group_root_entries += usize::from(entry.parent_id == 0);
+                    paragraph_group_maximum_depth =
+                        paragraph_group_maximum_depth.max(entry.table_depth);
+                    paragraph_group_missing_parents +=
+                        usize::from(entry.parent_id != 0 && !ids.contains(&entry.parent_id));
+                    let options = entry.options;
+                    let shape = u16::from(options.left_margin.is_some())
+                        | (u16::from(options.right_margin.is_some()) << 1)
+                        | (u16::from(options.top_margin.is_some()) << 2)
+                        | (u16::from(options.bottom_margin.is_some()) << 3)
+                        | (u16::from(options.left_border.is_some()) << 4)
+                        | (u16::from(options.right_border.is_some()) << 5)
+                        | (u16::from(options.top_border.is_some()) << 6)
+                        | (u16::from(options.bottom_border.is_some()) << 7)
+                        | (u16::from(options.html_block_type.is_some()) << 8);
+                    *paragraph_group_option_shapes.entry(shape).or_default() += 1;
+                    if let Some(value) = options.html_block_type {
+                        *paragraph_group_html_types.entry(value).or_default() += 1;
+                    }
+                }
+            }
+            if let Some(location) = fib.save_history_location()
+                && location.lcb != 0
+            {
+                let physical = bounded_slice(table, location.fc, location.lcb, "SttbSavedBy")?;
+                let history = SaveHistory::from_bytes(physical)
+                    .map_err(|error| format!("SttbSavedBy: {error}"))?;
+                if history.to_bytes().map_err(|error| error.to_string())? != physical {
+                    return Err("SttbSavedBy write did not reproduce its physical bytes".to_owned());
+                }
+                save_history_tables += 1;
+                save_history_entries += history.entries.len();
+                *save_history_entry_counts
+                    .entry(history.entries.len())
+                    .or_default() += 1;
+                for entry in history.entries {
+                    save_history_author_units += entry.author.len();
+                    save_history_path_units += entry.path.len();
+                    save_history_maximum_author_length =
+                        save_history_maximum_author_length.max(entry.author.len());
+                    save_history_maximum_path_length =
+                        save_history_maximum_path_length.max(entry.path.len());
+                }
+            }
+            if let Some(location) = fib.table_character_cache_location()
+                && location.lcb != 0
+            {
+                let physical = bounded_slice(table, location.fc, location.lcb, "PlcfTch")?;
+                let caches = TableCharacterCacheTable::from_bytes(physical).map_err(|error| {
+                    format!(
+                        "PlcfTch fc={:#x} lcb={:#x}: {error}",
+                        location.fc, location.lcb
+                    )
+                })?;
+                if caches.to_bytes().map_err(|error| error.to_string())? != physical {
+                    return Err("PlcfTch write did not reproduce its physical bytes".to_owned());
+                }
+                table_character_cache_tables += 1;
+                table_character_cache_ranges += caches.caches.len();
+                *table_character_cache_shapes
+                    .entry(caches.caches.len())
+                    .or_default() += 1;
+                table_character_unknown_ranges +=
+                    caches.caches.iter().filter(|cache| cache.unknown).count();
+                table_character_nonzero_unused += caches
+                    .caches
+                    .iter()
+                    .filter(|cache| cache.unused != 0)
+                    .count();
+                if let Ok(text_length) = u32::try_from(fib.rg_lw.ccp_text)
+                    && caches.positions == [0, text_length, text_length.saturating_add(2)]
+                    && caches.caches.len() == 2
+                    && !caches.caches[0].unknown
+                    && caches.caches[0].unused == 0
+                    && caches.caches[1].unknown
+                    && caches.caches[1].unused == 0
+                {
+                    table_character_canonical_undefined += 1;
+                }
+            }
+            if let Some(location) = fib.revision_message_threading_location()
+                && location.lcb != 0
+            {
+                let physical = bounded_slice(table, location.fc, location.lcb, "RmdThreading")?;
+                let threading =
+                    RevisionMessageThreading::from_bytes(physical).map_err(|error| {
+                        format!(
+                            "RmdThreading fc={:#x} lcb={:#x}: {error}",
+                            location.fc, location.lcb
+                        )
+                    })?;
+                if threading.to_bytes().map_err(|error| error.to_string())? != physical {
+                    return Err(
+                        "RmdThreading write did not reproduce its physical bytes".to_owned()
+                    );
+                }
+                revision_threading_tables += 1;
+                revision_thread_messages += threading.messages.len();
+                *revision_thread_message_count_shapes
+                    .entry(threading.messages.len())
+                    .or_default() += 1;
+                if let Some(author_count) = current_revision_author_count {
+                    revision_thread_author_count_mismatches +=
+                        usize::from(author_count != threading.messages.len());
+                }
+                for message in &threading.messages {
+                    revision_thread_message_units += message.identifier.len();
+                    revision_thread_nonempty_messages +=
+                        usize::from(!message.identifier.is_empty());
+                    let created = message.display.created;
+                    revision_thread_nonzero_dates += usize::from(
+                        created.minute != 0
+                            || created.hour != 0
+                            || created.day != 0
+                            || created.month != 0
+                            || created.year_offset != 0
+                            || created.weekday != 0,
+                    );
+                    revision_thread_nonzero_reserved += usize::from(message.display.reserved != 0);
+                    *revision_thread_author_indexes
+                        .entry(message.display.author_index)
+                        .or_default() += 1;
+                }
+                for style in &threading.styles {
+                    revision_thread_style_units += style.len();
+                    revision_thread_nonempty_styles += usize::from(!style.is_empty());
+                }
+                revision_thread_author_attributes += threading.author_attributes.len();
+                revision_thread_message_attributes += threading.message_attributes.len();
+                revision_thread_attribute_units += threading
+                    .author_attributes
+                    .iter()
+                    .chain(&threading.message_attributes)
+                    .map(|attribute| attribute.name.len())
+                    .sum::<usize>();
+                revision_thread_value_units += threading
+                    .author_values
+                    .iter()
+                    .chain(&threading.message_values)
+                    .map(Vec::len)
+                    .sum::<usize>();
+            }
+            if let Some(location) = fib.revision_save_ids_location()
+                && location.lcb != 0
+            {
+                let physical = bounded_slice(table, location.fc, location.lcb, "PLRSID")?;
+                let ids = RevisionSaveIdTable::from_bytes(physical).map_err(|error| {
+                    format!(
+                        "PLRSID fc={:#x} lcb={:#x}: {error}",
+                        location.fc, location.lcb
+                    )
+                })?;
+                if ids.to_bytes().map_err(|error| error.to_string())? != physical {
+                    return Err("PLRSID write did not reproduce its physical bytes".to_owned());
+                }
+                revision_save_id_tables += 1;
+                revision_save_ids += ids.ids.len();
+                *revision_save_id_count_shapes
+                    .entry(ids.ids.len())
+                    .or_default() += 1;
+                *revision_save_id_reserved2.entry(ids.reserved2).or_default() += 1;
+                nonzero_revision_save_id_reserved3 += usize::from(ids.reserved3 != 0);
+                let mut seen = BTreeSet::new();
+                for id in ids.ids {
+                    zero_revision_save_ids += usize::from(id.0 == 0);
+                    duplicate_revision_save_ids += usize::from(!seen.insert(id.0));
+                    distinct_revision_save_ids.insert(id.0);
+                }
+            }
             if let Some(location) = fib.selection_state_location()
                 && location.lcb != 0
             {
@@ -510,6 +965,7 @@ fn legacy_word_fibs_round_trip() {
                 }
             }
             let mut parsed_list_ids = BTreeSet::new();
+            let mut current_list_definition_count = 0usize;
             if let Some(location) = fib.list_definition_location()
                 && location.lcb != 0
             {
@@ -564,6 +1020,7 @@ fn legacy_word_fibs_round_trip() {
                 }
                 list_definition_sets += 1;
                 list_definitions += definitions.definitions.len();
+                current_list_definition_count = definitions.definitions.len();
                 simple_list_definitions += definitions
                     .definitions
                     .iter()
@@ -596,6 +1053,46 @@ fn legacy_word_fibs_round_trip() {
                     }
                 }
             }
+            if let Some(location) = fib.list_names_location()
+                && location.lcb != 0
+            {
+                let physical = bounded_slice(table, location.fc, location.lcb, "SttbListNames")?;
+                let names = ListNamesTable::from_bytes(physical).map_err(|error| {
+                    format!(
+                        "SttbListNames fc={:#x} lcb={:#x}: {error}",
+                        location.fc, location.lcb
+                    )
+                })?;
+                if names.to_bytes().map_err(|error| error.to_string())? != physical {
+                    return Err(
+                        "SttbListNames write did not reproduce its physical bytes".to_owned()
+                    );
+                }
+                list_name_tables += 1;
+                list_name_entries += names.names.len();
+                *list_name_count_shapes.entry(names.names.len()).or_default() += 1;
+                *list_name_definition_count_differences
+                    .entry(names.names.len() as i64 - current_list_definition_count as i64)
+                    .or_default() += 1;
+                for name in names.names {
+                    nonempty_list_names += usize::from(!name.is_empty());
+                    list_name_units += name.len();
+                    maximum_list_name_length = maximum_list_name_length.max(name.len());
+                }
+            }
+            if let Some(template_count) = current_list_style_template_count {
+                if template_count != current_list_definition_count {
+                    *extra_list_style_template_counts
+                        .entry(template_count.saturating_sub(current_list_definition_count))
+                        .or_default() += 1;
+                }
+                list_style_template_count_mismatches +=
+                    usize::from(template_count != current_list_definition_count);
+            }
+            out_of_range_custom_list_style_references += current_custom_list_style_indices
+                .iter()
+                .filter(|index| usize::from(**index) >= current_list_definition_count)
+                .count();
             if let Some(location) = fib.list_override_location()
                 && location.lcb != 0
             {
@@ -1645,8 +2142,15 @@ fn legacy_word_fibs_round_trip() {
     assert_eq!(encrypted_exclusions, 3);
     assert_eq!(invalid_exclusions, 36);
     assert_eq!(checked, 403);
+    assert_eq!(zero_last_saved_file_times, 70);
+    assert_eq!(nonzero_last_saved_file_times, 333);
+    assert_eq!(distinct_last_saved_file_times.len(), 329);
+    assert_eq!(minimum_last_saved_file_time, 0x0000_0000_c4ee_20b1);
+    assert_eq!(maximum_last_saved_file_time, 0x01dc_f8fb_bd7b_33c0);
+    assert_eq!(last_saved_high_zero_nonzero, 2);
+    assert_eq!(last_saved_file_time_part_mismatches, 0);
     assert_eq!(
-        nonempty_fc_lcb,
+        nonzero_fib_pairs,
         BTreeMap::from([
             (0, 399),
             (1, 403),
@@ -1799,6 +2303,330 @@ fn legacy_word_fibs_round_trip() {
     assert_eq!(
         revision_author_count_shapes,
         BTreeMap::from([(0, 1), (1, 304), (2, 11), (3, 1), (4, 1), (10, 1)])
+    );
+    assert_eq!(spelling_state_tables, 313);
+    assert_eq!(spelling_ranges, 14_745);
+    assert_eq!(spelling_duplicate_positions, 259);
+    assert_eq!(
+        spelling_state_shapes,
+        BTreeMap::from([
+            ((SpellingStateKind::MaybeDirty, false), 470),
+            ((SpellingStateKind::Dirty, false), 148),
+            ((SpellingStateKind::Edit, false), 701),
+            ((SpellingStateKind::Edit, true), 1),
+            ((SpellingStateKind::Foreign, false), 1_131),
+            ((SpellingStateKind::Clean, false), 7_341),
+            ((SpellingStateKind::RepeatWord, true), 10),
+            ((SpellingStateKind::UnknownWord, true), 4_936),
+            ((SpellingStateKind::Compatibility13, true), 7),
+        ])
+    );
+    assert_eq!(grammar_state_tables, 296);
+    assert_eq!(grammar_ranges, 6_777);
+    assert_eq!(grammar_duplicate_positions, 219);
+    assert_eq!(
+        grammar_state_shapes,
+        BTreeMap::from([
+            ((GrammarStateKind::MaybeDirty, false, false, false), 447),
+            ((GrammarStateKind::Dirty, false, false, false), 387),
+            ((GrammarStateKind::Dirty, true, true, false), 618),
+            ((GrammarStateKind::Edit, false, false, false), 693),
+            ((GrammarStateKind::Foreign, false, false, false), 809),
+            ((GrammarStateKind::Clean, false, false, false), 3_172),
+            ((GrammarStateKind::ErrorMin, true, false, false), 441),
+            ((GrammarStateKind::ErrorMin, true, true, false), 66),
+            ((GrammarStateKind::ErrorMin, true, true, true), 144),
+        ])
+    );
+    assert_eq!(language_detection_state_tables, 218);
+    assert_eq!(language_detection_ranges, 4_833);
+    assert_eq!(language_detection_duplicate_positions, 385);
+    assert_eq!(
+        language_detection_state_shapes,
+        BTreeMap::from([
+            ((LanguageDetectionStateKind::MaybeDirty, false), 444),
+            ((LanguageDetectionStateKind::Dirty, false), 448),
+            ((LanguageDetectionStateKind::Edit, false), 1_088),
+            ((LanguageDetectionStateKind::Foreign, false), 1_016),
+            ((LanguageDetectionStateKind::Clean, false), 1_809),
+            ((LanguageDetectionStateKind::NoLanguageDetection, false), 28,),
+        ])
+    );
+    assert_eq!(list_style_template_tables, 132);
+    assert_eq!(list_style_template_lists, 2_834);
+    assert_eq!(empty_list_style_templates, 2_145);
+    assert_eq!(built_in_list_level_templates, 5_651);
+    assert_eq!(user_list_level_templates, 550);
+    assert_eq!(list_style_template_count_mismatches, 5);
+    assert_eq!(
+        extra_list_style_template_counts,
+        BTreeMap::from([(3, 1), (6, 1), (12, 1), (14, 1), (755, 1)])
+    );
+    assert_eq!(frame_and_list_tables, 113);
+    assert_eq!(frame_and_list_records, 113);
+    assert_eq!(list_style_references, 1_436);
+    assert_eq!(custom_list_style_references, 5);
+    assert_eq!(standard_list_style_references, 1_431);
+    assert_eq!(out_of_range_custom_list_style_references, 0);
+    assert_eq!(grammar_option_tables, 6);
+    assert_eq!(grammar_options, 27);
+    assert_eq!(
+        grammar_option_shapes,
+        BTreeMap::from([
+            ((0, 1033, 0, 64), 1),
+            ((0, 1033, 4096, 64), 1),
+            ((0, 1033, 131078, 64), 2),
+            ((0, 1036, 0, 64), 1),
+            ((0, 1036, 4096, 64), 1),
+            ((0, 2057, 0, 64), 1),
+            ((0, 2057, 4096, 64), 1),
+            ((0, 2057, 131078, 64), 2),
+            ((0, 3081, 131078, 64), 1),
+            ((1, 1031, 131078, 64), 1),
+            ((1, 1033, 5, 64), 1),
+            ((1, 1033, 6, 64), 2),
+            ((1, 1033, 131078, 64), 2),
+            ((1, 1036, 6, 64), 1),
+            ((1, 1036, 131078, 64), 2),
+            ((1, 2052, 5, 64), 1),
+            ((1, 2057, 6, 64), 1),
+            ((1, 2057, 131077, 64), 1),
+            ((1, 2057, 131078, 64), 2),
+            ((1, 3081, 131078, 64), 1),
+            ((1, 5129, 131078, 64), 1),
+        ])
+    );
+    assert_eq!(smart_tag_state_tables, 100);
+    assert_eq!(smart_tag_state_ranges, 3_911);
+    assert_eq!(smart_tag_duplicate_positions, 1_245);
+    assert_eq!(
+        smart_tag_state_shapes,
+        BTreeMap::from([
+            (SmartTagRecognizerStateKind::Pending, 1),
+            (SmartTagRecognizerStateKind::MaybeDirty, 318),
+            (SmartTagRecognizerStateKind::Dirty, 919),
+            (SmartTagRecognizerStateKind::Edit, 1_644),
+            (SmartTagRecognizerStateKind::Clean, 1_029),
+        ])
+    );
+    assert_eq!(paragraph_group_tables, 31);
+    assert_eq!(paragraph_group_entries, 3_023);
+    assert_eq!(paragraph_group_root_entries, 670);
+    assert_eq!(paragraph_group_maximum_depth, 3);
+    assert_eq!(paragraph_group_missing_parents, 0);
+    assert_eq!(
+        paragraph_group_option_shapes,
+        BTreeMap::from([
+            (0, 2_284),
+            (1, 3),
+            (4, 9),
+            (8, 37),
+            (192, 2),
+            (213, 1),
+            (256, 655),
+            (257, 2),
+            (260, 2),
+            (261, 11),
+            (269, 5),
+            (271, 3),
+            (285, 6),
+            (287, 3),
+        ])
+    );
+    assert_eq!(
+        paragraph_group_html_types,
+        BTreeMap::from([(HtmlBlockType::BlockQuote, 17), (HtmlBlockType::Body, 670)])
+    );
+    assert_eq!(save_history_tables, 56);
+    assert_eq!(save_history_entries, 281);
+    assert_eq!(save_history_author_units, 2_653);
+    assert_eq!(save_history_path_units, 19_794);
+    assert_eq!(save_history_maximum_author_length, 19);
+    assert_eq!(save_history_maximum_path_length, 242);
+    assert_eq!(
+        save_history_entry_counts,
+        BTreeMap::from([
+            (1, 23),
+            (2, 5),
+            (4, 3),
+            (5, 1),
+            (6, 1),
+            (7, 1),
+            (8, 1),
+            (10, 21)
+        ])
+    );
+    assert_eq!(table_character_cache_tables, 345);
+    assert_eq!(table_character_cache_ranges, 5_845);
+    assert_eq!(table_character_unknown_ranges, 355);
+    assert_eq!(table_character_nonzero_unused, 5_124);
+    assert_eq!(table_character_canonical_undefined, 218);
+    assert_eq!(
+        table_character_cache_shapes,
+        BTreeMap::from([
+            (1, 70),
+            (2, 226),
+            (3, 2),
+            (4, 3),
+            (5, 3),
+            (7, 5),
+            (8, 4),
+            (9, 1),
+            (10, 1),
+            (11, 1),
+            (12, 1),
+            (13, 1),
+            (14, 2),
+            (15, 1),
+            (18, 1),
+            (20, 1),
+            (22, 1),
+            (24, 1),
+            (26, 1),
+            (28, 1),
+            (31, 1),
+            (35, 1),
+            (40, 2),
+            (43, 3),
+            (45, 1),
+            (65, 1),
+            (93, 1),
+            (99, 1),
+            (119, 1),
+            (126, 1),
+            (156, 1),
+            (245, 1),
+            (745, 2),
+            (2_274, 1),
+        ])
+    );
+    assert_eq!(revision_threading_tables, 313);
+    assert_eq!(revision_thread_messages, 329);
+    assert_eq!(revision_thread_message_units, 0);
+    assert_eq!(revision_thread_style_units, 0);
+    assert_eq!(revision_thread_nonempty_messages, 0);
+    assert_eq!(revision_thread_nonempty_styles, 0);
+    assert_eq!(revision_thread_nonzero_dates, 0);
+    assert_eq!(revision_thread_nonzero_reserved, 0);
+    assert_eq!(
+        revision_thread_author_indexes,
+        BTreeMap::from([
+            (0, 313),
+            (1, 8),
+            (2, 1),
+            (3, 1),
+            (4, 1),
+            (5, 1),
+            (6, 1),
+            (7, 1),
+            (8, 1),
+            (9, 1),
+        ])
+    );
+    assert_eq!(revision_thread_author_attributes, 0);
+    assert_eq!(revision_thread_message_attributes, 0);
+    assert_eq!(revision_thread_attribute_units, 0);
+    assert_eq!(revision_thread_value_units, 0);
+    assert_eq!(revision_thread_author_count_mismatches, 0);
+    assert_eq!(
+        revision_thread_message_count_shapes,
+        BTreeMap::from([(1, 305), (2, 7), (10, 1)])
+    );
+    assert_eq!(revision_save_id_tables, 284);
+    assert_eq!(revision_save_ids, 37_728);
+    assert_eq!(zero_revision_save_ids, 0);
+    assert_eq!(duplicate_revision_save_ids, 0);
+    assert_eq!(distinct_revision_save_ids.len(), 37_043);
+    assert_eq!(revision_save_id_reserved2, BTreeMap::from([(0, 284)]));
+    assert_eq!(nonzero_revision_save_id_reserved3, 276);
+    assert_eq!(
+        revision_save_id_count_shapes,
+        BTreeMap::from([
+            (1, 7),
+            (2, 30),
+            (3, 24),
+            (4, 21),
+            (5, 19),
+            (6, 17),
+            (7, 15),
+            (8, 13),
+            (9, 9),
+            (10, 10),
+            (11, 8),
+            (12, 6),
+            (13, 2),
+            (14, 3),
+            (15, 4),
+            (16, 6),
+            (17, 2),
+            (19, 5),
+            (20, 3),
+            (21, 1),
+            (22, 3),
+            (23, 4),
+            (24, 1),
+            (25, 1),
+            (27, 3),
+            (28, 2),
+            (29, 2),
+            (30, 1),
+            (32, 1),
+            (33, 2),
+            (34, 2),
+            (35, 1),
+            (36, 1),
+            (37, 1),
+            (38, 1),
+            (39, 2),
+            (45, 1),
+            (46, 1),
+            (52, 1),
+            (53, 1),
+            (54, 1),
+            (58, 1),
+            (60, 1),
+            (62, 2),
+            (64, 1),
+            (67, 2),
+            (71, 1),
+            (74, 1),
+            (75, 1),
+            (76, 1),
+            (83, 1),
+            (89, 1),
+            (90, 2),
+            (95, 1),
+            (110, 1),
+            (112, 1),
+            (120, 1),
+            (139, 1),
+            (146, 1),
+            (147, 1),
+            (164, 1),
+            (174, 1),
+            (193, 1),
+            (196, 1),
+            (199, 1),
+            (202, 1),
+            (213, 1),
+            (221, 1),
+            (224, 1),
+            (225, 1),
+            (239, 1),
+            (256, 1),
+            (286, 1),
+            (310, 1),
+            (358, 1),
+            (360, 1),
+            (398, 1),
+            (401, 1),
+            (465, 1),
+            (514, 1),
+            (776, 1),
+            (861, 1),
+            (3_023, 1),
+            (23_037, 1),
+        ])
     );
     assert_eq!(
         font_family_shapes,
@@ -2076,6 +2904,60 @@ fn legacy_word_fibs_round_trip() {
     assert_eq!(
         list_level_incomplete_tails,
         BTreeMap::from([(("character", 4), 1), (("character", 10), 1),])
+    );
+    assert_eq!(list_name_tables, 164);
+    assert_eq!(list_name_entries, 3_068);
+    assert_eq!(nonempty_list_names, 80);
+    assert_eq!(list_name_units, 675);
+    assert_eq!(maximum_list_name_length, 22);
+    assert_eq!(
+        list_name_count_shapes,
+        BTreeMap::from([
+            (1, 50),
+            (2, 18),
+            (3, 13),
+            (4, 10),
+            (5, 2),
+            (6, 2),
+            (8, 6),
+            (9, 3),
+            (10, 5),
+            (11, 5),
+            (12, 4),
+            (13, 2),
+            (14, 4),
+            (15, 5),
+            (18, 5),
+            (19, 1),
+            (20, 2),
+            (21, 2),
+            (22, 1),
+            (23, 2),
+            (25, 1),
+            (29, 1),
+            (31, 1),
+            (32, 1),
+            (37, 1),
+            (38, 1),
+            (39, 1),
+            (43, 1),
+            (46, 1),
+            (47, 1),
+            (48, 1),
+            (50, 2),
+            (61, 1),
+            (78, 2),
+            (79, 1),
+            (87, 1),
+            (111, 1),
+            (151, 1),
+            (308, 1),
+            (769, 1),
+        ])
+    );
+    assert_eq!(
+        list_name_definition_count_differences,
+        BTreeMap::from([(0, 159), (3, 1), (6, 1), (12, 1), (14, 1), (755, 1)])
     );
     assert_eq!(list_level_to_override_gaps, BTreeMap::from([(0, 164)]));
     assert_eq!(list_override_sets, 165);

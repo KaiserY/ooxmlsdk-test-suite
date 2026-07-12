@@ -1,0 +1,102 @@
+# Checked Office PDF batch 28: Apache POI 18, LibreOffice 64, Open XML SDK 18.
+# Format mix: DOC 11, DOCX 64, XLS 16, XLSX 9 (PowerPoint recovery fallback).
+Apache-POI/test-data/hpsf/TestSectionDictionary.doc
+Apache-POI/test-data/xmldsign/office2007prettyPrintedRels.docx
+Apache-POI/test-data/openxml4j/OPCCompliance_CoreProperties_OnlyOneCorePropertiesPart.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/caption.docx
+Apache-POI/test-data/openxml4j/OPCCompliance_CoreProperties_SUCCESS.docx
+Apache-POI/test-data/spreadsheet/unicodeNameRecord.xls
+LibreOffice/sw/qa/extras/ooxmlexport/data/calendar3.docx
+Apache-POI/test-data/spreadsheet/com.aida-tour.www_SPO_files_maldives%20august%20october.xls
+Apache-POI/test-data/spreadsheet/comments.xls
+Apache-POI/test-data/spreadsheet/countblankExamples.xls
+Apache-POI/test-data/spreadsheet/countifExamples.xls
+Apache-POI/test-data/spreadsheet/crash-e329fca9087fe21bca4a80c8bc472a661c98d860.xls
+Apache-POI/test-data/spreadsheet/dg-text.xls
+Apache-POI/test-data/spreadsheet/drawings.xls
+Apache-POI/test-data/spreadsheet/duprich1.xls
+Apache-POI/test-data/spreadsheet/duprich2.xls
+Apache-POI/test-data/spreadsheet/dvEmpty.xls
+Apache-POI/test-data/spreadsheet/empty.xls
+Apache-POI/test-data/spreadsheet/ex41187-19267.xls
+Apache-POI/test-data/spreadsheet/xlsx-jdbc.xlsx
+LibreOffice/sc/qa/extras/testdocuments/vba_findFunction.xls
+LibreOffice/sc/qa/extras/testdocuments/window2.xls
+LibreOffice/sc/qa/uitest/data/tdf124318.xls
+LibreOffice/sc/qa/unit/data/xlsx/pivot-table/shared-group-field.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot-table/shared-nested-dategroup.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot-table/shared-numgroup.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot-table/tdf126858-1.xlsx
+LibreOffice/sw/qa/core/text/data/tdf43100_tdf120715_cursorOnSpacesOverMargin.docx
+LibreOffice/sw/qa/core/txtnode/data/comment.docx
+LibreOffice/sw/qa/core/txtnode/data/floattable-anchor-split.docx
+LibreOffice/sw/qa/core/txtnode/data/plain-content-control-copy.docx
+LibreOffice/sw/qa/core/txtnode/data/textbox-copy-anchor.docx
+LibreOffice/sw/qa/core/txtnode/data/textbox-node-split.docx
+LibreOffice/sw/qa/core/unocore/data/floattable-outer-nonsplit-inner.docx
+LibreOffice/sw/qa/core/unocore/data/floattable-split.docx
+LibreOffice/sw/qa/core/unocore/data/format-char-style-change.docx
+LibreOffice/sw/qa/core/unocore/data/paragraph-marker.docx
+LibreOffice/sw/qa/core/unocore/data/tdf149555.docx
+LibreOffice/sw/qa/extras/cjk/data/UnderlineTrailingSpace.docx
+LibreOffice/sw/qa/extras/docbookexport/data/simple.docx
+LibreOffice/sw/qa/extras/docbookexport/data/tdf91095.docx
+LibreOffice/sw/qa/extras/embedded_fonts/data/embed-restricted+unrestricted.docx
+LibreOffice/sw/qa/extras/globalfilter/data/char_background_editing.docx
+LibreOffice/sw/qa/extras/globalfilter/data/char_highlight.docx
+LibreOffice/sw/qa/extras/globalfilter/data/fieldmark_QUOTE_nest.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/calendar1.docx
+LibreOffice/sw/qa/extras/globalfilter/data/tdf143311-1.docx
+LibreOffice/sw/qa/extras/htmlexport/data/fdo62336.docx
+LibreOffice/sw/qa/extras/htmlexport/data/skipimage-embedded-document.docx
+LibreOffice/sw/qa/extras/htmlexport/data/tdf131728.docx
+LibreOffice/sw/qa/extras/htmlexport/data/textAndImage.docx
+LibreOffice/sw/qa/extras/layout/data/CT-formatted-deletion.docx
+LibreOffice/sw/qa/extras/layout/data/fdo43573-2-min.docx
+LibreOffice/sw/qa/extras/layout/data/fdo48718-1.docx
+LibreOffice/sw/qa/extras/layout/data/fld-in-tbl.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/calendar2.docx
+LibreOffice/sw/qa/extras/layout/data/hidden-para-separator.docx
+LibreOffice/sw/qa/extras/layout/data/inline-textbox-position.docx
+LibreOffice/sw/qa/extras/layout/data/legend-itemorder-min.docx
+LibreOffice/sw/qa/extras/layout/data/long_legendentry.docx
+LibreOffice/sw/qa/extras/layout/data/merge_hidden_redline.docx
+LibreOffice/sw/qa/extras/layout/data/outside_long_data_label.docx
+LibreOffice/sw/qa/extras/layout/data/sdt+framePr.docx
+LibreOffice/sw/qa/extras/layout/data/tdf104797.docx
+LibreOffice/sw/qa/extras/layout/data/tdf106153.docx
+LibreOffice/sw/qa/extras/layout/data/tdf109077.docx
+LibreOffice/sw/qa/extras/layout/data/tdf109137.docx
+LibreOffice/sw/qa/extras/layout/data/tdf112290.docx
+LibreOffice/sw/qa/extras/layout/data/tdf115094.docx
+LibreOffice/sw/qa/extras/layout/data/tdf115630.docx
+LibreOffice/sw/qa/extras/layout/data/tdf116256.docx
+LibreOffice/sw/qa/extras/layout/data/tdf116486.docx
+LibreOffice/sw/qa/extras/ww8export/data/n760294.doc
+LibreOffice/sw/qa/extras/ooxmlexport/data/tdf79435_legacyInputFields.doc
+LibreOffice/sw/qa/extras/ooxmlexport/data/tdf92524_autoColor.doc
+LibreOffice/sw/qa/extras/ww8export/data/all_gaps_word.doc
+LibreOffice/sw/qa/extras/ww8export/data/arabic-zero-numbering.doc
+LibreOffice/sw/qa/extras/ww8export/data/bnc636128.doc
+LibreOffice/sw/qa/extras/ww8export/data/bnc787942.doc
+LibreOffice/sw/qa/extras/ww8export/data/bnc821208.doc
+LibreOffice/sw/qa/extras/ww8export/data/bnc863018b.doc
+LibreOffice/sw/qa/extras/ww8export/data/bordercolours.doc
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/RelationalPivotA4.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/RelationalPivotA5.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/RelationalPivotB1.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/malformed_uri.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/table/tableCell.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/table/tableCell2Para.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/template/Simple.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/test.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/textbox/textBox-2.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/textbox/txtBox.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/track change/trackChange.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/unable to normalized/ReadOnly.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/watermark/background - Copy (6).docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/watermark/background - Copy (7).docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/watermark/background - Copy (8).docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/watermark/background - aqua diagonal.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/watermark/background - orange.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/watermark/background - preset color.docx
