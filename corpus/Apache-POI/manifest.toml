@@ -690,3 +690,122 @@ file = "test-data/spreadsheet/testEXCEL_4.xls"
 test = "cfb_roundtrip"
 mode = "unsupported"
 reason = "raw BIFF4 stream, not a CFB container"
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIHWPFFuzzer-5050208641482752.doc"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "DocumentSummaryInformation has an invalid OLEPS byte-order marker"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIHWPFFuzzer-6610789829836800.doc"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "DocumentSummaryInformation has an invalid OLEPS byte-order marker"
+
+[[expectation]]
+file = "test-data/document/57843.doc"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "SummaryInformation is truncated inside its property table"
+
+[[expectation]]
+file = "test-data/hpsf/TestBug52372.doc"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "DocumentSummaryInformation is truncated inside a declared property"
+
+[[expectation]]
+file = "test-data/hpsf/Test_Humor-Generation.ppt"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "SummaryInformation declares an invalid property-set count"
+
+[[expectation]]
+file = "test-data/slideshow/missing-moveto.ppt"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "SummaryInformation declares an invalid property-set count"
+
+[[expectation]]
+file = "test-data/spreadsheet/poi-fuzz.xls"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "SummaryInformation declares an invalid property-set size"
+
+[[expectation]]
+file = "test-data/spreadsheet/bug66319.xls"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "DocumentSummaryInformation declares an invalid property-set size"
+
+[[expectation]]
+file = "test-data/spreadsheet/cf9f845e73447b092477d0472402a5baea4b8c9f.xls"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "SummaryInformation has an invalid OLEPS byte-order marker"
+
+[[expectation]]
+file = "test-data/spreadsheet/42726.xls"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "property streams contain empty or out-of-bounds property packets"
+
+[[expectation]]
+file = "test-data/spreadsheet/bug55505.xls"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "DocumentSummaryInformation declares an invalid property-set size"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIHSSFFuzzer-5285517825277952.xls"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "DocumentSummaryInformation declares a property count exceeding allocation limits"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIHSSFFuzzer-5436547081830400.xls"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "DocumentSummaryInformation declares a property count exceeding allocation limits"
+
+[[expectation]]
+file = "test-data/spreadsheet/NoGutsRecords.xls"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "DocumentSummaryInformation declares an invalid property-set size"
+
+[[expectation]]
+file = "test-data/document/60279.doc"
+test = "vba_compression_roundtrip"
+mode = "invalid"
+reason = "VBA MODULEOFFSET points to data without a compressed-container signature"
+
+[[expectation]]
+file = "test-data/hpsf/TestBug44375.xls"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "SummaryInformation contains a truncated Dictionary property"
+
+[[expectation]]
+file = "test-data/spreadsheet/WrongFormulaRecordType.xls"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "DocumentSummaryInformation has a Dictionary property without the required CodePage property"
+
+[[expectation]]
+file = "test-data/spreadsheet/cf9f845e73447b092477d0472402a5baea4b8c9f.xls"
+test = "xls_biff_roundtrip"
+mode = "invalid"
+reason = "Workbook stream declares a BIFF record payload larger than the 8224-byte limit"
+
+[[expectation]]
+file = "test-data/spreadsheet/43493.xls"
+test = "xls_biff_roundtrip"
+mode = "invalid"
+reason = "Delta record contains 16 bytes instead of the specified 8-byte floating-point payload"
+
+[[expectation]]
+file = "test-data/spreadsheet/poi-fuzz.xls"
+test = "xls_biff_roundtrip"
+mode = "invalid"
+reason = "Workbook contains a truncated Dimensions record; Apache POI's BiffViewer corpus test also excludes it with RecordFormatException"

@@ -1,0 +1,41 @@
+{
+    "schema_version":  1,
+    "environment_id":  "238d45fa17f25b86fbd61ee81bb755cb9692dbd5ba881afdea771268e08e9157",
+    "observed_at_utc":  "2026-07-11T14:15:33.7642610Z",
+    "environment":  {
+                        "schema_version":  1,
+                        "reference_engine":  "Microsoft Office",
+                        "generator_version":  3,
+                        "export_profile":  "office-fixed-format-print-no-macros-no-links-v2",
+                        "windows":  {
+                                        "full_build":  "26200.8655"
+                                    },
+                        "office":  {
+                                       "platform":  "x64",
+                                       "version_to_report":  "16.0.20131.20126"
+                                   },
+                        "locale":  {
+                                       "culture":  "zh-CN",
+                                       "ui_culture":  "zh-CN",
+                                       "time_zone":  "China Standard Time"
+                                   },
+                        "default_paper":  {
+                                              "name":  "A4",
+                                              "width_hundredths_inch":  827,
+                                              "height_hundredths_inch":  1169,
+                                              "landscape":  false
+                                          },
+                        "fonts":  {
+                                      "file_count":  762,
+                                      "fingerprint_kind":  "name-size-mtime",
+                                      "sha256":  "b49a60f610a65af2c881ee2c85a597ddcdc92d65ee934af43f21879a6a3e129a"
+                                  },
+                        "dependencies":  [
+                                             "office-build",
+                                             "windows-build",
+                                             "installed-font-files",
+                                             "locale-and-time-zone",
+                                             "default-paper"
+                                         ]
+                    }
+}

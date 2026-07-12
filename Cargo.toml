@@ -31,6 +31,7 @@ ooxmlsdk-layout = { path = "../ooxmlsdk/crates/ooxmlsdk-layout" }
 ooxmlsdk-pdf = { path = "../ooxmlsdk/crates/ooxmlsdk-pdf" }
 ooxmlsdk-corpus-test-support = { path = "crates/ooxmlsdk-corpus-test-support" }
 olecfsdk-corpus-test-support = { path = "crates/olecfsdk-corpus-test-support" }
+cfb = { path = "../rust-cfb" }
 criterion = "0.7.0"
 crc32fast = "1.5.0"
 flate2 = "1.1.9"

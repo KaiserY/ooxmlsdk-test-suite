@@ -8,9 +8,9 @@ license.workspace = true
 build = "build.rs"
 
 [dependencies]
+olecfsdk = { workspace = true }
 olecfsdk-corpus-test-support = { workspace = true }
 
 [build-dependencies]
 serde = { workspace = true }
 toml = { workspace = true }
-

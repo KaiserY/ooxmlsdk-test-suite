@@ -804,3 +804,86 @@ file = "writerperfect/qa/unit/data/writer/libwps/pass/Word_5.0_DOS.doc"
 test = "cfb_roundtrip"
 mode = "unsupported"
 reason = "non-CFB legacy or mislabeled Office fixture"
+[[expectation]]
+file = "sd/qa/unit/data/ppt/pass/hang-19.ppt"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "property streams contain out-of-bounds section and property offsets"
+
+[[expectation]]
+file = "sd/qa/unit/data/ppt/pass/crash-2.ppt"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "DocumentSummaryInformation declares an invalid property-set size"
+
+[[expectation]]
+file = "sw/qa/core/data/ww6/pass/crash-6.doc"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "SummaryInformation is truncated inside its header"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2007-1347-1.doc"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "DocumentSummaryInformation contains an out-of-bounds property offset"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/hang-4.doc"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "DocumentSummaryInformation declares an invalid property-set count"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/pass/CVE-2007-3490-1.xls"
+test = "vba_compression_roundtrip"
+mode = "invalid"
+reason = "VBA dir declares a Sheet2 module stream that is absent from the VBA storage"
+
+[[expectation]]
+file = "sd/qa/unit/data/ppt/pass/hang-22.ppt"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "DocumentSummaryInformation contains a truncated Dictionary property"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2003-0820-1.doc"
+test = "vba_compression_roundtrip"
+mode = "invalid"
+reason = "VBA storage contains dir but lacks the required PROJECT stream"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/pass/CVE-2014-6361.xls"
+test = "xls_biff_roundtrip"
+mode = "invalid"
+reason = "Workbook stream contains an EOF record with an illegal non-empty payload"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/pass/crash-7.xls"
+test = "xls_biff_roundtrip"
+mode = "invalid"
+reason = "Workbook stream is truncated inside a declared BIFF record payload"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/pass/EDB-22330-1.xls"
+test = "xls_biff_roundtrip"
+mode = "invalid"
+reason = "Workbook stream declares a BIFF record payload larger than the 8224-byte limit"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/pass/CVE-2015-2520-1.xls"
+test = "xls_biff_roundtrip"
+mode = "invalid"
+reason = "Workbook stream declares a BIFF record payload larger than the 8224-byte limit"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/pass/CVE-2012-4233-4.xls"
+test = "xls_biff_roundtrip"
+mode = "invalid"
+reason = "Workbook stream declares a BIFF record payload larger than the 8224-byte limit"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/pass/CVE-2007-0031-1.xls"
+test = "xls_biff_roundtrip"
+mode = "invalid"
+reason = "BookBool record does not contain the required 2-byte payload"

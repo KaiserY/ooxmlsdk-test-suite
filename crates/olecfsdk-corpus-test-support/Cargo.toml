@@ -7,8 +7,8 @@ publish.workspace = true
 license.workspace = true
 
 [dependencies]
+cfb = { workspace = true }
 olecfsdk = { workspace = true }
 serde = { workspace = true }
 toml = { workspace = true }
 walkdir = { workspace = true }
-
