@@ -105,6 +105,9 @@ fixtures.
 - Missing source paper settings may inherit the recorded default paper.
 - Explicit paper settings can still be affected by Excel's active printing
   environment; annotate proven cases in the source manifest.
+- Excel used ranges or print areas can legitimately produce thousands of PDF
+  pages. Keep those outputs as stress references, but avoid rasterizing every
+  page in the default test lane.
 - Missing fonts, font updates, fallback order, locale, fields, volatile formulas,
   and cached formula values can change visible output.
 - File Block, Protected View, encryption, corruption-repair prompts, and hidden
@@ -135,6 +138,6 @@ Use `-Force` to re-export every selected file. Without it, the converter applies
 the source/output/environment checks above. `-RecycleEvery 25` is the default.
 
 After a run, validate manifest JSON, resolve every converted output path, parse
-every PDF, and ensure there are no PDFs without manifest records. The eight
+every PDF, and ensure there are no PDFs without manifest records. The fifteen
 checked 100-file batches and their repeated all-skipped runs are the current
 smoke test for this workflow.

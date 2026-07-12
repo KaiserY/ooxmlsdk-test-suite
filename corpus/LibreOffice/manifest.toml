@@ -800,6 +800,12 @@ mode = "unsupported"
 reason = "non-CFB legacy or mislabeled Office fixture"
 
 [[expectation]]
+file = "writerperfect/qa/unit/data/impress/libmwaw/pass/PowerPoint_7.ppt"
+test = "ppt_record_roundtrip"
+mode = "unsupported"
+reason = "PowerPoint 95 record stream is outside the PPT97 milestone"
+
+[[expectation]]
 file = "writerperfect/qa/unit/data/writer/libwps/pass/Word_5.0_DOS.doc"
 test = "cfb_roundtrip"
 mode = "unsupported"
@@ -833,6 +839,84 @@ file = "sw/qa/core/data/ww8/pass/hang-4.doc"
 test = "oleps_roundtrip"
 mode = "invalid"
 reason = "DocumentSummaryInformation declares an invalid property-set count"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/hang-8.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PlcPcd contains a non-increasing CP range and cannot describe a valid text piece"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2006-6561-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PlcBteChpx page number points beyond the WordDocument stream"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2006-6628-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PlcBteChpx page number points beyond the WordDocument stream"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/EDB-37924-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "CHPX FKP contains a truncated grpprl operand"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/forcepoint-layout-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PlcBteChpx page number points beyond the WordDocument stream"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2015-2467-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "CHPX property block extends beyond the 511-byte FKP payload"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2015-0065-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PlcBtePapx page number points beyond the WordDocument stream"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2009-3301-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PAPX contains a truncated variable table operand"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/EDB-37910-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PapxInFkp extends beyond the 511-byte FKP payload"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2009-0201-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PAPX ends inside a variable table operand"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2009-3302-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PAPX contains a truncated variable table operand"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2009-3302-2.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "TDefTable TC80 region is not a multiple of the required 20-byte structure"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/crash-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PlcfSed contains a Sepx offset beyond the WordDocument stream"
 
 [[expectation]]
 file = "sc/qa/unit/data/xls/pass/CVE-2007-3490-1.xls"
@@ -887,3 +971,27 @@ file = "sc/qa/unit/data/xls/pass/CVE-2007-0031-1.xls"
 test = "xls_biff_roundtrip"
 mode = "invalid"
 reason = "BookBool record does not contain the required 2-byte payload"
+
+[[expectation]]
+file = "writerperfect/qa/unit/data/stream/fdo40686-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "STSH cstd declares one LPStd but the structure contains trailing style records"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/fdo40686-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "STSH cstd declares one LPStd but the structure contains trailing style records"
+
+[[expectation]]
+file = "sw/qa/extras/ww8export/data/tdf112535.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "STSH cstd declares 236 LPStd entries but the stream ends before entry 107"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/crash-3.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "STSH contains a zero-length STSHI instead of the required Stshif"

@@ -7,8 +7,9 @@ use std::{
 use olecfsdk::{
     cfb::CompoundFile,
     office_art::{
-        OfficeArtBitmapData, OfficeArtIncompletePropertyEntry, OfficeArtIncompletePropertyTable,
-        OfficeArtIncompleteRecordData, OfficeArtMetafileData, OfficeArtMetafileOpaqueReason,
+        OfficeArtBitmapData, OfficeArtComplexPropertyData, OfficeArtIncompletePropertyEntry,
+        OfficeArtIncompletePropertyTable, OfficeArtIncompleteRecordData, OfficeArtMetafileData,
+        OfficeArtMetafileOpaqueReason, OfficeArtPropertyValue, OfficeArtRecord,
         OfficeArtRecordData, SoftMakerNativePropertyData,
     },
     xls::{
@@ -74,8 +75,11 @@ fn legacy_office_workbook_streams_round_trip() {
     let mut im_data_bitmap_bytes = 0usize;
     let mut real_time_data_records = 0usize;
     let mut real_time_data_malformed = 0usize;
+    let mut real_time_data_corrupt_error_discriminators = 0usize;
+    let mut real_time_data_cells = 0usize;
     let mut real_time_data_topic_segments = 0usize;
     let mut real_time_data_malformed_bytes = 0usize;
+    let mut real_time_data_malformed_samples = Vec::new();
     let mut sort_records = 0usize;
     let mut sort_keys = 0usize;
     let mut sort_compressed_keys = 0usize;
@@ -102,6 +106,7 @@ fn legacy_office_workbook_streams_round_trip() {
     let mut standalone_obj_raw_shapes = BTreeMap::<(u16, usize), usize>::new();
     let mut standalone_obj_truncated_picture_flags = 0usize;
     let mut standalone_obj_trailing_bytes = 0usize;
+    let mut standalone_obj_trailing_samples = Vec::new();
     let mut formula4_compatibility_records = 0usize;
     let mut formula4_unparsed_bytes = 0usize;
     let mut extern_count_records = 0usize;
@@ -173,6 +178,8 @@ fn legacy_office_workbook_streams_round_trip() {
     let mut office_art_incomplete_low_words = 0usize;
     let mut office_art_incomplete_complex_bytes = 0usize;
     let mut office_art_incomplete_complex_unparsed_bytes = 0usize;
+    let mut office_art_incomplete_array_fragments = 0usize;
+    let mut office_art_incomplete_generic_fragment_bytes = 0usize;
     let mut office_art_incomplete_property_samples = Vec::new();
     let mut office_art_compatibility_property_tables = 0usize;
     let mut office_art_compatibility_anchors = BTreeMap::<u16, usize>::new();
@@ -186,6 +193,17 @@ fn legacy_office_workbook_streams_round_trip() {
     let mut office_art_softmaker_native_shapes = BTreeMap::<(u16, u16, usize), usize>::new();
     let mut office_art_atom_stats = BTreeMap::<u16, UnknownStats>::new();
     let mut office_art_atom_locations = Vec::new();
+    let mut office_art_simple_properties = BTreeMap::<u16, usize>::new();
+    let mut office_art_complex_properties = BTreeMap::<u16, UnknownStats>::new();
+    let mut office_art_utf16_properties = BTreeMap::<u16, UnknownStats>::new();
+    let mut office_art_empty_complex_properties = BTreeMap::<u16, usize>::new();
+    let mut office_art_metro_blobs = UnknownStats::default();
+    let mut office_art_metro_blob_entries = 0usize;
+    let mut office_art_hyperlinks = UnknownStats::default();
+    let mut office_art_hyperlink_nonparsed = 0usize;
+    let mut office_art_hyperlink_trailing_bytes = 0usize;
+    let mut office_art_array_headers = BTreeMap::<(u16, u16, u16, u16, u32, usize), usize>::new();
+    let mut office_art_property_table_trailing_bytes = 0usize;
     let mut office_art_emf_typed = 0usize;
     let mut office_art_wmf_typed = 0usize;
     let mut office_art_dib_typed = 0usize;
@@ -218,6 +236,9 @@ fn legacy_office_workbook_streams_round_trip() {
     let mut hyperlink_trailing_bytes = 0usize;
     let mut hyperlink_truncated_records = 0usize;
     let mut hyperlink_truncated_bytes = 0usize;
+    let mut hyperlink_truncated_url_records = 0usize;
+    let mut hyperlink_truncated_url_address_bytes = 0usize;
+    let mut hyperlink_truncated_samples = Vec::new();
     let mut hyperlink_compatibility_samples = Vec::new();
     let mut data_validation_records = 0usize;
     let mut data_validation_unparsed_rgce_bytes = 0usize;
@@ -479,9 +500,36 @@ fn legacy_office_workbook_streams_round_trip() {
                                         &bytes[..bytes.len().min(96)]
                                     ));
                                 }
-                                HyperlinkObject::Truncated { payload, .. } => {
+                                HyperlinkObject::Truncated {
+                                    stream_version,
+                                    flags,
+                                    payload,
+                                } => {
                                     hyperlink_truncated_records += 1;
                                     hyperlink_truncated_bytes += payload.len();
+                                    hyperlink_truncated_samples.push(format!(
+                                        "{} offset {} version {stream_version} flags 0x{:08x} len {} head {:02x?} tail {:02x?}",
+                                        path.display(),
+                                        record.offset,
+                                        flags.bits(),
+                                        payload.len(),
+                                        &payload[..payload.len().min(128)],
+                                        &payload[payload.len().saturating_sub(128)..]
+                                    ));
+                                }
+                                HyperlinkObject::TruncatedUrlMoniker {
+                                    stream_version,
+                                    flags,
+                                    class_id: _,
+                                    declared_byte_length,
+                                    address,
+                                } => {
+                                    hyperlink_truncated_records += 1;
+                                    hyperlink_truncated_url_records += 1;
+                                    hyperlink_truncated_url_address_bytes += address.len() * 2;
+                                    assert_eq!(*stream_version, 2);
+                                    assert_eq!(flags.bits(), 0x0000_0003);
+                                    assert_eq!(*declared_byte_length, 23_002);
                                 }
                             }
                         }
@@ -600,9 +648,31 @@ fn legacy_office_workbook_streams_round_trip() {
                         BiffRecordData::RealTimeData(value) => {
                             real_time_data_records += 1;
                             real_time_data_topic_segments += value.topic.substrings.len();
-                            if let RtdOperation::Malformed { payload, .. } = &value.operation {
-                                real_time_data_malformed += 1;
-                                real_time_data_malformed_bytes += payload.len();
+                            real_time_data_cells += value.cells.len();
+                            match &value.operation {
+                                RtdOperation::ErrorWithCorruptDiscriminator {
+                                    discriminator,
+                                    value,
+                                } => {
+                                    real_time_data_corrupt_error_discriminators += 1;
+                                    assert_eq!(*discriminator, 0x0000_dd10);
+                                    assert_eq!(*value, 42);
+                                }
+                                RtdOperation::Malformed {
+                                    discriminator,
+                                    payload,
+                                } => {
+                                    real_time_data_malformed += 1;
+                                    real_time_data_malformed_bytes += payload.len();
+                                    real_time_data_malformed_samples.push(format!(
+                                        "{}: BIFF offset {}, discriminator 0x{discriminator:08x}, {} bytes {:02x?}",
+                                        path.display(),
+                                        record.offset,
+                                        payload.len(),
+                                        payload
+                                    ));
+                                }
+                                _ => {}
                             }
                         }
                         BiffRecordData::Sort(value) => {
@@ -667,6 +737,16 @@ fn legacy_office_workbook_streams_round_trip() {
                         BiffRecordData::Obj(value) => {
                             standalone_obj_records += 1;
                             standalone_obj_trailing_bytes += value.trailing.len();
+                            if !value.trailing.is_empty() {
+                                standalone_obj_trailing_samples.push(format!(
+                                    "{}: BIFF offset {}, subrecords {:?}, trailing {} bytes {:02x?}",
+                                    path.display(),
+                                    record.offset,
+                                    value.subrecords,
+                                    value.trailing.len(),
+                                    value.trailing
+                                ));
+                            }
                             for subrecord in &value.subrecords {
                                 standalone_obj_truncated_picture_flags += usize::from(matches!(
                                     subrecord.data,
@@ -863,7 +943,24 @@ fn legacy_office_workbook_streams_round_trip() {
                             match &drawing.data {
                                 MsoDrawingData::Complete(stream) => {
                                     drawing_group_complete += 1;
-                                    stream.visit(|office_record| match &office_record.data {
+                                    stream.visit(|office_record| {
+                                        audit_office_art_properties(
+                                            office_record,
+                                            OfficeArtPropertyAudit {
+                                                simple: &mut office_art_simple_properties,
+                                                complex: &mut office_art_complex_properties,
+                                                utf16: &mut office_art_utf16_properties,
+                                                empty_complex: &mut office_art_empty_complex_properties,
+                                                metro_blobs: &mut office_art_metro_blobs,
+                                                metro_blob_entries: &mut office_art_metro_blob_entries,
+                                                hyperlinks: &mut office_art_hyperlinks,
+                                                hyperlink_nonparsed: &mut office_art_hyperlink_nonparsed,
+                                                hyperlink_trailing_bytes: &mut office_art_hyperlink_trailing_bytes,
+                                                array_headers: &mut office_art_array_headers,
+                                                trailing_bytes: &mut office_art_property_table_trailing_bytes,
+                                            },
+                                        );
+                                        match &office_record.data {
                                         OfficeArtRecordData::CompatibilityContainer(_) => {
                                             *office_art_compatibility_containers
                                                 .entry(office_record.header.record_type)
@@ -994,6 +1091,7 @@ fn legacy_office_workbook_streams_round_trip() {
                                                 }
                                             }
                                             _ => {}
+                                        }
                                     });
                                 }
                                 MsoDrawingData::Partial(partial) => {
@@ -1082,6 +1180,22 @@ fn legacy_office_workbook_streams_round_trip() {
                                             .or_default() += 1;
                                     }
                                     partial.visit_complete(|office_record| {
+                                        audit_office_art_properties(
+                                            office_record,
+                                            OfficeArtPropertyAudit {
+                                                simple: &mut office_art_simple_properties,
+                                                complex: &mut office_art_complex_properties,
+                                                utf16: &mut office_art_utf16_properties,
+                                                empty_complex: &mut office_art_empty_complex_properties,
+                                                metro_blobs: &mut office_art_metro_blobs,
+                                                metro_blob_entries: &mut office_art_metro_blob_entries,
+                                                hyperlinks: &mut office_art_hyperlinks,
+                                                hyperlink_nonparsed: &mut office_art_hyperlink_nonparsed,
+                                                hyperlink_trailing_bytes: &mut office_art_hyperlink_trailing_bytes,
+                                                array_headers: &mut office_art_array_headers,
+                                                trailing_bytes: &mut office_art_property_table_trailing_bytes,
+                                            },
+                                        );
                                         drawing_group_partial_node_samples.push(format!(
                                             "complete v{:#x}/i{:#05x}/t0x{:04x}, declared {}",
                                             office_record.header.version,
@@ -1122,6 +1236,16 @@ fn legacy_office_workbook_streams_round_trip() {
                                                 table.available_complex_len();
                                             office_art_incomplete_complex_unparsed_bytes +=
                                                 table.unparsed_complex_len();
+                                            for fragment in &table.complex_fragments {
+                                                match &fragment.data {
+                                                    OfficeArtComplexPropertyData::Array(_) => {
+                                                        office_art_incomplete_array_fragments += 1;
+                                                    }
+                                                    OfficeArtComplexPropertyData::Bytes(bytes) => {
+                                                        office_art_incomplete_generic_fragment_bytes += bytes.len();
+                                                    }
+                                                }
+                                            }
                                             office_art_incomplete_property_samples
                                                 .push(incomplete_property_sample(table));
                                         }
@@ -1261,6 +1385,22 @@ fn legacy_office_workbook_streams_round_trip() {
                                 MsoDrawingData::Complete(stream) => {
                                     drawing_complete += 1;
                                     stream.visit(|office_record| {
+                                        audit_office_art_properties(
+                                            office_record,
+                                            OfficeArtPropertyAudit {
+                                                simple: &mut office_art_simple_properties,
+                                                complex: &mut office_art_complex_properties,
+                                                utf16: &mut office_art_utf16_properties,
+                                                empty_complex: &mut office_art_empty_complex_properties,
+                                                metro_blobs: &mut office_art_metro_blobs,
+                                                metro_blob_entries: &mut office_art_metro_blob_entries,
+                                                hyperlinks: &mut office_art_hyperlinks,
+                                                hyperlink_nonparsed: &mut office_art_hyperlink_nonparsed,
+                                                hyperlink_trailing_bytes: &mut office_art_hyperlink_trailing_bytes,
+                                                array_headers: &mut office_art_array_headers,
+                                                trailing_bytes: &mut office_art_property_table_trailing_bytes,
+                                            },
+                                        );
                                         match &office_record.data {
                                             OfficeArtRecordData::CompatibilityContainer(_) => {
                                                 *office_art_compatibility_containers
@@ -1451,6 +1591,16 @@ fn legacy_office_workbook_streams_round_trip() {
                                                 table.available_complex_len();
                                             office_art_incomplete_complex_unparsed_bytes +=
                                                 table.unparsed_complex_len();
+                                            for fragment in &table.complex_fragments {
+                                                match &fragment.data {
+                                                    OfficeArtComplexPropertyData::Array(_) => {
+                                                        office_art_incomplete_array_fragments += 1;
+                                                    }
+                                                    OfficeArtComplexPropertyData::Bytes(bytes) => {
+                                                        office_art_incomplete_generic_fragment_bytes += bytes.len();
+                                                    }
+                                                }
+                                            }
                                             if let OfficeArtIncompletePropertyEntry::LowWord {
                                                 property_id,
                                                 is_blip_id,
@@ -1482,7 +1632,24 @@ fn legacy_office_workbook_streams_round_trip() {
                                             .entry(length)
                                             .or_default() += 1;
                                     }
-                                    partial.visit_complete(|office_record| match &office_record.data {
+                                    partial.visit_complete(|office_record| {
+                                        audit_office_art_properties(
+                                            office_record,
+                                            OfficeArtPropertyAudit {
+                                                simple: &mut office_art_simple_properties,
+                                                complex: &mut office_art_complex_properties,
+                                                utf16: &mut office_art_utf16_properties,
+                                                empty_complex: &mut office_art_empty_complex_properties,
+                                                metro_blobs: &mut office_art_metro_blobs,
+                                                metro_blob_entries: &mut office_art_metro_blob_entries,
+                                                hyperlinks: &mut office_art_hyperlinks,
+                                                hyperlink_nonparsed: &mut office_art_hyperlink_nonparsed,
+                                                hyperlink_trailing_bytes: &mut office_art_hyperlink_trailing_bytes,
+                                                array_headers: &mut office_art_array_headers,
+                                                trailing_bytes: &mut office_art_property_table_trailing_bytes,
+                                            },
+                                        );
+                                        match &office_record.data {
                                         OfficeArtRecordData::Atom(payload) => {
                                             let stats = office_art_atom_stats
                                                 .entry(office_record.header.record_type)
@@ -1515,6 +1682,16 @@ fn legacy_office_workbook_streams_round_trip() {
                                                 table.available_complex_len();
                                             office_art_incomplete_complex_unparsed_bytes +=
                                                 table.unparsed_complex_len();
+                                            for fragment in &table.complex_fragments {
+                                                match &fragment.data {
+                                                    OfficeArtComplexPropertyData::Array(_) => {
+                                                        office_art_incomplete_array_fragments += 1;
+                                                    }
+                                                    OfficeArtComplexPropertyData::Bytes(bytes) => {
+                                                        office_art_incomplete_generic_fragment_bytes += bytes.len();
+                                                    }
+                                                }
+                                            }
                                             office_art_incomplete_property_samples
                                                 .push(incomplete_property_sample(table));
                                         }
@@ -1531,7 +1708,8 @@ fn legacy_office_workbook_streams_round_trip() {
                                                 .or_default() += 1;
                                             assert_eq!(office_record.header.declared_length, 0);
                                         }
-                                        _ => {}
+                                            _ => {}
+                                        }
                                     });
                                     assert_eq!(
                                         partial.available_len(),
@@ -1851,6 +2029,22 @@ fn legacy_office_workbook_streams_round_trip() {
             failures.join("\n")
         );
     }
+    assert_eq!(
+        hyperlink_truncated_records, 1,
+        "truncated Hyperlink corpus coverage changed"
+    );
+    assert_eq!(
+        hyperlink_truncated_bytes, 0,
+        "truncated Hyperlink records retained generic payload bytes"
+    );
+    assert_eq!(
+        hyperlink_truncated_url_records, 1,
+        "truncated URL-moniker coverage changed"
+    );
+    assert_eq!(
+        hyperlink_truncated_url_address_bytes, 8_168,
+        "truncated URL-moniker typed address coverage changed"
+    );
     assert_eq!(drawing_obj_raw, 0, "Obj records fell back to raw payloads");
     assert_eq!(array_records, 145, "Array formula corpus coverage changed");
     assert_eq!(
@@ -1938,14 +2132,10 @@ fn legacy_office_workbook_streams_round_trip() {
         real_time_data_topic_segments, 3,
         "RealTimeData topic coverage changed"
     );
-    assert_eq!(
-        real_time_data_malformed, 1,
-        "RealTimeData malformed coverage changed"
-    );
-    assert_eq!(
-        real_time_data_malformed_bytes, 10,
-        "RealTimeData malformed byte coverage changed"
-    );
+    assert_eq!(real_time_data_malformed, 0);
+    assert_eq!(real_time_data_malformed_bytes, 0);
+    assert_eq!(real_time_data_corrupt_error_discriminators, 1);
+    assert_eq!(real_time_data_cells, 1);
     assert_eq!(sort_records, 24, "Sort corpus coverage changed");
     assert_eq!(sort_keys, 30, "Sort key coverage changed");
     assert_eq!(
@@ -2170,6 +2360,69 @@ fn legacy_office_workbook_streams_round_trip() {
     assert_eq!(office_art_incomplete_low_words, 1);
     assert_eq!(office_art_incomplete_complex_bytes, 86);
     assert_eq!(office_art_incomplete_complex_unparsed_bytes, 0);
+    assert_eq!(office_art_incomplete_array_fragments, 2);
+    assert_eq!(office_art_incomplete_generic_fragment_bytes, 0);
+    assert_eq!(
+        office_art_utf16_properties
+            .values()
+            .map(|stats| stats.records)
+            .sum::<usize>(),
+        1_130,
+        "OfficeArt UTF-16 property coverage changed"
+    );
+    assert_eq!(
+        office_art_utf16_properties
+            .values()
+            .map(|stats| stats.bytes)
+            .sum::<usize>(),
+        24_626,
+        "OfficeArt UTF-16 property byte coverage changed"
+    );
+    assert!(
+        [0x00c5, 0x0105, 0x0187, 0x01c6, 0x0380, 0x0381]
+            .into_iter()
+            .all(|property_id| !office_art_complex_properties.contains_key(&property_id)),
+        "a known UTF-16 property fell back to generic complex bytes"
+    );
+    assert_eq!(office_art_property_table_trailing_bytes, 0);
+    assert_eq!(
+        office_art_empty_complex_properties.values().sum::<usize>(),
+        134,
+        "OfficeArt zero-length complex-property coverage changed"
+    );
+    assert_eq!(office_art_metro_blobs.records, 183);
+    assert_eq!(office_art_metro_blobs.bytes, 1_073_391);
+    assert_eq!(office_art_metro_blob_entries, 832);
+    assert!(!office_art_complex_properties.contains_key(&0x03a9));
+    assert_eq!(office_art_hyperlinks.records, 47);
+    assert_eq!(office_art_hyperlinks.bytes, 6_674);
+    assert_eq!(office_art_hyperlink_nonparsed, 0);
+    assert_eq!(office_art_hyperlink_trailing_bytes, 0);
+    assert!(
+        office_art_complex_properties.is_empty(),
+        "complete FOPT values retained generic complex bytes: {office_art_complex_properties:?}"
+    );
+    assert_eq!(
+        office_art_array_headers.values().sum::<usize>(),
+        124,
+        "OfficeArt IMsoArray coverage changed"
+    );
+    assert_eq!(
+        office_art_array_headers
+            .iter()
+            .map(|((_, _, _, _, _, encoded_len), count)| encoded_len * count)
+            .sum::<usize>(),
+        24_978,
+        "OfficeArt IMsoArray encoded-byte coverage changed"
+    );
+    assert!(
+        [
+            0x0145, 0x0146, 0x0151, 0x0152, 0x0155, 0x0156, 0x0157, 0x0197, 0x01cf, 0x0383,
+        ]
+        .into_iter()
+        .all(|property_id| !office_art_complex_properties.contains_key(&property_id)),
+        "a known IMsoArray property fell back to generic complex bytes"
+    );
     assert_eq!(
         office_art_compatibility_property_tables, 1,
         "OfficeArt damaged property-table record-ID coverage changed"
@@ -2252,7 +2505,7 @@ fn legacy_office_workbook_streams_round_trip() {
         failures.join("\n")
     );
     eprintln!(
-        "checked {checked} workbook streams: {biff8} BIFF8, {legacy} legacy; {} unknown BIFF record types remain; Formula has {formula_unparsed_rgce_bytes} unparsed rgce bytes, {formula_rgcb_bytes} unparsed rgcb bytes and {formula_missing_extra} explicit missing-extra compatibility states; SharedFormula has {shared_formula_records} records, {shared_formula_unparsed_rgce_bytes} unparsed rgce and {shared_formula_rgcb_bytes} rgcb bytes; Array has {array_records} records, {array_unparsed_rgce_bytes} unparsed rgce and {array_rgcb_bytes} rgcb bytes; SupBook has {sup_book_records} records, {sup_book_compatibility} compatibility values and {sup_book_trailing_bytes} retained trailing bytes; ExternName has {extern_name_records} records ({extern_name_formula_records} formula/{extern_name_cached_link_records} cached-link/{extern_name_compatibility_records} compatibility with {extern_name_compatibility_bytes} bytes); Hyperlink has {hyperlink_records} records, {hyperlink_compatibility_records} compatibility/{hyperlink_compatibility_bytes} bytes, {hyperlink_truncated_records} truncated/{hyperlink_truncated_bytes} bytes and {hyperlink_trailing_bytes} trailing bytes; DV has {data_validation_records} records, {data_validation_unparsed_rgce_bytes} unparsed rgce bytes and {data_validation_missing_extra} missing extras; CF has {conditional_formatting_records} records, {conditional_formatting_unparsed_rgce_bytes} unparsed rgce bytes and {conditional_formatting_missing_extra} missing extras; CFEx has {cfex_records} records ({cfex_cf12_records} CF12/{cfex_non_cf12_records} non-CF12, {cfex_formats} DXFN12 and {cfex_extension_unparsed_bytes} unparsed extension bytes); CF12 has {cf12_records} records/types {cf12_types:?}/{cf12_unparsed_formula_bytes} unparsed formula bytes; CrtMlFrt has {crt_ml_frt_records} records/{xml_tk_records} XmlTk values {xml_tk_kinds:?}; LinkedData has {linked_data_records} records, {linked_data_unparsed_rgce_bytes} unparsed rgce bytes and {linked_data_missing_extra} missing extras; FeatHdr has {feature_header_records} records ({feature_header_none} empty/{feature_header_enhanced_protection} protection/{feature_header_property_bag_store} property-bag/{feature_header_malformed} malformed with {feature_header_malformed_bytes} bytes); Feat has {feature_records} records ({feature_protection} protection/{feature_formula_errors} formula-error/{feature_smart_tags} smart-tag, {feature_security_descriptors} security descriptors); DConn has {dconn_records} records ({dconn_text} text/{dconn_web} web); Feature11 has {feature11_records} records/{feature11_fields} fields/{feature11_formats} DXFN12List/{feature11_auto_filters} AutoFilter envelopes; Name has {name_records} records ({name_continued_records} continued), {name_unparsed_rgce_bytes} unparsed rgce bytes, {name_rgcb_tail_bytes} rgcb tail bytes and {name_missing_extra} missing extras; Pls has {pls_records} records ({pls_continued} continued), {pls_windows_full} full/{pls_windows_truncated} truncated DEVMODEW and {pls_platform_specific} values; MsoDrawingGroup has {drawing_group_records} records ({drawing_group_continued} continued), {drawing_group_complete} complete/{drawing_group_partial} partial trees ({drawing_group_partial_complete_records} complete + {drawing_group_partial_incomplete_records} incomplete records/{drawing_group_partial_unparsed_bytes} unparsed bytes) and {} whole-byte incomplete/{drawing_group_incomplete_bytes} bytes; MsoDrawing has {drawing_records} aggregates/{drawing_segments} segments/{drawing_host_records} host records, {drawing_complete} complete/{drawing_partial} partial trees ({drawing_partial_complete_records} complete + {drawing_partial_incomplete_records} incomplete records/{drawing_partial_unparsed_bytes} unparsed bytes) and {} whole-byte incomplete/{drawing_incomplete_bytes} bytes; host types: TxO {drawing_txo_typed} typed/{drawing_txo_raw} raw with {drawing_txo_control_contexts} ControlInfo/{drawing_txo_reserved_contexts} reserved/{drawing_txo_undetermined_contexts} undetermined contexts, {drawing_txo_formula_typed} typed/{drawing_txo_formula_opaque} opaque ObjFmla ({drawing_txo_formula_bytes} bytes) and {drawing_txo_trailing_bytes} trailing bytes, Note {drawing_note_typed} typed/{drawing_note_raw} raw, Obj {drawing_obj_typed} typed/{drawing_obj_raw} raw/{drawing_obj_raw_bytes} bytes; XFExt has {xf_ext_unparsed_bytes} unparsed bytes across property types {xf_ext_unknown_types:#06x?}; StyleExt has {style_ext_unparsed_bytes} unparsed XFProp bytes; DXF has {dxf_records} records/{dxf_unparsed_bytes} unparsed XFProp bytes; SST has {sst_records} records/{sst_strings} parsed strings, {sst_extension_bytes} ExtRst bytes ({sst_extension_unparsed_bytes} unparsed), {sst_trailing_bytes} compatibility tail bytes and {} truncated tables",
+        "checked {checked} workbook streams: {biff8} BIFF8, {legacy} legacy; {} unknown BIFF record types remain; Formula has {formula_unparsed_rgce_bytes} unparsed rgce bytes, {formula_rgcb_bytes} unparsed rgcb bytes and {formula_missing_extra} explicit missing-extra compatibility states; SharedFormula has {shared_formula_records} records, {shared_formula_unparsed_rgce_bytes} unparsed rgce and {shared_formula_rgcb_bytes} rgcb bytes; Array has {array_records} records, {array_unparsed_rgce_bytes} unparsed rgce and {array_rgcb_bytes} rgcb bytes; SupBook has {sup_book_records} records, {sup_book_compatibility} compatibility values and {sup_book_trailing_bytes} retained trailing bytes; ExternName has {extern_name_records} records ({extern_name_formula_records} formula/{extern_name_cached_link_records} cached-link/{extern_name_compatibility_records} compatibility with {extern_name_compatibility_bytes} bytes); Hyperlink has {hyperlink_records} records, {hyperlink_compatibility_records} compatibility/{hyperlink_compatibility_bytes} bytes, {hyperlink_truncated_records} truncated ({hyperlink_truncated_url_records} typed URL moniker/{hyperlink_truncated_url_address_bytes} address bytes, {hyperlink_truncated_bytes} generic bytes) and {hyperlink_trailing_bytes} trailing bytes; DV has {data_validation_records} records, {data_validation_unparsed_rgce_bytes} unparsed rgce bytes and {data_validation_missing_extra} missing extras; CF has {conditional_formatting_records} records, {conditional_formatting_unparsed_rgce_bytes} unparsed rgce bytes and {conditional_formatting_missing_extra} missing extras; CFEx has {cfex_records} records ({cfex_cf12_records} CF12/{cfex_non_cf12_records} non-CF12, {cfex_formats} DXFN12 and {cfex_extension_unparsed_bytes} unparsed extension bytes); CF12 has {cf12_records} records/types {cf12_types:?}/{cf12_unparsed_formula_bytes} unparsed formula bytes; CrtMlFrt has {crt_ml_frt_records} records/{xml_tk_records} XmlTk values {xml_tk_kinds:?}; LinkedData has {linked_data_records} records, {linked_data_unparsed_rgce_bytes} unparsed rgce bytes and {linked_data_missing_extra} missing extras; FeatHdr has {feature_header_records} records ({feature_header_none} empty/{feature_header_enhanced_protection} protection/{feature_header_property_bag_store} property-bag/{feature_header_malformed} malformed with {feature_header_malformed_bytes} bytes); Feat has {feature_records} records ({feature_protection} protection/{feature_formula_errors} formula-error/{feature_smart_tags} smart-tag, {feature_security_descriptors} security descriptors); DConn has {dconn_records} records ({dconn_text} text/{dconn_web} web); Feature11 has {feature11_records} records/{feature11_fields} fields/{feature11_formats} DXFN12List/{feature11_auto_filters} AutoFilter envelopes; Name has {name_records} records ({name_continued_records} continued), {name_unparsed_rgce_bytes} unparsed rgce bytes, {name_rgcb_tail_bytes} rgcb tail bytes and {name_missing_extra} missing extras; Pls has {pls_records} records ({pls_continued} continued), {pls_windows_full} full/{pls_windows_truncated} truncated DEVMODEW and {pls_platform_specific} values; MsoDrawingGroup has {drawing_group_records} records ({drawing_group_continued} continued), {drawing_group_complete} complete/{drawing_group_partial} partial trees ({drawing_group_partial_complete_records} complete + {drawing_group_partial_incomplete_records} incomplete records/{drawing_group_partial_unparsed_bytes} unparsed bytes) and {} whole-byte incomplete/{drawing_group_incomplete_bytes} bytes; MsoDrawing has {drawing_records} aggregates/{drawing_segments} segments/{drawing_host_records} host records, {drawing_complete} complete/{drawing_partial} partial trees ({drawing_partial_complete_records} complete + {drawing_partial_incomplete_records} incomplete records/{drawing_partial_unparsed_bytes} unparsed bytes) and {} whole-byte incomplete/{drawing_incomplete_bytes} bytes; host types: TxO {drawing_txo_typed} typed/{drawing_txo_raw} raw with {drawing_txo_control_contexts} ControlInfo/{drawing_txo_reserved_contexts} reserved/{drawing_txo_undetermined_contexts} undetermined contexts, {drawing_txo_formula_typed} typed/{drawing_txo_formula_opaque} opaque ObjFmla ({drawing_txo_formula_bytes} bytes) and {drawing_txo_trailing_bytes} trailing bytes, Note {drawing_note_typed} typed/{drawing_note_raw} raw, Obj {drawing_obj_typed} typed/{drawing_obj_raw} raw/{drawing_obj_raw_bytes} bytes; XFExt has {xf_ext_unparsed_bytes} unparsed bytes across property types {xf_ext_unknown_types:#06x?}; StyleExt has {style_ext_unparsed_bytes} unparsed XFProp bytes; DXF has {dxf_records} records/{dxf_unparsed_bytes} unparsed XFProp bytes; SST has {sst_records} records/{sst_strings} parsed strings, {sst_extension_bytes} ExtRst bytes ({sst_extension_unparsed_bytes} unparsed), {sst_trailing_bytes} compatibility tail bytes and {} truncated tables",
         unknown_types.len(),
         drawing_group_incomplete.len(),
         drawing_incomplete.len(),
@@ -2290,6 +2543,10 @@ fn legacy_office_workbook_streams_round_trip() {
             "Hyperlink compatibility samples:\n{}",
             hyperlink_compatibility_samples.join("\n")
         );
+        eprintln!(
+            "Hyperlink truncated samples:\n{}",
+            hyperlink_truncated_samples.join("\n")
+        );
     }
     if std::env::var_os("XLS_REPORT_PLS").is_some() && !pls_samples.is_empty() {
         eprintln!("PLS samples:\n{}", pls_samples.join("\n"));
@@ -2301,6 +2558,43 @@ fn legacy_office_workbook_streams_round_trip() {
     }
     if std::env::var_os("XLS_REPORT_OFFICE_ART").is_some() {
         eprintln!("TxO ObjFmla shapes: {drawing_txo_formula_shapes:?}");
+        eprintln!(
+            "OfficeArt simple properties: {} ids/{} values; property-table trailing bytes: {office_art_property_table_trailing_bytes}",
+            office_art_simple_properties.len(),
+            office_art_simple_properties.values().sum::<usize>()
+        );
+        for (property_id, stats) in &office_art_utf16_properties {
+            eprintln!(
+                "OfficeArt UTF-16 property 0x{property_id:04x}: {} values, {} bytes, lengths {:?}",
+                stats.records, stats.bytes, stats.lengths
+            );
+        }
+        eprintln!(
+            "OfficeArt empty complex properties: {office_art_empty_complex_properties:#06x?}"
+        );
+        eprintln!(
+            "OfficeArt metroBlob: {} packages/{} entries/{} bytes, lengths {:?}",
+            office_art_metro_blobs.records,
+            office_art_metro_blob_entries,
+            office_art_metro_blobs.bytes,
+            office_art_metro_blobs.lengths
+        );
+        eprintln!(
+            "OfficeArt IHlink: {} values/{} bytes/{} trailing bytes, lengths {:?}",
+            office_art_hyperlinks.records,
+            office_art_hyperlinks.bytes,
+            office_art_hyperlink_trailing_bytes,
+            office_art_hyperlinks.lengths
+        );
+        eprintln!("OfficeArt array headers: {office_art_array_headers:#06x?}");
+        let mut complex_properties: Vec<_> = office_art_complex_properties.iter().collect();
+        complex_properties.sort_by_key(|(_, stats)| std::cmp::Reverse(stats.bytes));
+        for (property_id, stats) in complex_properties {
+            eprintln!(
+                "OfficeArt complex property 0x{property_id:04x}: {} values, {} bytes, lengths {:?}",
+                stats.records, stats.bytes, stats.lengths
+            );
+        }
         eprintln!("partial drawing-group leaf shapes: {drawing_group_partial_leaf_shapes:#06x?}");
         eprintln!(
             "partial drawing-group leaf samples:\n{}",
@@ -2380,6 +2674,16 @@ fn legacy_office_workbook_streams_round_trip() {
             feature_header_malformed_samples.join("\n")
         );
     }
+    if std::env::var_os("XLS_REPORT_REMAINDERS").is_some() {
+        eprintln!(
+            "standalone Obj trailing samples:\n{}",
+            standalone_obj_trailing_samples.join("\n")
+        );
+        eprintln!(
+            "malformed RTD samples:\n{}",
+            real_time_data_malformed_samples.join("\n")
+        );
+    }
     if std::env::var_os("XLS_REPORT_FORMULA_TAILS").is_some() && !formula_tail_locations.is_empty()
     {
         eprintln!("Formula rgcb tails:\n{}", formula_tail_locations.join("\n"));
@@ -2450,11 +2754,151 @@ fn incomplete_property_sample(table: &OfficeArtIncompletePropertyTable) -> Strin
                 fragment.property_id,
                 fragment.declared_length,
                 fragment.data.encoded_len(),
-                fragment.is_complete
+                fragment.is_complete,
             ))
             .collect::<Vec<_>>(),
         table.trailing_data
     )
+}
+
+struct OfficeArtPropertyAudit<'a> {
+    simple: &'a mut BTreeMap<u16, usize>,
+    complex: &'a mut BTreeMap<u16, UnknownStats>,
+    utf16: &'a mut BTreeMap<u16, UnknownStats>,
+    empty_complex: &'a mut BTreeMap<u16, usize>,
+    metro_blobs: &'a mut UnknownStats,
+    metro_blob_entries: &'a mut usize,
+    hyperlinks: &'a mut UnknownStats,
+    hyperlink_nonparsed: &'a mut usize,
+    hyperlink_trailing_bytes: &'a mut usize,
+    array_headers: &'a mut BTreeMap<(u16, u16, u16, u16, u32, usize), usize>,
+    trailing_bytes: &'a mut usize,
+}
+
+fn audit_office_art_properties(record: &OfficeArtRecord, audit: OfficeArtPropertyAudit<'_>) {
+    let OfficeArtPropertyAudit {
+        simple,
+        complex,
+        utf16,
+        empty_complex,
+        metro_blobs,
+        metro_blob_entries,
+        hyperlinks,
+        hyperlink_nonparsed,
+        hyperlink_trailing_bytes,
+        array_headers,
+        trailing_bytes,
+    } = audit;
+    let OfficeArtRecordData::PropertyTable(table) = &record.data else {
+        return;
+    };
+    *trailing_bytes += table.trailing.len();
+    for property in &table.properties {
+        match &property.value {
+            OfficeArtPropertyValue::Simple(_) => {
+                *simple.entry(property.property_id).or_default() += 1;
+            }
+            OfficeArtPropertyValue::Complex {
+                declared_length,
+                data,
+            } => {
+                let stats = complex.entry(property.property_id).or_default();
+                stats.records += 1;
+                stats.bytes += data.len();
+                stats.lengths.insert(data.len());
+                if matches!(
+                    property.property_id,
+                    0x0145
+                        | 0x0146
+                        | 0x0151
+                        | 0x0152
+                        | 0x0155
+                        | 0x0156
+                        | 0x0157
+                        | 0x0197
+                        | 0x01cf
+                        | 0x0383
+                ) && data.len() >= 6
+                {
+                    *array_headers
+                        .entry((
+                            property.property_id,
+                            u16::from_le_bytes([data[0], data[1]]),
+                            u16::from_le_bytes([data[2], data[3]]),
+                            u16::from_le_bytes([data[4], data[5]]),
+                            *declared_length,
+                            data.len(),
+                        ))
+                        .or_default() += 1;
+                }
+            }
+            OfficeArtPropertyValue::Utf16String { code_units, .. } => {
+                let length = code_units.len() * 2;
+                let stats = utf16.entry(property.property_id).or_default();
+                stats.records += 1;
+                stats.bytes += length;
+                stats.lengths.insert(length);
+            }
+            OfficeArtPropertyValue::EmptyComplex { declared_length } => {
+                assert_eq!(*declared_length, 0);
+                *empty_complex.entry(property.property_id).or_default() += 1;
+            }
+            OfficeArtPropertyValue::EmptyArray { declared_length } => {
+                *array_headers
+                    .entry((property.property_id, 0, 0, 0, *declared_length, 0))
+                    .or_default() += 1;
+            }
+            OfficeArtPropertyValue::Array {
+                declared_length,
+                value,
+                ..
+            } => {
+                let element_size = if value.encoded_element_size == 0xfff0 {
+                    4
+                } else {
+                    usize::from(value.encoded_element_size)
+                };
+                let encoded_len = 6 + usize::from(value.element_count) * element_size;
+                *array_headers
+                    .entry((
+                        property.property_id,
+                        value.element_count,
+                        value.allocated_element_count,
+                        value.encoded_element_size,
+                        *declared_length,
+                        encoded_len,
+                    ))
+                    .or_default() += 1;
+            }
+            OfficeArtPropertyValue::MetroBlob { value, .. } => {
+                let length = value.package_bytes.len();
+                metro_blobs.records += 1;
+                metro_blobs.bytes += length;
+                metro_blobs.lengths.insert(length);
+                *metro_blob_entries += value.directory.entries.len();
+            }
+            OfficeArtPropertyValue::Hyperlink {
+                declared_length,
+                object,
+                ..
+            } => {
+                let length = usize::try_from(*declared_length).expect("u32 fits usize");
+                hyperlinks.records += 1;
+                hyperlinks.bytes += length;
+                hyperlinks.lengths.insert(length);
+                match object {
+                    HyperlinkObject::Parsed { trailing, .. } => {
+                        *hyperlink_trailing_bytes += trailing.len();
+                    }
+                    HyperlinkObject::Truncated { .. }
+                    | HyperlinkObject::TruncatedUrlMoniker { .. }
+                    | HyperlinkObject::Compatibility(_) => {
+                        *hyperlink_nonparsed += 1;
+                    }
+                }
+            }
+        }
+    }
 }
 
 #[derive(Debug, Default)]

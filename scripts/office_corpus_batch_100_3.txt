@@ -1,0 +1,105 @@
+# Apache POI: 35 new files across DOC/DOCX/XLS/XLSX/PPT/PPTX.
+Apache-POI/test-data/document/PageSpecificHeadFoot.doc
+Apache-POI/test-data/document/HeaderFooterUnicode.doc
+Apache-POI/test-data/document/SampleDoc.doc
+Apache-POI/test-data/document/Bug50936_3.doc
+Apache-POI/test-data/document/Bug41898.doc
+Apache-POI/test-data/document/simple-table2.doc
+Apache-POI/test-data/document/Numbering.docx
+Apache-POI/test-data/document/table-alignment.docx
+Apache-POI/test-data/document/ComplexNumberedLists.docx
+Apache-POI/test-data/document/ThreeColHeadFoot.docx
+Apache-POI/test-data/document/WithGIF.docx
+Apache-POI/test-data/document/FieldCodes.docx
+Apache-POI/test-data/spreadsheet/finance.xls
+Apache-POI/test-data/spreadsheet/SimpleWithStyling.xls
+Apache-POI/test-data/spreadsheet/mortgage-calculation.xls
+Apache-POI/test-data/spreadsheet/WithChart.xls
+Apache-POI/test-data/spreadsheet/tile-range-test.xls
+Apache-POI/test-data/spreadsheet/ColumnStyle1dpColoured.xls
+Apache-POI/test-data/spreadsheet/47668.xlsx
+Apache-POI/test-data/spreadsheet/45540_form_Header.xlsx
+Apache-POI/test-data/spreadsheet/57893-many-merges.xlsx
+Apache-POI/test-data/spreadsheet/AverageTaxRates.xlsx
+Apache-POI/test-data/spreadsheet/Themes.xlsx
+Apache-POI/test-data/spreadsheet/picture-and-shape-same-size.xlsx
+Apache-POI/test-data/slideshow/49541_symbol_map.ppt
+Apache-POI/test-data/slideshow/52599.ppt
+Apache-POI/test-data/slideshow/bug46441.ppt
+Apache-POI/test-data/slideshow/bug58159_headers-and-footers.ppt
+Apache-POI/test-data/slideshow/text-margins.ppt
+Apache-POI/test-data/slideshow/WithMaster.ppt
+Apache-POI/test-data/slideshow/table_test.pptx
+Apache-POI/test-data/slideshow/SampleShow.pptx
+Apache-POI/test-data/slideshow/line-chart.pptx
+Apache-POI/test-data/slideshow/WithMaster.pptx
+Apache-POI/test-data/slideshow/ArtisticEffectSample.pptx
+
+# LibreOffice: 35 new files across DOC/DOCX/XLS/XLSX/PPT/PPTX.
+LibreOffice/sw/qa/core/layout/data/tdf122894-4.doc
+LibreOffice/sw/qa/core/layout/data/inline-endnote-and-footnote.doc
+LibreOffice/sw/qa/core/layout/data/continuous-endnotes-move-backwards.doc
+LibreOffice/sw/qa/core/layout/data/floattable-no-footer-overlap.doc
+LibreOffice/sw/qa/core/layout/data/floattable-then-table.doc
+LibreOffice/sw/qa/core/header_footer/data/first-header-footer.doc
+LibreOffice/chart2/qa/extras/data/docx/testBarChartDataPointPropDOCX.docx
+LibreOffice/chart2/qa/extras/data/docx/line-chart-label-default-placement.docx
+LibreOffice/chart2/qa/extras/data/docx/bubblechart.docx
+LibreOffice/chart2/qa/extras/data/docx/testcustomshapepos.docx
+LibreOffice/chart2/qa/extras/data/docx/pieChartRotation.docx
+LibreOffice/chart2/qa/extras/data/docx/doughnutChart.docx
+LibreOffice/sc/qa/unit/data/xls/tdf81470.xls
+LibreOffice/sc/qa/unit/data/xls/pivottable_ext_grouping.xls
+LibreOffice/sc/qa/unit/data/xls/tdf129127.xls
+LibreOffice/sc/qa/unit/data/xls/pivottable_date_field_filter.xls
+LibreOffice/sc/qa/unit/data/xls/systematic.xls
+LibreOffice/sc/qa/unit/data/xls/cell-borders.xls
+LibreOffice/chart2/qa/extras/data/xlsx/piechart_outside.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/smoothed_series.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/custom_data_label.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/majorTickMark.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/chart-area-style-background.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/bubble_chart_simple.xlsx
+LibreOffice/svx/qa/unit/data/tdf148714_CurvedArrows.ppt
+LibreOffice/svx/qa/unit/data/tdf140321_Matte_import.ppt
+LibreOffice/sd/qa/unit/data/tdf124708.ppt
+LibreOffice/sd/qa/unit/data/tdf131269.ppt
+LibreOffice/sd/qa/unit/data/ppt/tdf116899.ppt
+LibreOffice/sd/qa/unit/data/ppt/tdf126761.ppt
+LibreOffice/chart2/qa/extras/data/pptx/tdf137691_dataTable.pptx
+LibreOffice/chart2/qa/extras/data/pptx/tdf127811.pptx
+LibreOffice/chart2/qa/extras/data/pptx/tdf146756_bestFit.pptx
+LibreOffice/chart2/qa/extras/data/pptx/testChartTitlePropertiesGradientFill.pptx
+LibreOffice/chart2/qa/extras/data/pptx/stacked-bar-chart-hidden-series.pptx
+
+# Open XML SDK: 30 new DOCX/XLSX/PPTX files.
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/sectPr-Previous Section Properties-rsidSelect-004B4C75.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/top-Top Border-themeColor-accent4.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/lid-Merge Field Name Language ID-val-th-TH.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/instrText-Field Definitions-NextIf.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/summaryLength-Percentage of Document to Use When Generating Summary-val-100.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/left-Table Left Border-themeColor-background1.docx.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/top-Top Border-val-whiteFlowers.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/left-Left Border-val-gems.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/paperSrc-Paper Source Information.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/textDirection-Paragraph Text Flow Direction-val-tbRl.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/RelationalPivotA1.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/NativePivotSourceWorkbook.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/OlapPivotC3.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/Foo.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/table.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/NOV.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/CF.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/RelationalPivotA2.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/Dialogsheet.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/SheetData.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/sldsz-Slide Size-type-b4iso.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/lvl8_mainLvl4prr_Level8.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/uDottedHeavy_rprU_UnderlineDottedHeavy.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/marL0_mainLvl8ppr_MarginLeftMinimum.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/uWavy_rprU_UnderlineWavy.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/main_bodyPr_rtlCol.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/webPr-WebProperties-NavigationControl-clr-blackTextOnWhite.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/main_defppr_indent_51206400.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/fontScale100000_mainNormAutofit_FontScaleMaximum.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/main_buautonum_type_arabicPeriod.pptx

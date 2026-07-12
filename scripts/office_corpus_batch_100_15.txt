@@ -1,0 +1,105 @@
+# Apache POI: 40 new files, emphasizing legacy DOC/XLS fixtures.
+Apache-POI/test-data/document/AIOOB-Tap.doc
+Apache-POI/test-data/document/DiffFirstPageHeadFoot.doc
+Apache-POI/test-data/document/FancyFoot.doc
+Apache-POI/test-data/document/Lists.doc
+Apache-POI/test-data/document/ProblemExtracting.doc
+Apache-POI/test-data/document/WithArtShapes.doc
+Apache-POI/test-data/document/HeaderWithMacros.doc
+Apache-POI/test-data/document/au.edu.utas.www___data_assets_word_doc_0003_154335_International-Travel-Approval-Request-Form.doc
+Apache-POI/test-data/document/ca.kwsymphony.www_education_School_Concert_Seat_Booking_Form_2011-12.doc
+Apache-POI/test-data/document/cap.stanford.edu_profiles_viewbiosketch_facultyid=4009&name=m_maciver.doc
+Apache-POI/test-data/spreadsheet/35565.xls
+Apache-POI/test-data/spreadsheet/41139.xls
+Apache-POI/test-data/spreadsheet/37376.xls
+Apache-POI/test-data/spreadsheet/43623.xls
+Apache-POI/test-data/spreadsheet/37684-2.xls
+Apache-POI/test-data/spreadsheet/42016.xls
+Apache-POI/test-data/spreadsheet/43251.xls
+Apache-POI/test-data/spreadsheet/39634.xls
+Apache-POI/test-data/spreadsheet/3dFormulas.xls
+Apache-POI/test-data/spreadsheet/40285.xls
+Apache-POI/test-data/spreadsheet/56315.xlsx
+Apache-POI/test-data/spreadsheet/56420.xlsx
+Apache-POI/test-data/spreadsheet/56502.xlsx
+Apache-POI/test-data/spreadsheet/56511.xlsx
+Apache-POI/test-data/spreadsheet/56514.xlsx
+Apache-POI/test-data/spreadsheet/56574.xlsx
+Apache-POI/test-data/spreadsheet/56644.xlsx
+Apache-POI/test-data/spreadsheet/56688_1.xlsx
+Apache-POI/test-data/spreadsheet/56688_3.xlsx
+Apache-POI/test-data/spreadsheet/56688_4.xlsx
+Apache-POI/test-data/spreadsheet/56702.xlsx
+Apache-POI/test-data/spreadsheet/56730.xlsx
+Apache-POI/test-data/spreadsheet/56737.xlsx
+Apache-POI/test-data/spreadsheet/56822-Countifs.xlsx
+Apache-POI/test-data/spreadsheet/57176.xlsx
+Apache-POI/test-data/spreadsheet/57196.xlsx
+Apache-POI/test-data/slideshow/54541_cropped_bitmap.ppt
+Apache-POI/test-data/slideshow/60003.ppt
+Apache-POI/test-data/slideshow/bug64693.pptx
+Apache-POI/test-data/slideshow/bug65228.pptx
+
+# LibreOffice: 40 new drawing, chart, and 3D presentation files.
+LibreOffice/oox/qa/unit/data/multiple-group-shapes.docx
+LibreOffice/oox/qa/unit/data/tdf112450_vml_polyline.docx
+LibreOffice/oox/qa/unit/data/tdf125885_WordArt.docx
+LibreOffice/oox/qa/unit/data/tdf125885_WordArt2.docx
+LibreOffice/oox/qa/unit/data/tdf137314_vml_rotation_unit_fd.docx
+LibreOffice/oox/qa/unit/data/tdf151518_SmartArtTextLocation.docx
+LibreOffice/oox/qa/unit/data/tdf152840_WordArt_non_accent_color.docx
+LibreOffice/oox/qa/unit/data/tif-crop.docx
+LibreOffice/oox/qa/unit/data/toplevel-line-hori-offset.docx
+LibreOffice/chart2/qa/extras/data/xlsx/tdf133190_tdf133191.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/tdf133376.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/tdf134118.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/tdf134225.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/tdf134978.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/tdf135184RoundLineCap.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/tdf135184RoundLineCap2.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/tdf136105.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/tdf136267.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/tdf136752.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/tdf137505.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/tdf137734.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/tdf137917.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/tdf138204.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/tdf140489.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/tdf142351.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/tdf143127.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/tdf143942.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/tdf150434.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/tdf161607PieChartLeaderLinesColorWidth.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/tdf166249.xlsx
+LibreOffice/oox/qa/unit/data/Scene3d_obliqueTopRight.pptx
+LibreOffice/oox/qa/unit/data/Scene3d_orthographicFront.pptx
+LibreOffice/oox/qa/unit/data/Scene3d_perspectiveContrastingLeft.pptx
+LibreOffice/oox/qa/unit/data/Scene3d_pureImage.pptx
+LibreOffice/oox/qa/unit/data/Scene3d_shape_rotation.pptx
+LibreOffice/oox/qa/unit/data/camera-rotation-revolution-nonwps.pptx
+LibreOffice/oox/qa/unit/data/chart-theme-override.pptx
+LibreOffice/oox/qa/unit/data/connectorConnection.pptx
+LibreOffice/oox/qa/unit/data/curvedConnectors.pptx
+LibreOffice/oox/qa/unit/data/elbowConnectors.pptx
+
+# Open XML SDK: 20 new DOCX/PPTX files; XLSX remains excluded.
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/Normalize/partially miss table row ID.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/Normalize/pict+pict.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/Normalize/sdsd.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/Normalize/sym+sym.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/Normalize/t+t.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/Normalize/text+sym.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/ParaPr/paraind.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/ParaPr/parashading.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/ParaPr/paraspace.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/SDT/SDT.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Text_withEffects_100chars.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Text_withEffects_200chars.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Text_withExtrusion_100chars+Animation (Fly In, by letter).pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Text_withExtrusion_100chars.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Text_withExtrusion_200chars+Animation (Fly In, all at once).pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Text_withExtrusion_200chars+Animation (Fly In, by letter).pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Text_withExtrusion_200chars.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Text_withShadow_100chars+Animation (Fly In, by letter).pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Text_withShadow_100chars.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Text_withShadow_200chars+Animation (Fly In, all at once).pptx

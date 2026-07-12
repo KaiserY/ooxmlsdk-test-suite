@@ -1,0 +1,105 @@
+# Apache POI: 38 new files across DOC/DOCX/XLS/XLSX/PPT/PPTX.
+Apache-POI/test-data/document/Bug52032_3.doc
+Apache-POI/test-data/document/61911.doc
+Apache-POI/test-data/document/testRangeDelete.doc
+Apache-POI/test-data/document/SimpleHeadThreeColFoot.doc
+Apache-POI/test-data/document/Bug50075.doc
+Apache-POI/test-data/document/bug65255.doc
+Apache-POI/test-data/document/61470.docx
+Apache-POI/test-data/document/Bug64561.docx
+Apache-POI/test-data/document/Bug60337.docx
+Apache-POI/test-data/document/Bug54771a.docx
+Apache-POI/test-data/document/testComment.docx
+Apache-POI/test-data/document/65099.docx
+Apache-POI/test-data/spreadsheet/30070.xls
+Apache-POI/test-data/spreadsheet/39512.xls
+Apache-POI/test-data/spreadsheet/DGet.xls
+Apache-POI/test-data/spreadsheet/ReferencePtg.xls
+Apache-POI/test-data/spreadsheet/37630.xls
+Apache-POI/test-data/spreadsheet/SimpleWithImages.xls
+Apache-POI/test-data/spreadsheet/55926.xlsx
+Apache-POI/test-data/spreadsheet/56688_2.xlsx
+Apache-POI/test-data/spreadsheet/InlineString.xlsx
+Apache-POI/test-data/spreadsheet/SampleSS.strict.xlsx
+Apache-POI/test-data/spreadsheet/decimal-format.xlsx
+Apache-POI/test-data/spreadsheet/WithTextBox.xlsx
+Apache-POI/test-data/spreadsheet/50784-font_theme_colours.xlsx
+Apache-POI/test-data/spreadsheet/45540_classic_Header.xlsx
+Apache-POI/test-data/spreadsheet/simple-table-named-range.xlsx
+Apache-POI/test-data/slideshow/bug55030.ppt
+Apache-POI/test-data/slideshow/empty_textbox.ppt
+Apache-POI/test-data/slideshow/ppt_with_png.ppt
+Apache-POI/test-data/slideshow/bug58516.ppt
+Apache-POI/test-data/slideshow/bug55732.ppt
+Apache-POI/test-data/slideshow/bullets.ppt
+Apache-POI/test-data/slideshow/templatePPTWithOnlyOneText.pptx
+Apache-POI/test-data/slideshow/SmartArt.pptx
+Apache-POI/test-data/slideshow/prProps.pptx
+Apache-POI/test-data/slideshow/with_japanese.pptx
+Apache-POI/test-data/slideshow/pie-chart.pptx
+
+# LibreOffice: 37 new files across DOC/DOCX/XLS/XLSX/PPT/PPTX.
+LibreOffice/sw/qa/filter/ww8/data/tdf71749_without_footnote.doc
+LibreOffice/sw/qa/filter/ww8/data/tdf71749_with_footnote.doc
+LibreOffice/sw/qa/core/txtnode/data/btlr-cell-chinese.doc
+LibreOffice/sw/qa/core/doc/data/bookmark-delete-redline.doc
+LibreOffice/sw/qa/extras/cjk/data/cjklist34.doc
+LibreOffice/sw/qa/extras/cjk/data/tdf118564.doc
+LibreOffice/oox/qa/unit/data/tdf156902_GlowOnGroup.docx
+LibreOffice/oox/qa/unit/data/shape-non-autosize-with-text.docx
+LibreOffice/oox/qa/unit/data/tdf152840_theme_color_non_accent.docx
+LibreOffice/sw/qa/uibase/frmdlg/data/wrapped-math-object.docx
+LibreOffice/sw/qa/core/unocore/data/paragraph-marker-formatted-run.docx
+LibreOffice/sw/qa/core/unocore/data/tdf108272-1-minimal.docx
+LibreOffice/sc/qa/unit/data/xls/tdf170285_controlsInGroupShape.xls
+LibreOffice/sc/qa/unit/data/xls/universal-content.xls
+LibreOffice/sc/qa/unit/data/xls/named-ranges-global.xls
+LibreOffice/sc/qa/unit/data/xls/pictureOrder.xls
+LibreOffice/sc/qa/unit/data/xls/matrix.xls
+LibreOffice/sc/qa/unit/data/xls/pivot_row_header.xls
+LibreOffice/sc/qa/unit/uicalc/data/tdf99913.xlsx
+LibreOffice/sc/qa/unit/uicalc/data/tdf118189.xlsx
+LibreOffice/sc/qa/unit/uicalc/data/tdf124820.xlsx
+LibreOffice/sc/qa/unit/uicalc/data/tdf124816.xlsx
+LibreOffice/sc/qa/unit/uicalc/data/tdf152037.xlsx
+LibreOffice/sc/qa/unit/uicalc/data/simpleTable.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/waterfall.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/bar_chart_simple.xlsx
+LibreOffice/sd/qa/unit/data/ppt/tdf169705.ppt
+LibreOffice/sd/qa/unit/data/ppt/tdf157636.ppt
+LibreOffice/sd/qa/unit/data/ppt/tdf166030.ppt
+LibreOffice/sd/qa/unit/data/ppt/tdf136911.ppt
+LibreOffice/sd/qa/unit/data/ppt/tdf168736-1.ppt
+LibreOffice/sd/qa/unit/data/ppt/tdf122899_Arc_90_to_91_clockwise.ppt
+LibreOffice/svx/qa/unit/data/tdf145004_gap_by_ScaleX.pptx
+LibreOffice/svx/qa/unit/data/tdf148000_EOLinCurvedText.pptx
+LibreOffice/svx/qa/unit/data/table-shadow-blur.pptx
+LibreOffice/svx/qa/unit/data/0-width-text-wrap.pptx
+LibreOffice/xmloff/qa/unit/data/ReferenceShapeFill.pptx
+
+# Open XML SDK: 25 new DOCX/XLSX/PPTX files.
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/instrText-Field Definitions-EQ-Array-AlignLeft.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/top-Top Border-val-handmade2.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/proofErr-Proofing Error Anchor - gramStart and gramEnd.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/name-Data Source Name for Column.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/rPr-bdr-Text Border-val=dotDash color=auto.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/truncatefontheightslikewp6-Truncate Font Height-val.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/insideH-Table Inside Horizontal Edges Border-val-thinThickThinSmallGap.docx.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/rSp-Row Spacing (Equation-Array Function)-val-1080.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/bugregression/680607.HelloO14.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/ForTestCase/header.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/Complex01.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/extlst.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/missingcalcchainpart.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFilesValidation/smtClean.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/CalcChain.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/lvl0_mainLvl3prr_Level0.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/marR51206400_mainLvl2ppr_MarginRightLevel2Maximum.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/algnJustLow_mainLvl1ppr_AlignmentLevel1JustifiedLow.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/browse-BrowseSlideShowMode-showScrollBar-0.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/main_buautonum_type_romanUCParenBoth.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/fontAlgnT_mainLvl1ppr_FontAlignementLevel1Top.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/ulnW20116800_main_UnderlineStrokeLineWidthMaximum.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/uDbl_rprU_UnderlineDouble.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/main_buautonum_type_ea1jpnkorperiod.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/fontAlgnB_mainLvl1ppr_FontAlignmentLevel1Bottom.pptx

@@ -1,0 +1,105 @@
+# Apache POI: 40 new files.
+Apache-POI/test-data/document/Bug45877.doc
+Apache-POI/test-data/document/Bug46220.doc
+Apache-POI/test-data/document/Bug46610_1.doc
+Apache-POI/test-data/document/Bug44603.doc
+Apache-POI/test-data/document/Bug45269.doc
+Apache-POI/test-data/document/bib-chernigovka.netdo.ru_download_docs_17459.docx
+Apache-POI/test-data/document/bug56075-changeTracking_off.docx
+Apache-POI/test-data/document/bug56075-changeTracking_on.docx
+Apache-POI/test-data/document/bug56076.docx
+Apache-POI/test-data/document/bug59058.docx
+Apache-POI/test-data/document/bug65738.docx
+Apache-POI/test-data/document/bug66312.docx
+Apache-POI/test-data/document/bug69628.docx
+Apache-POI/test-data/document/issue_51265_1.docx
+Apache-POI/test-data/document/saut_page.docx
+Apache-POI/test-data/document/tika-3388.docx
+Apache-POI/test-data/document/tika-3816.docx
+Apache-POI/test-data/spreadsheet/19599-1.xls
+Apache-POI/test-data/spreadsheet/19599-2.xls
+Apache-POI/test-data/spreadsheet/26100.xls
+Apache-POI/test-data/spreadsheet/24215.xls
+Apache-POI/test-data/spreadsheet/25183.xls
+Apache-POI/test-data/spreadsheet/48962.xlsx
+Apache-POI/test-data/spreadsheet/49156.xlsx
+Apache-POI/test-data/spreadsheet/49273.xlsx
+Apache-POI/test-data/spreadsheet/49325.xlsx
+Apache-POI/test-data/spreadsheet/49872.xlsx
+Apache-POI/test-data/spreadsheet/49928.xlsx
+Apache-POI/test-data/spreadsheet/49966.xlsx
+Apache-POI/test-data/spreadsheet/50299.xlsx
+Apache-POI/test-data/spreadsheet/50755_workday_formula_example.xlsx
+Apache-POI/test-data/spreadsheet/50795.xlsx
+Apache-POI/test-data/spreadsheet/50846-border_colours.xlsx
+Apache-POI/test-data/spreadsheet/50867_with_table.xlsx
+Apache-POI/test-data/spreadsheet/51222.xlsx
+Apache-POI/test-data/spreadsheet/51519.xlsx
+Apache-POI/test-data/slideshow/45776.ppt
+Apache-POI/test-data/slideshow/45537_Footer.ppt
+Apache-POI/test-data/slideshow/60810.pptx
+Apache-POI/test-data/slideshow/KEY02.pptx
+
+# LibreOffice: 40 new chart-focused OOXML files.
+LibreOffice/chart2/qa/extras/data/docx/tdf124243.docx
+LibreOffice/chart2/qa/extras/data/docx/tdf125337.docx
+LibreOffice/chart2/qa/extras/data/docx/tdf128794.docx
+LibreOffice/chart2/qa/extras/data/docx/tdf133632.docx
+LibreOffice/chart2/qa/extras/data/docx/tdf134111.docx
+LibreOffice/chart2/qa/extras/data/docx/tdf134255.docx
+LibreOffice/chart2/qa/extras/data/docx/tdf136650.docx
+LibreOffice/chart2/qa/extras/data/docx/tdf139658.docx
+LibreOffice/chart2/qa/extras/data/docx/tdf143130.docx
+LibreOffice/chart2/qa/extras/data/docx/tdf170215_nullDate.docx
+LibreOffice/chart2/qa/extras/data/docx/tdf91250.docx
+LibreOffice/chart2/qa/extras/data/docx/testAreaChartLoad.docx
+LibreOffice/chart2/qa/extras/data/docx/testAxisTitlePosition.docx
+LibreOffice/chart2/qa/extras/data/docx/testBarChart.docx
+LibreOffice/chart2/qa/extras/data/docx/testChartTitlePropertiesColorFill.docx
+LibreOffice/chart2/qa/extras/data/xlsx/hidden_cells.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/clusteredColumn.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/color_funnel.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/column-style.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/combined_chart_secondary_axis.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/data_label.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/data_labels_fill_color.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/deleted_data_labels.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/deleted_legend_entry.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/deleted_legend_entry2.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/dispBlanksAs_2007.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/dispBlanksAs_2013.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/empty_chart.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/external_str_ref.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/fdo54361-1.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/fdo54361.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/fdo70609.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/fdo78080.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/funnel1.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/gapWidth.xlsx
+LibreOffice/chart2/qa/extras/data/pptx/tdf122765.pptx
+LibreOffice/chart2/qa/extras/data/pptx/tdf125444.pptx
+LibreOffice/chart2/qa/extras/data/pptx/tdf127393.pptx
+LibreOffice/chart2/qa/extras/data/pptx/tdf127720.pptx
+LibreOffice/chart2/qa/extras/data/pptx/tdf128345_ChartWall_CS_TG.pptx
+
+# Open XML SDK: 20 new DOCX/PPTX files; XLSX remains excluded.
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment029.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment031.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment034.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment035.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment038.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment039.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment040.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment044.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment045.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment048.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/AutoShapes_3D_Rotation_Parallel (Isometric Right Up).pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Chart_2D+Animation (Box In, as one object).pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Chart_2D+Animation (Box In, by element in category).pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Chart_2D+Animation (Fly In, as one object).pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Chart_2D+Animation (Fly In, by element in category).pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Chart_2D.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Chart_3D (Column)+Animation (Box In, as one object).pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Chart_3D (Column)+Animation (Box Out, as one object).pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Chart_3D (Column)+Animation (Fly In, as one object).pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Chart_3D (Column)+Animation (Fly Out, as one object).pptx

@@ -23,3 +23,4 @@ target
 perf-*.data
 flamegraph-*.svg
 *.txt
+!scripts/office_corpus_batch_100*.txt

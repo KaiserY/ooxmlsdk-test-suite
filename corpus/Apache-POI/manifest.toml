@@ -518,6 +518,42 @@ mode = "invalid"
 reason = "truncated CFB directory"
 
 [[expectation]]
+file = "test-data/slideshow/ppt_with_png_encrypted.ppt"
+test = "ppt_record_roundtrip"
+mode = "requires_password"
+reason = "encrypted PowerPoint Document stream awaits MS-OFFCRYPTO support"
+
+[[expectation]]
+file = "test-data/slideshow/Password_Protected-56-hello.ppt"
+test = "ppt_record_roundtrip"
+mode = "requires_password"
+reason = "encrypted PowerPoint Document stream awaits MS-OFFCRYPTO support"
+
+[[expectation]]
+file = "test-data/slideshow/cryptoapi-proc2356.ppt"
+test = "ppt_record_roundtrip"
+mode = "requires_password"
+reason = "encrypted PowerPoint Document stream awaits MS-OFFCRYPTO support"
+
+[[expectation]]
+file = "test-data/slideshow/Password_Protected-hello.ppt"
+test = "ppt_record_roundtrip"
+mode = "requires_password"
+reason = "encrypted PowerPoint Document stream awaits MS-OFFCRYPTO support"
+
+[[expectation]]
+file = "test-data/slideshow/Password_Protected-np-hello.ppt"
+test = "ppt_record_roundtrip"
+mode = "requires_password"
+reason = "encrypted PowerPoint Document stream awaits MS-OFFCRYPTO support"
+
+[[expectation]]
+file = "test-data/slideshow/PPT95.ppt"
+test = "ppt_record_roundtrip"
+mode = "unsupported"
+reason = "PowerPoint 95 record stream is outside the PPT97 milestone"
+
+[[expectation]]
 file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIFuzzer-5429732352851968.ppt"
 test = "cfb_roundtrip"
 mode = "invalid"
@@ -697,6 +733,12 @@ mode = "invalid"
 reason = "DocumentSummaryInformation has an invalid OLEPS byte-order marker"
 
 [[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIHWPFFuzzer-5050208641482752.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "the first LPStd Xstz name declares 12552 UTF-16 code units inside an 88-byte STD"
+
+[[expectation]]
 file = "test-data/document/clusterfuzz-testcase-minimized-POIHWPFFuzzer-6610789829836800.doc"
 test = "oleps_roundtrip"
 mode = "invalid"
@@ -809,3 +851,39 @@ file = "test-data/spreadsheet/poi-fuzz.xls"
 test = "xls_biff_roundtrip"
 mode = "invalid"
 reason = "Workbook contains a truncated Dimensions record; Apache POI's BiffViewer corpus test also excludes it with RecordFormatException"
+
+[[expectation]]
+file = "test-data/document/password_password_cryptoapi.doc"
+test = "doc_fib_roundtrip"
+mode = "requires_password"
+reason = "WordDocument after the clear 68-byte FIB prefix and the selected Table stream are encrypted"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIHWPFFuzzer-6610789829836800.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "CHPX FKP declares an invalid zero or oversized crun"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIHWPFFuzzer-4951943183990784.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "CHPX FKP contains a truncated grpprl operand"
+
+[[expectation]]
+file = "test-data/document/password_tika_binaryrc4.doc"
+test = "doc_fib_roundtrip"
+mode = "requires_password"
+reason = "WordDocument after the clear 68-byte FIB prefix and the selected Table stream are encrypted"
+
+[[expectation]]
+file = "test-data/document/PasswordProtected.doc"
+test = "doc_fib_roundtrip"
+mode = "requires_password"
+reason = "WordDocument after the clear 68-byte FIB prefix and the selected Table stream are encrypted"
+
+[[expectation]]
+file = "test-data/document/testCroppedPictures.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "The final LPStd declares a 90-byte STD with only 68 bytes remaining in STSH"
