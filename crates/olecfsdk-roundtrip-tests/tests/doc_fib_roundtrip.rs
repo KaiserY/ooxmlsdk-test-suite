@@ -39,7 +39,7 @@ use olecfsdk::{
         WORD97_FILE_IDENTIFIER, WebTargetScreenSize, XmlSchemaReferences, XmlSchemaStringTable,
         XmlTransformPath,
     },
-    forms::MorphDataControlEnvelope,
+    forms::{CommandButtonControl, FmStringLengthMode, MorphDataControl, SingleStreamOleControl},
     office_art::OfficeArtRecordData,
     shared::{
         EnvelopeFlagStatus, EnvelopeImportance, EnvelopeRecipientPropertyValue,
@@ -264,6 +264,12 @@ fn legacy_word_fibs_round_trip() {
         BTreeMap::<(String, bool), (usize, BTreeSet<usize>)>::new();
     let mut morph_data_controls = 0usize;
     let mut morph_data_shapes = BTreeMap::<(String, u64, usize, usize), usize>::new();
+    let mut morph_data_text_props_masks = BTreeMap::<u32, usize>::new();
+    let mut morph_data_low_word_compatibility_strings = 0usize;
+    let mut command_button_controls = 0usize;
+    let mut command_button_shapes = BTreeMap::<(u32, u32, usize), usize>::new();
+    let mut single_stream_ole_controls = 0usize;
+    let mut single_stream_ole_control_shapes = BTreeMap::<(String, usize, bool), usize>::new();
     let mut annotation_owner_sets = 0usize;
     let mut annotation_owners = 0usize;
     let mut annotation_owner_name_units = 0usize;
@@ -840,7 +846,7 @@ fn legacy_word_fibs_round_trip() {
                                 && entry.name == "contents"
                         })
                         .ok_or_else(|| "MorphData control has no contents stream".to_owned())?;
-                    let morph = MorphDataControlEnvelope::from_bytes(&payload.data)
+                    let morph = MorphDataControl::from_bytes(&payload.data)
                         .map_err(|error| format!("{}: {error}", payload.path.display()))?;
                     if morph.to_bytes().map_err(|error| error.to_string())? != payload.data {
                         return Err(format!(
@@ -849,12 +855,95 @@ fn legacy_word_fibs_round_trip() {
                         ));
                     }
                     morph_data_controls += 1;
+                    *morph_data_text_props_masks
+                        .entry(morph.text_props.property_mask.bits())
+                        .or_default() += 1;
+                    morph_data_low_word_compatibility_strings += [
+                        morph.extra_data_block.value.as_ref(),
+                        morph.extra_data_block.caption.as_ref(),
+                        morph.extra_data_block.group_name.as_ref(),
+                        morph.text_props.extra_data_block.font_name.as_ref(),
+                    ]
+                    .into_iter()
+                    .flatten()
+                    .filter(|value| value.length_mode == FmStringLengthMode::LowWordCompatibility)
+                    .count();
                     *morph_data_shapes
                         .entry((
                             class_id.clone(),
                             morph.property_mask.bits(),
-                            morph.data_and_extra.len(),
-                            morph.following_data.len(),
+                            morph
+                                .data_and_extra_size()
+                                .map_err(|error| error.to_string())?,
+                            morph
+                                .following_data_size()
+                                .map_err(|error| error.to_string())?,
+                        ))
+                        .or_default() += 1;
+                }
+                if class_id == "d7053240-ce69-11cd-a777-00dd01143c57" {
+                    let payload = cfb
+                        .entries()
+                        .iter()
+                        .find(|entry| {
+                            entry.is_stream()
+                                && entry.path.parent() == Some(parent)
+                                && entry.name == "contents"
+                        })
+                        .ok_or_else(|| "CommandButton has no contents stream".to_owned())?;
+                    let command_button = CommandButtonControl::from_bytes(&payload.data)
+                        .map_err(|error| format!("{}: {error}", payload.path.display()))?;
+                    if command_button
+                        .to_bytes()
+                        .map_err(|error| error.to_string())?
+                        != payload.data
+                    {
+                        return Err(format!(
+                            "{}: CommandButton writer changed physical bytes",
+                            payload.path.display()
+                        ));
+                    }
+                    command_button_controls += 1;
+                    *command_button_shapes
+                        .entry((
+                            command_button.property_mask.bits(),
+                            command_button.text_props.property_mask.bits(),
+                            payload.data.len(),
+                        ))
+                        .or_default() += 1;
+                }
+                if class_id == "ae24fdae-03c6-11d1-8b76-0080c744f389" {
+                    let payload = cfb
+                        .entries()
+                        .iter()
+                        .find(|entry| {
+                            entry.is_stream()
+                                && entry.path.parent() == Some(parent)
+                                && entry.name == "\u{3}OCXDATA"
+                        })
+                        .ok_or_else(|| {
+                            "single-stream OLE control has no OCXDATA stream".to_owned()
+                        })?;
+                    let control = SingleStreamOleControl::from_bytes(&payload.data)
+                        .map_err(|error| format!("{}: {error}", payload.path.display()))?;
+                    if control.class_id.to_string() != class_id {
+                        return Err(format!(
+                            "{}: OCXDATA CLSID does not match its parent storage",
+                            payload.path.display()
+                        ));
+                    }
+                    if control.to_bytes() != payload.data {
+                        return Err(format!(
+                            "{}: single-stream OLE control writer changed physical bytes",
+                            payload.path.display()
+                        ));
+                    }
+                    single_stream_ole_controls += 1;
+                    *single_stream_ole_control_shapes
+                        .entry((
+                            class_id.clone(),
+                            control.persistence.bytes.len(),
+                            control.is_scriptlet_component(),
                         ))
                         .or_default() += 1;
                 }
@@ -6226,6 +6315,24 @@ fn legacy_word_fibs_round_trip() {
         ])
     );
     assert_eq!(morph_data_controls, 122);
+    assert_eq!(
+        morph_data_text_props_masks,
+        BTreeMap::from([(0x35, 6), (0x37, 116)])
+    );
+    assert_eq!(morph_data_low_word_compatibility_strings, 1);
+    assert_eq!(command_button_controls, 1);
+    assert_eq!(
+        command_button_shapes,
+        BTreeMap::from([((0x28, 0x75, 68), 1)])
+    );
+    assert_eq!(single_stream_ole_controls, 1);
+    assert_eq!(
+        single_stream_ole_control_shapes,
+        BTreeMap::from([(
+            ("ae24fdae-03c6-11d1-8b76-0080c744f389".into(), 130, true),
+            1
+        )])
+    );
     assert_eq!(
         morph_data_shapes,
         BTreeMap::from([
