@@ -1,7 +1,7 @@
 use std::io::{Cursor, Read};
 
 use ooxmlsdk::schemas::schemas_openxmlformats_org_markup_compatibility_2006::{
-    AlternateContent, AlternateContentChoice, Choice,
+    AlternateContent, AlternateContentChoice, Choice, Fallback,
 };
 use ooxmlsdk::schemas::schemas_openxmlformats_org_spreadsheetml_2006_main::SharedStringTable;
 #[cfg(feature = "mce")]
@@ -270,11 +270,16 @@ fn markup_compatibility_process_content_xml_space_full_mode() {
 fn markup_compatibility_preserve_ignored_unknown_element_full_mode() {
     // Source: test/DocumentFormat.OpenXml.Tests/OpenXmlDomTest/MarkupCompatibilityTest.cs
     //   Preserve_Ignored_UnknownElement_FullMode
-    let xml = r#"<mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2008/9/12/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"><mc:Choice Requires="w14" mc:PreserveElements="wps:wsp" mc:PreserveAttributes="w14:editId"/><mc:Fallback/></mc:AlternateContent>"#;
+    let xml = r#"<mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2008/9/12/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"><mc:Choice Requires="w14" mc:Ignorable="w14" mc:PreserveElements="wps:wsp" mc:PreserveAttributes="w14:editId"/><mc:Fallback/></mc:AlternateContent>"#;
 
     let (alternate_content, serialized, reparsed) =
         assert_stable_roundtrip::<AlternateContent>(xml);
 
+    assert_eq!(first_mc_choice(&alternate_content).requires, "w14");
+    assert_eq!(
+        first_mc_choice(&alternate_content).mc_ignorable.as_deref(),
+        Some(b"w14".as_slice())
+    );
     assert_eq!(
         first_mc_choice(&alternate_content)
             .mc_preserve_elements
@@ -295,8 +300,42 @@ fn markup_compatibility_preserve_ignored_unknown_element_full_mode() {
         first_mc_choice(&reparsed).mc_preserve_attributes.as_deref(),
         Some(b"w14:editId".as_slice())
     );
+    assert_eq!(first_mc_choice(&reparsed).requires, "w14");
+    assert_eq!(
+        first_mc_choice(&reparsed).mc_ignorable.as_deref(),
+        Some(b"w14".as_slice())
+    );
+    assert!(serialized.contains(r#"Requires="w14""#));
+    assert!(serialized.contains(r#"mc:Ignorable="w14""#));
     assert!(serialized.contains(r#"mc:PreserveElements="wps:wsp""#));
     assert!(serialized.contains(r#"mc:PreserveAttributes="w14:editId""#));
+}
+
+#[test]
+fn markup_compatibility_fallback_static_mce_attributes_roundtrip() {
+    let xml = r#"<mc:Fallback xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="w14&#x9;w15" mc:ProcessContent="w:p" mc:MustUnderstand="w14"/>"#;
+
+    let (fallback, serialized, reparsed) = assert_stable_roundtrip::<Fallback>(xml);
+
+    for value in [&fallback, &reparsed] {
+        assert_eq!(
+            value.mc_ignorable.as_deref(),
+            Some(b"w14&#x9;w15".as_slice())
+        );
+        assert_eq!(value.mc_process_content.as_deref(), Some(b"w:p".as_slice()));
+        assert_eq!(value.mc_must_understand.as_deref(), Some(b"w14".as_slice()));
+    }
+    assert!(serialized.contains(r#"mc:Ignorable="w14&#x9;w15""#));
+    assert!(serialized.contains(r#"mc:ProcessContent="w:p""#));
+    assert!(serialized.contains(r#"mc:MustUnderstand="w14""#));
+}
+
+#[test]
+fn markup_compatibility_choice_requires_is_required() {
+    let xml =
+        r#"<mc:Choice xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"/>"#;
+
+    assert!(xml.parse::<Choice>().is_err());
 }
 
 #[test]
@@ -382,6 +421,7 @@ fn markup_compatibility_must_understand_unselected_full_mode() {
     let (alternate_content, serialized, _) = assert_stable_roundtrip::<AlternateContent>(xml);
 
     assert_eq!(alternate_content.alternate_content_choice.len(), 1);
+    assert_eq!(first_mc_choice(&alternate_content).requires, "w14");
     assert_eq!(
         first_mc_choice(&alternate_content)
             .mc_must_understand

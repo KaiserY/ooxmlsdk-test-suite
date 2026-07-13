@@ -150,36 +150,17 @@ fn legacy_powerpoint_document_streams_round_trip() {
     let mut external_storage_vba_modules = 0usize;
     let mut external_storage_invalid_samples = Vec::new();
     let mut content_master_packages = 0usize;
-    let mut content_master_package_entries = 0usize;
-    let mut content_master_package_uncompressed_bytes = 0usize;
-    let mut content_master_typed_xml_failures = 0usize;
-    let mut malformed_content_master_packages = 0usize;
-    let mut malformed_content_master_package_bytes = 0usize;
-    let mut content_master_failure_samples = Vec::new();
+    let mut content_master_payload_bytes = 0usize;
     let mut theme_packages = 0usize;
-    let mut theme_package_entries = 0usize;
-    let mut theme_roots = 0usize;
-    let mut theme_override_roots = 0usize;
-    let mut theme_typed_xml_failures = 0usize;
-    let mut malformed_theme_packages = 0usize;
-    let mut malformed_theme_package_bytes = 0usize;
-    let mut color_mapping_roots = 0usize;
-    let mut color_mapping_override_roots = 0usize;
-    let mut color_mapping_typed_xml_failures = 0usize;
-    let mut malformed_color_mappings = 0usize;
-    let mut malformed_color_mapping_bytes = 0usize;
+    let mut theme_payload_bytes = 0usize;
+    let mut color_mapping_payloads = 0usize;
+    let mut color_mapping_payload_bytes = 0usize;
     let mut animation_packages = 0usize;
-    let mut animation_package_entries = 0usize;
-    let mut animation_typed_xml_failures = 0usize;
-    let mut malformed_animation_packages = 0usize;
-    let mut malformed_animation_package_bytes = 0usize;
+    let mut animation_payload_bytes = 0usize;
     let mut text_style_packages = 0usize;
     let mut notes_style_packages = 0usize;
     let mut table_style_packages = 0usize;
-    let mut style_package_entries = 0usize;
-    let mut style_typed_xml_failures = 0usize;
-    let mut malformed_style_packages = 0usize;
-    let mut malformed_style_package_bytes = 0usize;
+    let mut style_payload_bytes = 0usize;
     let mut text_special_info_atoms = 0usize;
     let mut text_special_info_runs = 0usize;
     let mut text_special_info_smart_tags = 0usize;
@@ -438,38 +419,17 @@ fn legacy_powerpoint_document_streams_round_trip() {
                     external_storage_vba_modules: &mut external_storage_vba_modules,
                     external_storage_invalid_samples: &mut external_storage_invalid_samples,
                     content_master_packages: &mut content_master_packages,
-                    content_master_package_entries: &mut content_master_package_entries,
-                    content_master_package_uncompressed_bytes:
-                        &mut content_master_package_uncompressed_bytes,
-                    content_master_typed_xml_failures: &mut content_master_typed_xml_failures,
-                    malformed_content_master_packages: &mut malformed_content_master_packages,
-                    malformed_content_master_package_bytes:
-                        &mut malformed_content_master_package_bytes,
-                    content_master_failure_samples: &mut content_master_failure_samples,
+                    content_master_payload_bytes: &mut content_master_payload_bytes,
                     theme_packages: &mut theme_packages,
-                    theme_package_entries: &mut theme_package_entries,
-                    theme_roots: &mut theme_roots,
-                    theme_override_roots: &mut theme_override_roots,
-                    theme_typed_xml_failures: &mut theme_typed_xml_failures,
-                    malformed_theme_packages: &mut malformed_theme_packages,
-                    malformed_theme_package_bytes: &mut malformed_theme_package_bytes,
-                    color_mapping_roots: &mut color_mapping_roots,
-                    color_mapping_override_roots: &mut color_mapping_override_roots,
-                    color_mapping_typed_xml_failures: &mut color_mapping_typed_xml_failures,
-                    malformed_color_mappings: &mut malformed_color_mappings,
-                    malformed_color_mapping_bytes: &mut malformed_color_mapping_bytes,
+                    theme_payload_bytes: &mut theme_payload_bytes,
+                    color_mapping_payloads: &mut color_mapping_payloads,
+                    color_mapping_payload_bytes: &mut color_mapping_payload_bytes,
                     animation_packages: &mut animation_packages,
-                    animation_package_entries: &mut animation_package_entries,
-                    animation_typed_xml_failures: &mut animation_typed_xml_failures,
-                    malformed_animation_packages: &mut malformed_animation_packages,
-                    malformed_animation_package_bytes: &mut malformed_animation_package_bytes,
+                    animation_payload_bytes: &mut animation_payload_bytes,
                     text_style_packages: &mut text_style_packages,
                     notes_style_packages: &mut notes_style_packages,
                     table_style_packages: &mut table_style_packages,
-                    style_package_entries: &mut style_package_entries,
-                    style_typed_xml_failures: &mut style_typed_xml_failures,
-                    malformed_style_packages: &mut malformed_style_packages,
-                    malformed_style_package_bytes: &mut malformed_style_package_bytes,
+                    style_payload_bytes: &mut style_payload_bytes,
                     text_special_info_atoms: &mut text_special_info_atoms,
                     text_special_info_runs: &mut text_special_info_runs,
                     text_special_info_smart_tags: &mut text_special_info_smart_tags,
@@ -538,11 +498,9 @@ fn legacy_powerpoint_document_streams_round_trip() {
         "PPT BlipEntity9: types {blip_entity9_types:#x?}; {malformed_blip_entity9} malformed/{malformed_blip_entity9_bytes} bytes"
     );
     eprintln!(
-        "PPT color mapping: {color_mapping_roots} maps/{color_mapping_override_roots} overrides/{color_mapping_typed_xml_failures} typed failures; {malformed_color_mappings} malformed/{malformed_color_mapping_bytes} bytes; notes styles {notes_style_packages}"
+        "PPT color mapping: {color_mapping_payloads} payloads/{color_mapping_payload_bytes} bytes; notes styles {notes_style_packages}"
     );
-    eprintln!(
-        "PPT animation OPC: {animation_packages} packages/{animation_package_entries} entries/{animation_typed_xml_failures} typed failures; {malformed_animation_packages} malformed/{malformed_animation_package_bytes} bytes"
-    );
+    eprintln!("PPT animation OPC: {animation_packages} packages/{animation_payload_bytes} bytes");
     assert_eq!(checked, 176, "supported PPT97 stream coverage changed");
     assert_eq!(current_user_streams, 176);
     assert_eq!(current_user_parsed, 175);
@@ -667,35 +625,17 @@ fn legacy_powerpoint_document_streams_round_trip() {
     assert_eq!(external_storage_vba_invalid, 0);
     assert_eq!(external_storage_vba_modules, 6);
     assert_eq!(content_master_packages, 602);
-    assert_eq!(content_master_package_entries, 1_839);
-    assert_eq!(content_master_package_uncompressed_bytes, 2_089_598);
-    assert_eq!(content_master_typed_xml_failures, 0);
-    assert_eq!(malformed_content_master_packages, 0);
-    assert_eq!(malformed_content_master_package_bytes, 0);
+    assert_eq!(content_master_payload_bytes, 981_249);
     assert_eq!(theme_packages, 152);
-    assert_eq!(theme_package_entries, 764);
-    assert_eq!(theme_roots, 151);
-    assert_eq!(theme_override_roots, 1);
-    assert_eq!(theme_typed_xml_failures, 0);
-    assert_eq!(malformed_theme_packages, 0);
-    assert_eq!(malformed_theme_package_bytes, 0);
-    assert_eq!(color_mapping_roots, 151);
-    assert_eq!(color_mapping_override_roots, 1);
-    assert_eq!(color_mapping_typed_xml_failures, 0);
-    assert_eq!(malformed_color_mappings, 0);
-    assert_eq!(malformed_color_mapping_bytes, 0);
+    assert_eq!(theme_payload_bytes, 491_582);
+    assert_eq!(color_mapping_payloads, 152);
+    assert_eq!(color_mapping_payload_bytes, 47_767);
     assert_eq!(animation_packages, 31);
-    assert_eq!(animation_package_entries, 93);
-    assert_eq!(animation_typed_xml_failures, 0);
-    assert_eq!(malformed_animation_packages, 0);
-    assert_eq!(malformed_animation_package_bytes, 0);
+    assert_eq!(animation_payload_bytes, 31_844);
     assert_eq!(text_style_packages, 104);
     assert_eq!(notes_style_packages, 30);
     assert_eq!(table_style_packages, 53);
-    assert_eq!(style_package_entries, 564);
-    assert_eq!(style_typed_xml_failures, 0);
-    assert_eq!(malformed_style_packages, 0);
-    assert_eq!(malformed_style_package_bytes, 0);
+    assert_eq!(style_payload_bytes, 345_319);
     assert_eq!(text_special_info_atoms, 7_387);
     assert_eq!(text_special_info_runs, 15_367);
     assert_eq!(text_special_info_smart_tags, 0);
@@ -890,13 +830,11 @@ fn legacy_powerpoint_document_streams_round_trip() {
         "PPT external storage: {external_storage_atoms} atoms, {external_storage_parsed_compressed} parsed compressed/{external_storage_parsed_uncompressed} parsed uncompressed, {external_storage_invalid_compressed} invalid compressed/{external_storage_invalid_uncompressed} invalid uncompressed/{external_storage_malformed_compressed} malformed compressed/{external_storage_unsupported_instance} unsupported instance, {external_storage_entries} CFB entries/{external_storage_vba_shaped} VBA-shaped/{external_storage_vba_parsed} VBA parsed/{external_storage_vba_invalid} VBA invalid/{external_storage_vba_modules} modules"
     );
     eprintln!(
-        "PPT content-master OPC: {content_master_packages} packages/{content_master_package_entries} entries/{content_master_package_uncompressed_bytes} uncompressed bytes/{content_master_typed_xml_failures} typed XML failures; {malformed_content_master_packages} malformed/{malformed_content_master_package_bytes} bytes"
+        "PPT content-master OPC: {content_master_packages} packages/{content_master_payload_bytes} bytes"
     );
+    eprintln!("PPT theme OPC: {theme_packages} packages/{theme_payload_bytes} bytes");
     eprintln!(
-        "PPT theme OPC: {theme_packages} packages/{theme_package_entries} entries/{theme_roots} themes/{theme_override_roots} overrides/{theme_typed_xml_failures} typed XML failures; {malformed_theme_packages} malformed/{malformed_theme_package_bytes} bytes"
-    );
-    eprintln!(
-        "PPT style OPC: {text_style_packages} slide-style/{notes_style_packages} notes-style/{table_style_packages} table-style packages/{style_package_entries} entries/{style_typed_xml_failures} typed XML failures; {malformed_style_packages} malformed/{malformed_style_package_bytes} bytes"
+        "PPT style OPC: {text_style_packages} slide-style/{notes_style_packages} notes-style/{table_style_packages} table-style packages/{style_payload_bytes} bytes"
     );
     eprintln!(
         "checked {checked} PowerPoint Document streams: Current User {current_user_streams} streams/{current_user_parsed} parsed/{current_user_compatibility} compatibility/{current_user_truncated} truncated, {current_edit_links} valid/{current_edit_broken_links} broken current-edit links/{current_user_trailing_bytes} trailing bytes; {persist_chains} persist chains/{persist_chain_failures} failures/{persist_chain_edits} edits/{effective_persist_objects} effective objects; {record_count} records/{container_count} containers; core atoms Document {document_atoms}/Slide {slide_atoms}/Notes {notes_atoms}, {slide_persist_atoms} persist/{color_scheme_atoms} color schemes/{placeholder_atoms} placeholders/{headers_footers_atoms} header-footer; text {outline_text_refs} outline refs/{text_headers} headers/{text_chars_records} UTF-16/{text_bytes_records} byte strings/{c_string_records} CStrings/{style_text_prop_atoms} style-prop ({style_paragraph_runs} PF runs/{style_character_runs} CF runs/{style_tab_stops} tabs/{style_trailing_bytes} trailing bytes + {malformed_style_text_prop} malformed/{malformed_style_text_prop_bytes} bytes + {unresolved_style_text_prop} unresolved/{unresolved_style_text_prop_bytes} bytes)/{master_text_prop_atoms} master-prop/{text_master_style_atoms} master-style ({text_master_style_levels} levels/{text_master_style_trailing_bytes} trailing + {malformed_text_master_style} malformed/{malformed_text_master_style_bytes} bytes)/{text_ruler_atoms} rulers ({text_ruler_tab_stops} tabs/{text_ruler_trailing_bytes} trailing + {malformed_text_rulers} malformed/{malformed_text_ruler_bytes} bytes)/{text_special_info_atoms} special-info + {malformed_text_special_info} malformed; OfficeArt {office_art_records} typed records/{office_art_bytes} bytes; Pictures {pictures_streams} streams ({picture_partial_streams} partial)/{picture_records} complete + {picture_incomplete_records} incomplete records/{picture_typed_records} typed/{picture_opaque_records} opaque/{picture_payload_bytes} payload bytes/{picture_unparsed_bytes} unparsed bytes; {user_edit_count} UserEditAtom ({encrypted_user_edits} encrypted); {persist_directory_count} PersistDirectoryAtom with {persist_directory_entries} entries/{persist_offsets} offsets; {} bounded atom types/{atom_bytes} bytes; {} explicit unknown compatibility types; {truncated_records} truncated records/{truncated_bytes} bytes; {trailing_header_bytes} trailing header bytes",
@@ -923,12 +861,6 @@ fn legacy_powerpoint_document_streams_round_trip() {
         eprintln!(
             "PPT external storage invalid samples:\n{}",
             external_storage_invalid_samples.join("\n")
-        );
-    }
-    if std::env::var_os("PPT_REPORT_OPC").is_some() {
-        eprintln!(
-            "PPT content-master failures:\n{}",
-            content_master_failure_samples.join("\n")
         );
     }
     if std::env::var_os("PPT_REPORT_TRUNCATED").is_some() {
@@ -1029,36 +961,17 @@ struct RecordAudit<'a> {
     external_storage_vba_modules: &'a mut usize,
     external_storage_invalid_samples: &'a mut Vec<String>,
     content_master_packages: &'a mut usize,
-    content_master_package_entries: &'a mut usize,
-    content_master_package_uncompressed_bytes: &'a mut usize,
-    content_master_typed_xml_failures: &'a mut usize,
-    malformed_content_master_packages: &'a mut usize,
-    malformed_content_master_package_bytes: &'a mut usize,
-    content_master_failure_samples: &'a mut Vec<String>,
+    content_master_payload_bytes: &'a mut usize,
     theme_packages: &'a mut usize,
-    theme_package_entries: &'a mut usize,
-    theme_roots: &'a mut usize,
-    theme_override_roots: &'a mut usize,
-    theme_typed_xml_failures: &'a mut usize,
-    malformed_theme_packages: &'a mut usize,
-    malformed_theme_package_bytes: &'a mut usize,
-    color_mapping_roots: &'a mut usize,
-    color_mapping_override_roots: &'a mut usize,
-    color_mapping_typed_xml_failures: &'a mut usize,
-    malformed_color_mappings: &'a mut usize,
-    malformed_color_mapping_bytes: &'a mut usize,
+    theme_payload_bytes: &'a mut usize,
+    color_mapping_payloads: &'a mut usize,
+    color_mapping_payload_bytes: &'a mut usize,
     animation_packages: &'a mut usize,
-    animation_package_entries: &'a mut usize,
-    animation_typed_xml_failures: &'a mut usize,
-    malformed_animation_packages: &'a mut usize,
-    malformed_animation_package_bytes: &'a mut usize,
+    animation_payload_bytes: &'a mut usize,
     text_style_packages: &'a mut usize,
     notes_style_packages: &'a mut usize,
     table_style_packages: &'a mut usize,
-    style_package_entries: &'a mut usize,
-    style_typed_xml_failures: &'a mut usize,
-    malformed_style_packages: &'a mut usize,
-    malformed_style_package_bytes: &'a mut usize,
+    style_payload_bytes: &'a mut usize,
     text_special_info_atoms: &'a mut usize,
     text_special_info_runs: &'a mut usize,
     text_special_info_smart_tags: &'a mut usize,
@@ -1333,102 +1246,34 @@ fn audit_sequence(
             }
             PptRecordData::RoundTripContentMasterInfo12(value) => {
                 *audit.content_master_packages += 1;
-                *audit.content_master_package_entries += value.package.entries.len();
-                *audit.content_master_package_uncompressed_bytes += value
-                    .package
-                    .entries
-                    .iter()
-                    .map(|entry| entry.data.len())
-                    .sum::<usize>();
-                if let Err(error) = value.package.validate_typed_xml_round_trip() {
-                    *audit.content_master_typed_xml_failures += 1;
-                    if audit.content_master_failure_samples.len() < 100 {
-                        audit.content_master_failure_samples.push(format!(
-                            "{} offset {} instance {}: {error}",
-                            audit.source.display(),
-                            record.offset,
-                            record.header.instance
-                        ));
-                    }
-                }
-            }
-            PptRecordData::MalformedRoundTripContentMasterInfo12 { body, .. } => {
-                *audit.malformed_content_master_packages += 1;
-                *audit.malformed_content_master_package_bytes += body.len();
+                *audit.content_master_payload_bytes += value.package.physical_bytes.len();
             }
             PptRecordData::RoundTripColorMapping12(value) => {
-                match &value.root {
-                    olecfsdk::ppt::ColorMappingRoot::ColorMap(_) => {
-                        *audit.color_mapping_roots += 1;
-                    }
-                    olecfsdk::ppt::ColorMappingRoot::ColorMapOverride(_) => {
-                        *audit.color_mapping_override_roots += 1;
-                    }
-                }
-                if value.validate_typed_xml_round_trip().is_err() {
-                    *audit.color_mapping_typed_xml_failures += 1;
-                }
-            }
-            PptRecordData::MalformedRoundTripColorMapping12 { body, .. } => {
-                *audit.malformed_color_mappings += 1;
-                *audit.malformed_color_mapping_bytes += body.len();
+                *audit.color_mapping_payloads += 1;
+                *audit.color_mapping_payload_bytes += value.physical_xml.len();
             }
             PptRecordData::RoundTripAnimation12(value) => {
                 *audit.animation_packages += 1;
-                *audit.animation_package_entries += value.package.entries.len();
-                if value.package.validate_typed_xml_round_trip().is_err() {
-                    *audit.animation_typed_xml_failures += 1;
-                }
-            }
-            PptRecordData::MalformedRoundTripAnimation12 { body, .. } => {
-                *audit.malformed_animation_packages += 1;
-                *audit.malformed_animation_package_bytes += body.len();
+                *audit.animation_payload_bytes += value.package.physical_bytes.len();
             }
             PptRecordData::RoundTripTheme12(value) => {
                 *audit.theme_packages += 1;
-                *audit.theme_package_entries += value.package.entries.len();
-                match &value.package.root {
-                    olecfsdk::ppt::ThemeRoot::Theme(_) => *audit.theme_roots += 1,
-                    olecfsdk::ppt::ThemeRoot::ThemeOverride(_) => {
-                        *audit.theme_override_roots += 1;
-                    }
-                }
-                if value.package.validate_typed_xml_round_trip().is_err() {
-                    *audit.theme_typed_xml_failures += 1;
-                }
-            }
-            PptRecordData::MalformedRoundTripTheme12 { body, .. } => {
-                *audit.malformed_theme_packages += 1;
-                *audit.malformed_theme_package_bytes += body.len();
+                *audit.theme_payload_bytes += value.package.physical_bytes.len();
             }
             PptRecordData::RoundTripStyle12(value) => {
-                match (&value.package.root, value.record_type) {
-                    (
-                        olecfsdk::ppt::StyleOpcRoot::TextStyles(_),
-                        ROUND_TRIP_NOTES_MASTER_TEXT_STYLES_12_ATOM,
-                    ) => {
+                match value.record_type {
+                    ROUND_TRIP_NOTES_MASTER_TEXT_STYLES_12_ATOM => {
                         *audit.notes_style_packages += 1;
                     }
-                    (olecfsdk::ppt::StyleOpcRoot::TextStyles(_), _) => {
+                    olecfsdk::ppt::ROUND_TRIP_OART_TEXT_STYLES_12_ATOM => {
                         *audit.text_style_packages += 1;
                     }
-                    (olecfsdk::ppt::StyleOpcRoot::TableStyles(_), _) => {
+                    olecfsdk::ppt::ROUND_TRIP_CUSTOM_TABLE_STYLES_12_ATOM => {
                         *audit.table_style_packages += 1;
                     }
+                    _ => unreachable!(),
                 }
-                *audit.style_package_entries += value.package.entries.len();
-                if value.package.validate_typed_xml_round_trip().is_err() {
-                    *audit.style_typed_xml_failures += 1;
-                }
-            }
-            PptRecordData::MalformedRoundTripStyle12 { body, reason } => {
-                *audit.malformed_style_packages += 1;
-                *audit.malformed_style_package_bytes += body.len();
-                if record.header.record_type == ROUND_TRIP_NOTES_MASTER_TEXT_STYLES_12_ATOM
-                    && *audit.malformed_style_packages <= 3
-                {
-                    eprintln!("notes style parse failure: {reason}");
-                }
+                *audit.style_payload_bytes += value.package.physical_bytes.len();
             }
             PptRecordData::TextSpecialInfo(value) => {
                 *audit.text_special_info_atoms += 1;

@@ -625,10 +625,7 @@ fn legacy_office_workbook_streams_round_trip() {
                             match &value.image {
                                 BkHimImage::Bitmap(bitmap) => {
                                     bk_him_bitmaps += 1;
-                                    bk_him_image_bytes += bitmap
-                                        .to_packed_bytes()
-                                        .expect("parsed BkHim bitmap must remain encodable")
-                                        .len();
+                                    bk_him_image_bytes += bitmap.len();
                                 }
                                 BkHimImage::Native(bytes) => {
                                     bk_him_native += 1;
@@ -641,10 +638,7 @@ fn legacy_office_workbook_streams_round_trip() {
                             let BkHimImage::Bitmap(bitmap) = &value.image else {
                                 panic!("corpus ImData image format changed");
                             };
-                            im_data_bitmap_bytes += bitmap
-                                .to_packed_bytes()
-                                .expect("parsed ImData bitmap must remain encodable")
-                                .len();
+                            im_data_bitmap_bytes += bitmap.len();
                         }
                         BiffRecordData::RealTimeData(value) => {
                             real_time_data_records += 1;
@@ -1086,7 +1080,7 @@ fn legacy_office_workbook_streams_round_trip() {
                                                 if office_record.header.record_type == 0xf01f =>
                                             {
                                                 match &blip.file_data {
-                                                    OfficeArtBitmapData::Dib { .. } => {
+                                                    OfficeArtBitmapData::Dib(_) => {
                                                         office_art_dib_typed += 1;
                                                     }
                                                     OfficeArtBitmapData::Encoded(_) => {
@@ -1542,7 +1536,7 @@ fn legacy_office_workbook_streams_round_trip() {
                                                 if office_record.header.record_type == 0xf01f =>
                                             {
                                                 match &blip.file_data {
-                                                    OfficeArtBitmapData::Dib { .. } => {
+                                                    OfficeArtBitmapData::Dib(_) => {
                                                         office_art_dib_typed += 1;
                                                     }
                                                     OfficeArtBitmapData::Encoded(_) => {

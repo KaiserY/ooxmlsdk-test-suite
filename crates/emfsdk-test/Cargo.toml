@@ -12,4 +12,5 @@ doctest = false
 [dependencies]
 emfsdk = { workspace = true, features = ["render"] }
 image.workspace = true
+olecfsdk.workspace = true
 walkdir.workspace = true

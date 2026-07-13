@@ -630,6 +630,7 @@ version = "0.1.0"
 dependencies = [
  "emfsdk",
  "image",
+ "olecfsdk",
  "walkdir",
 ]
 
@@ -1496,16 +1497,10 @@ version = "0.1.0"
 dependencies = [
  "bitflags 2.13.0",
  "codepage",
- "emfsdk",
  "encoding_rs",
  "flate2",
  "olecfsdk-derive",
- "ooxmlsdk",
- "quick-xml 0.41.0",
  "thiserror",
- "uuid",
- "web-time",
- "zip",
 ]
 
 [[package]]
