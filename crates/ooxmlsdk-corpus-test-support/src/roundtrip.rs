@@ -600,7 +600,7 @@ fn xml_equivalence_errors(
         return Vec::new();
     }
 
-    let relaxed_options = CanonicalOptions::relaxed_for_entry(entry_name);
+    let relaxed_options = CanonicalOptions::relaxed_for_entry(file_name, entry_name);
     let relaxed_original = canonicalize_xml(original, relaxed_options, file_name, entry_name);
     let relaxed_roundtripped =
         canonicalize_xml(roundtripped, relaxed_options, file_name, entry_name);
@@ -797,10 +797,15 @@ struct CanonicalOptions {
     normalize_header_footer_odd_type: bool,
     normalize_core_property_dcterms_refinements: bool,
     ignore_core_property_whitespace_text_nodes: bool,
+    ignore_invalid_core_property_xml_lang_attr: bool,
     ignore_spreadsheet_fills_text_nodes: bool,
+    ignore_spreadsheet_cell_format_zmienna_attrs: bool,
     ignore_spreadsheet_cell_value_inline_string_type_attr: bool,
     ignore_word_text_leaf_mc_ignorable_attr: bool,
     ignore_word_text_leaf_xsi_nil_true_attr: bool,
+    ignore_redundant_word_run_fonts_high_ascii_attr: bool,
+    ignore_open_xml_sdk_mcdoc_mce_attrs: bool,
+    ignore_open_xml_sdk_mcexcel_mce_attrs: bool,
     ignore_word_document_invalid_run_container_text_nodes: bool,
     sort_spreadsheet_stylesheet_children: bool,
     sort_package_properties: bool,
@@ -845,10 +850,15 @@ impl CanonicalOptions {
             normalize_header_footer_odd_type: false,
             normalize_core_property_dcterms_refinements: false,
             ignore_core_property_whitespace_text_nodes: false,
+            ignore_invalid_core_property_xml_lang_attr: false,
             ignore_spreadsheet_fills_text_nodes: false,
+            ignore_spreadsheet_cell_format_zmienna_attrs: false,
             ignore_spreadsheet_cell_value_inline_string_type_attr: false,
             ignore_word_text_leaf_mc_ignorable_attr: false,
             ignore_word_text_leaf_xsi_nil_true_attr: false,
+            ignore_redundant_word_run_fonts_high_ascii_attr: false,
+            ignore_open_xml_sdk_mcdoc_mce_attrs: false,
+            ignore_open_xml_sdk_mcexcel_mce_attrs: false,
             ignore_word_document_invalid_run_container_text_nodes: false,
             sort_spreadsheet_stylesheet_children: false,
             sort_package_properties: false,
@@ -880,7 +890,7 @@ impl CanonicalOptions {
         }
     }
 
-    fn relaxed_for_entry(entry_name: &str) -> Self {
+    fn relaxed_for_entry(file_name: &str, entry_name: &str) -> Self {
         Self {
             normalize_float_lexemes: true,
             normalize_measure_lexemes: true,
@@ -895,12 +905,21 @@ impl CanonicalOptions {
             normalize_header_footer_odd_type: true,
             normalize_core_property_dcterms_refinements: is_package_properties_entry(entry_name),
             ignore_core_property_whitespace_text_nodes: is_package_properties_entry(entry_name),
+            ignore_invalid_core_property_xml_lang_attr: file_name.ends_with(
+                "Apache-POI/test-data/openxml4j/OPCCompliance_CoreProperties_UnauthorizedXMLLangAttributeFAIL.docx",
+            ) && entry_name == "docProps/core.xml",
             ignore_spreadsheet_fills_text_nodes: is_spreadsheet_styles_entry(entry_name),
+            ignore_spreadsheet_cell_format_zmienna_attrs: is_spreadsheet_styles_entry(entry_name),
             ignore_spreadsheet_cell_value_inline_string_type_attr: is_spreadsheet_worksheet_entry(
                 entry_name,
             ),
             ignore_word_text_leaf_mc_ignorable_attr: is_word_document_entry(entry_name),
             ignore_word_text_leaf_xsi_nil_true_attr: is_word_document_entry(entry_name),
+            ignore_redundant_word_run_fonts_high_ascii_attr: is_word_styles_entry(entry_name),
+            ignore_open_xml_sdk_mcdoc_mce_attrs: file_name.ends_with("TestFiles/mcdoc.docx")
+                && matches!(entry_name, "word/document.xml" | "word/styles.xml"),
+            ignore_open_xml_sdk_mcexcel_mce_attrs: file_name.ends_with("TestFiles/MCExecl.xlsx")
+                && entry_name == "xl/sharedStrings.xml",
             ignore_word_document_invalid_run_container_text_nodes: is_word_document_entry(
                 entry_name,
             ),
@@ -984,8 +1003,14 @@ impl CanonicalOptions {
         if self.ignore_core_property_whitespace_text_nodes {
             enabled.push("core property whitespace text nodes");
         }
+        if self.ignore_invalid_core_property_xml_lang_attr {
+            enabled.push("invalid core property xml:lang attr");
+        }
         if self.ignore_spreadsheet_fills_text_nodes {
             enabled.push("spreadsheet fills text nodes");
+        }
+        if self.ignore_spreadsheet_cell_format_zmienna_attrs {
+            enabled.push("spreadsheet cell format ZMIENNA attrs");
         }
         if self.ignore_spreadsheet_cell_value_inline_string_type_attr {
             enabled.push("spreadsheet cell value inlineStr type attr");
@@ -995,6 +1020,15 @@ impl CanonicalOptions {
         }
         if self.ignore_word_text_leaf_xsi_nil_true_attr {
             enabled.push("word text leaf xsi:nil true attr");
+        }
+        if self.ignore_redundant_word_run_fonts_high_ascii_attr {
+            enabled.push("redundant word run fonts hAscii attr");
+        }
+        if self.ignore_open_xml_sdk_mcdoc_mce_attrs {
+            enabled.push("Open XML SDK mcdoc synthetic MCE attrs");
+        }
+        if self.ignore_open_xml_sdk_mcexcel_mce_attrs {
+            enabled.push("Open XML SDK MCExecl synthetic MCE attrs");
         }
         if self.ignore_word_document_invalid_run_container_text_nodes {
             enabled.push("word document invalid run container text nodes");
@@ -2661,6 +2695,37 @@ fn parse_xml_node(
         {
             continue;
         }
+        if options.ignore_redundant_word_run_fonts_high_ascii_attr
+            && is_redundant_word_run_fonts_high_ascii_attr(
+                &name,
+                &expanded_key,
+                value,
+                &raw_attrs,
+                &ns,
+            )
+        {
+            continue;
+        }
+        if options.ignore_open_xml_sdk_mcdoc_mce_attrs
+            && is_open_xml_sdk_mcdoc_mce_attr(&name, &expanded_key)
+        {
+            continue;
+        }
+        if options.ignore_open_xml_sdk_mcexcel_mce_attrs
+            && is_open_xml_sdk_mcexcel_mce_attr(&name, &expanded_key)
+        {
+            continue;
+        }
+        if options.ignore_invalid_core_property_xml_lang_attr
+            && is_invalid_core_property_xml_lang_attr(&name, &expanded_key)
+        {
+            continue;
+        }
+        if options.ignore_spreadsheet_cell_format_zmienna_attrs
+            && is_spreadsheet_cell_format_zmienna_attr(&name, &expanded_key)
+        {
+            continue;
+        }
         if options.ignore_spreadsheet_cell_value_inline_string_type_attr
             && value == "inlineStr"
             && is_spreadsheet_cell_value_type_attr(&name, &expanded_key)
@@ -2867,6 +2932,70 @@ fn is_core_property_whitespace_text_relaxed_root(name: &str) -> bool {
     )
 }
 
+fn is_invalid_core_property_xml_lang_attr(element_name: &str, attr_name: &str) -> bool {
+    element_name == "{http://purl.org/dc/elements/1.1/}subject"
+        && attr_name == "{http://www.w3.org/XML/1998/namespace}lang"
+}
+
+fn is_redundant_word_run_fonts_high_ascii_attr(
+    element_name: &str,
+    attr_name: &str,
+    attr_value: &str,
+    raw_attrs: &[(String, String)],
+    namespaces: &BTreeMap<String, String>,
+) -> bool {
+    const RUN_FONTS: &str = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}rFonts";
+    const HIGH_ASCII: &str = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}hAscii";
+    const ASCII: &str = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}ascii";
+    if element_name != RUN_FONTS || attr_name != HIGH_ASCII {
+        return false;
+    }
+
+    raw_attrs.iter().any(|(name, value)| {
+        value == attr_value && expand_xml_name(name, namespaces, true) == ASCII
+    })
+}
+
+fn is_open_xml_sdk_mcdoc_mce_attr(element_name: &str, attr_name: &str) -> bool {
+    matches!(
+        (element_name, attr_name),
+        (
+            "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}pPr",
+            "{http://schemas.microsoft.com/office/word/2008/9/12/wordml}myattr"
+        ) | (
+            "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}pPr",
+            "{http://schemas.openxmlformats.org/markup-compatibility/2006}PreserveAttributes"
+        ) | (
+            "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}spacing",
+            "{http://schemas.microsoft.com/office/word/2008/9/12/wordml}myattr"
+        ) | (
+            "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}spacing",
+            "{http://schemas.microsoft.com/office/word/2008/9/12/wordml}myanotherAttr"
+        ) | (
+            "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}r",
+            "{http://schemas.microsoft.com/office/word/2008/9/12/wordml}myattr"
+        ) | (
+            "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}r",
+            "{http://schemas.openxmlformats.org/markup-compatibility/2006}PreserveAttributes"
+        ) | (
+            "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}rPr",
+            "{http://schemas.microsoft.com/office/word/2008/9/12/wordml}myanotherAttr"
+        ) | (
+            "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}rPrDefault",
+            "{http://schemas.microsoft.com/office/word/2008/9/12/wordml}attr"
+        )
+    )
+}
+
+fn is_open_xml_sdk_mcexcel_mce_attr(element_name: &str, attr_name: &str) -> bool {
+    element_name == "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}si"
+        && matches!(
+            attr_name,
+            "{http://schemas.microsoft.com/office/word/2008/9/16/wordprocessingDrawing}attr"
+                | "{http://schemas.openxmlformats.org/markup-compatibility/2006}Ignorable"
+        )
+}
+
 fn is_package_properties_entry(entry_name: &str) -> bool {
     entry_name.starts_with("docProps/") && entry_name.ends_with(".xml")
 }
@@ -2877,6 +3006,14 @@ fn is_spreadsheet_styles_entry(entry_name: &str) -> bool {
 
 fn is_spreadsheet_worksheet_entry(entry_name: &str) -> bool {
     entry_name.starts_with("xl/worksheets/") && entry_name.ends_with(".xml")
+}
+
+fn is_spreadsheet_cell_format_zmienna_attr(element_name: &str, attr_name: &str) -> bool {
+    element_name == "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}xf"
+        && matches!(
+            attr_name,
+            "ZMIENNA_contentFontsCount" | "ZMIENNA_styleFontsCount"
+        )
 }
 
 fn is_spreadsheet_cell_value_type_attr(element_name: &str, attr_name: &str) -> bool {

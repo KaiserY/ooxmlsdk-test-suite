@@ -63,6 +63,17 @@ to a git or registry dependency.
   test targets.
 - `cargo test --workspace`: run default tests. This does not run ignored corpus
   tests.
+- `cargo test -p ooxmlsdk-test --no-default-features`: run the core schema,
+  XML, properties, and simple-type lane without package APIs. Package-only test
+  files must use `#![cfg(feature = "parts")]` so this lane remains buildable.
+- `cargo test -p ooxmlsdk-test`: run focused core tests with the default
+  `parts` feature.
+- `cargo test -p ooxmlsdk-test --features flat-opc`: run focused core tests
+  with parts and Flat OPC.
+- `cargo test -p ooxmlsdk-test --features mce`: run focused core tests with
+  parts and MCE.
+- `cargo test -p ooxmlsdk-test --features validators`: run focused core tests
+  with parts and validators.
 - `cargo test -p ooxmlsdk-corpus-test-support --test float_rules_sync -- --ignored`:
   compare checked-in schema float rules with `ooxmlsdk/data`.
 - `cargo test -p ooxmlsdk-roundtrip-tests --test apache_poi_roundtrip -- --ignored`:

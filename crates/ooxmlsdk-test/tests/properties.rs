@@ -23,14 +23,7 @@ fn core_properties_round_trip_from_hello_world_doc_props_test() {
     assert_eq!(serialized, serialized_twice);
 
     assert_eq!(parsed.title.as_deref(), Some(""));
-    assert_eq!(
-        parsed
-            .subject
-            .as_ref()
-            .and_then(|subject| subject.xml_content.as_deref())
-            .unwrap_or_default(),
-        ""
-    );
+    assert_eq!(parsed.subject.as_deref().unwrap_or_default(), "");
     assert_eq!(
         parsed
             .creator

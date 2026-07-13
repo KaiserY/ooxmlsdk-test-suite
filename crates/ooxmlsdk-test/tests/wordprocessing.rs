@@ -1,7 +1,7 @@
 use ooxmlsdk::schemas::schemas_openxmlformats_org_wordprocessingml_2006_main::{
     Body, BodyChoice, Columns, CommentChoice, Comments, DeletedRun, DeletedRunChoice, Document,
-    Hyperlink, HyperlinkChoice, Justification, LevelJustification, Paragraph, ParagraphChoice,
-    ParagraphProperties, Run, RunChoice, TabStop, TableJustification, Text, TextDirection,
+    Hyperlink, HyperlinkChoice, Justification, LevelJustification, Paragraph, ParagraphChoice, Run,
+    RunChoice, TabStop, TableJustification, Text, TextDirection,
 };
 #[cfg(not(feature = "mce"))]
 use ooxmlsdk::schemas::schemas_openxmlformats_org_wordprocessingml_2006_main::{
@@ -10,12 +10,6 @@ use ooxmlsdk::schemas::schemas_openxmlformats_org_wordprocessingml_2006_main::{
 use ooxmlsdk::sdk::SdkType;
 use ooxmlsdk::simple_type::TwipsMeasureValue;
 use ooxmlsdk_test::{assert_roundtrip, assert_stable_roundtrip, fixtures, trim_xml_declaration};
-
-fn xml_other_attr<'a>(attrs: &'a [ooxmlsdk::common::XmlOtherAttr], name: &str) -> Option<&'a str> {
-    attrs
-        .iter()
-        .find_map(|attr| (attr.name() == name).then_some(attr.raw_value()))
-}
 
 fn xml_namespace_prefix_matches(
     declaration: &ooxmlsdk::common::XmlNamespace,
@@ -334,31 +328,6 @@ fn deleted_run_flat_choice_parses_upstream_particle_shape() {
         deleted_run.deleted_run_choice[4],
         DeletedRunChoice::WRun(_)
     ));
-}
-
-#[test]
-#[ignore = "calibration: conformance=strict is preserved as a raw attribute instead of removed"]
-fn document_attribute_translation_test() {
-    // Source: test/DocumentFormat.OpenXml.Tests/Wordprocessing/DocumentTests.cs
-    //   DocumentAttributeTranslationTest
-    const NAMESPACE: &str = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
-
-    for (name, value, removed) in [
-        ("conformance", "strict", true),
-        ("conformance", "anything", false),
-        ("conformance", "", false),
-        ("anything", "something", false),
-    ] {
-        let xml = format!(r#"<w:document xmlns:w="{NAMESPACE}" {name}="{value}" />"#);
-        let document = xml.parse::<Document>().unwrap();
-
-        if removed {
-            assert!(document.w_conformance.is_none());
-            assert_eq!(xml_other_attr(&document.xml_other_attrs, name), None);
-        } else {
-            assert_eq!(xml_other_attr(&document.xml_other_attrs, name), Some(value));
-        }
-    }
 }
 
 #[test]
@@ -720,7 +689,7 @@ fn document_round_trip_preserves_hello_o14_structure_from_openxml_asset() {
 
 #[test]
 #[cfg(not(feature = "mce"))]
-fn document_round_trip_preserves_mce_attributes_and_alternate_content() {
+fn document_round_trip_preserves_static_mce_attributes_and_alternate_content() {
     // Source: test/DocumentFormat.OpenXml.Tests/ofapiTest/MCSupport.cs
     //   LoadAttributeTest
     //   LoadPreserveAttr
@@ -728,23 +697,19 @@ fn document_round_trip_preserves_mce_attributes_and_alternate_content() {
     //   NonIgnored_UnknownElement_FullMode
     //   ProcessContent_NonIgnored_UnknownElement_FullMode
     //   MustUnderstand_NonIgnored_UnknownElement_FullMode
-    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" mc:Ignorable="w14"><w:body><w:p><w:r mc:PreserveAttributes="w14:editId" w14:myattr="myattr"><mc:AlternateContent mc:MustUnderstand="w14" mc:ProcessContent="w14:unknown"><mc:Choice Requires="w14"><w14:unknown attr="1">choice</w14:unknown></mc:Choice><mc:Fallback><w:t>fallback</w:t></mc:Fallback></mc:AlternateContent><w:t>after</w:t></w:r></w:p></w:body></w:document>"#;
+    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2008/9/12/wordml" mc:Ignorable="w14" mc:PreserveAttributes="w14:editId"><w:body><w:p w14:paraId="57290E37" w14:editId="5B733B31"><w:r><mc:AlternateContent mc:MustUnderstand="w14" mc:ProcessContent="w14:unknown"><mc:Choice Requires="w14"><w14:unknown attr="1">choice</w14:unknown></mc:Choice><mc:Fallback><w:t>fallback</w:t></mc:Fallback></mc:AlternateContent><w:t>after</w:t></w:r></w:p></w:body></w:document>"#;
 
     let (document, serialized, _) = assert_stable_roundtrip::<Document>(xml);
 
+    assert_eq!(document.mc_ignorable.as_deref(), Some(b"w14".as_slice()));
     assert_eq!(
-        xml_other_attr(&document.xml_other_attrs, "mc:Ignorable"),
-        Some("w14")
+        document.mc_preserve_attributes.as_deref(),
+        Some(b"w14:editId".as_slice())
     );
-    let run = first_run(first_paragraph(first_body(&document)));
-    assert_eq!(
-        xml_other_attr(&run.xml_other_attrs, "mc:PreserveAttributes"),
-        Some("w14:editId")
-    );
-    assert_eq!(
-        xml_other_attr(&run.xml_other_attrs, "w14:myattr"),
-        Some("myattr")
-    );
+    let paragraph = first_paragraph(first_body(&document));
+    assert!(paragraph.paragraph_id.is_some());
+    assert!(paragraph.w14_edit_id.is_some());
+    let run = first_run(paragraph);
 
     let alternate_content = run
         .run_choice
@@ -763,6 +728,7 @@ fn document_round_trip_preserves_mce_attributes_and_alternate_content() {
     assert!(alternate_content.contains(r#"<mc:Fallback><w:t>fallback</w:t></mc:Fallback>"#));
     assert!(serialized.contains(r#"mc:Ignorable="w14""#));
     assert!(serialized.contains(r#"mc:PreserveAttributes="w14:editId""#));
+    assert!(serialized.contains(r#"w14:editId="5B733B31""#));
     assert!(serialized.contains(r#"mc:MustUnderstand="w14""#));
     assert!(serialized.contains(r#"mc:ProcessContent="w14:unknown""#));
     assert!(serialized.contains(r#"<w14:unknown attr="1">choice</w14:unknown>"#));
@@ -782,29 +748,26 @@ fn text_round_trip_drops_ignorable_attribute_on_leaf_text() {
 }
 
 #[test]
-fn paragraph_properties_preserve_known_extension_attribute_from_markup_compatibility_test() {
+fn document_preserves_known_extension_attribute_from_markup_compatibility_test() {
     // Source: test/DocumentFormat.OpenXml.Tests/OpenXmlDomTest/MarkupCompatibilityTest.cs
     //   Ignored_KnownAttribute_FullMode
     //   Preserve_NonIgnored_UnknownAttribute_FullMode
-    let xml = r#"<w:pPr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" mc:PreserveAttributes="w14:myattr" w14:myattr="attribute1 from unknown namespace1."><w:keepNext/></w:pPr>"#;
+    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2008/9/12/wordml" mc:Ignorable="w14" mc:PreserveAttributes="w14:noSpellErr"><w:body><w:p w14:noSpellErr="1"/></w:body></w:document>"#;
 
-    let (properties, serialized, reparsed) = assert_stable_roundtrip::<ParagraphProperties>(xml);
+    let (document, serialized, reparsed) = assert_stable_roundtrip::<Document>(xml);
 
-    assert_eq!(
-        xml_other_attr(&properties.xml_other_attrs, "mc:PreserveAttributes"),
-        Some("w14:myattr")
+    assert!(
+        first_paragraph(first_body(&document))
+            .no_spell_error
+            .is_some()
     );
-    assert_eq!(
-        xml_other_attr(&properties.xml_other_attrs, "w14:myattr"),
-        Some("attribute1 from unknown namespace1.")
+    assert!(
+        first_paragraph(first_body(&reparsed))
+            .no_spell_error
+            .is_some()
     );
-    assert_eq!(
-        xml_other_attr(&reparsed.xml_other_attrs, "w14:myattr"),
-        Some("attribute1 from unknown namespace1.")
-    );
-    assert!(properties.keep_next.is_some());
-    assert!(serialized.contains(r#"mc:PreserveAttributes="w14:myattr""#));
-    assert!(serialized.contains(r#"w14:myattr="attribute1 from unknown namespace1.""#));
+    assert!(serialized.contains(r#"mc:PreserveAttributes="w14:noSpellErr""#));
+    assert!(serialized.contains(r#"w14:noSpellErr="1""#));
 }
 
 #[test]

@@ -45,12 +45,6 @@ use ooxmlsdk::sdk::{
 };
 use ooxmlsdk_test::fixtures;
 
-fn xml_other_attr<'a>(attrs: &'a [ooxmlsdk::common::XmlOtherAttr], name: &str) -> Option<&'a str> {
-    attrs
-        .iter()
-        .find_map(|attr| (attr.name() == name).then_some(attr.raw_value()))
-}
-
 macro_rules! part_ref_variant {
     ($part_ref:expr, $variant:ident) => {
         match $part_ref {
@@ -619,10 +613,9 @@ fn process_all_parts_uses_process_content_for_ignorable_wrapper() {
 
 #[cfg(feature = "mce")]
 #[test]
-fn process_all_parts_uses_xmlns_declared_on_intermediate_elements() {
+fn process_all_parts_loads_ignorable_attributes_from_mcdoc_fixture() {
     // Source: test/DocumentFormat.OpenXml.Tests/ofapiTest/MCSupport.cs
     //   LoadIgnorable
-    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"><w:body><w:p xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" mc:Ignorable="w14"><w14:discarded><w:r><w:t>discarded</w:t></w:r></w14:discarded><w:r><w:t>kept</w:t></w:r></w:p></w:body></w:document>"#;
     let settings = OpenSettings {
         open_mode: PackageOpenMode::Lazy,
         markup_compatibility_process_settings: MarkupCompatibilityProcessSettings {
@@ -632,15 +625,22 @@ fn process_all_parts_uses_xmlns_declared_on_intermediate_elements() {
         ..Default::default()
     };
     let mut package =
-        WordprocessingDocument::new_with_settings(minimal_wordprocessing_package(xml), settings)
+        WordprocessingDocument::new_from_file_with_settings(doc_sample("mcdoc.docx"), settings)
             .unwrap();
     let main_part = package.main_document_part().unwrap();
     let root = main_part.root_element(&mut package).unwrap();
-    let serialized = root.to_xml().unwrap();
+    let paragraph = root
+        .body
+        .as_ref()
+        .and_then(|body| {
+            body.body_choice.iter().find_map(|choice| match choice {
+                BodyChoice::Paragraph(paragraph) => Some(paragraph.as_ref()),
+                _ => None,
+            })
+        })
+        .unwrap();
 
-    assert!(serialized.contains("<w:t>kept</w:t>"));
-    assert!(!serialized.contains("<w14:discarded"));
-    assert!(!serialized.contains("<w:t>discarded</w:t>"));
+    assert!(paragraph.w14_edit_id.is_none());
 }
 
 #[cfg(feature = "mce")]
@@ -673,7 +673,7 @@ fn process_all_parts_rejects_unsupported_must_understand_namespace() {
 fn process_all_parts_preserves_requested_ignorable_attributes_only() {
     // Source: test/DocumentFormat.OpenXml.Tests/ofapiTest/MCSupport.cs
     //   LoadIgnorableAttribute
-    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" mc:Ignorable="w14"><w:body><w:p><w:r mc:PreserveAttributes="w14:keepAttr" w14:dropAttr="drop" w14:keepAttr="keep"><w:t>text</w:t></w:r></w:p></w:body></w:document>"#;
+    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" mc:Ignorable="w14" mc:PreserveAttributes="w14:editId"><w:body><w:p w14:paraId="12345678" w14:editId="12345678"><w:r><w:t>text</w:t></w:r></w:p></w:body></w:document>"#;
     let settings = OpenSettings {
         open_mode: PackageOpenMode::Lazy,
         markup_compatibility_process_settings: MarkupCompatibilityProcessSettings {
@@ -689,8 +689,8 @@ fn process_all_parts_preserves_requested_ignorable_attributes_only() {
     let root = main_part.root_element(&mut package).unwrap();
     let serialized = root.to_xml().unwrap();
 
-    assert!(serialized.contains(r#"w14:keepAttr="keep""#));
-    assert!(!serialized.contains(r#"w14:dropAttr="drop""#));
+    assert!(serialized.contains(r#"w14:editId="12345678""#));
+    assert!(!serialized.contains(r#"w14:paraId="12345678""#));
 }
 
 #[test]
@@ -946,10 +946,7 @@ fn wordprocessing_font_table_touch_preserves_w14_namespace_from_mc_support_test(
     let main_part = package.main_document_part().unwrap();
     let font_table_part = main_part.font_table_part(&package).unwrap();
     let fonts = font_table_part.root_element(&mut package).unwrap();
-    assert_eq!(
-        xml_other_attr(&fonts.xml_other_attrs, "mc:Ignorable"),
-        Some("w14")
-    );
+    assert_eq!(fonts.mc_ignorable.as_deref(), Some(b"w14".as_slice()));
 
     let mut saved = Cursor::new(Vec::new());
     package.save(&mut saved).unwrap();

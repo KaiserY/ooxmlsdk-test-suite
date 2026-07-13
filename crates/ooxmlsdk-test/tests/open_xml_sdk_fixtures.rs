@@ -1,3 +1,5 @@
+#![cfg(feature = "parts")]
+
 use std::path::{Path, PathBuf};
 
 use ooxmlsdk::parts::{PartRef, wordprocessing_document::WordprocessingDocument};

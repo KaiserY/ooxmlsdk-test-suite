@@ -1,20 +1,19 @@
 use std::io::{Cursor, Read};
 
+use ooxmlsdk::schemas::schemas_openxmlformats_org_markup_compatibility_2006::{
+    AlternateContent, AlternateContentChoice, Choice,
+};
 use ooxmlsdk::schemas::schemas_openxmlformats_org_spreadsheetml_2006_main::SharedStringTable;
+#[cfg(feature = "mce")]
+use ooxmlsdk::schemas::schemas_openxmlformats_org_wordprocessingml_2006_main::ParagraphProperties;
 use ooxmlsdk::schemas::schemas_openxmlformats_org_wordprocessingml_2006_main::{
-    BodyChoice, Document, Paragraph, ParagraphChoice, ParagraphProperties, Run,
+    BodyChoice, Document, Paragraph,
 };
 #[cfg(feature = "mce")]
 use ooxmlsdk::sdk::{
     FileFormatVersion, MarkupCompatibilityProcessMode, MarkupCompatibilityProcessSettings, SdkMce,
 };
 use ooxmlsdk_test::{assert_stable_roundtrip, fixtures};
-
-fn xml_other_attr<'a>(attrs: &'a [ooxmlsdk::common::XmlOtherAttr], name: &str) -> Option<&'a str> {
-    attrs
-        .iter()
-        .find_map(|attr| (attr.name() == name).then_some(attr.raw_value()))
-}
 
 fn doc_sample_part(file_name: &str, part_name: &str) -> String {
     let bytes = std::fs::read(fixtures::doc_sample_path(file_name)).unwrap();
@@ -39,22 +38,15 @@ fn first_paragraph(document: &Document) -> &Paragraph {
         .expect("expected paragraph")
 }
 
-fn first_run(paragraph: &Paragraph) -> &Run {
-    paragraph
-        .paragraph_choice
+fn first_mc_choice(alternate_content: &AlternateContent) -> &Choice {
+    alternate_content
+        .alternate_content_choice
         .iter()
         .find_map(|choice| match choice {
-            ParagraphChoice::WRun(run) => Some(run.as_ref()),
+            AlternateContentChoice::Choice(choice) => Some(choice.as_ref()),
             _ => None,
         })
-        .expect("expected run")
-}
-
-fn paragraph_properties(paragraph: &Paragraph) -> &ParagraphProperties {
-    paragraph
-        .paragraph_properties
-        .as_ref()
-        .expect("expected paragraph properties")
+        .expect("expected mc:Choice")
 }
 
 #[test]
@@ -66,53 +58,38 @@ fn mcsupport_load_attribute_test() {
     let (document, serialized, reparsed) = assert_stable_roundtrip::<Document>(&xml);
 
     assert_eq!(
-        xml_other_attr(&document.xml_other_attrs, "mc:Ignorable"),
-        Some("w14 wp14")
+        document.mc_ignorable.as_deref(),
+        Some(b"w14 wp14".as_slice())
     );
     assert_eq!(
-        xml_other_attr(&reparsed.xml_other_attrs, "mc:Ignorable"),
-        Some("w14 wp14")
+        reparsed.mc_ignorable.as_deref(),
+        Some(b"w14 wp14".as_slice())
     );
     assert!(serialized.contains(r#"mc:Ignorable="w14 wp14""#));
-    assert!(serialized.contains(r#"mc:PreserveAttributes="w14:myattr""#));
-    assert!(serialized.contains(r#"mc:PreserveAttributes="w14:*""#));
+    assert!(!serialized.contains(r#"mc:PreserveAttributes="w14:myattr""#));
+    assert!(!serialized.contains(r#"mc:PreserveAttributes="w14:*""#));
 }
 
+#[cfg(feature = "mce")]
 #[test]
 fn mcsupport_load_preserve_attr() {
     // Source: test/DocumentFormat.OpenXml.Tests/ofapiTest/MCSupport.cs
     //   LoadPreserveAttr
-    let xml = doc_sample_part("mcdoc.docx", "word/document.xml");
+    // Attribute names and values come from mcdoc.docx. The original fixture uses
+    // synthetic w14 attributes on types that no longer have an open attr bag.
+    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2008/9/12/wordml" mc:Ignorable="w14" mc:PreserveAttributes="w14:editId"><w:body><w:p w14:paraId="57290E37" w14:editId="5B733B31" w14:textId="5B733B31"/></w:body></w:document>"#;
+    let settings = MarkupCompatibilityProcessSettings {
+        process_mode: MarkupCompatibilityProcessMode::ProcessAllParts,
+        target_file_format_version: FileFormatVersion::Office2007,
+    };
 
-    let (document, _, _) = assert_stable_roundtrip::<Document>(&xml);
+    let mut document = xml.parse::<Document>().unwrap();
+    document.process_mce(&settings).unwrap();
     let paragraph = first_paragraph(&document);
-    let properties = paragraph_properties(paragraph);
-    let spacing = properties
-        .spacing_between_lines
-        .as_ref()
-        .expect("expected spacing");
-    let run = first_run(paragraph);
-    let run_properties = run
-        .run_properties
-        .as_ref()
-        .expect("expected run properties");
 
-    assert_eq!(
-        xml_other_attr(&properties.xml_other_attrs, "w14:myattr"),
-        Some("myattr")
-    );
-    assert_eq!(
-        xml_other_attr(&spacing.xml_other_attrs, "w14:myattr"),
-        Some("myattr")
-    );
-    assert_eq!(
-        xml_other_attr(&run.xml_other_attrs, "w14:myattr"),
-        Some("myattr")
-    );
-    assert_eq!(
-        xml_other_attr(&run_properties.xml_other_attrs, "w14:myanotherAttr"),
-        Some("anotherattr")
-    );
+    assert!(paragraph.w14_edit_id.is_some());
+    assert!(paragraph.paragraph_id.is_none());
+    assert!(paragraph.text_id.is_none());
 }
 
 #[cfg(feature = "mce")]
@@ -130,10 +107,26 @@ fn mcsupport_load_ignorable() {
     document.process_mce(&settings).unwrap();
     let paragraph = first_paragraph(&document);
 
-    assert!(
-        xml_other_attr(&paragraph.xml_other_attrs, "w14:editId").is_none(),
-        "ProcessLoadedPartsOnly + Office2007 drops ignored w14:editId in the upstream SDK"
-    );
+    assert!(paragraph.w14_edit_id.is_none());
+    assert!(paragraph.paragraph_id.is_none());
+    assert!(paragraph.text_id.is_none());
+}
+
+#[cfg(feature = "mce")]
+#[test]
+fn markup_compatibility_keeps_supported_static_versioned_namespace_attributes() {
+    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" mc:Ignorable="w14"><w:body><w:p w14:noSpellErr="1" w14:editId="12345678"/></w:body></w:document>"#;
+    let settings = MarkupCompatibilityProcessSettings {
+        process_mode: MarkupCompatibilityProcessMode::ProcessAllParts,
+        target_file_format_version: FileFormatVersion::Office2010,
+    };
+
+    let mut document = xml.parse::<Document>().unwrap();
+    document.process_mce(&settings).unwrap();
+    let paragraph = first_paragraph(&document);
+
+    assert!(paragraph.no_spell_error.is_some());
+    assert!(paragraph.w14_edit_id.is_some());
 }
 
 #[test]
@@ -157,14 +150,8 @@ fn mcsupport_load_process_content() {
         })
         .expect("expected placeholder");
 
-    assert_eq!(
-        xml_other_attr(&item.xml_other_attrs, "mc:Ignorable"),
-        Some("w14")
-    );
-    assert_eq!(
-        xml_other_attr(&item.xml_other_attrs, "w14:attr"),
-        Some("value")
-    );
+    assert!(!serialized.contains(r#"mc:Ignorable="w14""#));
+    assert!(!serialized.contains(r#"w14:attr="value""#));
     assert!(placeholder_xml.contains(r#"mc:ProcessContent="w14:placeholder""#));
     assert!(placeholder_xml.contains(r#"mc:PreserveAttributes="w14:a w14:b""#));
     assert!(placeholder_xml.contains(r#"w14:a="a""#));
@@ -181,53 +168,33 @@ fn markup_compatibility_ignore_whitespaces_full_mode() {
         process_mode: MarkupCompatibilityProcessMode::ProcessAllParts,
         target_file_format_version: FileFormatVersion::Office2007,
     };
-    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" mc:Ignorable="  &#x9;&#xA;&#xD; "><w:body><w:p><w:pPr w14:myattr="kept"><w:keepNext/></w:pPr></w:p></w:body></w:document>"#;
+    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2008/9/12/wordml" mc:Ignorable="  &#x9;&#xA;&#xD; "><w:body><w:p w14:editId="5B733B31"/></w:body></w:document>"#;
     let mut document = xml.parse::<Document>().unwrap();
 
     document.process_mce(&settings).unwrap();
 
-    let properties = paragraph_properties(first_paragraph(&document));
-    assert_eq!(
-        xml_other_attr(&properties.xml_other_attrs, "w14:myattr"),
-        Some("kept")
-    );
-    assert!(properties.keep_next.is_some());
+    assert!(first_paragraph(&document).w14_edit_id.is_some());
 
-    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" mc:Ignorable="w14&#x9;wp14"><w:body><w:p><w:pPr w14:myattr="drop" wp14:other="drop"><w:keepNext/></w:pPr></w:p></w:body></w:document>"#;
+    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2008/9/12/wordml" xmlns:wp14="http://schemas.microsoft.com/office/word/2008/9/16/wordprocessingDrawing" mc:Ignorable="w14&#x9;wp14"><w:body><w:p w14:editId="5B733B31"/></w:body></w:document>"#;
     let mut document = xml.parse::<Document>().unwrap();
 
     document.process_mce(&settings).unwrap();
 
-    let properties = paragraph_properties(first_paragraph(&document));
-    assert_eq!(
-        xml_other_attr(&properties.xml_other_attrs, "w14:myattr"),
-        None
-    );
-    assert_eq!(
-        xml_other_attr(&properties.xml_other_attrs, "wp14:other"),
-        None
-    );
-    assert!(properties.keep_next.is_some());
+    assert!(first_paragraph(&document).w14_edit_id.is_none());
 }
 
 #[test]
 fn markup_compatibility_ignored_known_attribute_full_mode() {
     // Source: test/DocumentFormat.OpenXml.Tests/OpenXmlDomTest/MarkupCompatibilityTest.cs
     //   Ignored_KnownAttribute_FullMode
-    let xml = r#"<w:pPr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" mc:Ignorable="w14" w14:myattr="attribute1 from unknown namespace1."><w:keepNext/></w:pPr>"#;
+    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2008/9/12/wordml" mc:Ignorable="w14"><w:body><w:p w14:editId="5B733B31"/></w:body></w:document>"#;
 
-    let (properties, serialized, reparsed) = assert_stable_roundtrip::<ParagraphProperties>(xml);
+    let (document, serialized, reparsed) = assert_stable_roundtrip::<Document>(xml);
 
-    assert_eq!(
-        xml_other_attr(&properties.xml_other_attrs, "w14:myattr"),
-        Some("attribute1 from unknown namespace1.")
-    );
-    assert_eq!(
-        xml_other_attr(&reparsed.xml_other_attrs, "w14:myattr"),
-        Some("attribute1 from unknown namespace1.")
-    );
+    assert!(first_paragraph(&document).w14_edit_id.is_some());
+    assert!(first_paragraph(&reparsed).w14_edit_id.is_some());
     assert!(serialized.contains(r#"mc:Ignorable="w14""#));
-    assert!(serialized.contains(r#"w14:myattr="attribute1 from unknown namespace1.""#));
+    assert!(serialized.contains(r#"w14:editId="5B733B31""#));
 }
 
 #[cfg(feature = "mce")]
@@ -235,7 +202,7 @@ fn markup_compatibility_ignored_known_attribute_full_mode() {
 fn markup_compatibility_ignored_known_attribute_o12_mode() {
     // Source: test/DocumentFormat.OpenXml.Tests/OpenXmlDomTest/MarkupCompatibilityTest.cs
     //   Ignored_KnownAttribute_O12Mode
-    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" mc:Ignorable="w14"><w:body><w:p><w:pPr w14:myattr="attribute1 from unknown namespace1."><w:keepNext/></w:pPr></w:p></w:body></w:document>"#;
+    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2008/9/12/wordml" mc:Ignorable="w14"><w:body><w:p w14:paraId="57290E37" w14:editId="5B733B31" w14:textId="5B733B31"/></w:body></w:document>"#;
     let settings = MarkupCompatibilityProcessSettings {
         process_mode: MarkupCompatibilityProcessMode::ProcessAllParts,
         target_file_format_version: FileFormatVersion::Office2007,
@@ -244,11 +211,10 @@ fn markup_compatibility_ignored_known_attribute_o12_mode() {
     let mut document = xml.parse::<Document>().unwrap();
     document.process_mce(&settings).unwrap();
 
-    let properties = paragraph_properties(first_paragraph(&document));
-    assert!(
-        xml_other_attr(&properties.xml_other_attrs, "w14:myattr").is_none(),
-        "ProcessAllParts/Office2007 removes ignored known extension attributes upstream"
-    );
+    let paragraph = first_paragraph(&document);
+    assert!(paragraph.paragraph_id.is_none());
+    assert!(paragraph.w14_edit_id.is_none());
+    assert!(paragraph.text_id.is_none());
 }
 
 #[test]
@@ -257,14 +223,16 @@ fn markup_compatibility_process_content_ignored_unknown_element_full_mode() {
     //   ProcessContent_Ignored_UnknownElement_FullMode
     let xml = r#"<mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:uns1="http://test.openxmlsdk.microsoft.com/unknownns1" mc:Ignorable="uns1" mc:ProcessContent="uns1:e1uk1"><mc:Choice Requires="uns1"><uns1:e1uk1><uns1:child/></uns1:e1uk1></mc:Choice><mc:Fallback/></mc:AlternateContent>"#;
 
-    let (alternate_content, serialized, _) = assert_stable_roundtrip::<
-        ooxmlsdk::schemas::schemas_openxmlformats_org_markup_compatibility_2006::AlternateContent,
-    >(xml);
+    let (alternate_content, serialized, _) = assert_stable_roundtrip::<AlternateContent>(xml);
 
     assert_eq!(
         alternate_content.alternate_content_choice.len(),
         2,
         "AlternateContent retains choice and fallback branches"
+    );
+    assert_eq!(
+        alternate_content.mc_process_content.as_deref(),
+        Some(b"uns1:e1uk1".as_slice())
     );
     assert!(serialized.contains(r#"mc:Ignorable="uns1""#));
     assert!(serialized.contains(r#"mc:ProcessContent="uns1:e1uk1""#));
@@ -292,9 +260,7 @@ fn markup_compatibility_process_content_xml_space_full_mode() {
     //   ProcessContent_xmlSpace_FullMode
     let xml = r#"<mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:uns1="http://test.openxmlsdk.microsoft.com/unknownns1" xmlns:xml="http://www.w3.org/XML/1998/namespace" mc:Ignorable="uns1" mc:ProcessContent="xml:space"><mc:Choice Requires="uns1"><uns1:e1uk1 xml:space="preserve"> spaced </uns1:e1uk1></mc:Choice><mc:Fallback/></mc:AlternateContent>"#;
 
-    let (_alternate_content, serialized, _) = assert_stable_roundtrip::<
-        ooxmlsdk::schemas::schemas_openxmlformats_org_markup_compatibility_2006::AlternateContent,
-    >(xml);
+    let (_alternate_content, serialized, _) = assert_stable_roundtrip::<AlternateContent>(xml);
 
     assert!(serialized.contains(r#"mc:ProcessContent="xml:space""#));
     assert!(serialized.contains(r#"xml:space="preserve""#));
@@ -304,36 +270,51 @@ fn markup_compatibility_process_content_xml_space_full_mode() {
 fn markup_compatibility_preserve_ignored_unknown_element_full_mode() {
     // Source: test/DocumentFormat.OpenXml.Tests/OpenXmlDomTest/MarkupCompatibilityTest.cs
     //   Preserve_Ignored_UnknownElement_FullMode
-    let xml = r#"<w:pPr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:uns1="http://test.openxmlsdk.microsoft.com/unknownns1" mc:Ignorable="uns1" mc:PreserveElements="uns1:e1uk1" mc:PreserveAttributes="uns1:a1uk1"><w:keepNext/></w:pPr>"#;
+    let xml = r#"<mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2008/9/12/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"><mc:Choice Requires="w14" mc:PreserveElements="wps:wsp" mc:PreserveAttributes="w14:editId"/><mc:Fallback/></mc:AlternateContent>"#;
 
-    let (_, serialized, _) = assert_stable_roundtrip::<ParagraphProperties>(xml);
+    let (alternate_content, serialized, reparsed) =
+        assert_stable_roundtrip::<AlternateContent>(xml);
 
-    assert!(serialized.contains(r#"mc:Ignorable="uns1""#));
-    assert!(serialized.contains(r#"mc:PreserveElements="uns1:e1uk1""#));
-    assert!(serialized.contains(r#"mc:PreserveAttributes="uns1:a1uk1""#));
+    assert_eq!(
+        first_mc_choice(&alternate_content)
+            .mc_preserve_elements
+            .as_deref(),
+        Some(b"wps:wsp".as_slice())
+    );
+    assert_eq!(
+        first_mc_choice(&alternate_content)
+            .mc_preserve_attributes
+            .as_deref(),
+        Some(b"w14:editId".as_slice())
+    );
+    assert_eq!(
+        first_mc_choice(&reparsed).mc_preserve_elements.as_deref(),
+        Some(b"wps:wsp".as_slice())
+    );
+    assert_eq!(
+        first_mc_choice(&reparsed).mc_preserve_attributes.as_deref(),
+        Some(b"w14:editId".as_slice())
+    );
+    assert!(serialized.contains(r#"mc:PreserveElements="wps:wsp""#));
+    assert!(serialized.contains(r#"mc:PreserveAttributes="w14:editId""#));
 }
 
 #[test]
 fn markup_compatibility_preserve_ignored_unknown_element_wildcard_full_mode() {
     // Source: test/DocumentFormat.OpenXml.Tests/OpenXmlDomTest/MarkupCompatibilityTest.cs
     //   Preserve_Ignored_UnknownElement_Wildcard_FullMode
-    let xml = r#"<w:pPr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" mc:Ignorable="w14" mc:PreserveAttributes="*" w14:myattr="attribute1 from unknown namespace1."><w:keepNext/></w:pPr>"#;
+    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2008/9/12/wordml" mc:Ignorable="w14" mc:PreserveAttributes="*"><w:body><w:p w14:paraId="57290E37" w14:editId="5B733B31" w14:textId="5B733B31"/></w:body></w:document>"#;
 
-    let (properties, serialized, reparsed) = assert_stable_roundtrip::<ParagraphProperties>(xml);
+    let (document, serialized, reparsed) = assert_stable_roundtrip::<Document>(xml);
 
     assert_eq!(
-        xml_other_attr(&properties.xml_other_attrs, "mc:PreserveAttributes"),
-        Some("*")
+        document.mc_preserve_attributes.as_deref(),
+        Some(b"*".as_slice())
     );
-    assert_eq!(
-        xml_other_attr(&properties.xml_other_attrs, "w14:myattr"),
-        Some("attribute1 from unknown namespace1.")
-    );
-    assert_eq!(
-        xml_other_attr(&reparsed.xml_other_attrs, "w14:myattr"),
-        Some("attribute1 from unknown namespace1.")
-    );
+    assert!(first_paragraph(&document).w14_edit_id.is_some());
+    assert!(first_paragraph(&reparsed).w14_edit_id.is_some());
     assert!(serialized.contains(r#"mc:PreserveAttributes="*""#));
+    assert!(serialized.contains(r#"w14:editId="5B733B31""#));
 }
 
 #[cfg(feature = "mce")]
@@ -341,27 +322,38 @@ fn markup_compatibility_preserve_ignored_unknown_element_wildcard_full_mode() {
 fn markup_compatibility_preserve_ignored_unknown_element_wildcard_o12_mode() {
     // Source: test/DocumentFormat.OpenXml.Tests/OpenXmlDomTest/MarkupCompatibilityTest.cs
     //   Preserve_Ignored_UnknownElement_Wildcard_O12Mode
-    let xml = r#"<w:pPr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" mc:Ignorable="w14" mc:PreserveAttributes="*" w14:myattr="attribute1 from unknown namespace1."><w:keepNext/></w:pPr>"#;
+    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2008/9/12/wordml" mc:Ignorable="w14" mc:PreserveAttributes="*"><w:body><w:p w14:paraId="57290E37" w14:editId="5B733B31" w14:textId="5B733B31"/></w:body></w:document>"#;
+    let settings = MarkupCompatibilityProcessSettings {
+        process_mode: MarkupCompatibilityProcessMode::ProcessAllParts,
+        target_file_format_version: FileFormatVersion::Office2007,
+    };
 
-    let properties = xml.parse::<ParagraphProperties>().unwrap();
+    let mut document = xml.parse::<Document>().unwrap();
+    document.process_mce(&settings).unwrap();
+    let paragraph = first_paragraph(&document);
 
-    assert_eq!(
-        xml_other_attr(&properties.xml_other_attrs, "w14:myattr"),
-        Some("attribute1 from unknown namespace1."),
-        "PreserveAttributes=* keeps ignored extension attributes upstream"
-    );
+    assert!(paragraph.paragraph_id.is_some());
+    assert!(paragraph.w14_edit_id.is_some());
+    assert!(paragraph.text_id.is_some());
 }
 
 #[test]
 fn markup_compatibility_must_understand_ignored_unknown_element_full_mode() {
     // Source: test/DocumentFormat.OpenXml.Tests/OpenXmlDomTest/MarkupCompatibilityTest.cs
     //   MustUnderstand_Ignored_UnknownElement_FullMode
-    let xml = r#"<w:pPr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:uns1="http://test.openxmlsdk.microsoft.com/unknownns1" mc:Ignorable="uns1" mc:MustUnderstand="uns1"><w:keepNext/></w:pPr>"#;
+    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2008/9/12/wordml" mc:Ignorable="w14" mc:MustUnderstand="w14"><w:body/></w:document>"#;
 
-    let (_, serialized, _) = assert_stable_roundtrip::<ParagraphProperties>(xml);
+    let (document, serialized, reparsed) = assert_stable_roundtrip::<Document>(xml);
 
-    assert!(serialized.contains(r#"mc:Ignorable="uns1""#));
-    assert!(serialized.contains(r#"mc:MustUnderstand="uns1""#));
+    assert_eq!(
+        document.mc_must_understand.as_deref(),
+        Some(b"w14".as_slice())
+    );
+    assert_eq!(
+        reparsed.mc_must_understand.as_deref(),
+        Some(b"w14".as_slice())
+    );
+    assert!(serialized.contains(r#"mc:MustUnderstand="w14""#));
 }
 
 #[cfg(feature = "mce")]
@@ -369,31 +361,32 @@ fn markup_compatibility_must_understand_ignored_unknown_element_full_mode() {
 fn markup_compatibility_must_understand_ignored_unknown_element_o12_mode() {
     // Source: test/DocumentFormat.OpenXml.Tests/OpenXmlDomTest/MarkupCompatibilityTest.cs
     //   MustUnderstand_Ignored_UnknownElement_O12Mode
-    let xml = r#"<w:pPr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:uns1="http://test.openxmlsdk.microsoft.com/unknownns1" mc:Ignorable="uns1" mc:MustUnderstand="uns1"><w:keepNext/></w:pPr>"#;
+    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2008/9/12/wordml" mc:Ignorable="w14" mc:MustUnderstand="w14"><w:body/></w:document>"#;
     let settings = MarkupCompatibilityProcessSettings {
         process_mode: MarkupCompatibilityProcessMode::ProcessAllParts,
         target_file_format_version: FileFormatVersion::Office2007,
     };
 
-    let mut properties = xml.parse::<ParagraphProperties>().unwrap();
-    let processed = properties.process_mce(&settings);
+    let mut document = xml.parse::<Document>().unwrap();
+    let processed = document.process_mce(&settings);
 
-    assert!(
-        processed.is_err(),
-        "MCE processing should reject an unsupported MustUnderstand namespace upstream"
-    );
+    assert!(processed.is_err());
 }
 
 #[test]
 fn markup_compatibility_must_understand_unselected_full_mode() {
     // Source: test/DocumentFormat.OpenXml.Tests/OpenXmlDomTest/MarkupCompatibilityTest.cs
     //   MustUnderstand_Unselected_FullMode
-    let xml = r#"<mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:uns1="http://test.openxmlsdk.microsoft.com/unknownns1"><mc:Choice Requires="uns1" mc:MustUnderstand="uns1"><uns1:e1uk1/></mc:Choice></mc:AlternateContent>"#;
+    let xml = r#"<mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2008/9/12/wordml"><mc:Choice Requires="w14" mc:MustUnderstand="w14"/></mc:AlternateContent>"#;
 
-    let (alternate_content, serialized, _) = assert_stable_roundtrip::<
-        ooxmlsdk::schemas::schemas_openxmlformats_org_markup_compatibility_2006::AlternateContent,
-    >(xml);
+    let (alternate_content, serialized, _) = assert_stable_roundtrip::<AlternateContent>(xml);
 
     assert_eq!(alternate_content.alternate_content_choice.len(), 1);
-    assert!(serialized.contains(r#"mc:MustUnderstand="uns1""#));
+    assert_eq!(
+        first_mc_choice(&alternate_content)
+            .mc_must_understand
+            .as_deref(),
+        Some(b"w14".as_slice())
+    );
+    assert!(serialized.contains(r#"mc:MustUnderstand="w14""#));
 }

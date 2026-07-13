@@ -15,12 +15,6 @@ use ooxmlsdk::sdk::SdkType;
 use ooxmlsdk::simple_type::BooleanValue;
 use ooxmlsdk_test::{assert_stable_roundtrip, fixtures, trim_xml_declaration};
 
-fn xml_other_attr<'a>(attrs: &'a [ooxmlsdk::common::XmlOtherAttr], name: &str) -> Option<&'a str> {
-    attrs
-        .iter()
-        .find_map(|attr| (attr.name() == name).then_some(attr.raw_value()))
-}
-
 fn xml_namespace_prefix_matches(
     declaration: &ooxmlsdk::common::XmlNamespace,
     expected: &[u8],
@@ -125,10 +119,7 @@ fn workbook_round_trip_from_complex01_part_test() {
 
     let (parsed, serialized, reparsed) = assert_stable_roundtrip::<Workbook>(&workbook_xml);
 
-    assert_eq!(
-        xml_other_attr(&parsed.xml_other_attrs, "mc:Ignorable"),
-        Some("x15")
-    );
+    assert_eq!(parsed.mc_ignorable.as_deref(), Some(b"x15".as_slice()));
     assert_eq!(
         parsed
             .file_version
@@ -157,10 +148,7 @@ fn workbook_round_trip_from_complex01_part_test() {
         "calcPr"
     ));
     assert!(trim_xml_declaration(&serialized).contains("calcId=\"152511\""));
-    assert_eq!(
-        xml_other_attr(&reparsed.xml_other_attrs, "mc:Ignorable"),
-        Some("x15")
-    );
+    assert_eq!(reparsed.mc_ignorable.as_deref(), Some(b"x15".as_slice()));
     assert_eq!(reparsed.sheets.sheet.len(), 2);
 }
 
@@ -223,10 +211,7 @@ fn worksheet_round_trip_from_complex01_part_test() {
     let (parsed, _serialized, reparsed) =
         assert_stable_roundtrip::<Worksheet>(fixtures::SPREADSHEET_WORKSHEET_COMPLEX01_SHEET1_XML);
 
-    assert_eq!(
-        xml_other_attr(&parsed.xml_other_attrs, "mc:Ignorable"),
-        Some("x14ac")
-    );
+    assert_eq!(parsed.mc_ignorable.as_deref(), Some(b"x14ac".as_slice()));
     assert_eq!(
         parsed
             .sheet_dimension
@@ -310,14 +295,8 @@ fn shared_string_table_process_content_preserves_extension_attributes_from_mc_su
         .shared_string_item
         .first()
         .expect("expected shared string item");
-    assert_eq!(
-        xml_other_attr(&item.xml_other_attrs, "mc:Ignorable"),
-        Some("w14")
-    );
-    assert_eq!(
-        xml_other_attr(&item.xml_other_attrs, "w14:attr"),
-        Some("value")
-    );
+    assert!(!serialized.contains(r#"mc:Ignorable="w14""#));
+    assert!(!serialized.contains(r#"w14:attr="value""#));
     let placeholder_xml = item
         .xml_other_children
         .iter()
