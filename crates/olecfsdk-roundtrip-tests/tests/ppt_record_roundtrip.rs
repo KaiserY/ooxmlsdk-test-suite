@@ -22,20 +22,20 @@ use olecfsdk::{
         OUTLINE_TEXT_PROPS_HEADER9_ATOM, PARA_BUILD_ATOM, PPT10_RESERVED_ATOM,
         PPT11_FONT_DESCRIPTOR_ATOM, PPT11_FONT_DESCRIPTOR_COLLECTION_ATOM,
         PRESENTATION_ADVISOR_FLAGS9_ATOM, PRINT_OPTIONS_ATOM, PicturesStream, PowerPointDocument,
-        PptRecordData, ProgrammableTagKind, RECOLOR_INFO_ATOM, ROUND_TRIP_ANIMATION_HASH_12_ATOM,
-        ROUND_TRIP_COMPOSITE_MASTER_ID_12_ATOM, ROUND_TRIP_CONTENT_MASTER_ID_12_ATOM,
-        ROUND_TRIP_DOC_FLAGS_12_ATOM, ROUND_TRIP_HEADER_FOOTER_DEFAULTS_12_ATOM,
-        ROUND_TRIP_HF_PLACEHOLDER_12_ATOM, ROUND_TRIP_NOTES_MASTER_TEXT_STYLES_12_ATOM,
-        ROUND_TRIP_ORIGINAL_MAIN_MASTER_ID_12_ATOM, ROUND_TRIP_SHAPE_CHECKSUM_12_ATOM,
-        ROUND_TRIP_SHAPE_ID_12_ATOM, SLIDE_FLAGS10_ATOM, SLIDE_NUMBER_META_CHARACTER_ATOM,
-        SLIDE_SHOW_DOC_INFO_ATOM, SLIDE_SHOW_SLIDE_INFO_ATOM, SLIDE_TIME_10_ATOM,
-        SLIDE_VIEW_INFO_ATOM, SOUND_COLLECTION_ATOM, SOUND_DATA_BLOB, STYLE_TEXT_PROP10_ATOM,
-        STYLE_TEXT_PROP11_ATOM, TEXT_BOOKMARK_ATOM, TEXT_CF_EXCEPTION_ATOM, TEXT_DEFAULTS10_ATOM,
-        TEXT_INTERACTIVE_INFO_ATOM, TEXT_MASTER_STYLE9_ATOM, TEXT_MASTER_STYLE10_ATOM,
-        TEXT_PF_EXCEPTION_ATOM, TEXT_SI_EXCEPTION_ATOM, TIME_ANIMATE_BEHAVIOR_ATOM,
-        TIME_ANIMATION_VALUE_ATOM, TIME_BEHAVIOR_ATOM, TIME_COMMAND_BEHAVIOR_ATOM,
-        TIME_CONDITION_ATOM, TIME_EFFECT_BEHAVIOR_ATOM, TIME_MODIFIER_ATOM,
-        TIME_MOTION_BEHAVIOR_ATOM, TIME_NODE_ATOM, TIME_SCALE_BEHAVIOR_ATOM,
+        PptFile, PptRecordData, ProgrammableTagKind, RECOLOR_INFO_ATOM,
+        ROUND_TRIP_ANIMATION_HASH_12_ATOM, ROUND_TRIP_COMPOSITE_MASTER_ID_12_ATOM,
+        ROUND_TRIP_CONTENT_MASTER_ID_12_ATOM, ROUND_TRIP_DOC_FLAGS_12_ATOM,
+        ROUND_TRIP_HEADER_FOOTER_DEFAULTS_12_ATOM, ROUND_TRIP_HF_PLACEHOLDER_12_ATOM,
+        ROUND_TRIP_NOTES_MASTER_TEXT_STYLES_12_ATOM, ROUND_TRIP_ORIGINAL_MAIN_MASTER_ID_12_ATOM,
+        ROUND_TRIP_SHAPE_CHECKSUM_12_ATOM, ROUND_TRIP_SHAPE_ID_12_ATOM, SLIDE_FLAGS10_ATOM,
+        SLIDE_NUMBER_META_CHARACTER_ATOM, SLIDE_SHOW_DOC_INFO_ATOM, SLIDE_SHOW_SLIDE_INFO_ATOM,
+        SLIDE_TIME_10_ATOM, SLIDE_VIEW_INFO_ATOM, SOUND_COLLECTION_ATOM, SOUND_DATA_BLOB,
+        STYLE_TEXT_PROP10_ATOM, STYLE_TEXT_PROP11_ATOM, TEXT_BOOKMARK_ATOM, TEXT_CF_EXCEPTION_ATOM,
+        TEXT_DEFAULTS10_ATOM, TEXT_INTERACTIVE_INFO_ATOM, TEXT_MASTER_STYLE9_ATOM,
+        TEXT_MASTER_STYLE10_ATOM, TEXT_PF_EXCEPTION_ATOM, TEXT_SI_EXCEPTION_ATOM,
+        TIME_ANIMATE_BEHAVIOR_ATOM, TIME_ANIMATION_VALUE_ATOM, TIME_BEHAVIOR_ATOM,
+        TIME_COMMAND_BEHAVIOR_ATOM, TIME_CONDITION_ATOM, TIME_EFFECT_BEHAVIOR_ATOM,
+        TIME_MODIFIER_ATOM, TIME_MOTION_BEHAVIOR_ATOM, TIME_NODE_ATOM, TIME_SCALE_BEHAVIOR_ATOM,
         TIME_SEQUENCE_DATA_ATOM, TIME_SET_BEHAVIOR_ATOM, TIME_VARIANT_ATOM, VBA_INFO_ATOM,
         VIEW_INFO_ATOM, VISUAL_PAGE_ATOM, VISUAL_SHAPE_ATOM,
     },
@@ -205,6 +205,25 @@ fn legacy_powerpoint_document_streams_round_trip() {
             checked += 1;
             let document = PowerPointDocument::from_bytes(&entry.data)
                 .map_err(|error| format!("parse PowerPoint Document: {error}"))?;
+            let file = PptFile::from_compound_file(cfb.clone())
+                .map_err(|error| format!("parse typed PPT file root: {error}"))?;
+            let root_document = cfb
+                .stream("/PowerPoint Document")
+                .ok_or_else(|| "typed PPT file root has no root document stream".to_owned())?;
+            if file
+                .document
+                .to_bytes()
+                .map_err(|error| format!("write typed PPT document tree: {error}"))?
+                != root_document
+            {
+                return Err("typed PPT file root changed the root document tree".into());
+            }
+            let rebuilt = file
+                .to_compound_file()
+                .map_err(|error| format!("write typed PPT file root: {error}"))?;
+            if rebuilt.stream("/PowerPoint Document") != Some(root_document) {
+                return Err("typed PPT file root changed the document stream".into());
+            }
             let saved = document
                 .to_bytes()
                 .map_err(|error| format!("write PowerPoint Document: {error}"))?;

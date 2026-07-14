@@ -18,7 +18,7 @@ use olecfsdk::{
         FeatureData, FeatureHeaderData, HyperlinkObject, LhSubrecordData, MsoDrawingData,
         MsoDrawingHostData, ObjFormulaData, ObjSubrecordData, ParamQryData, PrinterSettings,
         RtdOperation, SortFieldParent, SstCompletion, SstExtensionData, SupBookLink, TxoContext,
-        XfPropertyData, XlStringCharacters, XmlTkData,
+        XfPropertyData, XlStringCharacters, XlsFile, XmlTkData,
     },
 };
 use olecfsdk_corpus_test_support::manifest::{ExpectationMode, read_manifest};
@@ -359,6 +359,29 @@ fn legacy_office_workbook_streams_round_trip() {
         checked += 1;
         let result = (|| {
             let parsed = BiffStream::from_bytes(&entry.data)?;
+            if entry.path == Path::new("/Workbook") || entry.path == Path::new("/Book") {
+                let file = XlsFile::from_compound_file(compound.clone())?;
+                let workbook = file
+                    .workbooks
+                    .iter()
+                    .find(|workbook| Path::new(workbook.name.path()) == entry.path)
+                    .ok_or_else(|| {
+                        olecfsdk::Error::invalid(0, "typed XLS file root omitted a BIFF stream")
+                    })?;
+                if workbook.tree.stream != parsed {
+                    return Err(olecfsdk::Error::invalid(
+                        0,
+                        "typed XLS file root changed the BIFF record tree",
+                    ));
+                }
+                let rebuilt = file.to_compound_file()?;
+                if rebuilt.stream(workbook.name.path()) != Some(entry.data.as_slice()) {
+                    return Err(olecfsdk::Error::invalid(
+                        0,
+                        "typed XLS file root changed the workbook stream",
+                    ));
+                }
+            }
             if parsed.is_biff8() {
                 biff8 += 1;
                 unknown_types.extend(parsed.unknown_record_types());

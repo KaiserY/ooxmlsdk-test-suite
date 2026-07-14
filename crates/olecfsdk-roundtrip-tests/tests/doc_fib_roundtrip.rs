@@ -10,7 +10,7 @@ use olecfsdk::{
         AnnotationBookmarks, AnnotationExtendedData, AnnotationOwners, AnnotationReferenceTable,
         AssociatedStrings, AutoCaptionDefinitions, AutoSummaryDesiredSize, AutoSummaryRangeTable,
         AutoSummaryView, Bookmarks, CaptionDefinitions, ChpxFkp, Clx, CommandCustomizationRecord,
-        CommandCustomizations, CpOnlyTable, CustomKinsokuLanguage, DocOfficeArtContent,
+        CommandCustomizations, CpOnlyTable, CustomKinsokuLanguage, DocFile, DocOfficeArtContent,
         DocumentClassification, DocumentProperties, DocumentProtectionMode, EmbeddedFontSubset,
         EmbeddedFontTable, EmbeddedFontTableOffset, ExternalFileNameTable,
         FIB_LAST_SAVED_FILETIME_INDEX, Fib, FibBase, FibBaseFlags, FieldCharacter,
@@ -715,6 +715,12 @@ fn legacy_word_fibs_round_trip() {
     let mut failures = Vec::new();
 
     for path in files {
+        // These duplicate the normal 47950 document and exist specifically to
+        // test MS-CFB's case-insensitive stream naming. Keep them out of the
+        // semantic DOC inventory and cover them in the focused test below.
+        if is_word_document_case_fixture(&path) {
+            continue;
+        }
         if let Some(mode) = exclusions.get(&path) {
             observed_exclusions.insert(path);
             match mode {
@@ -1021,6 +1027,19 @@ fn legacy_word_fibs_round_trip() {
             } else {
                 &cfb.entry("/0Table").expect("presence checked above").data
             };
+            let file = DocFile::from_compound_file(cfb.clone())
+                .map_err(|error| format!("typed DOC file root: {error}"))?;
+            if file.word_document.fib != fib {
+                return Err("typed DOC file root changed the FIB".to_owned());
+            }
+            let rebuilt = file
+                .to_compound_file()
+                .map_err(|error| format!("write typed DOC file root: {error}"))?;
+            if rebuilt.stream("/WordDocument") != Some(word_document.data.as_slice())
+                || rebuilt.stream(file.table.name.path()) != Some(table.as_slice())
+            {
+                return Err("typed DOC file root changed a managed stream".to_owned());
+            }
             if let Some([metadata_location, starts_location, ends_location]) =
                 fib.format_consistency_bookmark_locations()
                 && (metadata_location.lcb != 0
@@ -6820,6 +6839,43 @@ fn legacy_word_fibs_round_trip() {
     );
 }
 
+#[test]
+#[ignore = "DOC stream-name casing corpus round-trip runs explicitly"]
+fn word_document_stream_name_lookup_is_case_insensitive() {
+    let root = olecfsdk_corpus_test_support::corpus_root().join("Apache-POI/test-data/document");
+    for (file_name, physical_stream_name) in [
+        ("47950_upper.doc", "/WORDDOCUMENT"),
+        ("47950_lower.doc", "/worddocument"),
+    ] {
+        let path = root.join(file_name);
+        let bytes = corpus_bytes(&path).unwrap_or_else(|error| panic!("{file_name}: {error}"));
+        let compound = CompoundFile::from_bytes(&bytes)
+            .unwrap_or_else(|error| panic!("{file_name}: open CFB: {error}"));
+        let word_document = compound
+            .entry("/WordDocument")
+            .unwrap_or_else(|| panic!("{file_name}: case-insensitive lookup failed"));
+        assert_eq!(word_document.path, Path::new(physical_stream_name));
+
+        let file = DocFile::from_compound_file(compound.clone())
+            .unwrap_or_else(|error| panic!("{file_name}: open typed DOC tree: {error}"));
+        let rebuilt = file
+            .to_compound_file()
+            .unwrap_or_else(|error| panic!("{file_name}: rebuild typed DOC tree: {error}"));
+        assert!(
+            compound.logical_eq(&rebuilt),
+            "{file_name}: CFB graph changed"
+        );
+        assert_eq!(
+            rebuilt
+                .entry("/WordDocument")
+                .expect("case-insensitive lookup after rebuild")
+                .path,
+            Path::new(physical_stream_name),
+            "{file_name}: physical stream-name casing changed"
+        );
+    }
+}
+
 fn static_variable_shape(operand: &SprmOperand) -> Option<&'static str> {
     match operand {
         SprmOperand::ParagraphChangeTabs(_) => Some("paragraph-change-tabs"),
@@ -6905,4 +6961,11 @@ fn collect(root: &Path, files: &mut Vec<PathBuf>) {
             files.push(path);
         }
     }
+}
+
+fn is_word_document_case_fixture(path: &Path) -> bool {
+    matches!(
+        path.file_name().and_then(|name| name.to_str()),
+        Some("47950_upper.doc" | "47950_lower.doc")
+    )
 }
