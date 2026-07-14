@@ -5,6 +5,7 @@ use std::{
 };
 
 use olecfsdk::{
+    ParseDiagnosticCode,
     cfb::CompoundFile,
     office_art::{
         OfficeArtBitmapData, OfficeArtComplexPropertyData, OfficeArtIncompletePropertyEntry,
@@ -57,9 +58,12 @@ fn legacy_office_workbook_streams_round_trip() {
     let mut pls_continued = 0usize;
     let mut pls_windows_full = 0usize;
     let mut pls_windows_truncated = 0usize;
+    let mut pls_windows_legacy212 = 0usize;
+    let mut pls_windows_core100 = 0usize;
     let mut pls_platform_specific = 0usize;
     let mut pls_driver_extra_bytes = 0usize;
     let mut pls_truncated_driver_extra = 0usize;
+    let mut pls_truncated_driver_extra_samples = Vec::new();
     let mut pls_public_extension_bytes = 0usize;
     let mut pls_truncated_public_bytes = 0usize;
     let mut pls_platform_specific_bytes = 0usize;
@@ -334,6 +338,21 @@ fn legacy_office_workbook_streams_round_trip() {
     let mut sst_extension_unparsed_samples = Vec::new();
     let mut sst_trailing_bytes = 0usize;
     let mut sst_truncated = Vec::new();
+    let mut root_truncated_diagnostics = 0usize;
+    let mut root_nonconforming_diagnostics = 0usize;
+    let mut root_workbook_structure_diagnostics = 0usize;
+    let mut root_bof_diagnostics = 0usize;
+    let mut root_bof_diagnostic_shapes = BTreeMap::<String, usize>::new();
+    let mut root_workbook_diagnostic_shapes = BTreeMap::<(String, String), usize>::new();
+    let mut root_workbook_diagnostic_samples = Vec::new();
+    let mut root_invalid_stream_diagnostics = 0usize;
+    let mut root_noncanonical_cfb_diagnostics = 0usize;
+    let mut root_truncated_diagnostic_files = BTreeSet::new();
+    let mut root_nonconforming_diagnostic_files = BTreeSet::new();
+    let mut root_workbook_structure_diagnostic_files = BTreeSet::new();
+    let mut root_bof_diagnostic_files = BTreeSet::new();
+    let mut root_invalid_stream_diagnostic_files = BTreeSet::new();
+    let mut root_noncanonical_cfb_diagnostic_files = BTreeSet::new();
     let mut failures = Vec::new();
     let filter = std::env::var("XLS_FILTER").ok();
     for path in files {
@@ -356,26 +375,99 @@ fn legacy_office_workbook_streams_round_trip() {
         }) else {
             continue;
         };
+        let root_entry = compound.entries().iter().find(|entry| {
+            entry.is_stream()
+                && entry.path.parent() == Some(Path::new("/"))
+                && (entry.name.eq_ignore_ascii_case("Workbook")
+                    || entry.name.eq_ignore_ascii_case("Book"))
+        });
         checked += 1;
         let result = (|| {
             let parsed = BiffStream::from_bytes(&entry.data)?;
-            if entry.path == Path::new("/Workbook") || entry.path == Path::new("/Book") {
-                let file = XlsFile::from_compound_file(compound.clone())?;
+            if let Some(root_entry) = root_entry {
+                let root_parsed = BiffStream::from_bytes(&root_entry.data)?;
+                let outcome = XlsFile::from_compound_file_compatible(compound.clone())?;
+                for diagnostic in &outcome.diagnostics {
+                    match diagnostic.code {
+                        ParseDiagnosticCode::TruncatedRecord => {
+                            root_truncated_diagnostics += 1;
+                            root_truncated_diagnostic_files.insert(path.clone());
+                        }
+                        ParseDiagnosticCode::NonconformingRecord => {
+                            root_nonconforming_diagnostics += 1;
+                            root_nonconforming_diagnostic_files.insert(path.clone());
+                            root_workbook_structure_diagnostics += usize::from(matches!(
+                                diagnostic.structure,
+                                "Workbook Stream" | "Globals Substream"
+                            ));
+                            root_bof_diagnostics += usize::from(diagnostic.structure == "BOF");
+                            if diagnostic.structure == "BOF" {
+                                root_bof_diagnostic_files.insert(path.clone());
+                                *root_bof_diagnostic_shapes
+                                    .entry(diagnostic.message.clone())
+                                    .or_default() += 1;
+                            }
+                            if matches!(
+                                diagnostic.structure,
+                                "Workbook Stream" | "Globals Substream"
+                            ) {
+                                root_workbook_structure_diagnostic_files.insert(path.clone());
+                                *root_workbook_diagnostic_shapes
+                                    .entry((
+                                        diagnostic.structure.to_owned(),
+                                        diagnostic.message.clone(),
+                                    ))
+                                    .or_default() += 1;
+                                if !diagnostic.message.starts_with("legacy ")
+                                    && root_workbook_diagnostic_samples.len() < 20
+                                {
+                                    root_workbook_diagnostic_samples.push(format!(
+                                        "{}: {}: {}",
+                                        path.display(),
+                                        diagnostic.structure,
+                                        diagnostic.message
+                                    ));
+                                }
+                            }
+                        }
+                        ParseDiagnosticCode::InvalidStreamPreserved => {
+                            root_invalid_stream_diagnostics += 1;
+                            root_invalid_stream_diagnostic_files.insert(path.clone());
+                        }
+                        ParseDiagnosticCode::NoncanonicalCompoundFile => {
+                            root_noncanonical_cfb_diagnostics += 1;
+                            root_noncanonical_cfb_diagnostic_files.insert(path.clone());
+                        }
+                        ParseDiagnosticCode::InvalidReference => {
+                            return Err(olecfsdk::Error::invalid(
+                                diagnostic.location.offset.unwrap_or(0),
+                                "XLS root emitted a PPT reference diagnostic",
+                            ));
+                        }
+                    }
+                }
+                let file = outcome.value;
                 let workbook = file
                     .workbooks
                     .iter()
-                    .find(|workbook| Path::new(workbook.name.path()) == entry.path)
+                    .find(|workbook| {
+                        workbook
+                            .name
+                            .path()
+                            .trim_start_matches('/')
+                            .eq_ignore_ascii_case(&root_entry.name)
+                    })
                     .ok_or_else(|| {
                         olecfsdk::Error::invalid(0, "typed XLS file root omitted a BIFF stream")
                     })?;
-                if workbook.tree.stream != parsed {
+                if workbook.tree.stream != root_parsed {
                     return Err(olecfsdk::Error::invalid(
                         0,
                         "typed XLS file root changed the BIFF record tree",
                     ));
                 }
-                let rebuilt = file.to_compound_file()?;
-                if rebuilt.stream(workbook.name.path()) != Some(entry.data.as_slice()) {
+                let rebuilt = file.to_compound_file_preserving_compatibility()?;
+                if rebuilt.stream(workbook.name.path()) != Some(root_entry.data.as_slice()) {
                     return Err(olecfsdk::Error::invalid(
                         0,
                         "typed XLS file root changed the workbook stream",
@@ -978,6 +1070,15 @@ fn legacy_office_workbook_streams_round_trip() {
                                     pls_driver_extra_bytes += devmode.driver_extra.len();
                                     pls_truncated_driver_extra +=
                                         usize::from(!devmode.driver_extra_complete);
+                                    if !devmode.driver_extra_complete {
+                                        pls_truncated_driver_extra_samples.push(format!(
+                                            "{} offset {} declared {} available {}",
+                                            path.display(),
+                                            record.offset,
+                                            devmode.declared_driver_extra_size,
+                                            devmode.driver_extra.len()
+                                        ));
+                                    }
                                     pls_trailing_bytes += devmode.trailing.len();
                                     match &devmode.public_fields {
                                         DevModeWPublic::Full(public) => {
@@ -992,12 +1093,11 @@ fn legacy_office_workbook_streams_round_trip() {
                                                 .entry(devmode.declared_public_size)
                                                 .or_default() += 1;
                                         }
-                                        DevModeWPublic::Legacy212(_)
-                                        | DevModeWPublic::Core100(_) => {
-                                            pls_windows_truncated += 1;
-                                            *pls_truncated_sizes
-                                                .entry(devmode.declared_public_size)
-                                                .or_default() += 1;
+                                        DevModeWPublic::Legacy212(_) => {
+                                            pls_windows_legacy212 += 1;
+                                        }
+                                        DevModeWPublic::Core100(_) => {
+                                            pls_windows_core100 += 1;
                                         }
                                     }
                                 }
@@ -2191,6 +2291,36 @@ fn legacy_office_workbook_streams_round_trip() {
         hyperlink_truncated_url_address_bytes, 8_168,
         "truncated URL-moniker typed address coverage changed"
     );
+    assert_eq!(
+        root_truncated_diagnostics,
+        hyperlink_truncated_records
+            + formula_missing_extra
+            + data_validation_missing_extra
+            + conditional_formatting_missing_extra
+            + linked_data_missing_extra
+            + name_missing_extra
+            + pls_truncated_driver_extra
+            + drawing_group_partial
+            + drawing_partial
+            + sst_truncated.len(),
+        "every retained truncated XLS structure requires one root diagnostic; PLS samples: {pls_truncated_driver_extra_samples:?}"
+    );
+    assert_eq!(
+        root_nonconforming_diagnostics,
+        hyperlink_compatibility_records
+            + feature_header_malformed
+            + root_workbook_structure_diagnostics
+            + root_bof_diagnostics,
+        "every retained nonconforming XLS structure requires one root diagnostic"
+    );
+    assert_eq!(
+        root_workbook_structure_diagnostics, 37,
+        "Workbook stream name/version/topology compatibility coverage changed"
+    );
+    assert_eq!(
+        root_bof_diagnostics, 756,
+        "BOF MUST-field compatibility coverage changed"
+    );
     assert_eq!(drawing_obj_raw, 0, "Obj records fell back to raw payloads");
     assert_eq!(
         formula_unparsed_rgce_bytes, 0,
@@ -2709,7 +2839,16 @@ fn legacy_office_workbook_streams_round_trip() {
         "Obj FtPictFmla: {obj_picture_formulas} formulas, {obj_picture_embed_info} embed-info values, {obj_picture_positions} positions, {obj_picture_control_stream_sizes} Ctls sizes, {obj_picture_keys} keys, {obj_picture_compatibility_bytes} compatibility bytes"
     );
     eprintln!(
-        "checked {checked} workbook streams: {biff8} BIFF8, {legacy} legacy; {} unknown BIFF record types remain; Formula has {formula_unparsed_rgce_bytes} unparsed rgce bytes, {formula_rgcb_bytes} unparsed rgcb bytes and {formula_missing_extra} explicit missing-extra compatibility states; SharedFormula has {shared_formula_records} records, {shared_formula_unparsed_rgce_bytes} unparsed rgce and {shared_formula_rgcb_bytes} rgcb bytes; Array has {array_records} records, {array_unparsed_rgce_bytes} unparsed rgce and {array_rgcb_bytes} rgcb bytes; SupBook has {sup_book_records} records, {sup_book_compatibility} compatibility values and {sup_book_trailing_bytes} retained trailing bytes; ExternName has {extern_name_records} records ({extern_name_formula_records} formula/{extern_name_cached_link_records} cached-link/{extern_name_compatibility_records} compatibility with {extern_name_compatibility_bytes} bytes); Hyperlink has {hyperlink_records} records, {hyperlink_compatibility_records} compatibility/{hyperlink_compatibility_bytes} bytes, {hyperlink_truncated_records} truncated ({hyperlink_truncated_url_records} typed URL moniker/{hyperlink_truncated_url_address_bytes} address bytes, {hyperlink_truncated_bytes} generic bytes) and {hyperlink_trailing_bytes} trailing bytes; DV has {data_validation_records} records, {data_validation_unparsed_rgce_bytes} unparsed rgce bytes and {data_validation_missing_extra} missing extras; CF has {conditional_formatting_records} records, {conditional_formatting_unparsed_rgce_bytes} unparsed rgce bytes and {conditional_formatting_missing_extra} missing extras; CFEx has {cfex_records} records ({cfex_cf12_records} CF12/{cfex_non_cf12_records} non-CF12, {cfex_formats} DXFN12 and {cfex_extension_unparsed_bytes} unparsed extension bytes); CF12 has {cf12_records} records/types {cf12_types:?}/{cf12_unparsed_formula_bytes} unparsed formula bytes; CrtMlFrt has {crt_ml_frt_records} records/{xml_tk_records} XmlTk values {xml_tk_kinds:?}; LinkedData has {linked_data_records} records, {linked_data_unparsed_rgce_bytes} unparsed rgce bytes and {linked_data_missing_extra} missing extras; FeatHdr has {feature_header_records} records ({feature_header_none} empty/{feature_header_enhanced_protection} protection/{feature_header_property_bag_store} property-bag/{feature_header_malformed} malformed with {feature_header_malformed_bytes} bytes); Feat has {feature_records} records ({feature_protection} protection/{feature_formula_errors} formula-error/{feature_smart_tags} smart-tag, {feature_security_descriptors} security descriptors); DConn has {dconn_records} records ({dconn_text} text/{dconn_web} web); Feature11 has {feature11_records} records/{feature11_fields} fields/{feature11_formats} DXFN12List/{feature11_auto_filters} AutoFilter envelopes; Name has {name_records} records ({name_continued_records} continued), {name_unparsed_rgce_bytes} unparsed rgce bytes, {name_rgcb_tail_bytes} rgcb tail bytes and {name_missing_extra} missing extras; Pls has {pls_records} records ({pls_continued} continued), {pls_windows_full} full/{pls_windows_truncated} truncated DEVMODEW and {pls_platform_specific} values; MsoDrawingGroup has {drawing_group_records} records ({drawing_group_continued} continued), {drawing_group_complete} complete/{drawing_group_partial} partial trees ({drawing_group_partial_complete_records} complete + {drawing_group_partial_incomplete_records} incomplete records/{drawing_group_partial_unparsed_bytes} unparsed bytes) and {} whole-byte incomplete/{drawing_group_incomplete_bytes} bytes; MsoDrawing has {drawing_records} aggregates/{drawing_segments} segments/{drawing_host_records} host records, {drawing_complete} complete/{drawing_partial} partial trees ({drawing_partial_complete_records} complete + {drawing_partial_incomplete_records} incomplete records/{drawing_partial_unparsed_bytes} unparsed bytes) and {} whole-byte incomplete/{drawing_incomplete_bytes} bytes; host types: TxO {drawing_txo_typed} typed/{drawing_txo_raw} raw with {drawing_txo_control_contexts} ControlInfo/{drawing_txo_reserved_contexts} reserved/{drawing_txo_undetermined_contexts} undetermined contexts, {drawing_txo_formula_typed} typed/{drawing_txo_formula_opaque} opaque ObjFmla ({drawing_txo_formula_bytes} bytes) and {drawing_txo_trailing_bytes} trailing bytes, Note {drawing_note_typed} typed/{drawing_note_raw} raw, Obj {drawing_obj_typed} typed/{drawing_obj_raw} raw/{drawing_obj_raw_bytes} bytes; XFExt has {xf_ext_unparsed_bytes} unparsed bytes across property types {xf_ext_unknown_types:#06x?}; StyleExt has {style_ext_unparsed_bytes} unparsed XFProp bytes; DXF has {dxf_records} records/{dxf_unparsed_bytes} unparsed XFProp bytes; SST has {sst_records} records/{sst_strings} parsed strings, {sst_extension_bytes} ExtRst bytes ({sst_extension_unparsed_bytes} unparsed), {sst_trailing_bytes} compatibility tail bytes and {} truncated tables",
+        "XLS root diagnostics: {root_truncated_diagnostics} truncated in {} files/{root_nonconforming_diagnostics} nonconforming in {} files ({root_workbook_structure_diagnostics} Workbook structure in {} files {root_workbook_diagnostic_shapes:?}; samples {root_workbook_diagnostic_samples:#?}; {root_bof_diagnostics} BOF in {} files {root_bof_diagnostic_shapes:?})/{root_invalid_stream_diagnostics} invalid stream in {} files/{root_noncanonical_cfb_diagnostics} noncanonical CFB in {} files",
+        root_truncated_diagnostic_files.len(),
+        root_nonconforming_diagnostic_files.len(),
+        root_workbook_structure_diagnostic_files.len(),
+        root_bof_diagnostic_files.len(),
+        root_invalid_stream_diagnostic_files.len(),
+        root_noncanonical_cfb_diagnostic_files.len()
+    );
+    eprintln!(
+        "checked {checked} workbook streams: {biff8} BIFF8, {legacy} legacy; {} unknown BIFF record types remain; Formula has {formula_unparsed_rgce_bytes} unparsed rgce bytes, {formula_rgcb_bytes} unparsed rgcb bytes and {formula_missing_extra} explicit missing-extra compatibility states; SharedFormula has {shared_formula_records} records, {shared_formula_unparsed_rgce_bytes} unparsed rgce and {shared_formula_rgcb_bytes} rgcb bytes; Array has {array_records} records, {array_unparsed_rgce_bytes} unparsed rgce and {array_rgcb_bytes} rgcb bytes; SupBook has {sup_book_records} records, {sup_book_compatibility} compatibility values and {sup_book_trailing_bytes} retained trailing bytes; ExternName has {extern_name_records} records ({extern_name_formula_records} formula/{extern_name_cached_link_records} cached-link/{extern_name_compatibility_records} compatibility with {extern_name_compatibility_bytes} bytes); Hyperlink has {hyperlink_records} records, {hyperlink_compatibility_records} compatibility/{hyperlink_compatibility_bytes} bytes, {hyperlink_truncated_records} truncated ({hyperlink_truncated_url_records} typed URL moniker/{hyperlink_truncated_url_address_bytes} address bytes, {hyperlink_truncated_bytes} generic bytes) and {hyperlink_trailing_bytes} trailing bytes; DV has {data_validation_records} records, {data_validation_unparsed_rgce_bytes} unparsed rgce bytes and {data_validation_missing_extra} missing extras; CF has {conditional_formatting_records} records, {conditional_formatting_unparsed_rgce_bytes} unparsed rgce bytes and {conditional_formatting_missing_extra} missing extras; CFEx has {cfex_records} records ({cfex_cf12_records} CF12/{cfex_non_cf12_records} non-CF12, {cfex_formats} DXFN12 and {cfex_extension_unparsed_bytes} unparsed extension bytes); CF12 has {cf12_records} records/types {cf12_types:?}/{cf12_unparsed_formula_bytes} unparsed formula bytes; CrtMlFrt has {crt_ml_frt_records} records/{xml_tk_records} XmlTk values {xml_tk_kinds:?}; LinkedData has {linked_data_records} records, {linked_data_unparsed_rgce_bytes} unparsed rgce bytes and {linked_data_missing_extra} missing extras; FeatHdr has {feature_header_records} records ({feature_header_none} empty/{feature_header_enhanced_protection} protection/{feature_header_property_bag_store} property-bag/{feature_header_malformed} malformed with {feature_header_malformed_bytes} bytes); Feat has {feature_records} records ({feature_protection} protection/{feature_formula_errors} formula-error/{feature_smart_tags} smart-tag, {feature_security_descriptors} security descriptors); DConn has {dconn_records} records ({dconn_text} text/{dconn_web} web); Feature11 has {feature11_records} records/{feature11_fields} fields/{feature11_formats} DXFN12List/{feature11_auto_filters} AutoFilter envelopes; Name has {name_records} records ({name_continued_records} continued), {name_unparsed_rgce_bytes} unparsed rgce bytes, {name_rgcb_tail_bytes} rgcb tail bytes and {name_missing_extra} missing extras; Pls has {pls_records} records ({pls_continued} continued), {pls_windows_full} full/{pls_windows_legacy212} legacy-212/{pls_windows_core100} core-100/{pls_windows_truncated} spec-truncated DEVMODEW and {pls_platform_specific} values; MsoDrawingGroup has {drawing_group_records} records ({drawing_group_continued} continued), {drawing_group_complete} complete/{drawing_group_partial} partial trees ({drawing_group_partial_complete_records} complete + {drawing_group_partial_incomplete_records} incomplete records/{drawing_group_partial_unparsed_bytes} unparsed bytes) and {} whole-byte incomplete/{drawing_group_incomplete_bytes} bytes; MsoDrawing has {drawing_records} aggregates/{drawing_segments} segments/{drawing_host_records} host records, {drawing_complete} complete/{drawing_partial} partial trees ({drawing_partial_complete_records} complete + {drawing_partial_incomplete_records} incomplete records/{drawing_partial_unparsed_bytes} unparsed bytes) and {} whole-byte incomplete/{drawing_incomplete_bytes} bytes; host types: TxO {drawing_txo_typed} typed/{drawing_txo_raw} raw with {drawing_txo_control_contexts} ControlInfo/{drawing_txo_reserved_contexts} reserved/{drawing_txo_undetermined_contexts} undetermined contexts, {drawing_txo_formula_typed} typed/{drawing_txo_formula_opaque} opaque ObjFmla ({drawing_txo_formula_bytes} bytes) and {drawing_txo_trailing_bytes} trailing bytes, Note {drawing_note_typed} typed/{drawing_note_raw} raw, Obj {drawing_obj_typed} typed/{drawing_obj_raw} raw/{drawing_obj_raw_bytes} bytes; XFExt has {xf_ext_unparsed_bytes} unparsed bytes across property types {xf_ext_unknown_types:#06x?}; StyleExt has {style_ext_unparsed_bytes} unparsed XFProp bytes; DXF has {dxf_records} records/{dxf_unparsed_bytes} unparsed XFProp bytes; SST has {sst_records} records/{sst_strings} parsed strings, {sst_extension_bytes} ExtRst bytes ({sst_extension_unparsed_bytes} unparsed), {sst_trailing_bytes} compatibility tail bytes and {} truncated tables",
         unknown_types.len(),
         drawing_group_incomplete.len(),
         drawing_incomplete.len(),

@@ -5,6 +5,7 @@ use std::{
 };
 
 use olecfsdk::{
+    ParseDiagnosticCode,
     cfb::CompoundFile,
     office_art::OfficeArtRecordData,
     ppt::{
@@ -176,7 +177,7 @@ fn legacy_powerpoint_document_streams_round_trip() {
     let mut persist_directory_entries = 0usize;
     let mut persist_offsets = 0usize;
     let mut atom_stats = BTreeMap::<u16, RecordStats>::new();
-    let mut unknown_compatibility_stats = BTreeMap::<u16, RecordStats>::new();
+    let mut unknown_record_stats = BTreeMap::<u16, RecordStats>::new();
     let mut selected_atom_samples = Vec::new();
     let mut truncated_records = 0usize;
     let mut truncated_bytes = 0usize;
@@ -185,6 +186,18 @@ fn legacy_powerpoint_document_streams_round_trip() {
     let mut trailing_header_bytes = 0usize;
     let mut encrypted_user_edits = 0usize;
     let mut encrypted_samples = Vec::new();
+    let mut truncated_diagnostics = 0usize;
+    let mut nonconforming_diagnostics = 0usize;
+    let mut current_user_nonconforming_diagnostics = 0usize;
+    let mut current_user_diagnostic_samples = Vec::new();
+    let mut noncanonical_cfb_diagnostics = 0usize;
+    let mut invalid_stream_diagnostics = 0usize;
+    let mut invalid_reference_diagnostics = 0usize;
+    let mut truncated_diagnostic_files = BTreeSet::<PathBuf>::new();
+    let mut nonconforming_diagnostic_files = BTreeSet::<PathBuf>::new();
+    let mut noncanonical_cfb_diagnostic_files = BTreeSet::<PathBuf>::new();
+    let mut invalid_stream_diagnostic_files = BTreeSet::<PathBuf>::new();
+    let mut invalid_reference_diagnostic_files = BTreeSet::<PathBuf>::new();
     let mut failures = Vec::new();
 
     for path in files {
@@ -205,8 +218,64 @@ fn legacy_powerpoint_document_streams_round_trip() {
             checked += 1;
             let document = PowerPointDocument::from_bytes(&entry.data)
                 .map_err(|error| format!("parse PowerPoint Document: {error}"))?;
-            let file = PptFile::from_compound_file(cfb.clone())
+            let outcome = PptFile::from_compound_file_compatible(cfb.clone())
                 .map_err(|error| format!("parse typed PPT file root: {error}"))?;
+            for diagnostic in &outcome.diagnostics {
+                if diagnostic.location.path.as_deref() == Some("/Current User")
+                    && current_user_diagnostic_samples.len() < 20
+                {
+                    current_user_diagnostic_samples.push(format!(
+                        "{}: {}: {}",
+                        path.display(),
+                        diagnostic.code.as_str(),
+                        diagnostic.message
+                    ));
+                }
+                match diagnostic.code {
+                    ParseDiagnosticCode::TruncatedRecord => {
+                        truncated_diagnostics += 1;
+                        truncated_diagnostic_files.insert(path.clone());
+                        if !matches!(
+                            diagnostic.location.path.as_deref(),
+                            Some("/PowerPoint Document" | "/Current User")
+                        ) {
+                            return Err(format!(
+                                "truncated diagnostic has unexpected location: {diagnostic:?}"
+                            ));
+                        }
+                    }
+                    ParseDiagnosticCode::NonconformingRecord => {
+                        nonconforming_diagnostics += 1;
+                        nonconforming_diagnostic_files.insert(path.clone());
+                        current_user_nonconforming_diagnostics += usize::from(
+                            diagnostic.location.path.as_deref() == Some("/Current User"),
+                        );
+                    }
+                    ParseDiagnosticCode::NoncanonicalCompoundFile => {
+                        noncanonical_cfb_diagnostics += 1;
+                        noncanonical_cfb_diagnostic_files.insert(path.clone());
+                    }
+                    ParseDiagnosticCode::InvalidStreamPreserved => {
+                        invalid_stream_diagnostics += 1;
+                        invalid_stream_diagnostic_files.insert(path.clone());
+                        if diagnostic.location.path.as_deref() != Some("/Pictures") {
+                            return Err(format!(
+                                "invalid-stream diagnostic has unexpected location: {diagnostic:?}"
+                            ));
+                        }
+                    }
+                    ParseDiagnosticCode::InvalidReference => {
+                        invalid_reference_diagnostics += 1;
+                        invalid_reference_diagnostic_files.insert(path.clone());
+                        if diagnostic.location.path.as_deref() != Some("/PowerPoint Document") {
+                            return Err(format!(
+                                "invalid-reference diagnostic has unexpected location: {diagnostic:?}"
+                            ));
+                        }
+                    }
+                }
+            }
+            let file = outcome.value;
             let root_document = cfb
                 .stream("/PowerPoint Document")
                 .ok_or_else(|| "typed PPT file root has no root document stream".to_owned())?;
@@ -219,7 +288,7 @@ fn legacy_powerpoint_document_streams_round_trip() {
                 return Err("typed PPT file root changed the root document tree".into());
             }
             let rebuilt = file
-                .to_compound_file()
+                .to_compound_file_preserving_compatibility()
                 .map_err(|error| format!("write typed PPT file root: {error}"))?;
             if rebuilt.stream("/PowerPoint Document") != Some(root_document) {
                 return Err("typed PPT file root changed the document stream".into());
@@ -464,7 +533,7 @@ fn legacy_powerpoint_document_streams_round_trip() {
                     persist_entries: &mut persist_directory_entries,
                     persist_offsets: &mut persist_offsets,
                     atoms: &mut atom_stats,
-                    unknown_compatibility: &mut unknown_compatibility_stats,
+                    unknown_records: &mut unknown_record_stats,
                     selected_atom_samples: &mut selected_atom_samples,
                     truncated_records: &mut truncated_records,
                     truncated_bytes: &mut truncated_bytes,
@@ -831,19 +900,57 @@ fn legacy_powerpoint_document_streams_round_trip() {
         atom_stats.values().map(|stats| stats.bytes).sum::<usize>(),
         0
     );
-    assert_eq!(unknown_compatibility_stats.len(), 3);
-    assert_eq!(unknown_compatibility_stats[&0x0000].records, 381);
-    assert_eq!(unknown_compatibility_stats[&0x0000].bytes, 14);
-    assert_eq!(unknown_compatibility_stats[&0x0000].lengths, [0, 14].into());
-    assert_eq!(unknown_compatibility_stats[&0x0080].records, 1);
-    assert_eq!(unknown_compatibility_stats[&0x0080].bytes, 0);
-    assert_eq!(unknown_compatibility_stats[&0x0080].lengths, [0].into());
-    assert_eq!(unknown_compatibility_stats[&0x779f].records, 1);
-    assert_eq!(unknown_compatibility_stats[&0x779f].bytes, 4);
-    assert_eq!(unknown_compatibility_stats[&0x779f].lengths, [4].into());
+    assert_eq!(unknown_record_stats.len(), 3);
+    assert_eq!(unknown_record_stats[&0x0000].records, 381);
+    assert_eq!(unknown_record_stats[&0x0000].bytes, 14);
+    assert_eq!(unknown_record_stats[&0x0000].lengths, [0, 14].into());
+    assert_eq!(unknown_record_stats[&0x0080].records, 1);
+    assert_eq!(unknown_record_stats[&0x0080].bytes, 0);
+    assert_eq!(unknown_record_stats[&0x0080].lengths, [0].into());
+    assert_eq!(unknown_record_stats[&0x779f].records, 1);
+    assert_eq!(unknown_record_stats[&0x779f].bytes, 4);
+    assert_eq!(unknown_record_stats[&0x779f].lengths, [4].into());
     assert_eq!(truncated_records, 52);
     assert_eq!(truncated_bytes, 85_738);
     assert_eq!(trailing_header_bytes, 4);
+    assert!(
+        truncated_diagnostics >= truncated_records + current_user_truncated,
+        "every retained truncated record requires a diagnostic"
+    );
+    assert!(
+        trailing_header_bytes == 0
+            || truncated_diagnostics > truncated_records + current_user_truncated,
+        "retained RecordHeader prefixes require diagnostics"
+    );
+    assert_eq!(
+        nonconforming_diagnostics,
+        current_user_nonconforming_diagnostics
+            + malformed_text_special_info
+            + malformed_style_text_prop
+            + unresolved_style_text_prop
+            + malformed_text_master_style
+            + malformed_text_rulers
+            + malformed_style_text_prop9
+            + malformed_time_variants
+            + malformed_blip_entity9
+            + atom_stats
+                .values()
+                .map(|stats| stats.records)
+                .sum::<usize>()
+            + external_storage_invalid_compressed
+            + external_storage_invalid_uncompressed
+            + external_storage_malformed_compressed
+            + external_storage_unsupported_instance
+    );
+    assert!(
+        current_user_nonconforming_diagnostics >= current_user_compatibility,
+        "every compatibility CurrentUserAtom requires a nonconforming diagnostic"
+    );
+    assert_eq!(invalid_stream_diagnostics, picture_partial_streams);
+    assert_eq!(
+        invalid_reference_diagnostics,
+        current_edit_broken_links + persist_chain_failures
+    );
     let atom_bytes = atom_stats.values().map(|stats| stats.bytes).sum::<usize>();
     eprintln!(
         "PPT external storage: {external_storage_atoms} atoms, {external_storage_parsed_compressed} parsed compressed/{external_storage_parsed_uncompressed} parsed uncompressed, {external_storage_invalid_compressed} invalid compressed/{external_storage_invalid_uncompressed} invalid uncompressed/{external_storage_malformed_compressed} malformed compressed/{external_storage_unsupported_instance} unsupported instance, {external_storage_entries} CFB entries/{external_storage_vba_shaped} VBA-shaped/{external_storage_vba_parsed} VBA parsed/{external_storage_vba_invalid} VBA invalid/{external_storage_vba_modules} modules"
@@ -856,9 +963,14 @@ fn legacy_powerpoint_document_streams_round_trip() {
         "PPT style OPC: {text_style_packages} slide-style/{notes_style_packages} notes-style/{table_style_packages} table-style packages/{style_payload_bytes} bytes"
     );
     eprintln!(
-        "checked {checked} PowerPoint Document streams: Current User {current_user_streams} streams/{current_user_parsed} parsed/{current_user_compatibility} compatibility/{current_user_truncated} truncated, {current_edit_links} valid/{current_edit_broken_links} broken current-edit links/{current_user_trailing_bytes} trailing bytes; {persist_chains} persist chains/{persist_chain_failures} failures/{persist_chain_edits} edits/{effective_persist_objects} effective objects; {record_count} records/{container_count} containers; core atoms Document {document_atoms}/Slide {slide_atoms}/Notes {notes_atoms}, {slide_persist_atoms} persist/{color_scheme_atoms} color schemes/{placeholder_atoms} placeholders/{headers_footers_atoms} header-footer; text {outline_text_refs} outline refs/{text_headers} headers/{text_chars_records} UTF-16/{text_bytes_records} byte strings/{c_string_records} CStrings/{style_text_prop_atoms} style-prop ({style_paragraph_runs} PF runs/{style_character_runs} CF runs/{style_tab_stops} tabs/{style_trailing_bytes} trailing bytes + {malformed_style_text_prop} malformed/{malformed_style_text_prop_bytes} bytes + {unresolved_style_text_prop} unresolved/{unresolved_style_text_prop_bytes} bytes)/{master_text_prop_atoms} master-prop/{text_master_style_atoms} master-style ({text_master_style_levels} levels/{text_master_style_trailing_bytes} trailing + {malformed_text_master_style} malformed/{malformed_text_master_style_bytes} bytes)/{text_ruler_atoms} rulers ({text_ruler_tab_stops} tabs/{text_ruler_trailing_bytes} trailing + {malformed_text_rulers} malformed/{malformed_text_ruler_bytes} bytes)/{text_special_info_atoms} special-info + {malformed_text_special_info} malformed; OfficeArt {office_art_records} typed records/{office_art_bytes} bytes; Pictures {pictures_streams} streams ({picture_partial_streams} partial)/{picture_records} complete + {picture_incomplete_records} incomplete records/{picture_typed_records} typed/{picture_opaque_records} opaque/{picture_payload_bytes} payload bytes/{picture_unparsed_bytes} unparsed bytes; {user_edit_count} UserEditAtom ({encrypted_user_edits} encrypted); {persist_directory_count} PersistDirectoryAtom with {persist_directory_entries} entries/{persist_offsets} offsets; {} malformed spec types/{atom_bytes} bytes; {} explicit unknown compatibility types; {truncated_records} truncated records/{truncated_bytes} bytes; {trailing_header_bytes} trailing header bytes",
+        "checked {checked} PowerPoint Document streams: Current User {current_user_streams} streams/{current_user_parsed} parsed/{current_user_compatibility} compatibility/{current_user_truncated} truncated, {current_edit_links} valid/{current_edit_broken_links} broken current-edit links/{current_user_trailing_bytes} trailing bytes; Current User diagnostic samples {current_user_diagnostic_samples:#?}; {persist_chains} persist chains/{persist_chain_failures} failures/{persist_chain_edits} edits/{effective_persist_objects} effective objects; {record_count} records/{container_count} containers; core atoms Document {document_atoms}/Slide {slide_atoms}/Notes {notes_atoms}, {slide_persist_atoms} persist/{color_scheme_atoms} color schemes/{placeholder_atoms} placeholders/{headers_footers_atoms} header-footer; text {outline_text_refs} outline refs/{text_headers} headers/{text_chars_records} UTF-16/{text_bytes_records} byte strings/{c_string_records} CStrings/{style_text_prop_atoms} style-prop ({style_paragraph_runs} PF runs/{style_character_runs} CF runs/{style_tab_stops} tabs/{style_trailing_bytes} trailing bytes + {malformed_style_text_prop} malformed/{malformed_style_text_prop_bytes} bytes + {unresolved_style_text_prop} unresolved/{unresolved_style_text_prop_bytes} bytes)/{master_text_prop_atoms} master-prop/{text_master_style_atoms} master-style ({text_master_style_levels} levels/{text_master_style_trailing_bytes} trailing + {malformed_text_master_style} malformed/{malformed_text_master_style_bytes} bytes)/{text_ruler_atoms} rulers ({text_ruler_tab_stops} tabs/{text_ruler_trailing_bytes} trailing + {malformed_text_rulers} malformed/{malformed_text_ruler_bytes} bytes)/{text_special_info_atoms} special-info + {malformed_text_special_info} malformed; OfficeArt {office_art_records} typed records/{office_art_bytes} bytes; Pictures {pictures_streams} streams ({picture_partial_streams} partial)/{picture_records} complete + {picture_incomplete_records} incomplete records/{picture_typed_records} typed/{picture_opaque_records} opaque/{picture_payload_bytes} payload bytes/{picture_unparsed_bytes} unparsed bytes; {user_edit_count} UserEditAtom ({encrypted_user_edits} encrypted); {persist_directory_count} PersistDirectoryAtom with {persist_directory_entries} entries/{persist_offsets} offsets; {} malformed spec types/{atom_bytes} bytes; {} unknown record types; {truncated_records} truncated records/{truncated_bytes} bytes; {trailing_header_bytes} trailing header bytes; diagnostics {truncated_diagnostics} truncated in {} files/{nonconforming_diagnostics} nonconforming ({current_user_nonconforming_diagnostics} Current User) in {} files/{invalid_stream_diagnostics} invalid stream in {} files/{invalid_reference_diagnostics} invalid reference in {} files/{noncanonical_cfb_diagnostics} noncanonical CFB in {} files",
         atom_stats.len(),
-        unknown_compatibility_stats.len()
+        unknown_record_stats.len(),
+        truncated_diagnostic_files.len(),
+        nonconforming_diagnostic_files.len(),
+        invalid_stream_diagnostic_files.len(),
+        invalid_reference_diagnostic_files.len(),
+        noncanonical_cfb_diagnostic_files.len()
     );
     if std::env::var_os("PPT_REPORT_ATOMS").is_some() {
         let mut atoms: Vec<_> = atom_stats.iter().collect();
@@ -1006,7 +1118,7 @@ struct RecordAudit<'a> {
     persist_entries: &'a mut usize,
     persist_offsets: &'a mut usize,
     atoms: &'a mut BTreeMap<u16, RecordStats>,
-    unknown_compatibility: &'a mut BTreeMap<u16, RecordStats>,
+    unknown_records: &'a mut BTreeMap<u16, RecordStats>,
     selected_atom_samples: &'a mut Vec<String>,
     truncated_records: &'a mut usize,
     truncated_bytes: &'a mut usize,
@@ -1506,11 +1618,8 @@ fn audit_sequence(
                     ));
                 }
             }
-            PptRecordData::UnknownCompatibility(value) => {
-                let stats = audit
-                    .unknown_compatibility
-                    .entry(value.record_type)
-                    .or_default();
+            PptRecordData::Unknown(value) => {
+                let stats = audit.unknown_records.entry(value.record_type).or_default();
                 stats.records += 1;
                 stats.bytes += value.body.len();
                 stats.lengths.insert(value.body.len());

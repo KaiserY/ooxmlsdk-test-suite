@@ -1027,8 +1027,9 @@ fn legacy_word_fibs_round_trip() {
             } else {
                 &cfb.entry("/0Table").expect("presence checked above").data
             };
-            let file = DocFile::from_compound_file(cfb.clone())
-                .map_err(|error| format!("typed DOC file root: {error}"))?;
+            let file = DocFile::from_compound_file_compatible(cfb.clone())
+                .map_err(|error| format!("typed DOC file root: {error}"))?
+                .value;
             if file.word_document.fib != fib {
                 return Err("typed DOC file root changed the FIB".to_owned());
             }
@@ -6856,8 +6857,9 @@ fn word_document_stream_name_lookup_is_case_insensitive() {
             .unwrap_or_else(|| panic!("{file_name}: case-insensitive lookup failed"));
         assert_eq!(word_document.path, Path::new(physical_stream_name));
 
-        let file = DocFile::from_compound_file(compound.clone())
-            .unwrap_or_else(|error| panic!("{file_name}: open typed DOC tree: {error}"));
+        let file = DocFile::from_compound_file_compatible(compound.clone())
+            .unwrap_or_else(|error| panic!("{file_name}: open typed DOC tree: {error}"))
+            .value;
         let rebuilt = file
             .to_compound_file()
             .unwrap_or_else(|error| panic!("{file_name}: rebuild typed DOC tree: {error}"));
