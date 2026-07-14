@@ -35,10 +35,8 @@ pub fn assert_cfb_round_trip(path: &Path, file_name: &str) {
     let saved = original
         .to_bytes()
         .unwrap_or_else(|err| panic!("{file_name}: save CFB: {err}"));
-    cfb::CompoundFile::open_strict(std::io::Cursor::new(saved.as_slice()))
-        .unwrap_or_else(|err| panic!("{file_name}: strict reference reopen: {err}"));
-    let reopened = olecfsdk::cfb::CompoundFile::from_bytes(&saved)
-        .unwrap_or_else(|err| panic!("{file_name}: reopen saved CFB: {err}"));
+    let reopened = olecfsdk::cfb::CompoundFile::from_bytes_strict(&saved)
+        .unwrap_or_else(|err| panic!("{file_name}: strict reopen saved CFB: {err}"));
     assert!(
         original.logical_eq(&reopened),
         "{file_name}: logical CFB graph or stream bytes differ"
