@@ -837,7 +837,7 @@ fn legacy_powerpoint_document_streams_round_trip() {
         "PPT style OPC: {text_style_packages} slide-style/{notes_style_packages} notes-style/{table_style_packages} table-style packages/{style_payload_bytes} bytes"
     );
     eprintln!(
-        "checked {checked} PowerPoint Document streams: Current User {current_user_streams} streams/{current_user_parsed} parsed/{current_user_compatibility} compatibility/{current_user_truncated} truncated, {current_edit_links} valid/{current_edit_broken_links} broken current-edit links/{current_user_trailing_bytes} trailing bytes; {persist_chains} persist chains/{persist_chain_failures} failures/{persist_chain_edits} edits/{effective_persist_objects} effective objects; {record_count} records/{container_count} containers; core atoms Document {document_atoms}/Slide {slide_atoms}/Notes {notes_atoms}, {slide_persist_atoms} persist/{color_scheme_atoms} color schemes/{placeholder_atoms} placeholders/{headers_footers_atoms} header-footer; text {outline_text_refs} outline refs/{text_headers} headers/{text_chars_records} UTF-16/{text_bytes_records} byte strings/{c_string_records} CStrings/{style_text_prop_atoms} style-prop ({style_paragraph_runs} PF runs/{style_character_runs} CF runs/{style_tab_stops} tabs/{style_trailing_bytes} trailing bytes + {malformed_style_text_prop} malformed/{malformed_style_text_prop_bytes} bytes + {unresolved_style_text_prop} unresolved/{unresolved_style_text_prop_bytes} bytes)/{master_text_prop_atoms} master-prop/{text_master_style_atoms} master-style ({text_master_style_levels} levels/{text_master_style_trailing_bytes} trailing + {malformed_text_master_style} malformed/{malformed_text_master_style_bytes} bytes)/{text_ruler_atoms} rulers ({text_ruler_tab_stops} tabs/{text_ruler_trailing_bytes} trailing + {malformed_text_rulers} malformed/{malformed_text_ruler_bytes} bytes)/{text_special_info_atoms} special-info + {malformed_text_special_info} malformed; OfficeArt {office_art_records} typed records/{office_art_bytes} bytes; Pictures {pictures_streams} streams ({picture_partial_streams} partial)/{picture_records} complete + {picture_incomplete_records} incomplete records/{picture_typed_records} typed/{picture_opaque_records} opaque/{picture_payload_bytes} payload bytes/{picture_unparsed_bytes} unparsed bytes; {user_edit_count} UserEditAtom ({encrypted_user_edits} encrypted); {persist_directory_count} PersistDirectoryAtom with {persist_directory_entries} entries/{persist_offsets} offsets; {} bounded atom types/{atom_bytes} bytes; {} explicit unknown compatibility types; {truncated_records} truncated records/{truncated_bytes} bytes; {trailing_header_bytes} trailing header bytes",
+        "checked {checked} PowerPoint Document streams: Current User {current_user_streams} streams/{current_user_parsed} parsed/{current_user_compatibility} compatibility/{current_user_truncated} truncated, {current_edit_links} valid/{current_edit_broken_links} broken current-edit links/{current_user_trailing_bytes} trailing bytes; {persist_chains} persist chains/{persist_chain_failures} failures/{persist_chain_edits} edits/{effective_persist_objects} effective objects; {record_count} records/{container_count} containers; core atoms Document {document_atoms}/Slide {slide_atoms}/Notes {notes_atoms}, {slide_persist_atoms} persist/{color_scheme_atoms} color schemes/{placeholder_atoms} placeholders/{headers_footers_atoms} header-footer; text {outline_text_refs} outline refs/{text_headers} headers/{text_chars_records} UTF-16/{text_bytes_records} byte strings/{c_string_records} CStrings/{style_text_prop_atoms} style-prop ({style_paragraph_runs} PF runs/{style_character_runs} CF runs/{style_tab_stops} tabs/{style_trailing_bytes} trailing bytes + {malformed_style_text_prop} malformed/{malformed_style_text_prop_bytes} bytes + {unresolved_style_text_prop} unresolved/{unresolved_style_text_prop_bytes} bytes)/{master_text_prop_atoms} master-prop/{text_master_style_atoms} master-style ({text_master_style_levels} levels/{text_master_style_trailing_bytes} trailing + {malformed_text_master_style} malformed/{malformed_text_master_style_bytes} bytes)/{text_ruler_atoms} rulers ({text_ruler_tab_stops} tabs/{text_ruler_trailing_bytes} trailing + {malformed_text_rulers} malformed/{malformed_text_ruler_bytes} bytes)/{text_special_info_atoms} special-info + {malformed_text_special_info} malformed; OfficeArt {office_art_records} typed records/{office_art_bytes} bytes; Pictures {pictures_streams} streams ({picture_partial_streams} partial)/{picture_records} complete + {picture_incomplete_records} incomplete records/{picture_typed_records} typed/{picture_opaque_records} opaque/{picture_payload_bytes} payload bytes/{picture_unparsed_bytes} unparsed bytes; {user_edit_count} UserEditAtom ({encrypted_user_edits} encrypted); {persist_directory_count} PersistDirectoryAtom with {persist_directory_entries} entries/{persist_offsets} offsets; {} malformed spec types/{atom_bytes} bytes; {} explicit unknown compatibility types; {truncated_records} truncated records/{truncated_bytes} bytes; {trailing_header_bytes} trailing header bytes",
         atom_stats.len(),
         unknown_compatibility_stats.len()
     );
@@ -1360,6 +1360,36 @@ fn audit_sequence(
             | PptRecordData::MacLegacyPrintInfo(_)
             | PptRecordData::MacPrintDriverInfo(_)
             | PptRecordData::HandoutCompatibility(_)
+            | PptRecordData::NamedShowSlides(_)
+            | PptRecordData::BookmarkSeed(_)
+            | PptRecordData::ShapeFlags(_)
+            | PptRecordData::ShapeFlags10(_)
+            | PptRecordData::RoundTripNewPlaceholderId12(_)
+            | PptRecordData::FontEmbedDataBlob(_)
+            | PptRecordData::BookmarkEntity(_)
+            | PptRecordData::RtfDateTimeMeta(_)
+            | PptRecordData::ChartBuild(_)
+            | PptRecordData::DiagramBuild(_)
+            | PptRecordData::LinkedShape10(_)
+            | PptRecordData::LinkedSlide10(_)
+            | PptRecordData::Diff10(_)
+            | PptRecordData::SlideListTableSize10(_)
+            | PptRecordData::SlideListEntry10(_)
+            | PptRecordData::FontEmbedFlags10(_)
+            | PptRecordData::PhotoAlbumInfo10(_)
+            | PptRecordData::TimeIterateData(_)
+            | PptRecordData::TextDefaults9(_)
+            | PptRecordData::ExternalOleLink(_)
+            | PptRecordData::ExternalOleControl(_)
+            | PptRecordData::ExternalCdAudio(_)
+            | PptRecordData::BroadcastDocInfo9(_)
+            | PptRecordData::EnvelopeFlags9(_)
+            | PptRecordData::EnvelopeData9(_)
+            | PptRecordData::DocRoutingSlip(_)
+            | PptRecordData::Metafile(_)
+            | PptRecordData::RoundTripSlideSyncInfo12(_)
+            | PptRecordData::TimeColorBehavior(_)
+            | PptRecordData::TimeRotationBehavior(_)
             | PptRecordData::OutlineTextPropsHeader9(_)
             | PptRecordData::ExternalMedia(_)
             | PptRecordData::ExternalWavAudioEmbedded(_)
@@ -1427,11 +1457,11 @@ fn audit_sequence(
                     .map(|entry| entry.stream_offsets.len())
                     .sum::<usize>();
             }
-            PptRecordData::Atom(bytes) => {
+            PptRecordData::MalformedSpecRecord(value) => {
                 let stats = audit.atoms.entry(record.header.record_type).or_default();
                 stats.records += 1;
-                stats.bytes += bytes.len();
-                stats.lengths.insert(bytes.len());
+                stats.bytes += value.body.len();
+                stats.lengths.insert(value.body.len());
                 let selected_type = std::env::var("PPT_REPORT_ATOM_TYPE")
                     .ok()
                     .and_then(|value| u16::from_str_radix(value.trim_start_matches("0x"), 16).ok());
@@ -1449,8 +1479,8 @@ fn audit_sequence(
                         audit.source.display(),
                         record.offset,
                         record.header.instance,
-                        bytes.len(),
-                        &bytes[..bytes.len().min(64)],
+                        value.body.len(),
+                        &value.body[..value.body.len().min(64)],
                         preceding,
                         ancestry,
                         programmable_tag

@@ -144,6 +144,7 @@ fn legacy_word_fibs_round_trip() {
     let mut empty_styles = 0usize;
     let mut style_definition_bytes = 0usize;
     let mut style_name_units = 0usize;
+    let mut revision_marked_styles = 0usize;
     let mut style_upx_prls = 0usize;
     let mut style_upx_padding = BTreeMap::<u8, usize>::new();
     let mut style_upx_index_mismatches = BTreeMap::<(u16, u16), usize>::new();
@@ -707,6 +708,8 @@ fn legacy_word_fibs_round_trip() {
     let mut toolbar_control_records = 0usize;
     let mut toolbar_control_bytes = 0usize;
     let mut toolbar_control_shapes = BTreeMap::<(u8, u16, u8, u8), usize>::new();
+    let mut custom_toolbar_records = 0usize;
+    let mut custom_toolbar_controls = 0usize;
     let mut shape_anchors_without_fsp = 0usize;
     let mut textbox_stories_without_fsp = 0usize;
     let mut failures = Vec::new();
@@ -1583,6 +1586,14 @@ fn legacy_word_fibs_round_trip() {
                                     CommandCustomizationRecord::MacroNames(_) => "macro-names",
                                     CommandCustomizationRecord::Toolbar(value) => {
                                         toolbar_control_records += value.controls.len();
+                                        for toolbar in value
+                                            .customizations
+                                            .iter()
+                                            .filter_map(|value| value.custom_toolbar.as_ref())
+                                        {
+                                            custom_toolbar_records += 1;
+                                            custom_toolbar_controls += toolbar.controls.len();
+                                        }
                                         for control in &value.controls {
                                             *toolbar_control_shapes
                                                 .entry((
@@ -3799,6 +3810,47 @@ fn legacy_word_fibs_round_trip() {
                             *style_upx_padding.entry(value).or_default() += 1;
                         }
                     }
+                    StyleFormatting::RevisionParagraph {
+                        paragraph,
+                        character,
+                        original_paragraph,
+                        original_character,
+                        ..
+                    } => {
+                        revision_marked_styles += 1;
+                        papx.extend([paragraph, original_paragraph]);
+                        groups.extend([
+                            &paragraph.properties,
+                            &character.properties,
+                            &original_paragraph.properties,
+                            &original_character.properties,
+                        ]);
+                        for value in [
+                            paragraph.padding,
+                            character.padding,
+                            original_paragraph.padding,
+                            original_character.padding,
+                        ]
+                        .into_iter()
+                        .flatten()
+                        {
+                            *style_upx_padding.entry(value).or_default() += 1;
+                        }
+                    }
+                    StyleFormatting::RevisionCharacter {
+                        character,
+                        original_character,
+                        ..
+                    } => {
+                        revision_marked_styles += 1;
+                        groups.extend([&character.properties, &original_character.properties]);
+                        for value in [character.padding, original_character.padding]
+                            .into_iter()
+                            .flatten()
+                        {
+                            *style_upx_padding.entry(value).or_default() += 1;
+                        }
+                    }
                     StyleFormatting::Table {
                         table,
                         paragraph,
@@ -4276,6 +4328,8 @@ fn legacy_word_fibs_round_trip() {
     assert_eq!(typed_command_customizations, 353);
     assert_eq!(toolbar_control_records, 2);
     assert_eq!(toolbar_control_bytes, 262);
+    assert_eq!(custom_toolbar_records, 0);
+    assert_eq!(custom_toolbar_controls, 0);
     assert_eq!(
         toolbar_control_shapes,
         BTreeMap::from([((0x0a, 0x0001, 0x00, 0x05), 2)])
@@ -5979,6 +6033,7 @@ fn legacy_word_fibs_round_trip() {
     assert_eq!(empty_styles, 3_986);
     assert_eq!(style_definition_bytes, 612_108);
     assert_eq!(style_name_units, 101_716);
+    assert_eq!(revision_marked_styles, 0);
     assert_eq!(style_upx_prls, 43_260);
     assert_eq!(
         field_tables,

@@ -9,18 +9,23 @@ DOCX 是权威原件。Markdown 仅用于全文搜索和日常阅读；遇到转
 
 ## 转换为 Markdown
 
-在本目录执行以下命令。每份规范使用独立的 media 子目录，避免不同文档中同名图片
-互相覆盖；`raw_html` 用于尽量保留 GFM 无法表达的复杂表格等结构。
+在本目录执行以下命令。生成物统一放入已被 Git 忽略的 `references/` 子目录；
+每份规范使用独立的 media 子目录，避免不同文档中同名图片互相覆盖；`raw_html`
+用于尽量保留 GFM 无法表达的复杂表格等结构。
 
 ```bash
 stem='[MS-DOC]-260217'
 
-pandoc "${stem}.docx" \
-  --from=docx \
-  --to=gfm+footnotes+raw_html \
-  --extract-media="./media/${stem}" \
-  --wrap=none \
-  -o "${stem}.md"
+mkdir -p references
+(
+  cd references
+  pandoc "../${stem}.docx" \
+    --from=docx \
+    --to=gfm+footnotes+raw_html \
+    --extract-media="./media/${stem}" \
+    --wrap=none \
+    -o "${stem}.md"
+)
 ```
 
 转换其他规范时只需修改 `stem`。生成后不要手工简化 raw HTML 表格；若 DOCX 更新，

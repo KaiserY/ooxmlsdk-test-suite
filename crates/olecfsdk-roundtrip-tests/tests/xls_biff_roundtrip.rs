@@ -171,6 +171,12 @@ fn legacy_office_workbook_streams_round_trip() {
     let mut drawing_obj_raw_bytes = 0usize;
     let mut drawing_obj_typed = 0usize;
     let mut drawing_obj_subrecord_raw = BTreeMap::<u16, UnknownStats>::new();
+    let mut obj_picture_formulas = 0usize;
+    let mut obj_picture_embed_info = 0usize;
+    let mut obj_picture_positions = 0usize;
+    let mut obj_picture_control_stream_sizes = 0usize;
+    let mut obj_picture_keys = 0usize;
+    let mut obj_picture_compatibility_bytes = 0usize;
     let mut office_art_compatibility_containers = BTreeMap::<u16, usize>::new();
     let mut office_art_incomplete_property_tables = 0usize;
     let mut office_art_incomplete_property_entries = 0usize;
@@ -279,6 +285,18 @@ fn legacy_office_workbook_streams_round_trip() {
     let mut feature11_fields = 0usize;
     let mut feature11_formats = 0usize;
     let mut feature11_auto_filters = 0usize;
+    let mut feature11_embedded_auto_filters = 0usize;
+    let mut feature11_xml_maps = 0usize;
+    let mut feature11_formulas = 0usize;
+    let mut feature11_total_formulas = 0usize;
+    let mut feature11_total_array_formulas = 0usize;
+    let mut feature11_total_texts = 0usize;
+    let mut feature11_wss_info = 0usize;
+    let mut feature11_query_fields = 0usize;
+    let mut feature11_cached_headers = 0usize;
+    let mut feature11_deleted_id_lists = 0usize;
+    let mut feature11_changed_id_lists = 0usize;
+    let mut feature11_invalid_cell_lists = 0usize;
     let mut name_records = 0usize;
     let mut name_unparsed_rgce_bytes = 0usize;
     let mut name_rgcb_tail_bytes = 0usize;
@@ -747,6 +765,23 @@ fn legacy_office_workbook_streams_round_trip() {
                                     subrecord.data,
                                     ObjSubrecordData::TruncatedPictureFlags { .. }
                                 ));
+                                if let ObjSubrecordData::PictureFormula(picture) = &subrecord.data {
+                                    obj_picture_formulas += 1;
+                                    obj_picture_embed_info += usize::from(matches!(
+                                        &picture.formula.data,
+                                        ObjFormulaData::Parsed {
+                                            embed_info: Some(_),
+                                            ..
+                                        }
+                                    ));
+                                    obj_picture_positions +=
+                                        usize::from(picture.control_stream_position.is_some());
+                                    obj_picture_control_stream_sizes +=
+                                        usize::from(picture.control_stream_size.is_some());
+                                    obj_picture_keys += usize::from(picture.key.is_some());
+                                    obj_picture_compatibility_bytes +=
+                                        picture.compatibility_trailing.len();
+                                }
                                 if let ObjSubrecordData::Raw(bytes) = &subrecord.data {
                                     standalone_obj_raw_subrecords += 1;
                                     *standalone_obj_raw_shapes
@@ -757,6 +792,25 @@ fn legacy_office_workbook_streams_round_trip() {
                         }
                         BiffRecordData::ObjCompatibility { value, .. } => {
                             obj_id_compatibility_records += 1;
+                            for subrecord in &value.subrecords {
+                                if let ObjSubrecordData::PictureFormula(picture) = &subrecord.data {
+                                    obj_picture_formulas += 1;
+                                    obj_picture_embed_info += usize::from(matches!(
+                                        &picture.formula.data,
+                                        ObjFormulaData::Parsed {
+                                            embed_info: Some(_),
+                                            ..
+                                        }
+                                    ));
+                                    obj_picture_positions +=
+                                        usize::from(picture.control_stream_position.is_some());
+                                    obj_picture_control_stream_sizes +=
+                                        usize::from(picture.control_stream_size.is_some());
+                                    obj_picture_keys += usize::from(picture.key.is_some());
+                                    obj_picture_compatibility_bytes +=
+                                        picture.compatibility_trailing.len();
+                                }
+                            }
                             assert!(value.subrecords.iter().all(|subrecord| !matches!(
                                 subrecord.data,
                                 ObjSubrecordData::Raw(_)
@@ -839,10 +893,34 @@ fn legacy_office_workbook_streams_round_trip() {
                         BiffRecordData::Feature11(feature) => {
                             feature11_records += 1;
                             feature11_fields += feature.feature.fields.len();
+                            feature11_deleted_id_lists +=
+                                usize::from(feature.feature.deleted_row_ids.is_some());
+                            feature11_changed_id_lists +=
+                                usize::from(feature.feature.changed_row_ids.is_some());
+                            feature11_invalid_cell_lists +=
+                                usize::from(feature.feature.invalid_cells.is_some());
                             for field in &feature.feature.fields {
                                 feature11_formats += usize::from(field.aggregate_format.is_some())
                                     + usize::from(field.insert_row_format.is_some());
                                 feature11_auto_filters += usize::from(field.auto_filter.is_some());
+                                feature11_embedded_auto_filters += field
+                                    .auto_filter
+                                    .as_ref()
+                                    .map_or(0, |value| usize::from(value.filter.is_some()));
+                                feature11_xml_maps += usize::from(field.xml_map.is_some());
+                                feature11_formulas += usize::from(field.formula.is_some());
+                                feature11_total_formulas +=
+                                    usize::from(field.total_formula.is_some());
+                                feature11_total_array_formulas += usize::from(matches!(
+                                    field.total_formula.as_ref(),
+                                    Some(olecfsdk::xls::Feat11TotalFmla::ArrayFormula(_))
+                                ));
+                                feature11_total_texts += usize::from(field.total_text.is_some());
+                                feature11_wss_info += usize::from(field.wss_info.is_some());
+                                feature11_query_fields +=
+                                    usize::from(field.query_field_id.is_some());
+                                feature11_cached_headers +=
+                                    usize::from(field.cached_header.is_some());
                             }
                         }
                         BiffRecordData::Name(name) => {
@@ -1303,6 +1381,28 @@ fn legacy_office_workbook_streams_round_trip() {
                                     MsoDrawingHostData::Obj(obj) => {
                                         drawing_obj_typed += 1;
                                         for subrecord in &obj.subrecords {
+                                            if let ObjSubrecordData::PictureFormula(picture) =
+                                                &subrecord.data
+                                            {
+                                                obj_picture_formulas += 1;
+                                                obj_picture_embed_info += usize::from(matches!(
+                                                    &picture.formula.data,
+                                                    ObjFormulaData::Parsed {
+                                                        embed_info: Some(_),
+                                                        ..
+                                                    }
+                                                ));
+                                                obj_picture_positions += usize::from(
+                                                    picture.control_stream_position.is_some(),
+                                                );
+                                                obj_picture_control_stream_sizes += usize::from(
+                                                    picture.control_stream_size.is_some(),
+                                                );
+                                                obj_picture_keys +=
+                                                    usize::from(picture.key.is_some());
+                                                obj_picture_compatibility_bytes +=
+                                                    picture.compatibility_trailing.len();
+                                            }
                                             if let ObjSubrecordData::Raw(payload) = &subrecord.data
                                             {
                                                 let stats = drawing_obj_subrecord_raw
@@ -1318,6 +1418,28 @@ fn legacy_office_workbook_streams_round_trip() {
                                         obj_id_compatibility_records += 1;
                                         drawing_obj_typed += 1;
                                         for subrecord in &value.subrecords {
+                                            if let ObjSubrecordData::PictureFormula(picture) =
+                                                &subrecord.data
+                                            {
+                                                obj_picture_formulas += 1;
+                                                obj_picture_embed_info += usize::from(matches!(
+                                                    &picture.formula.data,
+                                                    ObjFormulaData::Parsed {
+                                                        embed_info: Some(_),
+                                                        ..
+                                                    }
+                                                ));
+                                                obj_picture_positions += usize::from(
+                                                    picture.control_stream_position.is_some(),
+                                                );
+                                                obj_picture_control_stream_sizes += usize::from(
+                                                    picture.control_stream_size.is_some(),
+                                                );
+                                                obj_picture_keys +=
+                                                    usize::from(picture.key.is_some());
+                                                obj_picture_compatibility_bytes +=
+                                                    picture.compatibility_trailing.len();
+                                            }
                                             if let ObjSubrecordData::Raw(payload) = &subrecord.data
                                             {
                                                 let stats = drawing_obj_subrecord_raw
@@ -2111,6 +2233,18 @@ fn legacy_office_workbook_streams_round_trip() {
         "FeatHdr malformed payload is no longer the known CVE fixture"
     );
     assert_eq!(feature11_records, 8, "Feature11 corpus coverage changed");
+    assert_eq!(feature11_embedded_auto_filters, 0);
+    assert_eq!(feature11_xml_maps, 0);
+    assert_eq!(feature11_formulas, 0);
+    assert_eq!(feature11_total_formulas, 0);
+    assert_eq!(feature11_total_array_formulas, 0);
+    assert_eq!(feature11_total_texts, 0);
+    assert_eq!(feature11_wss_info, 0);
+    assert_eq!(feature11_query_fields, 0);
+    assert_eq!(feature11_cached_headers, 0);
+    assert_eq!(feature11_deleted_id_lists, 0);
+    assert_eq!(feature11_changed_id_lists, 0);
+    assert_eq!(feature11_invalid_cell_lists, 0);
     assert_eq!(feature_records, 36, "Feat corpus coverage changed");
     assert_eq!(dconn_records, 4, "DConn corpus coverage changed");
     assert_eq!(text_query_records, 3, "TxtQry corpus coverage changed");
@@ -2351,6 +2485,21 @@ fn legacy_office_workbook_streams_round_trip() {
         drawing_obj_subrecord_raw.is_empty(),
         "Obj subrecords fell back to raw payloads: {drawing_obj_subrecord_raw:?}"
     );
+    assert_eq!(obj_picture_formulas, 150, "FtPictFmla coverage changed");
+    assert_eq!(
+        obj_picture_embed_info, 150,
+        "PictFmlaEmbedInfo coverage changed"
+    );
+    assert_eq!(obj_picture_positions, 150, "lPosInCtlStm coverage changed");
+    assert_eq!(
+        obj_picture_control_stream_sizes, 143,
+        "cbBufInCtlStm coverage changed"
+    );
+    assert_eq!(obj_picture_keys, 143, "PictFmlaKey coverage changed");
+    assert_eq!(
+        obj_picture_compatibility_bytes, 0,
+        "FtPictFmla retained compatibility bytes"
+    );
     assert_eq!(
         drawing_group_partial, 1,
         "partial drawing-group coverage changed"
@@ -2532,6 +2681,9 @@ fn legacy_office_workbook_streams_round_trip() {
         "{} of {checked} workbook streams failed:\n{}",
         failures.len(),
         failures.join("\n")
+    );
+    eprintln!(
+        "Obj FtPictFmla: {obj_picture_formulas} formulas, {obj_picture_embed_info} embed-info values, {obj_picture_positions} positions, {obj_picture_control_stream_sizes} Ctls sizes, {obj_picture_keys} keys, {obj_picture_compatibility_bytes} compatibility bytes"
     );
     eprintln!(
         "checked {checked} workbook streams: {biff8} BIFF8, {legacy} legacy; {} unknown BIFF record types remain; Formula has {formula_unparsed_rgce_bytes} unparsed rgce bytes, {formula_rgcb_bytes} unparsed rgcb bytes and {formula_missing_extra} explicit missing-extra compatibility states; SharedFormula has {shared_formula_records} records, {shared_formula_unparsed_rgce_bytes} unparsed rgce and {shared_formula_rgcb_bytes} rgcb bytes; Array has {array_records} records, {array_unparsed_rgce_bytes} unparsed rgce and {array_rgcb_bytes} rgcb bytes; SupBook has {sup_book_records} records, {sup_book_compatibility} compatibility values and {sup_book_trailing_bytes} retained trailing bytes; ExternName has {extern_name_records} records ({extern_name_formula_records} formula/{extern_name_cached_link_records} cached-link/{extern_name_compatibility_records} compatibility with {extern_name_compatibility_bytes} bytes); Hyperlink has {hyperlink_records} records, {hyperlink_compatibility_records} compatibility/{hyperlink_compatibility_bytes} bytes, {hyperlink_truncated_records} truncated ({hyperlink_truncated_url_records} typed URL moniker/{hyperlink_truncated_url_address_bytes} address bytes, {hyperlink_truncated_bytes} generic bytes) and {hyperlink_trailing_bytes} trailing bytes; DV has {data_validation_records} records, {data_validation_unparsed_rgce_bytes} unparsed rgce bytes and {data_validation_missing_extra} missing extras; CF has {conditional_formatting_records} records, {conditional_formatting_unparsed_rgce_bytes} unparsed rgce bytes and {conditional_formatting_missing_extra} missing extras; CFEx has {cfex_records} records ({cfex_cf12_records} CF12/{cfex_non_cf12_records} non-CF12, {cfex_formats} DXFN12 and {cfex_extension_unparsed_bytes} unparsed extension bytes); CF12 has {cf12_records} records/types {cf12_types:?}/{cf12_unparsed_formula_bytes} unparsed formula bytes; CrtMlFrt has {crt_ml_frt_records} records/{xml_tk_records} XmlTk values {xml_tk_kinds:?}; LinkedData has {linked_data_records} records, {linked_data_unparsed_rgce_bytes} unparsed rgce bytes and {linked_data_missing_extra} missing extras; FeatHdr has {feature_header_records} records ({feature_header_none} empty/{feature_header_enhanced_protection} protection/{feature_header_property_bag_store} property-bag/{feature_header_malformed} malformed with {feature_header_malformed_bytes} bytes); Feat has {feature_records} records ({feature_protection} protection/{feature_formula_errors} formula-error/{feature_smart_tags} smart-tag, {feature_security_descriptors} security descriptors); DConn has {dconn_records} records ({dconn_text} text/{dconn_web} web); Feature11 has {feature11_records} records/{feature11_fields} fields/{feature11_formats} DXFN12List/{feature11_auto_filters} AutoFilter envelopes; Name has {name_records} records ({name_continued_records} continued), {name_unparsed_rgce_bytes} unparsed rgce bytes, {name_rgcb_tail_bytes} rgcb tail bytes and {name_missing_extra} missing extras; Pls has {pls_records} records ({pls_continued} continued), {pls_windows_full} full/{pls_windows_truncated} truncated DEVMODEW and {pls_platform_specific} values; MsoDrawingGroup has {drawing_group_records} records ({drawing_group_continued} continued), {drawing_group_complete} complete/{drawing_group_partial} partial trees ({drawing_group_partial_complete_records} complete + {drawing_group_partial_incomplete_records} incomplete records/{drawing_group_partial_unparsed_bytes} unparsed bytes) and {} whole-byte incomplete/{drawing_group_incomplete_bytes} bytes; MsoDrawing has {drawing_records} aggregates/{drawing_segments} segments/{drawing_host_records} host records, {drawing_complete} complete/{drawing_partial} partial trees ({drawing_partial_complete_records} complete + {drawing_partial_incomplete_records} incomplete records/{drawing_partial_unparsed_bytes} unparsed bytes) and {} whole-byte incomplete/{drawing_incomplete_bytes} bytes; host types: TxO {drawing_txo_typed} typed/{drawing_txo_raw} raw with {drawing_txo_control_contexts} ControlInfo/{drawing_txo_reserved_contexts} reserved/{drawing_txo_undetermined_contexts} undetermined contexts, {drawing_txo_formula_typed} typed/{drawing_txo_formula_opaque} opaque ObjFmla ({drawing_txo_formula_bytes} bytes) and {drawing_txo_trailing_bytes} trailing bytes, Note {drawing_note_typed} typed/{drawing_note_raw} raw, Obj {drawing_obj_typed} typed/{drawing_obj_raw} raw/{drawing_obj_raw_bytes} bytes; XFExt has {xf_ext_unparsed_bytes} unparsed bytes across property types {xf_ext_unknown_types:#06x?}; StyleExt has {style_ext_unparsed_bytes} unparsed XFProp bytes; DXF has {dxf_records} records/{dxf_unparsed_bytes} unparsed XFProp bytes; SST has {sst_records} records/{sst_strings} parsed strings, {sst_extension_bytes} ExtRst bytes ({sst_extension_unparsed_bytes} unparsed), {sst_trailing_bytes} compatibility tail bytes and {} truncated tables",
