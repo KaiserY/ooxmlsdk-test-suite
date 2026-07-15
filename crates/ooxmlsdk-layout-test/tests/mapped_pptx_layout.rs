@@ -214,9 +214,9 @@ const CASES: &[PptxCase] = &[
     ),
     case!(
         tdf103792,
-        source: "../core/sd/qa/unit/import-tests2.cxx:testTdf103792",
+        source: "../core/svx/source/sdr/primitive2d/sdrrectangleprimitive2d.cxx:SdrRectanglePrimitive2D::create2DDecomposition",
         file: "sd/qa/unit/data/pptx/tdf103792.pptx",
-        ordered: [ordered!(0, ["Click to add Title"])],
+        absent: [pt!(0, "Click to add Title")],
     ),
     case!(
         tdf119649,

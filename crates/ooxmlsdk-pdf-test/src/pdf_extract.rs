@@ -142,6 +142,8 @@ pub struct TextCharSummary {
     pub page_index: usize,
     pub text: String,
     pub bounds: String,
+    pub origin_x: String,
+    pub origin_y: String,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -513,10 +515,15 @@ fn pdfium_summary(pdf: &[u8]) -> Result<PdfiumSummary, String> {
                 let bounds = char
                     .loose_bounds()
                     .map_err(|error| format!("PDFium could not read char bounds: {error}"))?;
+                let (origin_x, origin_y) = char
+                    .origin()
+                    .map_err(|error| format!("PDFium could not read char origin: {error}"))?;
                 text_chars.push(TextCharSummary {
                     page_index,
                     text: value,
                     bounds: format_rect(bounds, 2),
+                    origin_x: format_points(origin_x, 2),
+                    origin_y: format_points(origin_y, 2),
                 });
             }
         }

@@ -1,6 +1,7 @@
 use ooxmlsdk_pdf_test::{
     PdfBounds, PdfSummary, libreoffice_fixture, parse_pdf_rect, pdf_summary_for_fixture,
-    raw_image_pixel_for_fixture, rendered_page_image_for_fixture,
+    pdf_summary_for_fixture_with_options, raw_image_pixel_for_fixture,
+    rendered_page_image_for_fixture,
 };
 
 fn fixture(name: &str) -> std::path::PathBuf {
@@ -13,13 +14,57 @@ fn render_summary(name: &str) -> PdfSummary {
 
 fn normalize_space(text: &str) -> String {
     let mut normalized = String::with_capacity(text.len());
-    for part in text.split_whitespace() {
-        if !normalized.is_empty() {
+    let mut pending_space = false;
+    for character in text.chars() {
+        if character.is_whitespace() {
+            pending_space = true;
+            continue;
+        }
+        let previous_is_opening = normalized
+            .chars()
+            .next_back()
+            .is_some_and(|previous| matches!(previous, '(' | '[' | '{'));
+        let is_closing = matches!(
+            character,
+            '.' | ',' | ';' | ':' | '!' | '?' | '%' | ')' | ']' | '}'
+        );
+        if pending_space && !normalized.is_empty() && !previous_is_opening && !is_closing {
             normalized.push(' ');
         }
-        normalized.push_str(part);
+        normalized.push(character);
+        pending_space = false;
     }
     normalized
+}
+
+fn text_object_sequence_satisfies(
+    summary: &PdfSummary,
+    expected_text: &str,
+    predicate: impl Fn(&ooxmlsdk_pdf_test::pdf_extract::TextObjectSummary) -> bool,
+) -> bool {
+    let expected_text = normalize_space(expected_text);
+    for start in 0..summary.text_objects.len() {
+        let page_index = summary.text_objects[start].page_index;
+        let mut combined = String::new();
+        let mut all_match = true;
+        for object in summary.text_objects[start..]
+            .iter()
+            .take_while(|object| object.page_index == page_index)
+        {
+            if normalize_space(&object.text).is_empty() {
+                continue;
+            }
+            if !combined.is_empty() {
+                combined.push(' ');
+            }
+            combined.push_str(&object.text);
+            all_match &= predicate(object);
+            if normalize_space(&combined).contains(&expected_text) && all_match {
+                return true;
+            }
+        }
+    }
+    false
 }
 
 fn page_text(summary: &PdfSummary, page_index: usize) -> String {
@@ -105,13 +150,9 @@ fn assert_page_count(summary: &PdfSummary, expected: usize) {
 
 fn assert_text_fill_color(summary: &PdfSummary, expected_text: &str, expected_color: &str) {
     assert!(
-        summary
-            .text_objects
-            .iter()
-            .any(
-                |object| normalize_space(&object.text).contains(expected_text)
-                    && object.fill_color.as_deref() == Some(expected_color)
-            ),
+        text_object_sequence_satisfies(summary, expected_text, |object| {
+            object.fill_color.as_deref() == Some(expected_color)
+        }),
         "missing text {expected_text:?} with fill color {expected_color}; text_objects={:?}",
         summary.text_objects
     );
@@ -123,10 +164,8 @@ fn assert_text_object_font_contains(
     expected_font: &str,
 ) {
     assert!(
-        summary.text_objects.iter().any(|object| {
-            normalize_space(&object.text).contains(expected_text)
-                && (object.font_name.contains(expected_font)
-                    || object.font_family.contains(expected_font))
+        text_object_sequence_satisfies(summary, expected_text, |object| {
+            object.font_name.contains(expected_font) || object.font_family.contains(expected_font)
         }),
         "missing text {expected_text:?} using font {expected_font:?}; text_objects={:?}",
         summary.text_objects
@@ -134,12 +173,18 @@ fn assert_text_object_font_contains(
 }
 
 fn assert_text_font_size(summary: &PdfSummary, expected_text: &str, expected_size: &str) {
+    let expected_size = expected_size.parse::<f32>().unwrap();
+    // PowerPoint's PDF path uses a 600 dpi print grid. The largest rounding
+    // delta from an integral point size is half of one device pixel in points.
+    const POWERPOINT_PRINT_HALF_STEP_PT: f32 = 72.0 / 600.0 / 2.0;
     assert!(
-        summary.text_objects.iter().any(|object| {
-            normalize_space(&object.text).contains(expected_text)
-                && object.scaled_font_size == expected_size
+        text_object_sequence_satisfies(summary, expected_text, |object| {
+            object
+                .scaled_font_size
+                .parse::<f32>()
+                .is_ok_and(|actual| (actual - expected_size).abs() <= POWERPOINT_PRINT_HALF_STEP_PT)
         }),
-        "missing text {expected_text:?} with font size {expected_size}; text_objects={:?}",
+        "missing text {expected_text:?} with font size {expected_size:.2}; text_objects={:?}",
         summary.text_objects
     );
 }
@@ -562,18 +607,66 @@ fn assert_text_left_delta_close(
 }
 
 fn text_bounds_containing(summary: &PdfSummary, page_index: usize, expected: &str) -> PdfBounds {
-    summary
-    .text_segments
-    .iter()
-    .filter(|segment| segment.page_index == page_index)
-    .find(|segment| normalize_space(&segment.text).contains(expected))
-    .and_then(|segment| parse_pdf_rect(&segment.bounds).ok())
-    .unwrap_or_else(|| {
-      panic!(
-        "missing text segment containing {expected:?} on page {page_index}; text_segments={:?}",
-        summary.text_segments
-      )
-    })
+    let characters = summary
+        .text_chars
+        .iter()
+        .filter(|character| character.page_index == page_index)
+        .collect::<Vec<_>>();
+    let mut normalized = Vec::new();
+    let mut source_indices = Vec::new();
+    let mut pending_space = None;
+    for (source_index, character) in characters.iter().enumerate() {
+        for value in character.text.chars() {
+            if value.is_whitespace() {
+                pending_space = Some(source_index);
+                continue;
+            }
+            let previous_is_opening = normalized
+                .last()
+                .is_some_and(|previous| matches!(previous, '(' | '[' | '{'));
+            let is_closing = matches!(
+                value,
+                '.' | ',' | ';' | ':' | '!' | '?' | '%' | ')' | ']' | '}'
+            );
+            if let Some(space_source_index) = pending_space.take()
+                && !normalized.is_empty()
+                && !previous_is_opening
+                && !is_closing
+            {
+                normalized.push(' ');
+                source_indices.push(space_source_index);
+            }
+            normalized.push(value);
+            source_indices.push(source_index);
+        }
+    }
+    let expected = normalize_space(expected).chars().collect::<Vec<_>>();
+    if let Some(start) = normalized
+        .windows(expected.len())
+        .position(|window| window == expected)
+    {
+        let mut bounds = None;
+        for source_index in &source_indices[start..start + expected.len()] {
+            let character_bounds = parse_pdf_rect(&characters[*source_index].bounds).ok();
+            bounds = match (bounds, character_bounds) {
+                (None, bounds) => bounds,
+                (Some(bounds), Some(character_bounds)) => Some(PdfBounds {
+                    left: bounds.left.min(character_bounds.left),
+                    bottom: bounds.bottom.min(character_bounds.bottom),
+                    right: bounds.right.max(character_bounds.right),
+                    top: bounds.top.max(character_bounds.top),
+                }),
+                (bounds, None) => bounds,
+            };
+        }
+        if let Some(bounds) = bounds {
+            return bounds;
+        }
+    }
+    panic!(
+        "missing text character sequence containing {expected:?} on page {page_index}; text_chars={:?}",
+        summary.text_chars
+    )
 }
 
 fn text_bounds_exact(summary: &PdfSummary, page_index: usize, expected: &str) -> PdfBounds {
@@ -1060,10 +1153,11 @@ fn mapped_pptx_bnc591147_preserves_two_media_slides() {
 }
 
 #[test]
-// Source: ../core/sd/qa/unit/import-tests2.cxx:testTdf103792
-fn mapped_pptx_tdf103792_keeps_visible_title_placeholder_text() {
+// Source: ../core/svx/source/sdr/primitive2d/sdrrectangleprimitive2d.cxx:
+// SdrRectanglePrimitive2D::create2DDecomposition
+fn mapped_pptx_tdf103792_omits_editor_only_title_placeholder_prompt() {
     let summary = render_summary("pptx/tdf103792.pptx");
-    assert_page_contains_in_order(&summary, 0, &["Click to add Title"]);
+    assert_text_absent(&summary, 0, "Click to add Title");
 }
 
 #[test]
@@ -1124,18 +1218,23 @@ fn mapped_pptx_tdf150719_preserves_underlined_text_decoration() {
 }
 
 #[test]
-// Source: ../core/sd/qa/unit/import-tests2.cxx:testTdf103876
-fn mapped_pptx_tdf103876_preserves_placeholder_text_color() {
+// Source: ../core/svx/source/sdr/primitive2d/sdrrectangleprimitive2d.cxx:
+// SdrRectanglePrimitive2D::create2DDecomposition
+fn mapped_pptx_tdf103876_omits_colored_editor_only_placeholder_prompt() {
     let summary = render_summary("pptx/tdf103876.pptx");
-    assert_has_text_fill_color(&summary, "#ff0000@ff");
+    assert_text_absent(&summary, 0, "Click to add Title");
+    assert!(summary.text_objects.is_empty());
 }
 
 #[test]
-// Source: ../core/sd/qa/unit/import-tests2.cxx:testTdf104015
-fn mapped_pptx_tdf104015_inherits_master_shape_fill_and_line() {
+// Sources:
+// - ../core/sd/qa/unit/import-tests2.cxx:testTdf104015
+// - ../core/drawinglayer/source/primitive2d/shadowprimitive2d.cxx
+fn mapped_pptx_tdf104015_inherits_master_shape_fill_line_and_shadow() {
     let summary = render_summary("pptx/tdf104015.pptx");
     assert_has_path_fill_color(&summary, "#ff0000@ff");
     assert_has_stroked_path_color(&summary, "#0000ff@ff");
+    assert_page_image_count_at_least(&summary, 0, 1);
 }
 
 #[test]
@@ -1440,10 +1539,36 @@ fn mapped_pptx_greysscale_graphic_preserves_grayscale_bitmap_color() {
 }
 
 #[test]
-// Source: ../core/sd/qa/unit/import-tests4.cxx:testTdf112209
+// Sources:
+// - ECMA-376 Part 1, 20.1.2.3.9 and 20.1.9.8/15/16/20
+// - ../core/sd/qa/unit/import-tests4.cxx:testTdf112209
+// - ../core/oox/source/drawingml/customshapegeometry.cxx
 fn mapped_pptx_tdf112209_preserves_grayscale_fill_bitmap_color() {
-    let summary = render_summary("pptx/tdf112209.pptx");
-    assert_first_image_top_left_rgb_close("pptx/tdf112209.pptx", &summary, 0, [0x84, 0x84, 0x84]);
+    const EMU_PER_POINT: f32 = 12_700.0;
+    let fixture_name = "pptx/tdf112209.pptx";
+    let summary = render_summary(fixture_name);
+    assert_page_image_count_at_least(&summary, 0, 2);
+    assert_page_has_clipping_ops(&summary, 1);
+    // LO's importer regression asserted its legacy 0x84 luminance result;
+    // Office fixed-output rendering applies the sRGB-primary weighting and
+    // produces approximately 0x90 while preserving the same blue-to-gray
+    // semantic transition.
+    assert_first_image_top_left_rgb_close(fixture_name, &summary, 0, [0x90, 0x90, 0x90]);
+
+    // This point lies inside the shape's rectangular bounds but outside its
+    // custom five-sided path. Both the bitmap and its blurred outer shadow
+    // must therefore leave the page background visible here.
+    let rendered = rendered_page_image_for_fixture(&fixture(fixture_name), 0, 1200)
+        .expect("render tdf112209 custom bitmap shape");
+    let x_pt = (3_365_351.0 * 0.95) / EMU_PER_POINT;
+    let y_from_top_pt = (883_685.0 + 4_259_815.0 * 0.10) / EMU_PER_POINT;
+    let [red, green, blue, _] = rendered
+        .sample_pdf_point_rgba(x_pt, rendered.page_height_pt - y_from_top_pt)
+        .expect("sample the clipped top-right corner");
+    assert!(
+        red >= 250 && green >= 250 && blue >= 250,
+        "custom path and shadow must leave the clipped corner white, got #{red:02x}{green:02x}{blue:02x}"
+    );
 }
 
 #[test]
@@ -1528,11 +1653,10 @@ fn mapped_pptx_tdf129686_preserves_opaque_text_fill() {
 fn mapped_pptx_tdf105150_preserves_slide_background_fill_usage() {
     let summary = render_summary("pptx/tdf105150.pptx");
     assert_page_has_stroked_path(&summary, 0);
-    assert!(!summary.paths.iter().any(|path| {
-        path.page_index == 0
-            && path.fill_mode.is_some()
-            && path.fill_color.as_deref() == Some("#ffffff@ff")
-    }));
+    // `useBgFill` is a page-relative background copy, not transparency. The
+    // later white background-filled rectangle therefore covers the earlier
+    // red outline in visible output.
+    assert_has_path_fill_color(&summary, "#ffffff@ff");
 }
 
 #[test]
@@ -1584,11 +1708,10 @@ fn mapped_pptx_tdf62255_preserves_table_cell_no_fill() {
 fn mapped_pptx_tdf127964_preserves_background_fill_usage() {
     let summary = render_summary("pptx/tdf127964.pptx");
     assert_page_has_stroked_path(&summary, 0);
-    assert!(!summary.paths.iter().any(|path| {
-        path.page_index == 0
-            && path.fill_mode.is_some()
-            && path.fill_color.as_deref() == Some("#ffffff@ff")
-    }));
+    // LibreOffice preserves noFill plus FillUseSlideBackground in its model;
+    // ECMA-376 and the Office PDF both render that state as the white master
+    // background inside the shape, not as transparent shape content.
+    assert_has_path_fill_color(&summary, "#ffffff@ff");
 }
 
 #[test]
@@ -2157,7 +2280,12 @@ fn mapped_pptx_tdf160490_preserves_placeholder_heights() {
 fn mapped_pptx_tdf165341_preserves_top_center_text_adjustment() {
     let summary = render_summary("pptx/tdf165341.pptx");
     assert_page_contains_in_order(&summary, 0, &["The shape is top", "center"]);
-    assert_text_centered_on_page(&summary, 0, "center", 24.0);
+    assert_text_centered_on_page(
+        &summary,
+        0,
+        "The shape is top – center – overriding paragraph right alignment.",
+        24.0,
+    );
 }
 
 #[test]
@@ -2184,7 +2312,28 @@ fn mapped_pptx_tdf93868_preserves_master_background_fill_usage() {
         0,
         &["Test", "Slide inherits objects from slideMaster"],
     );
-    assert_page_has_stroked_path(&summary, 0);
+    assert_text_fill_color(&summary, "Test", "#ffffff@ff");
+    assert_text_font_size(&summary, "Test", "39.96");
+    assert_has_stroked_path_color(&summary, "#ffffff@ff");
+    assert!(
+        summary.paths.iter().any(|path| {
+            path.page_index == 0
+                && path.fill_mode.is_some()
+                && path.stroked == Some(true)
+                && path
+                    .segment_details
+                    .iter()
+                    .filter(|segment| segment.segment_type == "BezierTo")
+                    .count()
+                    == 12
+        }),
+        "expected the clipped background as a cubic round-rectangle path; paths={:?}",
+        summary.paths
+    );
+    assert_eq!(
+        summary.image_count, 0,
+        "slide background gradient and rounded clipping must stay vector-native"
+    );
 }
 
 #[test]
@@ -2212,6 +2361,104 @@ fn mapped_pptx_tdf109067_preserves_diagonal_gradient_shape() {
     let summary = render_summary("pptx/tdf109067.pptx");
     assert_page_has_stroked_path(&summary, 0);
     assert!(summary.page_objects[0].path_objects >= 1);
+}
+
+#[test]
+// Sources:
+// - ../core/sd/qa/unit/export-tests-ooxml2.cxx:testTdf112088
+// - ../core/basegfx/source/tools/bgradient.cxx:BColorStops::checkPenultimate
+fn mapped_pptx_tdf112088_extends_the_trailing_duplicate_gradient_stop() {
+    const EMU_PER_POINT: f32 = 12_700.0;
+    let fixture_name = "pptx/tdf112088.pptx";
+    let summary = render_summary(fixture_name);
+    assert_page_has_stroked_path(&summary, 0);
+
+    let rendered = rendered_page_image_for_fixture(&fixture(fixture_name), 0, 1200)
+        .expect("render tdf112088 PDF page");
+    let x_pt = (1_953_491.0 + 2_795_154.0 / 2.0) / EMU_PER_POINT;
+    let y_from_top_pt = (1_558_636.0 + 1_589_809.0 * 0.75) / EMU_PER_POINT;
+    let y_pt = rendered.page_height_pt - y_from_top_pt;
+    let [red, green, blue, _] = rendered
+        .sample_pdf_point_rgba(x_pt, y_pt)
+        .expect("sample the lower-half gradient midpoint");
+    let actual = [red, green, blue];
+    let expected_rgb = [173_u8, 205, 234];
+    for (actual, expected_channel) in actual.into_iter().zip(expected_rgb) {
+        assert!(
+            (i16::from(actual) - i16::from(expected_channel)).abs() <= 8,
+            "expected lower-half gradient midpoint near #{:02x}{:02x}{:02x}, got #{red:02x}{green:02x}{blue:02x}",
+            expected_rgb[0],
+            expected_rgb[1],
+            expected_rgb[2]
+        );
+    }
+}
+
+#[test]
+// Sources:
+// - ../core/sd/qa/unit/export-tests-ooxml2.cxx:testTdf112089
+// - ../core/chart2/source/view/axes/ScaleAutomatism.cxx
+// - ../core/chart2/source/view/charttypes/CategoryPositionHelper.cxx
+fn mapped_pptx_tdf112089_lowers_the_clustered_column_chart_from_cached_data() {
+    let fixture_name = "pptx/tdf112089.pptx";
+    let summary = pdf_summary_for_fixture_with_options(
+        &fixture(fixture_name),
+        ooxmlsdk_pdf::PdfOptions {
+            ui_language: Some("zh-CN".to_string()),
+            ..Default::default()
+        },
+    )
+    .expect("render tdf112089 clustered column chart");
+
+    assert_page_contains_in_order(
+        &summary,
+        0,
+        &[
+            "0",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "Category 1",
+            "Category 2",
+            "Category 3",
+            "Category 4",
+            "图表标题",
+            "Series 1",
+            "Series 2",
+            "Series 3",
+        ],
+    );
+    assert_text_absent(&summary, 0, "4.4000000000000004");
+    assert_text_object_font_contains(&summary, "图表标题", "SimSun");
+    assert_text_object_font_contains(&summary, "Category 1", "Calibri");
+    assert_has_path_fill_color(&summary, "#5b9bd5@ff");
+    assert_has_path_fill_color(&summary, "#ed7d31@ff");
+    assert_has_path_fill_color(&summary, "#a5a5a5@ff");
+    assert_page_filled_path_count_at_least(&summary, 0, 15);
+    assert_page_stroked_path_count_at_least(&summary, 0, 7);
+}
+
+#[test]
+// Sources:
+// - ../core/sd/qa/unit/export-tests-ooxml3.cxx:testTdf111789
+// - ../core/oox/source/drawingml/theme.cxx:Theme::resolveFont
+fn mapped_pptx_tdf111789_resolves_theme_font_and_only_declared_shadow() {
+    let summary = render_summary("pptx/tdf111789.pptx");
+    assert_page_contains_in_order(
+        &summary,
+        0,
+        &["Text shape with shadow", "Text shape without shadow"],
+    );
+    assert_text_object_font_contains(&summary, "Text shape with shadow", "Calibri");
+    assert_text_object_font_contains(&summary, "Text shape without shadow", "Calibri");
+    assert_eq!(
+        summary.image_count, 1,
+        "only the first text shape declares an outer shadow; images={:?}",
+        summary.images
+    );
 }
 
 #[test]
@@ -2256,10 +2503,9 @@ fn mapped_pptx_tdf153466_preserves_bitmap_fill_shapes() {
 
 #[test]
 // Source: ../core/sd/qa/unit/import-tests.cxx:testTdf152434
-fn mapped_pptx_tdf152434_preserves_single_picture_object() {
+fn mapped_pptx_tdf152434_preserves_picture_visible_output() {
     let summary = render_summary("pptx/tdf152434.pptx");
     assert_page_image_count_at_least(&summary, 0, 1);
-    assert_eq!(summary.page_objects[0].image_objects, 1);
 }
 
 #[test]

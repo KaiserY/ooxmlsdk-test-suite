@@ -5,11 +5,15 @@
 //! and exposes PDFium/lopdf-based summaries for tests that mirror upstream
 //! LibreOffice final PDF assertions.
 
+pub mod office_golden;
 pub mod pdf_extract;
 pub mod render;
 
 use std::path::{Path, PathBuf};
 
+pub use office_golden::{
+    OfficeGoldenCase, OfficeGoldenReport, VisualDiffMetrics, VisualTolerance, compare_office_golden,
+};
 pub use pdf_extract::{
     AnnotationSummary, LinkTargetKind, PathObjectSummary, PdfBounds, PdfSummary, PixelRect,
     RawAnnotationSummary, RawPageSummary, RawXObjectSummary, RenderedPageImage,
@@ -28,6 +32,8 @@ pub enum CalibrationError {
     Pdf(#[from] ooxmlsdk_pdf::PdfError),
     #[error("PDFium extraction failed: {0}")]
     PdfiumExtraction(String),
+    #[error("Office golden comparison failed: {0}")]
+    OfficeGolden(String),
 }
 
 pub fn workspace_root() -> PathBuf {
