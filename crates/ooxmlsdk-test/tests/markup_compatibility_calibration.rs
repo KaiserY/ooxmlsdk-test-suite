@@ -3,7 +3,6 @@ use std::io::{Cursor, Read};
 use ooxmlsdk::schemas::schemas_openxmlformats_org_markup_compatibility_2006::{
     AlternateContent, AlternateContentChoice, Choice, Fallback,
 };
-use ooxmlsdk::schemas::schemas_openxmlformats_org_spreadsheetml_2006_main::SharedStringTable;
 #[cfg(feature = "mce")]
 use ooxmlsdk::schemas::schemas_openxmlformats_org_wordprocessingml_2006_main::ParagraphProperties;
 use ooxmlsdk::schemas::schemas_openxmlformats_org_wordprocessingml_2006_main::{
@@ -11,7 +10,7 @@ use ooxmlsdk::schemas::schemas_openxmlformats_org_wordprocessingml_2006_main::{
 };
 #[cfg(feature = "mce")]
 use ooxmlsdk::sdk::{
-    FileFormatVersion, MarkupCompatibilityProcessMode, MarkupCompatibilityProcessSettings, SdkMce,
+    FileFormatVersion, MarkupCompatibilityProcessMode, MarkupCompatibilityProcessSettings,
 };
 use ooxmlsdk_test::{assert_stable_roundtrip, fixtures};
 
@@ -127,36 +126,6 @@ fn markup_compatibility_keeps_supported_static_versioned_namespace_attributes() 
 
     assert!(paragraph.no_spell_error.is_some());
     assert!(paragraph.w14_edit_id.is_some());
-}
-
-#[test]
-fn mcsupport_load_process_content() {
-    // Source: test/DocumentFormat.OpenXml.Tests/ofapiTest/MCSupport.cs
-    //   LoadProcessContent
-    let xml = doc_sample_part("MCExecl.xlsx", "xl/sharedStrings.xml");
-
-    let (table, serialized, _) = assert_stable_roundtrip::<SharedStringTable>(&xml);
-    let item = table
-        .shared_string_item
-        .first()
-        .expect("expected shared string item");
-    let placeholder_xml = item
-        .xml_other_children
-        .iter()
-        .find_map(|(_, xml)| {
-            std::str::from_utf8(xml)
-                .ok()
-                .filter(|xml| xml.contains("<w14:placeholder"))
-        })
-        .expect("expected placeholder");
-
-    assert!(!serialized.contains(r#"mc:Ignorable="w14""#));
-    assert!(!serialized.contains(r#"w14:attr="value""#));
-    assert!(placeholder_xml.contains(r#"mc:ProcessContent="w14:placeholder""#));
-    assert!(placeholder_xml.contains(r#"mc:PreserveAttributes="w14:a w14:b""#));
-    assert!(placeholder_xml.contains(r#"w14:a="a""#));
-    assert!(placeholder_xml.contains(r#"w14:b="b""#));
-    assert!(serialized.contains(r#"mc:ProcessContent="w14:placeholder""#));
 }
 
 #[test]

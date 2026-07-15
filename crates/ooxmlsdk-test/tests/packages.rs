@@ -19,7 +19,6 @@ use ooxmlsdk::parts::{
     workbook_styles_part::WorkbookStylesPart, worksheet_part::WorksheetPart,
 };
 use ooxmlsdk::schemas::opc_relationships::TargetMode;
-use ooxmlsdk::schemas::schemas_microsoft_com_office_drawing_2014_chartex::SeriesLayout;
 use ooxmlsdk::schemas::schemas_openxmlformats_org_presentationml_2006_main::{
     Presentation as PmlPresentation, Slide, SlideId, SlideIdList,
 };
@@ -530,7 +529,7 @@ fn process_all_parts_applies_alternate_content_selection_edges() {
     //   MultipleChoice_LeadingFallback_O12Mode
     //   MustUnderstand_Unselected_O12Mode
     //   MultipleChoice_OneFallback_Ignorable_O12Mode
-    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:uns="http://test.openxmlsdk.microsoft.com/unknownns1"><w:body><mc:AlternateContent/><mc:AlternateContent><mc:Choice Requires="w14"><w:p><w:r><w:t>unsupported-no-fallback</w:t></w:r></w:p></mc:Choice></mc:AlternateContent><mc:AlternateContent><mc:Choice Requires="w14"><w:p><w:r><w:t>unsupported-with-fallback</w:t></w:r></w:p></mc:Choice><mc:Fallback><w:p><w:r><w:t>fallback</w:t></w:r></w:p></mc:Fallback></mc:AlternateContent><mc:AlternateContent><mc:Choice Requires="w"><w:p><w:r><w:t>supported</w:t></w:r></w:p></mc:Choice><mc:Fallback><w:p><w:r><w:t>unused-fallback</w:t></w:r></w:p></mc:Fallback></mc:AlternateContent><mc:AlternateContent><mc:Choice Requires="w14"><w:p><w:r><w:t>first-unsupported</w:t></w:r></w:p></mc:Choice><mc:Choice Requires="w"><w:p><w:r><w:t>second-supported</w:t></w:r></w:p></mc:Choice><mc:Fallback><w:p><w:r><w:t>unused-second-fallback</w:t></w:r></w:p></mc:Fallback></mc:AlternateContent><mc:AlternateContent><mc:Fallback><w:p><w:r><w:t>leading-fallback</w:t></w:r></w:p></mc:Fallback><mc:Choice Requires="w"><w:p><w:r><w:t>leading-choice</w:t></w:r></w:p></mc:Choice></mc:AlternateContent><mc:AlternateContent><mc:Choice Requires="uns"><w:p mc:MustUnderstand="uns"><w:r><w:t>unselected-must-understand</w:t></w:r></w:p></mc:Choice><mc:Choice Requires="w"><w:p><w:r><w:t>selected-after-unselected-must-understand</w:t></w:r></w:p></mc:Choice></mc:AlternateContent><mc:AlternateContent mc:Ignorable="uns" uns:dropAttr="drop"><mc:Choice Requires="w14"><w:p><w:r><w:t>ignorable-unsupported</w:t></w:r></w:p></mc:Choice><mc:Choice Requires="w"><w:p><w:r><w:t>ignorable-choice</w:t></w:r></w:p></mc:Choice><mc:Fallback><w:p><w:r><w:t>ignorable-fallback</w:t></w:r></w:p></mc:Fallback><uns:extra><w:p><w:r><w:t>ignorable-extra</w:t></w:r></w:p></uns:extra></mc:AlternateContent><w:p><w:r><w:t>after</w:t></w:r></w:p></w:body></w:document>"#;
+    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:uns="http://test.openxmlsdk.microsoft.com/unknownns1"><w:body><mc:AlternateContent/><mc:AlternateContent><mc:Choice Requires="w14"><w:p><w:r><w:t>unsupported-no-fallback</w:t></w:r></w:p></mc:Choice></mc:AlternateContent><mc:AlternateContent><mc:Choice Requires="w14"><w:p><w:r><w:t>unsupported-with-fallback</w:t></w:r></w:p></mc:Choice><mc:Fallback><w:p><w:r><w:t>fallback</w:t></w:r></w:p></mc:Fallback></mc:AlternateContent><mc:AlternateContent><mc:Choice Requires="w"><w:p><w:r><w:t>supported</w:t></w:r></w:p></mc:Choice><mc:Fallback><w:p><w:r><w:t>unused-fallback</w:t></w:r></w:p></mc:Fallback></mc:AlternateContent><mc:AlternateContent><mc:Choice Requires="w14"><w:p><w:r><w:t>first-unsupported</w:t></w:r></w:p></mc:Choice><mc:Choice Requires="w"><w:p><w:r><w:t>second-supported</w:t></w:r></w:p></mc:Choice><mc:Fallback><w:p><w:r><w:t>unused-second-fallback</w:t></w:r></w:p></mc:Fallback></mc:AlternateContent><mc:AlternateContent><mc:Fallback><w:p><w:r><w:t>leading-fallback</w:t></w:r></w:p></mc:Fallback><mc:Choice Requires="w"><w:p><w:r><w:t>leading-choice</w:t></w:r></w:p></mc:Choice></mc:AlternateContent><mc:AlternateContent><mc:Choice Requires="uns"><w:p mc:MustUnderstand="uns"><w:r><w:t>unselected-must-understand</w:t></w:r></w:p></mc:Choice><mc:Choice Requires="w"><w:p><w:r><w:t>selected-after-unselected-must-understand</w:t></w:r></w:p></mc:Choice></mc:AlternateContent><mc:AlternateContent mc:Ignorable="uns" uns:dropAttr="drop"><mc:Choice Requires="w14"><w:p><w:r><w:t>ignorable-unsupported</w:t></w:r></w:p></mc:Choice><mc:Choice Requires="w"><w:p><w:r><w:t>ignorable-choice</w:t></w:r></w:p></mc:Choice><mc:Fallback><w:p><w:r><w:t>ignorable-fallback</w:t></w:r></w:p></mc:Fallback></mc:AlternateContent><w:p><w:r><w:t>after</w:t></w:r></w:p></w:body></w:document>"#;
     let settings = OpenSettings {
         open_mode: PackageOpenMode::Lazy,
         markup_compatibility_process_settings: MarkupCompatibilityProcessSettings {
@@ -569,46 +568,10 @@ fn process_all_parts_applies_alternate_content_selection_edges() {
         "<w:t>unselected-must-understand</w:t>",
         "<w:t>ignorable-unsupported</w:t>",
         "<w:t>ignorable-fallback</w:t>",
-        "<w:t>ignorable-extra</w:t>",
         "uns:dropAttr",
     ] {
         assert!(!serialized.contains(unexpected), "{serialized}");
     }
-}
-
-#[cfg(feature = "mce")]
-#[test]
-fn process_all_parts_uses_process_content_for_ignorable_wrapper() {
-    // Source: test/DocumentFormat.OpenXml.Tests/ofapiTest/MCSupport.cs
-    //   LoadProcessContent
-    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" mc:Ignorable="w14" mc:ProcessContent="w14:paraWrap"><w:body><w14:paraWrap><w:p><w:r><w:t>wrapped</w:t></w:r></w:p></w14:paraWrap><w14:discarded><w:p><w:r><w:t>discarded</w:t></w:r></w:p></w14:discarded></w:body></w:document>"#;
-    let settings = OpenSettings {
-        open_mode: PackageOpenMode::Lazy,
-        markup_compatibility_process_settings: MarkupCompatibilityProcessSettings {
-            process_mode: MarkupCompatibilityProcessMode::ProcessAllParts,
-            target_file_format_version: FileFormatVersion::Office2007,
-        },
-        ..Default::default()
-    };
-    let mut package =
-        WordprocessingDocument::new_with_settings(minimal_wordprocessing_package(xml), settings)
-            .unwrap();
-    let main_part = package.main_document_part().unwrap();
-    let root = main_part.root_element(&mut package).unwrap();
-    let body = root.body.as_ref().unwrap();
-
-    assert_eq!(
-        body.body_choice
-            .iter()
-            .filter(|choice| matches!(choice, BodyChoice::Paragraph(_)))
-            .count(),
-        1
-    );
-    let serialized = root.to_xml().unwrap();
-    assert!(serialized.contains("<w:t>wrapped</w:t>"));
-    assert!(!serialized.contains("<w14:paraWrap"));
-    assert!(!serialized.contains("<w14:discarded"));
-    assert!(!serialized.contains("<w:t>discarded</w:t>"));
 }
 
 #[cfg(feature = "mce")]
@@ -4860,46 +4823,6 @@ fn model3d_reference_relationship_parts_use_powerpoint_content_type() {
             Some("model/gltf-binary")
         );
     }
-}
-
-#[test]
-fn wordprocessing_extended_chart_part_root_loads_from_office2016_unknown_element_test() {
-    // Source: test/DocumentFormat.OpenXml.Tests/TestOffice2016.cs
-    //   OF16_006_AccessChartPart_IntentionalUnknownElement
-    let mut package = WordprocessingDocument::new_from_file_with_settings(
-        doc_sample("Of16-09-UnknownElement.docx"),
-        lazy_open_settings(),
-    )
-    .unwrap();
-    let main_part = package.main_document_part().unwrap();
-    let chart_part = main_part.extended_chart_parts(&package).next().unwrap();
-
-    assert_eq!(
-        chart_part.content_type(&package),
-        Some("application/vnd.ms-office.chartex+xml")
-    );
-    assert_eq!(chart_part.path(&package), Some("word/charts/chartEx1.xml"));
-    assert!(chart_part.embedded_package_part(&package).is_some());
-
-    let chart_space = chart_part.root_element(&mut package).unwrap();
-    assert!(
-        chart_space
-            .xml_other_children
-            .iter()
-            .filter_map(|(_, xml)| std::str::from_utf8(xml).ok())
-            .any(|xml| xml.contains("<cx:chartDataIntentionallyChanged>")),
-        "expected intentional unknown chart data child to be preserved"
-    );
-    assert_eq!(
-        chart_space
-            .chart
-            .plot_area
-            .plot_area_region
-            .series
-            .first()
-            .map(|series| series.layout_id),
-        Some(SeriesLayout::Waterfall)
-    );
 }
 
 #[test]

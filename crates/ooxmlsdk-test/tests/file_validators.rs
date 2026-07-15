@@ -4,7 +4,6 @@ use ooxmlsdk::parts::{
     presentation_document::PresentationDocument, spreadsheet_document::SpreadsheetDocument,
     wordprocessing_document::WordprocessingDocument,
 };
-use ooxmlsdk::validator::SdkValidator;
 use ooxmlsdk_test::fixtures;
 
 fn test_file_path(file_name: &str) -> std::path::PathBuf {

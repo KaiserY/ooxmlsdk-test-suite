@@ -20,7 +20,7 @@ use ooxmlsdk::schemas::schemas_openxmlformats_org_wordprocessingml_2006_main::{
 use ooxmlsdk::simple_type::CoordinateValue;
 use ooxmlsdk::validator::ValidationErrorType;
 use ooxmlsdk::validator::validate_number_type;
-use ooxmlsdk::validator::{SdkValidator, StringFormatKind, validate_string_format};
+use ooxmlsdk::validator::{StringFormatKind, validate_string_format};
 
 fn repeated_a(count: usize) -> String {
     "A".repeat(count)

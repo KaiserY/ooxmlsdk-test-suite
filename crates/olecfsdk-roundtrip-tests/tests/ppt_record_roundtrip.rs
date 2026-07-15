@@ -59,6 +59,7 @@ fn legacy_powerpoint_document_streams_round_trip() {
     let mut checked = 0usize;
     let mut pictures_streams = 0usize;
     let mut picture_records = 0usize;
+    let mut picture_compatibility_streams = 0usize;
     let mut picture_partial_streams = 0usize;
     let mut picture_incomplete_records = 0usize;
     let mut picture_unparsed_bytes = 0usize;
@@ -88,6 +89,7 @@ fn legacy_powerpoint_document_streams_round_trip() {
     let mut notes_atoms = 0usize;
     let mut office_art_records = 0usize;
     let mut office_art_bytes = 0usize;
+    let mut office_art_layout = OfficeArtLocalLayoutAudit::default();
     let mut outline_text_refs = 0usize;
     let mut text_headers = 0usize;
     let mut text_chars_records = 0usize;
@@ -189,10 +191,12 @@ fn legacy_powerpoint_document_streams_round_trip() {
     let mut truncated_diagnostics = 0usize;
     let mut nonconforming_diagnostics = 0usize;
     let mut current_user_nonconforming_diagnostics = 0usize;
+    let mut live_process_nonconforming_diagnostics = 0usize;
     let mut current_user_diagnostic_samples = Vec::new();
     let mut noncanonical_cfb_diagnostics = 0usize;
     let mut invalid_stream_diagnostics = 0usize;
     let mut invalid_reference_diagnostics = 0usize;
+    let mut live_process_invalid_reference_diagnostics = 0usize;
     let mut truncated_diagnostic_files = BTreeSet::<PathBuf>::new();
     let mut nonconforming_diagnostic_files = BTreeSet::<PathBuf>::new();
     let mut noncanonical_cfb_diagnostic_files = BTreeSet::<PathBuf>::new();
@@ -250,6 +254,10 @@ fn legacy_powerpoint_document_streams_round_trip() {
                         current_user_nonconforming_diagnostics += usize::from(
                             diagnostic.location.path.as_deref() == Some("/Current User"),
                         );
+                        live_process_nonconforming_diagnostics += usize::from(matches!(
+                            diagnostic.structure,
+                            "VBAInfoAtom" | "DocumentContainer.masterList"
+                        ));
                     }
                     ParseDiagnosticCode::NoncanonicalCompoundFile => {
                         noncanonical_cfb_diagnostics += 1;
@@ -266,6 +274,15 @@ fn legacy_powerpoint_document_streams_round_trip() {
                     }
                     ParseDiagnosticCode::InvalidReference => {
                         invalid_reference_diagnostics += 1;
+                        live_process_invalid_reference_diagnostics += usize::from(
+                            matches!(
+                                diagnostic.structure,
+                                "MasterPersistAtom.persistIdRef"
+                                    | "NotesPersistAtom.persistIdRef"
+                                    | "VBAInfoAtom.persistIdRef"
+                            ) || (diagnostic.structure == "live-record process"
+                                && diagnostic.message.contains("documentAtom")),
+                        );
                         invalid_reference_diagnostic_files.insert(path.clone());
                         if diagnostic.location.path.as_deref() != Some("/PowerPoint Document") {
                             return Err(format!(
@@ -403,6 +420,26 @@ fn legacy_powerpoint_document_streams_round_trip() {
                             }
                         }
                     }
+                    PicturesStream::Compatibility { stream, .. } => {
+                        if stream.to_bytes().map_err(|error| {
+                            format!("write compatibility Pictures stream: {error}")
+                        })? != pictures_entry.data
+                        {
+                            return Err(
+                                "compatibility Pictures bytes changed after round-trip".into()
+                            );
+                        }
+                        picture_compatibility_streams += 1;
+                        picture_records += stream.records.len();
+                        for record in &stream.records {
+                            picture_payload_bytes += record.header.declared_length as usize;
+                            if matches!(record.data, OfficeArtRecordData::Atom(_)) {
+                                picture_opaque_records += 1;
+                            } else {
+                                picture_typed_records += 1;
+                            }
+                        }
+                    }
                     PicturesStream::Partial(partial) => {
                         if partial
                             .to_bytes()
@@ -439,6 +476,7 @@ fn legacy_powerpoint_document_streams_round_trip() {
                     notes_atoms: &mut notes_atoms,
                     office_art_records: &mut office_art_records,
                     office_art_bytes: &mut office_art_bytes,
+                    office_art_layout: &mut office_art_layout,
                     outline_text_refs: &mut outline_text_refs,
                     text_headers: &mut text_headers,
                     text_chars_records: &mut text_chars_records,
@@ -653,6 +691,9 @@ fn legacy_powerpoint_document_streams_round_trip() {
     assert_eq!(notes_atoms, 667);
     assert_eq!(office_art_records, 69_426);
     assert_eq!(office_art_bytes, 5_302_645);
+    assert_eq!(office_art_layout.local_count_mismatches, 0);
+    assert_eq!(office_art_layout.bstore_count_mismatches, 13);
+    assert_eq!(office_art_layout.bstore_invalid_children, 0);
     assert_eq!(outline_text_refs, 1_300);
     assert_eq!(text_headers, 11_190);
     assert_eq!(text_chars_records, 2_065);
@@ -889,6 +930,7 @@ fn legacy_powerpoint_document_streams_round_trip() {
     assert_eq!(malformed_blip_entity9_bytes, 0);
     assert_eq!(pictures_streams, 86);
     assert_eq!(picture_partial_streams, 5);
+    assert_eq!(picture_compatibility_streams, 1);
     assert_eq!(picture_records, 1_724);
     assert_eq!(picture_incomplete_records, 2);
     assert_eq!(picture_typed_records, 1_724);
@@ -941,15 +983,21 @@ fn legacy_powerpoint_document_streams_round_trip() {
             + external_storage_invalid_uncompressed
             + external_storage_malformed_compressed
             + external_storage_unsupported_instance
+            + live_process_nonconforming_diagnostics
     );
     assert!(
         current_user_nonconforming_diagnostics >= current_user_compatibility,
         "every compatibility CurrentUserAtom requires a nonconforming diagnostic"
     );
-    assert_eq!(invalid_stream_diagnostics, picture_partial_streams);
+    assert_eq!(
+        invalid_stream_diagnostics,
+        picture_partial_streams + picture_compatibility_streams
+    );
     assert_eq!(
         invalid_reference_diagnostics,
-        current_edit_broken_links + persist_chain_failures
+        current_edit_broken_links
+            + persist_chain_failures
+            + live_process_invalid_reference_diagnostics
     );
     let atom_bytes = atom_stats.values().map(|stats| stats.bytes).sum::<usize>();
     eprintln!(
@@ -963,7 +1011,13 @@ fn legacy_powerpoint_document_streams_round_trip() {
         "PPT style OPC: {text_style_packages} slide-style/{notes_style_packages} notes-style/{table_style_packages} table-style packages/{style_payload_bytes} bytes"
     );
     eprintln!(
-        "checked {checked} PowerPoint Document streams: Current User {current_user_streams} streams/{current_user_parsed} parsed/{current_user_compatibility} compatibility/{current_user_truncated} truncated, {current_edit_links} valid/{current_edit_broken_links} broken current-edit links/{current_user_trailing_bytes} trailing bytes; Current User diagnostic samples {current_user_diagnostic_samples:#?}; {persist_chains} persist chains/{persist_chain_failures} failures/{persist_chain_edits} edits/{effective_persist_objects} effective objects; {record_count} records/{container_count} containers; core atoms Document {document_atoms}/Slide {slide_atoms}/Notes {notes_atoms}, {slide_persist_atoms} persist/{color_scheme_atoms} color schemes/{placeholder_atoms} placeholders/{headers_footers_atoms} header-footer; text {outline_text_refs} outline refs/{text_headers} headers/{text_chars_records} UTF-16/{text_bytes_records} byte strings/{c_string_records} CStrings/{style_text_prop_atoms} style-prop ({style_paragraph_runs} PF runs/{style_character_runs} CF runs/{style_tab_stops} tabs/{style_trailing_bytes} trailing bytes + {malformed_style_text_prop} malformed/{malformed_style_text_prop_bytes} bytes + {unresolved_style_text_prop} unresolved/{unresolved_style_text_prop_bytes} bytes)/{master_text_prop_atoms} master-prop/{text_master_style_atoms} master-style ({text_master_style_levels} levels/{text_master_style_trailing_bytes} trailing + {malformed_text_master_style} malformed/{malformed_text_master_style_bytes} bytes)/{text_ruler_atoms} rulers ({text_ruler_tab_stops} tabs/{text_ruler_trailing_bytes} trailing + {malformed_text_rulers} malformed/{malformed_text_ruler_bytes} bytes)/{text_special_info_atoms} special-info + {malformed_text_special_info} malformed; OfficeArt {office_art_records} typed records/{office_art_bytes} bytes; Pictures {pictures_streams} streams ({picture_partial_streams} partial)/{picture_records} complete + {picture_incomplete_records} incomplete records/{picture_typed_records} typed/{picture_opaque_records} opaque/{picture_payload_bytes} payload bytes/{picture_unparsed_bytes} unparsed bytes; {user_edit_count} UserEditAtom ({encrypted_user_edits} encrypted); {persist_directory_count} PersistDirectoryAtom with {persist_directory_entries} entries/{persist_offsets} offsets; {} malformed spec types/{atom_bytes} bytes; {} unknown record types; {truncated_records} truncated records/{truncated_bytes} bytes; {trailing_header_bytes} trailing header bytes; diagnostics {truncated_diagnostics} truncated in {} files/{nonconforming_diagnostics} nonconforming ({current_user_nonconforming_diagnostics} Current User) in {} files/{invalid_stream_diagnostics} invalid stream in {} files/{invalid_reference_diagnostics} invalid reference in {} files/{noncanonical_cfb_diagnostics} noncanonical CFB in {} files",
+        "checked {checked} PowerPoint Document streams: Current User {current_user_streams} streams/{current_user_parsed} parsed/{current_user_compatibility} compatibility/{current_user_truncated} truncated, {current_edit_links} valid/{current_edit_broken_links} broken current-edit links/{current_user_trailing_bytes} trailing bytes; Current User diagnostic samples {current_user_diagnostic_samples:#?}; {persist_chains} persist chains/{persist_chain_failures} failures/{persist_chain_edits} edits/{effective_persist_objects} effective objects; {record_count} records/{container_count} containers; core atoms Document {document_atoms}/Slide {slide_atoms}/Notes {notes_atoms}, {slide_persist_atoms} persist/{color_scheme_atoms} color schemes/{placeholder_atoms} placeholders/{headers_footers_atoms} header-footer; text {outline_text_refs} outline refs/{text_headers} headers/{text_chars_records} UTF-16/{text_bytes_records} byte strings/{c_string_records} CStrings/{style_text_prop_atoms} style-prop ({style_paragraph_runs} PF runs/{style_character_runs} CF runs/{style_tab_stops} tabs/{style_trailing_bytes} trailing bytes + {malformed_style_text_prop} malformed/{malformed_style_text_prop_bytes} bytes + {unresolved_style_text_prop} unresolved/{unresolved_style_text_prop_bytes} bytes)/{master_text_prop_atoms} master-prop/{text_master_style_atoms} master-style ({text_master_style_levels} levels/{text_master_style_trailing_bytes} trailing + {malformed_text_master_style} malformed/{malformed_text_master_style_bytes} bytes)/{text_ruler_atoms} rulers ({text_ruler_tab_stops} tabs/{text_ruler_trailing_bytes} trailing + {malformed_text_rulers} malformed/{malformed_text_ruler_bytes} bytes)/{text_special_info_atoms} special-info + {malformed_text_special_info} malformed; OfficeArt {office_art_records} typed records/{office_art_bytes} bytes, {} locally counted records/{} mismatches, {} BStore containers/{} count mismatches {:?}/{} invalid children; Pictures {pictures_streams} streams ({picture_compatibility_streams} compatibility/{picture_partial_streams} partial)/{picture_records} complete + {picture_incomplete_records} incomplete records/{picture_typed_records} typed/{picture_opaque_records} opaque/{picture_payload_bytes} payload bytes/{picture_unparsed_bytes} unparsed bytes; {user_edit_count} UserEditAtom ({encrypted_user_edits} encrypted); {persist_directory_count} PersistDirectoryAtom with {persist_directory_entries} entries/{persist_offsets} offsets; {} malformed spec types/{atom_bytes} bytes; {} unknown record types; {truncated_records} truncated records/{truncated_bytes} bytes; {trailing_header_bytes} trailing header bytes; diagnostics {truncated_diagnostics} truncated in {} files/{nonconforming_diagnostics} nonconforming ({current_user_nonconforming_diagnostics} Current User) in {} files/{invalid_stream_diagnostics} invalid stream in {} files/{invalid_reference_diagnostics} invalid reference in {} files/{noncanonical_cfb_diagnostics} noncanonical CFB in {} files",
+        office_art_layout.locally_counted_records,
+        office_art_layout.local_count_mismatches,
+        office_art_layout.bstore_containers,
+        office_art_layout.bstore_count_mismatches,
+        office_art_layout.bstore_mismatch_shapes,
+        office_art_layout.bstore_invalid_children,
         atom_stats.len(),
         unknown_record_stats.len(),
         truncated_diagnostic_files.len(),
@@ -1018,6 +1072,74 @@ fn legacy_powerpoint_document_streams_round_trip() {
     }
 }
 
+#[derive(Default)]
+struct OfficeArtLocalLayoutAudit {
+    locally_counted_records: usize,
+    local_count_mismatches: usize,
+    bstore_containers: usize,
+    bstore_count_mismatches: usize,
+    bstore_mismatch_shapes: BTreeMap<(u16, usize), usize>,
+    bstore_invalid_children: usize,
+}
+
+fn audit_office_art_local_layout(
+    record: &olecfsdk::office_art::OfficeArtRecord,
+    audit: &mut OfficeArtLocalLayoutAudit,
+) {
+    let local_count = match &record.data {
+        OfficeArtRecordData::DggBlock(value) => Some((
+            usize::try_from(value.declared_cluster_count).unwrap_or(usize::MAX),
+            value.clusters.len().saturating_add(1),
+        )),
+        OfficeArtRecordData::Frit(values) => {
+            Some((usize::from(record.header.instance), values.len()))
+        }
+        OfficeArtRecordData::ColorMru(colors) => {
+            Some((usize::from(record.header.instance), colors.len()))
+        }
+        OfficeArtRecordData::PropertyTable(value)
+            if matches!(record.header.record_type, 0xf00b | 0xf121 | 0xf122) =>
+        {
+            Some((usize::from(record.header.instance), value.properties.len()))
+        }
+        _ => None,
+    };
+    if let Some((actual_count, expected_count)) = local_count {
+        audit.locally_counted_records += 1;
+        if actual_count != expected_count {
+            audit.local_count_mismatches += 1;
+        }
+    }
+
+    match &record.data {
+        OfficeArtRecordData::Container(children)
+        | OfficeArtRecordData::CompatibilityContainer(children) => {
+            if record.header.record_type == 0xf001 {
+                audit.bstore_containers += 1;
+                if usize::from(record.header.instance) != children.len() {
+                    audit.bstore_count_mismatches += 1;
+                }
+                audit.bstore_invalid_children += children
+                    .iter()
+                    .filter(|child| {
+                        child.header.record_type != 0xf007
+                            && !(0xf018..=0xf117).contains(&child.header.record_type)
+                    })
+                    .count();
+            }
+            for child in children {
+                audit_office_art_local_layout(child, audit);
+            }
+        }
+        OfficeArtRecordData::Fbse(value) => {
+            if let Some(blip) = &value.embedded_blip {
+                audit_office_art_local_layout(blip, audit);
+            }
+        }
+        _ => {}
+    }
+}
+
 struct RecordAudit<'a> {
     records: &'a mut usize,
     containers: &'a mut usize,
@@ -1029,6 +1151,7 @@ struct RecordAudit<'a> {
     notes_atoms: &'a mut usize,
     office_art_records: &'a mut usize,
     office_art_bytes: &'a mut usize,
+    office_art_layout: &'a mut OfficeArtLocalLayoutAudit,
     outline_text_refs: &'a mut usize,
     text_headers: &'a mut usize,
     text_chars_records: &'a mut usize,
@@ -1142,6 +1265,25 @@ fn audit_sequence(
         match &record.data {
             PptRecordData::Container(children) => {
                 *audit.containers += 1;
+                if record.header.record_type == 0xf001 {
+                    audit.office_art_layout.bstore_containers += 1;
+                    if usize::from(record.header.instance) != children.records.len() {
+                        audit.office_art_layout.bstore_count_mismatches += 1;
+                        *audit
+                            .office_art_layout
+                            .bstore_mismatch_shapes
+                            .entry((record.header.instance, children.records.len()))
+                            .or_default() += 1;
+                    }
+                    audit.office_art_layout.bstore_invalid_children += children
+                        .records
+                        .iter()
+                        .filter(|child| {
+                            child.header.record_type != 0xf007
+                                && !(0xf018..=0xf117).contains(&child.header.record_type)
+                        })
+                        .count();
+                }
                 ancestry.push((record.header.record_type, record.offset));
                 audit_sequence(children, audit, ancestry, programmable_tag);
                 ancestry.pop();
@@ -1172,9 +1314,10 @@ fn audit_sequence(
             PptRecordData::Document(_) => *audit.document_atoms += 1,
             PptRecordData::Slide(_) => *audit.slide_atoms += 1,
             PptRecordData::Notes(_) => *audit.notes_atoms += 1,
-            PptRecordData::OfficeArt(_) => {
+            PptRecordData::OfficeArt(value) => {
                 *audit.office_art_records += 1;
                 *audit.office_art_bytes += record.header.declared_length as usize;
+                audit_office_art_local_layout(value, audit.office_art_layout);
             }
             PptRecordData::OutlineTextRef(_) => *audit.outline_text_refs += 1,
             PptRecordData::TextHeader(_) => *audit.text_headers += 1,

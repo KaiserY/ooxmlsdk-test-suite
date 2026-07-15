@@ -13,34 +13,33 @@ use olecfsdk::{
         CommandCustomizations, CpOnlyTable, CustomKinsokuLanguage, DocFile, DocOfficeArtContent,
         DocumentClassification, DocumentProperties, DocumentProtectionMode, EmbeddedFontSubset,
         EmbeddedFontTable, EmbeddedFontTableOffset, ExternalFileNameTable,
-        FIB_LAST_SAVED_FILETIME_INDEX, Fib, FibBase, FibBaseFlags, FieldCharacter,
-        FieldDocumentPart, FieldTable, FontTable, FormatConsistencyBookmarks, FrameAndListRecord,
-        FrameAndListRecords, GrammarCheckerCookieTable, GrammarCookieErrorType, GrammarCookieStore,
-        GrammarOptionSets, GrammarStateKind, GrammarStateTable, GridDisplayFrequency,
-        HeaderStoryBoundary, HeaderTextTable, HtmlBlockType, KinsokuLevel,
-        LanguageDetectionStateKind, LanguageDetectionStateTable, LegacyGrammarCheckerCookieTable,
-        LegacyGrammarOptionSets, ListDefinitions, ListLevelTemplateCode, ListNamesTable,
-        ListOverrides, ListStyleTemplates, MailMergeDestination, MailMergeDocumentType,
-        MailMergeErrorHandling, MailMergeFileReference, MailMergeSourceKind, MailMergeState,
-        MathBinaryOperatorBreak, MathBinarySubtractionBreak, MathFixedConstants, MathJustification,
-        NoteReferenceTable, OfficeDataSource, OleControlDocumentPart, OleControlInfos,
-        OleObjectDescriptor, PapxFkp, PapxLengthEncoding, ParagraphGroupProperties,
-        ParagraphIdentifierContext, PlcBte, PlcfSed, PrinterDriverInfo, Prm, PropertyBagString,
-        ProtectedUsers, RangeProtection, RepairBookmarks, RevisionAuthors,
-        RevisionMessageThreading, RevisionSaveIdTable, SaveHistory, SavedOutlineLevel,
-        SavedViewKind, SelectionRange, SelectionState, SelectionStateExtension, SelectionStyle,
-        Sepx, ShapeAnchorTable, SmartTagBookmarks, SmartTagData, SmartTagFactoidTypeId,
-        SmartTagRecognizerStateKind, SmartTagRecognizerStateTable, SmartTagSource,
-        SpellingStateKind, SpellingStateTable, SprmGroup, SprmKind, SprmOperand,
-        StructuredTagBookmarks, StyleFormatting, StyleKind, StyleSheet, StyleSortMethod,
-        SubdocumentTable, TableCharacterCacheTable, TextLineEnding, TextPieceCharacters,
-        TextboxBreakTable, TextboxDocumentPart, TextboxStoryChain, TextboxStoryTable,
-        TypographyJustification, UserInputMethods, UserVariableKind, UserVariables,
-        WORD97_FILE_IDENTIFIER, WebTargetScreenSize, XmlSchemaReferences, XmlSchemaStringTable,
-        XmlTransformPath,
+        FIB_LAST_SAVED_FILETIME_INDEX, Fib, FibBase, FibBaseFlags, FieldDocumentPart, FontTable,
+        FormatConsistencyBookmarks, FrameAndListRecord, FrameAndListRecords,
+        GrammarCheckerCookieTable, GrammarCookieErrorType, GrammarCookieStore, GrammarOptionSets,
+        GrammarStateKind, GrammarStateTable, GridDisplayFrequency, HeaderStoryBoundary,
+        HeaderTextTable, HtmlBlockType, KinsokuLevel, LanguageDetectionStateKind,
+        LanguageDetectionStateTable, LegacyGrammarCheckerCookieTable, LegacyGrammarOptionSets,
+        ListDefinitions, ListLevelTemplateCode, ListNamesTable, ListOverrides, ListStyleTemplates,
+        MailMergeDestination, MailMergeDocumentType, MailMergeErrorHandling,
+        MailMergeFileReference, MailMergeSourceKind, MailMergeState, MathBinaryOperatorBreak,
+        MathBinarySubtractionBreak, MathFixedConstants, MathJustification, NoteReferenceTable,
+        OfficeDataSource, OleControlDocumentPart, OleControlInfos, OleObjectDescriptor, PapxFkp,
+        PapxLengthEncoding, ParagraphGroupProperties, ParagraphIdentifierContext, PlcBte, PlcfSed,
+        PrinterDriverInfo, Prm, PropertyBagString, ProtectedUsers, RangeProtection,
+        RepairBookmarks, RevisionAuthors, RevisionMessageThreading, RevisionSaveIdTable,
+        SaveHistory, SavedOutlineLevel, SavedViewKind, SelectionRange, SelectionState,
+        SelectionStateExtension, SelectionStyle, Sepx, ShapeAnchorTable, SmartTagBookmarks,
+        SmartTagData, SmartTagFactoidTypeId, SmartTagRecognizerStateKind,
+        SmartTagRecognizerStateTable, SmartTagSource, SpellingStateKind, SpellingStateTable,
+        SprmGroup, SprmKind, SprmOperand, StructuredTagBookmarks, StyleFormatting, StyleKind,
+        StyleSheet, StyleSortMethod, SubdocumentTable, TableCharacterCacheTable, TextLineEnding,
+        TextPieceCharacters, TextboxBreakTable, TextboxDocumentPart, TextboxStoryChain,
+        TextboxStoryTable, TypographyJustification, UserInputMethods, UserVariableKind,
+        UserVariables, WORD97_FILE_IDENTIFIER, WebTargetScreenSize, XmlSchemaReferences,
+        XmlSchemaStringTable, XmlTransformPath,
     },
     forms::{CommandButtonControl, FmStringLengthMode, MorphDataControl, SingleStreamOleControl},
-    office_art::OfficeArtRecordData,
+    office_art::{OfficeArtRecordData, OfficeArtShapeFlags},
     shared::{
         EnvelopeFlagStatus, EnvelopeImportance, EnvelopeRecipientPropertyValue,
         EnvelopeSensitivity, MsoEnvelopeClsid, MsoEnvelopeData, MsoEnvelopeVersion,
@@ -50,6 +49,218 @@ use olecfsdk_corpus_test_support::{
     corpus_bytes,
     manifest::{ExpectationMode, read_manifest},
 };
+
+#[derive(Debug, Default)]
+struct OfficeArtDrawingGraphAudit {
+    graphs: usize,
+    partial_graphs: usize,
+    typed_graphs: usize,
+    strict_graphs: usize,
+    compatibility_graphs: usize,
+    dgg_records: usize,
+    missing_or_multiple_dgg: usize,
+    drawings: usize,
+    fdg_records: usize,
+    missing_or_multiple_fdg: usize,
+    shapes: usize,
+    patriarch_shapes: usize,
+    deleted_shapes: usize,
+    duplicate_drawing_ids: usize,
+    duplicate_shape_ids: usize,
+    fdg_shape_count_deltas: BTreeMap<i64, usize>,
+    fdg_shape_count_without_patriarch_deltas: BTreeMap<i64, usize>,
+    fdg_current_shape_relations: BTreeMap<&'static str, usize>,
+    dgg_saved_shape_vs_fdg_deltas: BTreeMap<i64, usize>,
+    dgg_saved_shape_vs_fsp_deltas: BTreeMap<i64, usize>,
+    dgg_saved_drawing_deltas: BTreeMap<i64, usize>,
+    dgg_max_shape_relations: BTreeMap<&'static str, usize>,
+    dgg_max_shape_deltas: BTreeMap<i64, usize>,
+    shape_cluster_zero: usize,
+    shape_cluster_missing: usize,
+    shape_cluster_drawing_mismatches: usize,
+    cluster_without_current_shape: usize,
+    cluster_cursor_relations: BTreeMap<&'static str, usize>,
+    cluster_cursor_deltas: BTreeMap<i64, usize>,
+}
+
+impl OfficeArtDrawingGraphAudit {
+    fn audit(&mut self, content: &DocOfficeArtContent) {
+        self.graphs += 1;
+        if content.drawing_group.is_partial()
+            || content
+                .drawings
+                .iter()
+                .any(|drawing| drawing.container.is_partial())
+        {
+            self.partial_graphs += 1;
+            return;
+        }
+        let graph = content
+            .drawing_graph()
+            .expect("complete DOC OfficeArt trees build a drawing graph");
+        self.typed_graphs += 1;
+        if graph.validate_strict().is_ok() {
+            self.strict_graphs += 1;
+        } else {
+            self.compatibility_graphs += 1;
+        }
+
+        let mut dgg_records = Vec::new();
+        content.drawing_group.visit_complete(|record| {
+            if let OfficeArtRecordData::DggBlock(value) = &record.data {
+                dgg_records.push(value.clone());
+            }
+        });
+        self.dgg_records += dgg_records.len();
+        if dgg_records.len() != 1 {
+            self.missing_or_multiple_dgg += 1;
+            return;
+        }
+        let dgg = &dgg_records[0];
+
+        let mut drawing_ids = BTreeSet::new();
+        let mut shape_ids = BTreeSet::new();
+        let mut shapes_by_drawing = Vec::new();
+        let mut fdg_shape_total = 0usize;
+        for drawing in &content.drawings {
+            self.drawings += 1;
+            let mut fdg_records = Vec::new();
+            let mut shapes = Vec::new();
+            drawing
+                .container
+                .visit_complete(|record| match &record.data {
+                    OfficeArtRecordData::Drawing(value) => {
+                        fdg_records.push((record.header.instance, *value));
+                    }
+                    OfficeArtRecordData::Shape(value) => shapes.push(*value),
+                    _ => {}
+                });
+            self.fdg_records += fdg_records.len();
+            if fdg_records.len() != 1 {
+                self.missing_or_multiple_fdg += 1;
+                continue;
+            }
+            let (drawing_id, fdg) = fdg_records[0];
+            self.duplicate_drawing_ids += usize::from(!drawing_ids.insert(drawing_id));
+            self.shapes += shapes.len();
+            let patriarch_count = shapes
+                .iter()
+                .filter(|shape| shape.flags.contains(OfficeArtShapeFlags::PATRIARCH))
+                .count();
+            self.patriarch_shapes += patriarch_count;
+            self.deleted_shapes += shapes
+                .iter()
+                .filter(|shape| shape.flags.contains(OfficeArtShapeFlags::DELETED))
+                .count();
+            self.duplicate_shape_ids += shapes
+                .iter()
+                .filter(|shape| !shape_ids.insert(shape.shape_id))
+                .count();
+            *self
+                .fdg_shape_count_deltas
+                .entry(signed_delta(fdg.shape_count, shapes.len()))
+                .or_default() += 1;
+            *self
+                .fdg_shape_count_without_patriarch_deltas
+                .entry(signed_delta(
+                    fdg.shape_count,
+                    shapes.len().saturating_sub(patriarch_count),
+                ))
+                .or_default() += 1;
+            let max_shape_id = shapes.iter().map(|shape| shape.shape_id).max();
+            *self
+                .fdg_current_shape_relations
+                .entry(relation_to_optional(fdg.current_shape_id, max_shape_id))
+                .or_default() += 1;
+            fdg_shape_total = fdg_shape_total.saturating_add(fdg.shape_count as usize);
+            shapes_by_drawing.push((drawing_id, shapes));
+        }
+
+        *self
+            .dgg_saved_shape_vs_fdg_deltas
+            .entry(signed_delta(dgg.saved_shape_count, fdg_shape_total))
+            .or_default() += 1;
+        *self
+            .dgg_saved_shape_vs_fsp_deltas
+            .entry(signed_delta(dgg.saved_shape_count, shape_ids.len()))
+            .or_default() += 1;
+        *self
+            .dgg_saved_drawing_deltas
+            .entry(signed_delta(
+                dgg.saved_drawing_count,
+                content.drawings.len(),
+            ))
+            .or_default() += 1;
+        let max_shape_id = shape_ids.iter().copied().max();
+        *self
+            .dgg_max_shape_relations
+            .entry(relation_to_optional(dgg.maximum_shape_id, max_shape_id))
+            .or_default() += 1;
+        if let Some(max_shape_id) = max_shape_id {
+            *self
+                .dgg_max_shape_deltas
+                .entry(i64::from(dgg.maximum_shape_id) - i64::from(max_shape_id))
+                .or_default() += 1;
+        }
+
+        let mut cluster_max_offsets = vec![None::<u32>; dgg.clusters.len()];
+        for (drawing_id, shapes) in &shapes_by_drawing {
+            for shape in shapes {
+                let cluster_number = shape.shape_id / 0x400;
+                if cluster_number == 0 {
+                    self.shape_cluster_zero += 1;
+                    continue;
+                }
+                let cluster_index = usize::try_from(cluster_number - 1).unwrap_or(usize::MAX);
+                let Some(cluster) = dgg.clusters.get(cluster_index) else {
+                    self.shape_cluster_missing += 1;
+                    continue;
+                };
+                self.shape_cluster_drawing_mismatches +=
+                    usize::from(cluster.drawing_id != u32::from(*drawing_id));
+                let local_offset = shape.shape_id % 0x400;
+                let max_offset = &mut cluster_max_offsets[cluster_index];
+                *max_offset =
+                    Some(max_offset.map_or(local_offset, |value| value.max(local_offset)));
+            }
+        }
+        for (cluster, max_offset) in dgg.clusters.iter().zip(cluster_max_offsets) {
+            let Some(max_offset) = max_offset else {
+                self.cluster_without_current_shape += 1;
+                continue;
+            };
+            let expected_cursor = max_offset + 1;
+            *self
+                .cluster_cursor_relations
+                .entry(relation(cluster.current_shape_id, expected_cursor))
+                .or_default() += 1;
+            *self
+                .cluster_cursor_deltas
+                .entry(i64::from(cluster.current_shape_id) - i64::from(expected_cursor))
+                .or_default() += 1;
+        }
+    }
+}
+
+fn signed_delta(declared: u32, actual: usize) -> i64 {
+    i64::from(declared) - i64::try_from(actual).unwrap_or(i64::MAX)
+}
+
+fn relation_to_optional(value: u32, expected: Option<u32>) -> &'static str {
+    match expected {
+        Some(expected) => relation(value, expected),
+        None if value == 0 => "empty-zero",
+        None => "empty-nonzero",
+    }
+}
+
+fn relation(value: u32, expected: u32) -> &'static str {
+    match value.cmp(&expected) {
+        std::cmp::Ordering::Less => "below",
+        std::cmp::Ordering::Equal => "equal",
+        std::cmp::Ordering::Greater => "above",
+    }
+}
 
 #[test]
 #[ignore = "DOC FIB corpus round-trip runs explicitly"]
@@ -293,6 +504,7 @@ fn legacy_word_fibs_round_trip() {
     let mut office_art_atom_bytes = 0usize;
     let mut office_art_atom_shapes = BTreeMap::<(u16, usize), usize>::new();
     let mut office_art_partial_trees = 0usize;
+    let mut office_art_graph_audit = OfficeArtDrawingGraphAudit::default();
     let mut word_client_anchors = 0usize;
     let mut word_client_data = 0usize;
     let mut word_client_textboxes = 0usize;
@@ -3124,29 +3336,36 @@ fn legacy_word_fibs_round_trip() {
                     continue;
                 }
                 let field_bytes = bounded_slice(table, location.fc, location.lcb, "Plcfld")?;
-                let fields = FieldTable::from_bytes(field_bytes)
-                    .map_err(|error| format!("{part:?} Plcfld: {error}"))?;
+                let fields = &file
+                    .table
+                    .fields
+                    .get(&part)
+                    .ok_or_else(|| format!("typed DOC tree omitted {part:?} Plcfld"))?
+                    .value;
                 if fields.to_bytes().map_err(|error| error.to_string())? != field_bytes {
                     return Err(format!("{part:?} Plcfld write changed physical bytes"));
                 }
                 *field_tables.entry(part).or_default() += 1;
-                field_records += fields.fields.len();
-                current_field_counts.insert(part, fields.fields.len());
-                for field in fields.fields {
-                    let (character, reserved, field_type) = match field.character {
-                        FieldCharacter::Begin {
-                            reserved,
-                            field_type,
-                        } => (0x13, reserved, Some(field_type)),
-                        FieldCharacter::Separator { reserved, .. } => (0x14, reserved, None),
-                        FieldCharacter::End { reserved, .. } => (0x15, reserved, None),
-                    };
-                    *field_character_counts.entry((part, character)).or_default() += 1;
-                    *field_reserved_counts.entry(reserved).or_default() += 1;
-                    if let Some(field_type) = field_type {
-                        *field_type_counts.entry(field_type).or_default() += 1;
+                let mut current_count = 0usize;
+                let mut pending = fields.fields.iter().collect::<Vec<_>>();
+                while let Some(field) = pending.pop() {
+                    current_count += 2 + usize::from(field.separator.is_some());
+                    *field_character_counts.entry((part, 0x13)).or_default() += 1;
+                    *field_reserved_counts
+                        .entry(field.begin.reserved)
+                        .or_default() += 1;
+                    *field_type_counts.entry(field.begin.field_type).or_default() += 1;
+                    if let Some(separator) = field.separator {
+                        *field_character_counts.entry((part, 0x14)).or_default() += 1;
+                        *field_reserved_counts.entry(separator.reserved).or_default() += 1;
                     }
+                    *field_character_counts.entry((part, 0x15)).or_default() += 1;
+                    *field_reserved_counts.entry(field.end.reserved).or_default() += 1;
+                    pending.extend(&field.instruction_fields);
+                    pending.extend(&field.result_fields);
                 }
+                field_records += current_count;
+                current_field_counts.insert(part, current_count);
             }
             if let Some(location) = fib.ole_control_info_location()
                 && location.lcb != 0
@@ -3687,6 +3906,7 @@ fn legacy_word_fibs_round_trip() {
                 if content.to_bytes().map_err(|error| error.to_string())? != bytes {
                     return Err("OfficeArtContent writer changed physical bytes".to_owned());
                 }
+                office_art_graph_audit.audit(&content);
                 let mut fsp_ids = BTreeMap::<TextboxDocumentPart, BTreeSet<u32>>::new();
                 office_art_partial_trees += usize::from(content.drawing_group.is_partial());
                 content.drawing_group.visit_complete(|record| {
@@ -4258,6 +4478,10 @@ fn legacy_word_fibs_round_trip() {
                         SprmOperand::CharacterDisplayFieldRevisionMark(_) => {
                             ("character-display-field-revision", 39)
                         }
+                        SprmOperand::StylePermutation(value) => (
+                            "style-permutation",
+                            5 + value.remapped_style_indices.len() * 2,
+                        ),
                         SprmOperand::ConditionalFormatting(value) => (
                             "conditional-formatting",
                             2 + value.properties.to_bytes().unwrap().len(),
@@ -6512,6 +6736,45 @@ fn legacy_word_fibs_round_trip() {
     assert_eq!(office_art_records, 18_883);
     assert_eq!(office_art_atom_bytes, 66);
     assert_eq!(office_art_atom_shapes, BTreeMap::from([((0xf004, 66), 1)]));
+    assert_eq!(office_art_graph_audit.graphs, 301);
+    assert_eq!(office_art_graph_audit.partial_graphs, 1);
+    assert_eq!(office_art_graph_audit.typed_graphs, 300);
+    assert_eq!(office_art_graph_audit.strict_graphs, 19);
+    assert_eq!(office_art_graph_audit.compatibility_graphs, 281);
+    assert_eq!(office_art_graph_audit.missing_or_multiple_dgg, 0);
+    assert_eq!(office_art_graph_audit.missing_or_multiple_fdg, 0);
+    assert_eq!(office_art_graph_audit.duplicate_drawing_ids, 0);
+    assert_eq!(office_art_graph_audit.duplicate_shape_ids, 0);
+    assert_eq!(office_art_graph_audit.shape_cluster_zero, 0);
+    assert_eq!(office_art_graph_audit.shape_cluster_missing, 0);
+    assert_eq!(office_art_graph_audit.shape_cluster_drawing_mismatches, 0);
+    assert_eq!(office_art_graph_audit.shapes, 2_893);
+    assert_eq!(office_art_graph_audit.patriarch_shapes, 371);
+    assert_eq!(office_art_graph_audit.deleted_shapes, 0);
+    assert_eq!(
+        office_art_graph_audit.fdg_shape_count_deltas,
+        BTreeMap::from([(-1, 279), (0, 92)])
+    );
+    assert_eq!(
+        office_art_graph_audit.dgg_saved_drawing_deltas,
+        BTreeMap::from([(0, 300)])
+    );
+    assert!(
+        !office_art_graph_audit
+            .fdg_current_shape_relations
+            .contains_key("below")
+    );
+    assert!(
+        !office_art_graph_audit
+            .dgg_max_shape_relations
+            .contains_key("below")
+    );
+    assert!(
+        !office_art_graph_audit
+            .cluster_cursor_relations
+            .contains_key("below")
+    );
+    eprintln!("DOC OfficeArt drawing graph: {office_art_graph_audit:#?}");
     assert_eq!(word_client_anchors, 423);
     assert_eq!(word_client_data, 2_521);
     assert_eq!(word_client_textboxes, 623);

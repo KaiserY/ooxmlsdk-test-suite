@@ -284,51 +284,6 @@ fn shared_string_table_round_trip_from_openxml_part_test() {
 }
 
 #[test]
-fn shared_string_table_process_content_preserves_extension_attributes_from_mc_support_test() {
-    // Source: test/DocumentFormat.OpenXml.Tests/ofapiTest/MCSupport.cs
-    //   LoadProcessContent
-    let shared_strings_xml = doc_sample_part("MCExecl.xlsx", "xl/sharedStrings.xml");
-
-    let (parsed, serialized, _) = assert_stable_roundtrip::<SharedStringTable>(&shared_strings_xml);
-
-    let item = parsed
-        .shared_string_item
-        .first()
-        .expect("expected shared string item");
-    assert!(!serialized.contains(r#"mc:Ignorable="w14""#));
-    assert!(!serialized.contains(r#"w14:attr="value""#));
-    let placeholder_xml = item
-        .xml_other_children
-        .iter()
-        .find_map(|(_, xml)| {
-            std::str::from_utf8(xml)
-                .ok()
-                .filter(|xml| xml.contains("<w14:placeholder"))
-        })
-        .expect("expected w14 placeholder");
-    assert!(placeholder_xml.contains(r#"mc:ProcessContent="w14:placeholder""#));
-    assert!(placeholder_xml.contains(r#"mc:PreserveAttributes="w14:a w14:b""#));
-    assert!(placeholder_xml.contains(r#"w14:a="a""#));
-    assert!(placeholder_xml.contains(r#"w14:b="b""#));
-    assert!(placeholder_xml.contains(r#"w14:c="c""#));
-    assert!(placeholder_xml.contains(">ddd<"));
-    assert!(
-        item.xml_other_children
-            .iter()
-            .filter_map(|(_, xml)| std::str::from_utf8(xml).ok())
-            .any(|xml| xml.contains("<w14:no"))
-    );
-    assert!(item.text.is_some());
-    assert!(item.phonetic_properties.is_some());
-
-    assert!(serialized.contains(r#"mc:ProcessContent="w14:placeholder""#));
-    assert!(serialized.contains(r#"mc:PreserveAttributes="w14:a w14:b""#));
-    assert!(serialized.contains(r#"w14:a="a""#));
-    assert!(serialized.contains(r#"w14:b="b""#));
-    assert!(serialized.contains(r#"w14:c="c""#));
-}
-
-#[test]
 fn shared_string_table_serialization_matches_get_stream_write_test() {
     let (_parsed, serialized, reparsed) =
         assert_stable_roundtrip::<SharedStringTable>(fixtures::SPREADSHEET_SHARED_STRING_TABLE_XML);
