@@ -12,7 +12,7 @@
 
 | Total files | Round-trip candidates | Open-only | Invalid | Known failures | Last run | Passed | Failed |
 | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: |
-| 3368 | 3335 | 7 | 26 | 0 | 2026-06-07 | 3368 | 0 |
+| 3368 | 3335 | 7 | 26 | 0 | 2026-07-16 | 3368 | 0 |
 
 The imported corpus preserves LibreOffice core-relative paths for supported
 Office package fixtures only.
@@ -40,7 +40,7 @@ cargo test -p ooxmlsdk-roundtrip-tests --test libreoffice_roundtrip -- --ignored
 ## Last Run
 
 ```text
-test result: ok. 3368 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 19.91s
+test result: ok. 3368 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 24.05s
 ```
 
 Current failures: none.

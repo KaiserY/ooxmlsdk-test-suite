@@ -15,8 +15,8 @@ reason = "encrypted package"
 [[expectation]]
 file = "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Invalid_Word15Comments.docx"
 test = "roundtrip"
-mode = "invalid"
-reason = "intentionally invalid Word 15 comments extension fixture"
+mode = "round_trip"
+reason = "opens successfully; round-trip comparison ignores the fixture's synthetic w15:commentExNG child"
 
 [[expectation]]
 file = "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment022.docx"

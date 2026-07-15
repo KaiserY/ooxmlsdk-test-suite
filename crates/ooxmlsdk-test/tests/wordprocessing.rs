@@ -239,11 +239,21 @@ fn body_choice_sdt_block(choice: &BodyChoice) -> Option<&SdtBlock> {
 }
 
 #[cfg(not(feature = "mce"))]
-fn body_choice_alternate_content(choice: &BodyChoice) -> Option<&str> {
+fn body_choice_alternate_content(choice: &BodyChoice) -> Option<String> {
     match choice {
-        BodyChoice::XmlAny(xml) if xml.starts_with(b"<mc:AlternateContent") => {
-            std::str::from_utf8(xml.as_ref()).ok()
-        }
+        BodyChoice::AlternateContent(alternate_content) => alternate_content.to_xml().ok(),
+        _ => None,
+    }
+}
+
+#[cfg(not(feature = "mce"))]
+fn body_choice_alternate_content_model(
+    choice: &BodyChoice,
+) -> Option<
+    &ooxmlsdk::schemas::schemas_openxmlformats_org_markup_compatibility_2006::AlternateContent,
+> {
+    match choice {
+        BodyChoice::AlternateContent(alternate_content) => Some(alternate_content.as_ref()),
         _ => None,
     }
 }
@@ -715,9 +725,7 @@ fn document_round_trip_preserves_static_mce_attributes_and_alternate_content() {
         .run_choice
         .iter()
         .find_map(|choice| match choice {
-            RunChoice::XmlAny(xml) if xml.starts_with(b"<mc:AlternateContent") => {
-                std::str::from_utf8(xml.as_ref()).ok()
-            }
+            RunChoice::AlternateContent(alternate_content) => alternate_content.to_xml().ok(),
             _ => None,
         })
         .expect("expected alternate content in run");
@@ -895,11 +903,31 @@ fn body_alternate_content_without_selected_content_round_trips() {
     let alternate_content = body
         .body_choice
         .iter()
-        .filter_map(body_choice_alternate_content)
+        .filter_map(body_choice_alternate_content_model)
         .collect::<Vec<_>>();
-    assert!(alternate_content[0].contains("<mc:AlternateContent/>"));
-    assert!(alternate_content[1].contains(r#"<mc:Choice Requires="w13"/>"#));
-    assert!(alternate_content[2].contains(r#"<mc:Choice Requires="w15" mc:MustUnderstand="w15">"#));
+    assert!(alternate_content[0].alternate_content_choice.is_empty());
+    assert_eq!(alternate_content[1].alternate_content_choice.len(), 1);
+    assert!(matches!(
+        &alternate_content[1].alternate_content_choice[0],
+        ooxmlsdk::schemas::schemas_openxmlformats_org_markup_compatibility_2006::AlternateContentChoice::Choice(choice)
+            if choice.requires == "w13"
+    ));
+    let w15_choice = alternate_content[2]
+        .alternate_content_choice
+        .iter()
+        .find_map(|choice| match choice {
+            ooxmlsdk::schemas::schemas_openxmlformats_org_markup_compatibility_2006::AlternateContentChoice::Choice(choice)
+                if choice.requires == "w15" =>
+            {
+                Some(choice.as_ref())
+            }
+            _ => None,
+        })
+        .expect("expected w15 choice");
+    assert_eq!(
+        w15_choice.mc_must_understand.as_deref(),
+        Some(b"w15".as_slice())
+    );
 
     assert!(serialized.contains("<mc:AlternateContent"));
     assert!(serialized.contains(r#"<mc:Choice Requires="w13""#));

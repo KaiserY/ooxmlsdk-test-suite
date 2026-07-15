@@ -160,8 +160,8 @@ reason = "empty invalid package fixture"
 [[expectation]]
 file = "test-data/spreadsheet/sample-beta.xlsx"
 test = "roundtrip"
-mode = "invalid"
-reason = "pre-standard Excel beta shared strings use non-OOXML namespace and sstItem elements"
+mode = "open_only"
+reason = "pre-standard Excel beta namespace and sstItem elements are outside the current static schema"
 
 [[expectation]]
 file = "test-data/openxml4j/OPCCompliance_CoreProperties_LimitedXSITypeAttribute_PresentWithUnauthorizedValueFAIL.docx"

@@ -8,8 +8,8 @@ use ooxmlsdk::schemas::schemas_openxmlformats_org_drawingml_2006_chart::{
 };
 use ooxmlsdk::schemas::schemas_openxmlformats_org_spreadsheetml_2006_main::WorkbookExtensionChoice;
 use ooxmlsdk::schemas::schemas_openxmlformats_org_spreadsheetml_2006_main::{
-    CellValue, ColorScale, ConditionalFormatValueObjectValues, SharedStringTable, Workbook,
-    Worksheet,
+    CellValue, ColorScale, ConditionalFormatValueObjectValues, SharedStringItem, SharedStringTable,
+    Workbook, Worksheet,
 };
 use ooxmlsdk::sdk::SdkType;
 use ooxmlsdk::simple_type::BooleanValue;
@@ -294,6 +294,37 @@ fn shared_string_table_serialization_matches_get_stream_write_test() {
     assert!(contains_x_start(serialized, "t"));
     assert!(contains_x_end_text(serialized, "Test", "t"));
     assert_eq!(shared_string_items(&reparsed).len(), 1);
+}
+
+#[test]
+fn shared_string_item_skips_unknown_child_subtrees() {
+    let xml = br#"<x:si xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:u="urn:unknown"><u:empty/><u:wrapper><x:t>discarded</x:t><u:wrapper/></u:wrapper><x:t>kept</x:t></x:si>"#;
+
+    let borrowed = SharedStringItem::from_bytes(xml).unwrap();
+    let buffered = SharedStringItem::from_reader(Cursor::new(xml)).unwrap();
+
+    for parsed in [&borrowed, &buffered] {
+        assert_eq!(
+            parsed
+                .text
+                .as_ref()
+                .and_then(|text| text.xml_content.as_deref()),
+            Some("kept")
+        );
+        let serialized = parsed.to_xml().unwrap();
+        assert!(!serialized.contains("u:empty"), "{serialized}");
+        assert!(!serialized.contains("u:wrapper"), "{serialized}");
+        assert!(!serialized.contains("discarded"), "{serialized}");
+        assert!(serialized.contains("kept"), "{serialized}");
+    }
+}
+
+#[test]
+fn shared_string_item_rejects_unterminated_unknown_child() {
+    let xml = br#"<x:si xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:u="urn:unknown"><u:wrapper><x:t>discarded</x:t></x:si>"#;
+
+    assert!(SharedStringItem::from_bytes(xml).is_err());
+    assert!(SharedStringItem::from_reader(Cursor::new(xml)).is_err());
 }
 
 #[test]

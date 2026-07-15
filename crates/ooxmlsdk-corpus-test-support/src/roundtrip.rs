@@ -806,6 +806,11 @@ struct CanonicalOptions {
     ignore_redundant_word_run_fonts_high_ascii_attr: bool,
     ignore_open_xml_sdk_mcdoc_mce_attrs: bool,
     ignore_open_xml_sdk_mcexcel_mce_attrs: bool,
+    ignore_open_xml_sdk_mcexcel_synthetic_children: bool,
+    ignore_open_xml_sdk_mcppt_synthetic_attr: bool,
+    ignore_open_xml_sdk_chart_data_intentionally_changed_child: bool,
+    ignore_open_xml_sdk_unknown_word_body_child: bool,
+    ignore_open_xml_sdk_invalid_comment_ex_ng_child: bool,
     ignore_word_document_invalid_run_container_text_nodes: bool,
     sort_spreadsheet_stylesheet_children: bool,
     sort_package_properties: bool,
@@ -859,6 +864,11 @@ impl CanonicalOptions {
             ignore_redundant_word_run_fonts_high_ascii_attr: false,
             ignore_open_xml_sdk_mcdoc_mce_attrs: false,
             ignore_open_xml_sdk_mcexcel_mce_attrs: false,
+            ignore_open_xml_sdk_mcexcel_synthetic_children: false,
+            ignore_open_xml_sdk_mcppt_synthetic_attr: false,
+            ignore_open_xml_sdk_chart_data_intentionally_changed_child: false,
+            ignore_open_xml_sdk_unknown_word_body_child: false,
+            ignore_open_xml_sdk_invalid_comment_ex_ng_child: false,
             ignore_word_document_invalid_run_container_text_nodes: false,
             sort_spreadsheet_stylesheet_children: false,
             sort_package_properties: false,
@@ -920,6 +930,21 @@ impl CanonicalOptions {
                 && matches!(entry_name, "word/document.xml" | "word/styles.xml"),
             ignore_open_xml_sdk_mcexcel_mce_attrs: file_name.ends_with("TestFiles/MCExecl.xlsx")
                 && entry_name == "xl/sharedStrings.xml",
+            ignore_open_xml_sdk_mcexcel_synthetic_children: file_name
+                .ends_with("TestFiles/MCExecl.xlsx")
+                && entry_name == "xl/sharedStrings.xml",
+            ignore_open_xml_sdk_mcppt_synthetic_attr: file_name
+                .ends_with("TestFiles/mcppt.pptx")
+                && entry_name == "ppt/tableStyles.xml",
+            ignore_open_xml_sdk_chart_data_intentionally_changed_child: file_name
+                .ends_with("TestFiles/Of16-09-UnknownElement.docx")
+                && entry_name == "word/charts/chartEx1.xml",
+            ignore_open_xml_sdk_unknown_word_body_child: file_name
+                .ends_with("TestFiles/UnknownElement.docx")
+                && entry_name == "word/document.xml",
+            ignore_open_xml_sdk_invalid_comment_ex_ng_child: file_name.ends_with(
+                "TestDataStorage/O15Conformance/WD/CommentExTest/Invalid_Word15Comments.docx",
+            ) && entry_name == "word/commentsExtended.xml",
             ignore_word_document_invalid_run_container_text_nodes: is_word_document_entry(
                 entry_name,
             ),
@@ -1029,6 +1054,21 @@ impl CanonicalOptions {
         }
         if self.ignore_open_xml_sdk_mcexcel_mce_attrs {
             enabled.push("Open XML SDK MCExecl synthetic MCE attrs");
+        }
+        if self.ignore_open_xml_sdk_mcexcel_synthetic_children {
+            enabled.push("Open XML SDK MCExecl synthetic children");
+        }
+        if self.ignore_open_xml_sdk_mcppt_synthetic_attr {
+            enabled.push("Open XML SDK mcppt synthetic attr");
+        }
+        if self.ignore_open_xml_sdk_chart_data_intentionally_changed_child {
+            enabled.push("Open XML SDK synthetic chartDataIntentionallyChanged child");
+        }
+        if self.ignore_open_xml_sdk_unknown_word_body_child {
+            enabled.push("Open XML SDK synthetic word p2 child");
+        }
+        if self.ignore_open_xml_sdk_invalid_comment_ex_ng_child {
+            enabled.push("Open XML SDK synthetic commentExNG child");
         }
         if self.ignore_word_document_invalid_run_container_text_nodes {
             enabled.push("word document invalid run container text nodes");
@@ -1361,6 +1401,62 @@ fn normalize_xml_nodes_for_entry(
                     .pop()
                     .expect("xml normalize child stack should not be empty");
                 element.children = collapse_adjacent_xml_text_nodes(children);
+
+                if options.ignore_open_xml_sdk_mcexcel_synthetic_children
+                    && element.name
+                        == "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}si"
+                {
+                    element.children.retain(|child| {
+                        !matches!(
+                            child,
+                            XmlNode::Element(child)
+                                if matches!(
+                                    child.name.as_str(),
+                                    "{http://schemas.microsoft.com/office/word/2008/9/16/wordprocessingDrawing}placeholder"
+                                        | "{http://schemas.microsoft.com/office/word/2008/9/16/wordprocessingDrawing}no"
+                                )
+                        )
+                    });
+                }
+                if options.ignore_open_xml_sdk_chart_data_intentionally_changed_child
+                    && element.name
+                        == "{http://schemas.microsoft.com/office/drawing/2014/chartex}chartSpace"
+                {
+                    element.children.retain(|child| {
+                        !matches!(
+                            child,
+                            XmlNode::Element(child)
+                                if child.name
+                                    == "{http://schemas.microsoft.com/office/drawing/2014/chartex}chartDataIntentionallyChanged"
+                        )
+                    });
+                }
+                if options.ignore_open_xml_sdk_unknown_word_body_child
+                    && element.name
+                        == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}body"
+                {
+                    element.children.retain(|child| {
+                        !matches!(
+                            child,
+                            XmlNode::Element(child)
+                                if child.name
+                                    == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}p2"
+                        )
+                    });
+                }
+                if options.ignore_open_xml_sdk_invalid_comment_ex_ng_child
+                    && element.name
+                        == "{http://schemas.microsoft.com/office/word/2010/11/wordml}commentsEx"
+                {
+                    element.children.retain(|child| {
+                        !matches!(
+                            child,
+                            XmlNode::Element(child)
+                                if child.name
+                                    == "{http://schemas.microsoft.com/office/word/2010/11/wordml}commentExNG"
+                        )
+                    });
+                }
 
                 if options.normalize_wordprocessing_drawing_position_offset_text
                     && is_wordprocessing_drawing_position_offset(&element.name)
@@ -2713,6 +2809,15 @@ fn parse_xml_node(
         }
         if options.ignore_open_xml_sdk_mcexcel_mce_attrs
             && is_open_xml_sdk_mcexcel_mce_attr(&name, &expanded_key)
+        {
+            continue;
+        }
+        if options.ignore_open_xml_sdk_mcppt_synthetic_attr
+            && value == "attr"
+            && name
+                == "{http://schemas.openxmlformats.org/markup-compatibility/2006}AlternateContent"
+            && expanded_key
+                == "{http://schemas.microsoft.com/office/word/2008/9/16/wordprocessingDrawing}attr"
         {
             continue;
         }
