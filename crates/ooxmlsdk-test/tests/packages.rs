@@ -1182,6 +1182,37 @@ fn package_save_writes_package_relationships_from_parts() {
 }
 
 #[test]
+fn package_accessors_read_live_relationship_storage_after_mutation() {
+    let mut package = WordprocessingDocument::create(WordprocessingDocumentType::Document);
+    let main_part = package.add_main_document_part().unwrap();
+    main_part
+        .set_root_element(&mut package, empty_body_document())
+        .unwrap();
+    let core = package.add_core_file_properties_part().unwrap();
+
+    assert_eq!(
+        package.core_file_properties_part().unwrap().part_id(),
+        core.part_id()
+    );
+    assert!(package.delete_part(core).unwrap());
+    assert!(package.core_file_properties_part().is_none());
+
+    let replacement_core = package.add_core_file_properties_part().unwrap();
+    assert_eq!(
+        package.core_file_properties_part().unwrap().part_id(),
+        replacement_core.part_id()
+    );
+
+    assert!(package.delete_part(main_part).unwrap());
+    assert!(package.main_document_part().is_err());
+    let replacement_main = package.add_main_document_part().unwrap();
+    assert_eq!(
+        package.main_document_part().unwrap().part_id(),
+        replacement_main.part_id()
+    );
+}
+
+#[test]
 fn wordprocessing_child_accessors_are_relationship_backed_handles() {
     let package = WordprocessingDocument::new_from_file(doc_sample("Of16-01.docx")).unwrap();
     let main_part = package.main_document_part().unwrap();
@@ -3629,6 +3660,60 @@ fn add_extended_part_with_id_supports_package_part_and_nested_extended_parts() {
         reopened_nested_extended.data(&reopened),
         Some(&b"nested extended"[..])
     );
+}
+
+#[test]
+fn extended_part_relationship_cycle_uses_storage_edges_without_recursive_handles() {
+    let mut package = WordprocessingDocument::create(WordprocessingDocumentType::Document);
+    let main_part = package.add_main_document_part().unwrap();
+    main_part
+        .set_root_element(&mut package, empty_body_document())
+        .unwrap();
+
+    let first = main_part
+        .add_extended_part_with_id(
+            &mut package,
+            "http://temp/first",
+            "text/xml",
+            "xml",
+            "rIdFirst",
+        )
+        .unwrap();
+    let second = first
+        .add_extended_part_with_id(
+            &mut package,
+            "http://temp/second",
+            "text/xml",
+            "xml",
+            "rIdSecond",
+        )
+        .unwrap();
+    second
+        .create_relationship_to_part_with_id(&mut package, first.clone(), "rIdBackToFirst")
+        .unwrap();
+
+    assert_eq!(main_part.get_all_parts(&package).count(), 2);
+    assert_eq!(first.get_all_parts(&package).count(), 2);
+
+    let mut buffer = Cursor::new(Vec::new());
+    package.save(&mut buffer).unwrap();
+    let reopened = WordprocessingDocument::new(Cursor::new(buffer.into_inner())).unwrap();
+    let reopened_main = reopened.main_document_part().unwrap();
+    let reopened_first = reopened_main
+        .get_part_by_id(&reopened, "rIdFirst")
+        .and_then(|part| part_ref_variant!(part, ExtendedPart))
+        .unwrap();
+    let reopened_second = reopened_first
+        .get_part_by_id(&reopened, "rIdSecond")
+        .and_then(|part| part_ref_variant!(part, ExtendedPart))
+        .unwrap();
+    let reopened_back = reopened_second
+        .get_part_by_id(&reopened, "rIdBackToFirst")
+        .and_then(|part| part_ref_variant!(part, ExtendedPart))
+        .unwrap();
+
+    assert_eq!(reopened_back.part_id(), reopened_first.part_id());
+    assert_eq!(reopened_main.get_all_parts(&reopened).count(), 2);
 }
 
 #[test]
