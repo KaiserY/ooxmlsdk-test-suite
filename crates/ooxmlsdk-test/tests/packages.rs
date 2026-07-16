@@ -59,6 +59,36 @@ fn doc_sample(file_name: &str) -> std::path::PathBuf {
     path
 }
 
+#[cfg(feature = "mce")]
+fn corpus_file(relative: &str) -> std::path::PathBuf {
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .join(relative);
+    assert!(path.is_file(), "missing corpus file: {}", path.display());
+    path
+}
+
+#[cfg(feature = "mce")]
+fn office_2007_process_all_settings() -> OpenSettings {
+    OpenSettings {
+        open_mode: PackageOpenMode::Lazy,
+        markup_compatibility_process_settings: MarkupCompatibilityProcessSettings {
+            process_mode: MarkupCompatibilityProcessMode::ProcessAllParts,
+            target_file_format_version: FileFormatVersion::Office2007,
+        },
+        ..Default::default()
+    }
+}
+
+#[cfg(feature = "mce")]
+fn saved_zip_part(bytes: &[u8], part_name: &str) -> String {
+    let mut archive = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
+    let mut part = archive.by_name(part_name).unwrap();
+    let mut xml = String::new();
+    part.read_to_string(&mut xml).unwrap();
+    xml
+}
+
 fn lazy_open_settings() -> OpenSettings {
     OpenSettings {
         open_mode: PackageOpenMode::Lazy,
@@ -654,6 +684,89 @@ fn process_all_parts_preserves_requested_ignorable_attributes_only() {
 
     assert!(serialized.contains(r#"w14:editId="12345678""#));
     assert!(!serialized.contains(r#"w14:paraId="12345678""#));
+}
+
+#[cfg(feature = "mce")]
+#[test]
+fn libreoffice_tdf90104_selects_data_validation_fallback_for_office_2007() {
+    let path = corpus_file("corpus/LibreOffice/sc/qa/unit/data/xlsx/tdf90104.xlsx");
+    let package =
+        SpreadsheetDocument::new_from_file_with_settings(path, office_2007_process_all_settings())
+            .unwrap();
+    let mut saved = Cursor::new(Vec::new());
+    package.save(&mut saved).unwrap();
+    let worksheet = saved_zip_part(saved.get_ref(), "xl/worksheets/sheet1.xml");
+
+    assert!(!worksheet.contains("AlternateContent"));
+    assert!(!worksheet.contains("x12ac:list"));
+    assert!(worksheet.contains("<formula1>"));
+}
+
+#[cfg(feature = "mce")]
+#[test]
+fn libreoffice_tdf134769_removes_nested_unsupported_controls_without_fallback() {
+    let path = corpus_file("corpus/LibreOffice/sc/qa/unit/data/xlsx/tdf134769.xlsx");
+    let package =
+        SpreadsheetDocument::new_from_file_with_settings(path, office_2007_process_all_settings())
+            .unwrap();
+    let mut saved = Cursor::new(Vec::new());
+    package.save(&mut saved).unwrap();
+    let worksheet = saved_zip_part(saved.get_ref(), "xl/worksheets/sheet1.xml");
+
+    assert!(!worksheet.contains("AlternateContent"));
+    assert!(!worksheet.contains("<controls"));
+    assert!(worksheet.contains("<legacyDrawing"));
+}
+
+#[cfg(feature = "mce")]
+#[test]
+fn libreoffice_fdo78957_selects_wordprocessing_fallbacks_for_office_2007() {
+    let path = corpus_file("corpus/LibreOffice/sw/qa/extras/ooxmlexport/data/fdo78957.docx");
+    let package = WordprocessingDocument::new_from_file_with_settings(
+        path,
+        office_2007_process_all_settings(),
+    )
+    .unwrap();
+    let mut saved = Cursor::new(Vec::new());
+    package.save(&mut saved).unwrap();
+    let header = saved_zip_part(saved.get_ref(), "word/header1.xml");
+
+    assert!(!header.contains("AlternateContent"));
+    assert!(header.contains("<w:pict"));
+}
+
+#[cfg(feature = "mce")]
+#[test]
+fn apache_poi_style_alternate_content_selects_static_fallbacks() {
+    let path = corpus_file("corpus/Apache-POI/test-data/spreadsheet/style-alternate-content.xlsx");
+    let package =
+        SpreadsheetDocument::new_from_file_with_settings(path, office_2007_process_all_settings())
+            .unwrap();
+    let mut saved = Cursor::new(Vec::new());
+    package.save(&mut saved).unwrap();
+    let styles = saved_zip_part(saved.get_ref(), "xl/styles.xml");
+
+    assert!(!styles.contains("AlternateContent"));
+    assert!(!styles.contains("schemas.haansoft.com"));
+    assert!(styles.contains("<fonts"));
+    assert!(styles.contains("<cellXfs"));
+    assert!(styles.contains("<dxfs"));
+}
+
+#[cfg(feature = "mce")]
+#[test]
+fn apache_poi_2411_selects_picture_blip_fallback_for_office_2007() {
+    let path = corpus_file("corpus/Apache-POI/test-data/slideshow/2411-Performance_Up.pptx");
+    let package =
+        PresentationDocument::new_from_file_with_settings(path, office_2007_process_all_settings())
+            .unwrap();
+    let mut saved = Cursor::new(Vec::new());
+    package.save(&mut saved).unwrap();
+    let slide = saved_zip_part(saved.get_ref(), "ppt/slides/slide5.xml");
+
+    assert!(!slide.contains("AlternateContent"));
+    assert!(!slide.contains("r:embed=\"rId3\""));
+    assert!(slide.contains("r:embed=\"rId4\""));
 }
 
 #[test]

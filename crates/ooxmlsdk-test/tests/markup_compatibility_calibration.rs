@@ -10,7 +10,7 @@ use ooxmlsdk::schemas::schemas_openxmlformats_org_wordprocessingml_2006_main::{
 };
 #[cfg(feature = "mce")]
 use ooxmlsdk::sdk::{
-    FileFormatVersion, MarkupCompatibilityProcessMode, MarkupCompatibilityProcessSettings,
+    FileFormatVersion, MarkupCompatibilityProcessMode, MarkupCompatibilityProcessSettings, SdkType,
 };
 use ooxmlsdk_test::{assert_stable_roundtrip, fixtures};
 
@@ -89,6 +89,24 @@ fn mcsupport_load_preserve_attr() {
     assert!(paragraph.w14_edit_id.is_some());
     assert!(paragraph.paragraph_id.is_none());
     assert!(paragraph.text_id.is_none());
+}
+
+#[cfg(feature = "mce")]
+#[test]
+fn markup_compatibility_preserve_attributes_namespace_wildcard_on_static_attributes() {
+    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2008/9/12/wordml" mc:Ignorable="w14" mc:PreserveAttributes="w14:*"><w:body><w:p w14:paraId="57290E37" w14:editId="5B733B31" w14:textId="5B733B31"/></w:body></w:document>"#;
+    let settings = MarkupCompatibilityProcessSettings {
+        process_mode: MarkupCompatibilityProcessMode::ProcessAllParts,
+        target_file_format_version: FileFormatVersion::Office2007,
+    };
+
+    let mut document = xml.parse::<Document>().unwrap();
+    document.process_mce(&settings).unwrap();
+    let paragraph = first_paragraph(&document);
+
+    assert!(paragraph.paragraph_id.is_some());
+    assert!(paragraph.w14_edit_id.is_some());
+    assert!(paragraph.text_id.is_some());
 }
 
 #[cfg(feature = "mce")]
@@ -343,6 +361,105 @@ fn markup_compatibility_preserve_ignored_unknown_element_wildcard_o12_mode() {
     assert!(paragraph.paragraph_id.is_some());
     assert!(paragraph.w14_edit_id.is_some());
     assert!(paragraph.text_id.is_some());
+}
+
+#[cfg(feature = "mce")]
+fn process_word_document_for_office_2007(xml: &str) -> String {
+    process_word_document(xml, FileFormatVersion::Office2007)
+}
+
+#[cfg(feature = "mce")]
+fn process_word_document(xml: &str, target_file_format_version: FileFormatVersion) -> String {
+    let settings = MarkupCompatibilityProcessSettings {
+        process_mode: MarkupCompatibilityProcessMode::ProcessAllParts,
+        target_file_format_version,
+    };
+    let mut document = xml.parse::<Document>().unwrap();
+    document.process_mce(&settings).unwrap();
+    document.to_xml().unwrap()
+}
+
+#[cfg(feature = "mce")]
+#[test]
+fn markup_compatibility_preserve_elements_exact_and_wildcard_on_static_children() {
+    let document = |preserve: &str| {
+        format!(
+            r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml"><w:body><mc:AlternateContent><mc:Choice Requires="w" mc:Ignorable="w14"{preserve}><w:p><w:r><w:rPr><w14:glow/><w14:reflection/></w:rPr><w:t>kept text</w:t></w:r></w:p></mc:Choice></mc:AlternateContent></w:body></w:document>"#
+        )
+    };
+
+    let dropped = process_word_document_for_office_2007(&document(""));
+    assert!(!dropped.contains("<w14:glow"));
+    assert!(!dropped.contains("<w14:reflection"));
+    assert!(dropped.contains("kept text"));
+
+    let exact =
+        process_word_document_for_office_2007(&document(r#" mc:PreserveElements="w14:glow""#));
+    assert!(exact.contains("<w14:glow"));
+    assert!(!exact.contains("<w14:reflection"));
+
+    let wildcard =
+        process_word_document_for_office_2007(&document(r#" mc:PreserveElements="w14:*""#));
+    assert!(wildcard.contains("<w14:glow"));
+    assert!(wildcard.contains("<w14:reflection"));
+
+    let global_wildcard =
+        process_word_document_for_office_2007(&document(r#" mc:PreserveElements="*""#));
+    assert!(global_wildcard.contains("<w14:glow"));
+    assert!(global_wildcard.contains("<w14:reflection"));
+
+    let supported = process_word_document(&document(""), FileFormatVersion::Office2010);
+    assert!(supported.contains("<w14:glow"));
+    assert!(supported.contains("<w14:reflection"));
+}
+
+#[cfg(feature = "mce")]
+#[test]
+fn markup_compatibility_preserve_elements_targets_one_static_choice_variant() {
+    let document = |preserve: &str| {
+        format!(
+            r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml"><w:body><mc:AlternateContent><mc:Choice Requires="w" mc:Ignorable="w14"{preserve}><w:p><w:r><w:t>before</w:t></w:r><w14:conflictIns w:author="A" w:id="1"><w:r><w:t>inside</w:t></w:r></w14:conflictIns><w:r><w:t>after</w:t></w:r></w:p></mc:Choice></mc:AlternateContent></w:body></w:document>"#
+        )
+    };
+
+    let dropped = process_word_document_for_office_2007(&document(""));
+    assert!(!dropped.contains("<w14:conflictIns"));
+    assert!(!dropped.contains(">inside<"));
+    assert!(dropped.contains(">before<"));
+    assert!(dropped.contains(">after<"));
+
+    let preserved = process_word_document_for_office_2007(&document(
+        r#" mc:PreserveElements="w14:conflictIns""#,
+    ));
+    assert!(preserved.contains("<w14:conflictIns"));
+    assert!(preserved.contains(">inside<"));
+    assert!(preserved.contains(">before<"));
+    assert!(preserved.contains(">after<"));
+}
+
+#[cfg(feature = "mce")]
+#[test]
+fn markup_compatibility_process_content_promotes_static_choice_children() {
+    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml"><w:body><mc:AlternateContent><mc:Choice Requires="w" mc:Ignorable="w14" mc:ProcessContent="w14:conflictIns"><w:p><w:r><w:t>before</w:t></w:r><w14:conflictIns w:author="A" w:id="1"><w:r><w:t>inside</w:t></w:r></w14:conflictIns><w:r><w:t>after</w:t></w:r></w:p></mc:Choice></mc:AlternateContent></w:body></w:document>"#;
+
+    let processed = process_word_document_for_office_2007(xml);
+
+    assert!(!processed.contains("<w14:conflictIns"));
+    assert!(processed.contains(">before<"));
+    assert!(processed.contains(">inside<"));
+    assert!(processed.contains(">after<"));
+}
+
+#[cfg(feature = "mce")]
+#[test]
+fn markup_compatibility_preserve_elements_scope_does_not_leak_from_selected_choice() {
+    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" mc:Ignorable="w14"><w:body><mc:AlternateContent><mc:Choice Requires="w" mc:PreserveElements="w14:glow"><w:p><w:r><w:rPr><w14:glow/></w:rPr><w:t>inside choice</w:t></w:r></w:p></mc:Choice></mc:AlternateContent><w:p><w:r><w:rPr><w14:glow/></w:rPr><w:t>after choice</w:t></w:r></w:p></w:body></w:document>"#;
+
+    let processed = process_word_document_for_office_2007(xml);
+
+    assert_eq!(processed.matches("<w14:glow").count(), 1);
+    assert!(processed.contains(">inside choice<"));
+    assert!(processed.contains(">after choice<"));
 }
 
 #[test]
