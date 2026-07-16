@@ -27,7 +27,7 @@ cargo test -p ooxmlsdk-roundtrip-tests --test open_xml_sdk_roundtrip -- --ignore
 Result:
 
 ```text
-test result: ok. 884 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 16.88s
+test result: ok. 884 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 16.07s
 ```
 
 The round-trip check is aligned with the high-standard `doc_samples` comparison

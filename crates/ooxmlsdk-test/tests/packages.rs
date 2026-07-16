@@ -10,13 +10,13 @@ use ooxmlsdk::common::{
 };
 use ooxmlsdk::parts::{
     PartRef, custom_xml_part::CustomXmlPart, document_settings_part::DocumentSettingsPart,
-    font_table_part::FontTablePart, header_part::HeaderPart, image_part::ImagePart,
-    main_document_part::MainDocumentPart, presentation_document::PresentationDocument,
-    presentation_part::PresentationPart, ribbon_extensibility_part::RibbonExtensibilityPart,
-    slide_part::SlidePart, spreadsheet_document::SpreadsheetDocument,
-    style_definitions_part::StyleDefinitionsPart, thumbnail_part::ThumbnailPart,
-    wordprocessing_document::WordprocessingDocument, workbook_part::WorkbookPart,
-    workbook_styles_part::WorkbookStylesPart, worksheet_part::WorksheetPart,
+    header_part::HeaderPart, image_part::ImagePart, main_document_part::MainDocumentPart,
+    presentation_document::PresentationDocument, presentation_part::PresentationPart,
+    ribbon_extensibility_part::RibbonExtensibilityPart, slide_part::SlidePart,
+    spreadsheet_document::SpreadsheetDocument, style_definitions_part::StyleDefinitionsPart,
+    thumbnail_part::ThumbnailPart, wordprocessing_document::WordprocessingDocument,
+    workbook_part::WorkbookPart, workbook_styles_part::WorkbookStylesPart,
+    worksheet_part::WorksheetPart,
 };
 use ooxmlsdk::schemas::opc_relationships::TargetMode;
 use ooxmlsdk::schemas::schemas_openxmlformats_org_presentationml_2006_main::{
@@ -1465,9 +1465,7 @@ fn part_get_all_parts_and_parent_parts_follow_reachable_relationship_graph() {
     let header_part = main_part
         .add_new_part_auto_id::<_, HeaderPart>(&mut package)
         .unwrap();
-    let settings_part = main_part
-        .add_new_part_auto_id::<_, DocumentSettingsPart>(&mut package)
-        .unwrap();
+    let settings_part = main_part.document_settings_part(&package).unwrap();
     let image_part = header_part
         .add_image_part(&mut package, "image/png")
         .unwrap();
@@ -2455,6 +2453,79 @@ fn add_new_header_part_creates_relationship_content_type_and_root_slot() {
 }
 
 #[test]
+fn generated_child_part_constraints_reject_invalid_singleton_and_parent_combinations() {
+    // Source: OpenXmlPartContainer.InitPart/AddPartFrom and generated IPartConstraintFeature.
+    let mut package = WordprocessingDocument::create(WordprocessingDocumentType::Document);
+    let main_part = package.add_main_document_part().unwrap();
+    assert_eq!(
+        std::mem::size_of::<MainDocumentPart>(),
+        std::mem::size_of::<PartId>()
+    );
+
+    let settings_constraint = <MainDocumentPart as SdkPart>::CHILD_PART_CONSTRAINTS
+        .iter()
+        .find(|constraint| constraint.child_kind == ooxmlsdk::parts::PartKind::DocumentSettingsPart)
+        .copied()
+        .unwrap();
+    assert_eq!(
+        settings_constraint.relationship_type,
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings"
+    );
+    assert_eq!(
+        settings_constraint.content_type,
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"
+    );
+    assert!(!settings_constraint.min_occurs_is_non_zero);
+    assert!(!settings_constraint.max_occurs_great_than_one);
+
+    assert!(
+        main_part
+            .add_new_part_with_content_type::<_, DocumentSettingsPart>(
+                &mut package,
+                "rIdWrongSettingsContentType",
+                "application/xml",
+            )
+            .is_err()
+    );
+    assert!(
+        main_part
+            .add_new_part::<_, WorksheetPart>(&mut package, "rIdInvalidWorksheet")
+            .is_err()
+    );
+
+    let settings = main_part
+        .add_new_part_auto_id::<_, DocumentSettingsPart>(&mut package)
+        .unwrap();
+    assert!(main_part.get_id_of_part(&package, &settings).is_some());
+    assert!(
+        main_part
+            .add_new_part_auto_id::<_, DocumentSettingsPart>(&mut package)
+            .is_err()
+    );
+    assert_eq!(
+        main_part.document_settings_part(&package),
+        Some(settings.clone())
+    );
+
+    let header = main_part
+        .add_new_part_auto_id::<_, HeaderPart>(&mut package)
+        .unwrap();
+    assert!(
+        settings
+            .create_relationship_to_part(&mut package, header)
+            .is_err()
+    );
+
+    let main_constraint = <WordprocessingDocument as SdkPackage>::CHILD_PART_CONSTRAINTS
+        .iter()
+        .find(|constraint| constraint.child_kind == ooxmlsdk::parts::PartKind::MainDocumentPart)
+        .copied()
+        .unwrap();
+    assert!(main_constraint.min_occurs_is_non_zero);
+    assert!(!main_constraint.max_occurs_great_than_one);
+}
+
+#[test]
 fn add_new_parts_use_unique_upstream_style_part_names() {
     // Source: test/DocumentFormat.OpenXml.Packaging.Tests/PartUriHelperTests
     let mut package = WordprocessingDocument::create(WordprocessingDocumentType::Document);
@@ -3203,9 +3274,7 @@ fn add_extensible_supported_relationship_parts_by_type_save_and_reopen() {
         .unwrap()
         .to_string();
 
-    let font_table = main_part
-        .add_new_part_auto_id::<_, FontTablePart>(&mut package)
-        .unwrap();
+    let font_table = main_part.font_table_part(&package).unwrap();
     let font = font_table
         .add_font_part_by_type(&mut package, FontPartType::FontTtf)
         .unwrap();
@@ -3219,9 +3288,7 @@ fn add_extensible_supported_relationship_parts_by_type_save_and_reopen() {
         .unwrap()
         .to_string();
 
-    let settings = main_part
-        .add_new_part_auto_id::<_, DocumentSettingsPart>(&mut package)
-        .unwrap();
+    let settings = main_part.document_settings_part(&package).unwrap();
     let recipients = settings
         .add_mail_merge_recipient_data_part_by_type(
             &mut package,

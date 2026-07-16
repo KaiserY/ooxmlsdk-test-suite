@@ -40,7 +40,7 @@ cargo test -p ooxmlsdk-roundtrip-tests --test libreoffice_roundtrip -- --ignored
 ## Last Run
 
 ```text
-test result: ok. 3368 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 24.05s
+test result: ok. 3368 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 27.23s
 ```
 
 Current failures: none.

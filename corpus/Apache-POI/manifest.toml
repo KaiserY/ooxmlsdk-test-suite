@@ -8,6 +8,12 @@ source_commit = "dfa53082b3e04412a4440c77862f17061cb2e97f"
 default_roundtrip = false
 
 [[expectation]]
+file = "test-data/integration/stress025.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "Apache POI marks this theme-manager-only package as failing; it has no Wordprocessing main document part"
+
+[[expectation]]
 file = "test-data/document/56392.docx"
 test = "roundtrip"
 mode = "open_only"
