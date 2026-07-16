@@ -39,7 +39,7 @@ use olecfsdk::{
         XmlSchemaStringTable, XmlTransformPath,
     },
     forms::{CommandButtonControl, FmStringLengthMode, MorphDataControl, SingleStreamOleControl},
-    office_art::{OfficeArtRecordData, OfficeArtShapeFlags},
+    office_art::{OfficeArtDrawingGraphIssue, OfficeArtRecordData, OfficeArtShapeFlags},
     shared::{
         EnvelopeFlagStatus, EnvelopeImportance, EnvelopeRecipientPropertyValue,
         EnvelopeSensitivity, MsoEnvelopeClsid, MsoEnvelopeData, MsoEnvelopeVersion,
@@ -81,6 +81,14 @@ struct OfficeArtDrawingGraphAudit {
     cluster_without_current_shape: usize,
     cluster_cursor_relations: BTreeMap<&'static str, usize>,
     cluster_cursor_deltas: BTreeMap<i64, usize>,
+    blip_stores: usize,
+    blip_entries: usize,
+    blip_references: usize,
+    blip_reference_count_relations: BTreeMap<String, usize>,
+    blip_store_entry_count_mismatches: usize,
+    blip_store_entry_count_mismatch_shapes: BTreeMap<(u16, usize), usize>,
+    blip_references_out_of_range: usize,
+    empty_blip_store_slots_referenced: usize,
 }
 
 impl OfficeArtDrawingGraphAudit {
@@ -103,6 +111,37 @@ impl OfficeArtDrawingGraphAudit {
             self.strict_graphs += 1;
         } else {
             self.compatibility_graphs += 1;
+        }
+        self.blip_references += graph.blip_references.len();
+        if let Some(store) = &graph.blip_store {
+            self.blip_stores += 1;
+            self.blip_entries += store.entries.len();
+            for entry in &store.entries {
+                if let Some(relation) = entry.reference_count_relation {
+                    *self
+                        .blip_reference_count_relations
+                        .entry(format!("{relation:?}"))
+                        .or_default() += 1;
+                }
+            }
+        }
+        for issue in &graph.issues {
+            match issue {
+                OfficeArtDrawingGraphIssue::BlipStoreEntryCountMismatch { declared, actual } => {
+                    self.blip_store_entry_count_mismatches += 1;
+                    *self
+                        .blip_store_entry_count_mismatch_shapes
+                        .entry((*declared, *actual))
+                        .or_default() += 1;
+                }
+                OfficeArtDrawingGraphIssue::BlipReferenceOutOfRange { .. } => {
+                    self.blip_references_out_of_range += 1;
+                }
+                OfficeArtDrawingGraphIssue::EmptyBlipStoreSlotReferenced { .. } => {
+                    self.empty_blip_store_slots_referenced += 1;
+                }
+                _ => {}
+            }
         }
 
         let mut dgg_records = Vec::new();
@@ -232,11 +271,11 @@ impl OfficeArtDrawingGraphAudit {
             let expected_cursor = max_offset + 1;
             *self
                 .cluster_cursor_relations
-                .entry(relation(cluster.current_shape_id, expected_cursor))
+                .entry(relation(cluster.current_shape_id_count, expected_cursor))
                 .or_default() += 1;
             *self
                 .cluster_cursor_deltas
-                .entry(i64::from(cluster.current_shape_id) - i64::from(expected_cursor))
+                .entry(i64::from(cluster.current_shape_id_count) - i64::from(expected_cursor))
                 .or_default() += 1;
         }
     }
@@ -6739,8 +6778,8 @@ fn legacy_word_fibs_round_trip() {
     assert_eq!(office_art_graph_audit.graphs, 301);
     assert_eq!(office_art_graph_audit.partial_graphs, 1);
     assert_eq!(office_art_graph_audit.typed_graphs, 300);
-    assert_eq!(office_art_graph_audit.strict_graphs, 19);
-    assert_eq!(office_art_graph_audit.compatibility_graphs, 281);
+    assert_eq!(office_art_graph_audit.strict_graphs, 10);
+    assert_eq!(office_art_graph_audit.compatibility_graphs, 290);
     assert_eq!(office_art_graph_audit.missing_or_multiple_dgg, 0);
     assert_eq!(office_art_graph_audit.missing_or_multiple_fdg, 0);
     assert_eq!(office_art_graph_audit.duplicate_drawing_ids, 0);
@@ -6751,6 +6790,20 @@ fn legacy_word_fibs_round_trip() {
     assert_eq!(office_art_graph_audit.shapes, 2_893);
     assert_eq!(office_art_graph_audit.patriarch_shapes, 371);
     assert_eq!(office_art_graph_audit.deleted_shapes, 0);
+    assert_eq!(office_art_graph_audit.blip_stores, 57);
+    assert_eq!(office_art_graph_audit.blip_entries, 355);
+    assert_eq!(office_art_graph_audit.blip_references, 373);
+    assert_eq!(
+        office_art_graph_audit.blip_reference_count_relations,
+        BTreeMap::from([("EqualToActual".to_owned(), 355)])
+    );
+    assert_eq!(office_art_graph_audit.blip_store_entry_count_mismatches, 2);
+    assert_eq!(
+        office_art_graph_audit.blip_store_entry_count_mismatch_shapes,
+        BTreeMap::from([((1, 2), 1), ((1, 3), 1)])
+    );
+    assert_eq!(office_art_graph_audit.blip_references_out_of_range, 0);
+    assert_eq!(office_art_graph_audit.empty_blip_store_slots_referenced, 0);
     assert_eq!(
         office_art_graph_audit.fdg_shape_count_deltas,
         BTreeMap::from([(-1, 279), (0, 92)])

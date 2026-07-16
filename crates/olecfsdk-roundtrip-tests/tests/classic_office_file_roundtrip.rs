@@ -909,6 +909,10 @@ fn ppt_files_round_trip_through_typed_root() {
     let mut compatibility_live_drawing_graph_files = 0usize;
     let mut live_drawing_graph_drawings = 0usize;
     let mut live_drawing_graph_shapes = 0usize;
+    let mut live_drawing_graph_blip_stores = 0usize;
+    let mut live_drawing_graph_blip_entries = 0usize;
+    let mut live_drawing_graph_blip_references = 0usize;
+    let mut live_drawing_graph_blip_reference_count_relations = BTreeMap::<String, usize>::new();
     let mut live_drawing_graph_issues = BTreeMap::<&'static str, usize>::new();
     let mut live_drawing_graph_errors = BTreeMap::<String, usize>::new();
     let mut compatible_live_presentation_files = 0usize;
@@ -1000,6 +1004,18 @@ fn ppt_files_round_trip_through_typed_root() {
                                     .iter()
                                     .map(|drawing| drawing.shapes.len())
                                     .sum::<usize>();
+                                live_drawing_graph_blip_references += graph.blip_references.len();
+                                if let Some(store) = &graph.blip_store {
+                                    live_drawing_graph_blip_stores += 1;
+                                    live_drawing_graph_blip_entries += store.entries.len();
+                                    for entry in &store.entries {
+                                        if let Some(relation) = entry.reference_count_relation {
+                                            *live_drawing_graph_blip_reference_count_relations
+                                                .entry(format!("{relation:?}"))
+                                                .or_default() += 1;
+                                        }
+                                    }
+                                }
                                 for issue in &graph.issues {
                                     let shape = match issue {
                                         OfficeArtDrawingGraphIssue::MaximumShapeIdOutOfRange {
@@ -1023,6 +1039,15 @@ fn ppt_files_round_trip_through_typed_root() {
                                         OfficeArtDrawingGraphIssue::ShapeClusterDrawingMismatch {
                                             ..
                                         } => "shape-cluster-drawing-mismatch",
+                                        OfficeArtDrawingGraphIssue::BlipStoreEntryCountMismatch {
+                                            ..
+                                        } => "blip-store-entry-count-mismatch",
+                                        OfficeArtDrawingGraphIssue::BlipReferenceOutOfRange {
+                                            ..
+                                        } => "blip-reference-out-of-range",
+                                        OfficeArtDrawingGraphIssue::EmptyBlipStoreSlotReferenced {
+                                            ..
+                                        } => "empty-blip-store-slot-referenced",
                                     };
                                     *live_drawing_graph_issues.entry(shape).or_default() += 1;
                                 }
@@ -1185,10 +1210,21 @@ fn ppt_files_round_trip_through_typed_root() {
     assert_eq!(live_persist_object_records, 1_588);
     assert_eq!(dead_top_level_records, 177);
     assert_eq!(live_drawing_graph_files, 138);
-    assert_eq!(strict_live_drawing_graph_files, 2);
-    assert_eq!(compatibility_live_drawing_graph_files, 136);
+    assert_eq!(strict_live_drawing_graph_files, 0);
+    assert_eq!(compatibility_live_drawing_graph_files, 138);
     assert_eq!(live_drawing_graph_drawings, 1_369);
     assert_eq!(live_drawing_graph_shapes, 13_786);
+    assert_eq!(live_drawing_graph_blip_stores, 55);
+    assert_eq!(live_drawing_graph_blip_entries, 446);
+    assert_eq!(live_drawing_graph_blip_references, 735);
+    assert_eq!(
+        live_drawing_graph_blip_reference_count_relations,
+        BTreeMap::from([
+            ("AboveActual".to_owned(), 6),
+            ("BelowActual".to_owned(), 1),
+            ("EqualToActual".to_owned(), 439),
+        ])
+    );
     assert!(live_drawing_graph_errors.is_empty());
     assert_eq!(
         live_drawing_graph_issues,
@@ -1291,7 +1327,7 @@ fn ppt_files_round_trip_through_typed_root() {
         "PPT live presentations: {live_presentation_files} files/{live_master_slides} masters/{live_presentation_slides} slides/{live_notes_slides} notes/{live_active_x_controls} ActiveX/{live_embedded_ole_objects} embedded OLE/{live_linked_ole_objects} linked OLE/{live_vba_projects} VBA/{live_persist_object_records} live persist top-level records/{dead_top_level_records} dead top-level records; errors {live_presentation_errors:#?}"
     );
     eprintln!(
-        "PPT live OfficeArt graphs: {live_drawing_graph_files} files ({strict_live_drawing_graph_files} strict/{compatibility_live_drawing_graph_files} compatibility), {live_drawing_graph_drawings} drawings/{live_drawing_graph_shapes} shapes; issues {live_drawing_graph_issues:?}; errors {live_drawing_graph_errors:#?}"
+        "PPT live OfficeArt graphs: {live_drawing_graph_files} files ({strict_live_drawing_graph_files} strict/{compatibility_live_drawing_graph_files} compatibility), {live_drawing_graph_drawings} drawings/{live_drawing_graph_shapes} shapes; BLIP {live_drawing_graph_blip_stores} stores/{live_drawing_graph_blip_entries} entries/{live_drawing_graph_blip_references} references, cRef {live_drawing_graph_blip_reference_count_relations:?}; issues {live_drawing_graph_issues:?}; errors {live_drawing_graph_errors:#?}"
     );
     eprintln!(
         "PPT compatible live presentations: {compatible_live_presentation_files} files/{compatible_live_presentation_diagnostics} diagnostics; errors {compatible_live_presentation_errors:#?}"

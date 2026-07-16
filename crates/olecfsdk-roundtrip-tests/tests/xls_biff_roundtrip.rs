@@ -146,6 +146,10 @@ fn legacy_office_workbook_streams_round_trip() {
     let mut drawing_graph_saved_shape_count_relations = BTreeMap::<String, usize>::new();
     let mut drawing_graph_saved_drawing_count_relations = BTreeMap::<String, usize>::new();
     let mut drawing_graph_cluster_cursor_relations = BTreeMap::<String, usize>::new();
+    let mut drawing_graph_blip_stores = 0usize;
+    let mut drawing_graph_blip_entries = 0usize;
+    let mut drawing_graph_blip_references = 0usize;
+    let mut drawing_graph_blip_reference_count_relations = BTreeMap::<String, usize>::new();
     let mut drawing_group_continued = 0usize;
     let mut drawing_group_complete = 0usize;
     let mut drawing_group_partial = 0usize;
@@ -358,6 +362,8 @@ fn legacy_office_workbook_streams_round_trip() {
     let mut root_nonconforming_diagnostics = 0usize;
     let mut root_workbook_structure_diagnostics = 0usize;
     let mut root_bof_diagnostics = 0usize;
+    let mut root_end_object_diagnostics = 0usize;
+    let mut root_isstinf_diagnostics = 0usize;
     let mut root_bof_diagnostic_shapes = BTreeMap::<String, usize>::new();
     let mut root_workbook_diagnostic_shapes = BTreeMap::<(String, String), usize>::new();
     let mut root_workbook_diagnostic_samples = Vec::new();
@@ -409,6 +415,9 @@ fn legacy_office_workbook_streams_round_trip() {
                             "Workbook Stream" | "Globals Substream"
                         ));
                         root_bof_diagnostics += usize::from(diagnostic.structure == "BOF");
+                        root_end_object_diagnostics +=
+                            usize::from(diagnostic.structure == "EndObject");
+                        root_isstinf_diagnostics += usize::from(diagnostic.structure == "ISSTInf");
                         if diagnostic.structure == "BOF" {
                             root_bof_diagnostic_files.insert(path.clone());
                             *root_bof_diagnostic_shapes
@@ -497,10 +506,20 @@ fn legacy_office_workbook_streams_round_trip() {
                             .or_default() += 1;
                     }
                     for cluster in &graph.clusters {
-                        if let Some(relation) = cluster.cursor_relation {
-                            *drawing_graph_cluster_cursor_relations
-                                .entry(format!("{relation:?}"))
-                                .or_default() += 1;
+                        *drawing_graph_cluster_cursor_relations
+                            .entry(format!("{:?}", cluster.shape_id_count_relation))
+                            .or_default() += 1;
+                    }
+                    drawing_graph_blip_references += graph.blip_references.len();
+                    if let Some(store) = &graph.blip_store {
+                        drawing_graph_blip_stores += 1;
+                        drawing_graph_blip_entries += store.entries.len();
+                        for entry in &store.entries {
+                            if let Some(relation) = entry.reference_count_relation {
+                                *drawing_graph_blip_reference_count_relations
+                                    .entry(format!("{relation:?}"))
+                                    .or_default() += 1;
+                            }
                         }
                     }
                     drawing_graphs_strict += usize::from(graph.validate_strict().is_ok());
@@ -526,6 +545,15 @@ fn legacy_office_workbook_streams_round_trip() {
                             }
                             OfficeArtDrawingGraphIssue::ShapeClusterDrawingMismatch { .. } => {
                                 "shape-cluster-drawing-mismatch"
+                            }
+                            OfficeArtDrawingGraphIssue::BlipStoreEntryCountMismatch { .. } => {
+                                "blip-store-entry-count-mismatch"
+                            }
+                            OfficeArtDrawingGraphIssue::BlipReferenceOutOfRange { .. } => {
+                                "blip-reference-out-of-range"
+                            }
+                            OfficeArtDrawingGraphIssue::EmptyBlipStoreSlotReferenced { .. } => {
+                                "empty-blip-store-slot-referenced"
                             }
                         };
                         *drawing_graph_issues.entry(kind).or_default() += 1;
@@ -2457,7 +2485,9 @@ fn legacy_office_workbook_streams_round_trip() {
         hyperlink_compatibility_records
             + feature_header_malformed
             + root_workbook_structure_diagnostics
-            + root_bof_diagnostics,
+            + root_bof_diagnostics
+            + root_end_object_diagnostics
+            + root_isstinf_diagnostics,
         "every retained nonconforming XLS structure requires one root diagnostic"
     );
     assert_eq!(
@@ -2467,6 +2497,14 @@ fn legacy_office_workbook_streams_round_trip() {
     assert_eq!(
         root_bof_diagnostics, 756,
         "BOF MUST-field compatibility coverage changed"
+    );
+    assert_eq!(
+        root_end_object_diagnostics, 14,
+        "EndObject iObjectKind compatibility coverage changed"
+    );
+    assert_eq!(
+        root_isstinf_diagnostics, 24,
+        "ISSTInf compatibility coverage changed"
     );
     assert_eq!(drawing_obj_raw, 0, "Obj records fell back to raw payloads");
     assert_eq!(
@@ -2805,12 +2843,22 @@ fn legacy_office_workbook_streams_round_trip() {
         "complete XLS drawing-graph coverage changed"
     );
     assert_eq!(
-        drawing_graphs_strict, 298,
+        drawing_graphs_strict, 167,
         "strict XLS drawing-graph coverage changed"
     );
     assert_eq!(drawing_graph_drawings, 521);
     assert_eq!(drawing_graph_shapes, 3_690);
     assert_eq!(drawing_graph_absent, 380);
+    assert_eq!(drawing_graph_blip_stores, 64);
+    assert_eq!(drawing_graph_blip_entries, 296);
+    assert_eq!(drawing_graph_blip_references, 395);
+    assert_eq!(
+        drawing_graph_blip_reference_count_relations,
+        BTreeMap::from([
+            ("AboveActual".to_owned(), 16),
+            ("EqualToActual".to_owned(), 280),
+        ])
+    );
     assert_eq!(
         drawing_graph_shape_count_bases,
         BTreeMap::from([
@@ -2853,6 +2901,8 @@ fn legacy_office_workbook_streams_round_trip() {
         drawing_graph_cluster_cursor_relations,
         BTreeMap::from([
             ("AbovePresentTree".to_owned(), 61),
+            ("EmptyNonzero".to_owned(), 797),
+            ("EmptyZero".to_owned(), 38),
             ("EqualToPresentTree".to_owned(), 461),
         ])
     );
@@ -2877,8 +2927,7 @@ fn legacy_office_workbook_streams_round_trip() {
         drawing_graph_errors
             .iter()
             .filter(|(error, _)| {
-                error.contains("partial MsoDrawing")
-                    && !error.contains("partial MsoDrawingGroup")
+                error.contains("partial MsoDrawing") && !error.contains("partial MsoDrawingGroup")
             })
             .map(|(_, count)| count)
             .sum::<usize>(),
@@ -3087,7 +3136,7 @@ fn legacy_office_workbook_streams_round_trip() {
         root_noncanonical_cfb_diagnostic_files.len()
     );
     eprintln!(
-        "XLS drawing graphs: {drawing_graphs} complete ({drawing_graphs_strict} strict), {drawing_graph_drawings} drawings/{drawing_graph_shapes} shapes, {drawing_graph_absent} absent; csp {drawing_graph_shape_count_bases:?}; spidCur {drawing_graph_current_shape_id_relations:?}; spidMax {drawing_graph_maximum_shape_id_relations:?}; cspSaved {drawing_graph_saved_shape_count_relations:?}; cdgSaved {drawing_graph_saved_drawing_count_relations:?}; IDCL cursor {drawing_graph_cluster_cursor_relations:?}; issues {drawing_graph_issues:?}, errors {drawing_graph_errors:?}"
+        "XLS drawing graphs: {drawing_graphs} complete ({drawing_graphs_strict} strict), {drawing_graph_drawings} drawings/{drawing_graph_shapes} shapes, {drawing_graph_absent} absent; csp {drawing_graph_shape_count_bases:?}; spidCur {drawing_graph_current_shape_id_relations:?}; spidMax {drawing_graph_maximum_shape_id_relations:?}; cspSaved {drawing_graph_saved_shape_count_relations:?}; cdgSaved {drawing_graph_saved_drawing_count_relations:?}; IDCL cursor {drawing_graph_cluster_cursor_relations:?}; BLIP {drawing_graph_blip_stores} stores/{drawing_graph_blip_entries} entries/{drawing_graph_blip_references} references, cRef {drawing_graph_blip_reference_count_relations:?}; issues {drawing_graph_issues:?}, errors {drawing_graph_errors:?}"
     );
     eprintln!(
         "checked {checked} XLS file roots ({root_parsed_files} parsed/{root_reopened_files} written and reopened): {biff8} BIFF8, {legacy} legacy; {} unknown BIFF record types remain; newly static formal records {newly_static_formal_records:?}; Formula has {formula_unparsed_rgce_bytes} unparsed rgce bytes, {formula_rgcb_bytes} unparsed rgcb bytes and {formula_missing_extra} explicit missing-extra compatibility states; SharedFormula has {shared_formula_records} records, {shared_formula_unparsed_rgce_bytes} unparsed rgce and {shared_formula_rgcb_bytes} rgcb bytes; Array has {array_records} records, {array_unparsed_rgce_bytes} unparsed rgce and {array_rgcb_bytes} rgcb bytes; SupBook has {sup_book_records} records, {sup_book_compatibility} compatibility values and {sup_book_trailing_bytes} retained trailing bytes; ExternName has {extern_name_records} records ({extern_name_formula_records} formula/{extern_name_cached_link_records} cached-link/{extern_name_compatibility_records} compatibility with {extern_name_compatibility_bytes} bytes); Hyperlink has {hyperlink_records} records, {hyperlink_compatibility_records} compatibility/{hyperlink_compatibility_bytes} bytes, {hyperlink_truncated_records} truncated ({hyperlink_truncated_url_records} typed URL moniker/{hyperlink_truncated_url_address_bytes} address bytes, {hyperlink_truncated_bytes} generic bytes) and {hyperlink_trailing_bytes} trailing bytes; DV has {data_validation_records} records, {data_validation_unparsed_rgce_bytes} unparsed rgce bytes and {data_validation_missing_extra} missing extras; CF has {conditional_formatting_records} records, {conditional_formatting_unparsed_rgce_bytes} unparsed rgce bytes and {conditional_formatting_missing_extra} missing extras; CFEx has {cfex_records} records ({cfex_cf12_records} CF12/{cfex_non_cf12_records} non-CF12, {cfex_formats} DXFN12 and {cfex_extension_unparsed_bytes} unparsed extension bytes); CF12 has {cf12_records} records/types {cf12_types:?}/{cf12_unparsed_formula_bytes} unparsed formula bytes; CrtMlFrt has {crt_ml_frt_records} records/{xml_tk_records} XmlTk values {xml_tk_kinds:?}; LinkedData has {linked_data_records} records, {linked_data_unparsed_rgce_bytes} unparsed rgce bytes and {linked_data_missing_extra} missing extras; FeatHdr has {feature_header_records} records ({feature_header_none} empty/{feature_header_enhanced_protection} protection/{feature_header_property_bag_store} property-bag/{feature_header_malformed} malformed with {feature_header_malformed_bytes} bytes); Feat has {feature_records} records ({feature_protection} protection/{feature_formula_errors} formula-error/{feature_smart_tags} smart-tag, {feature_security_descriptors} security descriptors); DConn has {dconn_records} records ({dconn_text} text/{dconn_web} web); Feature11 has {feature11_records} records/{feature11_fields} fields/{feature11_formats} DXFN12List/{feature11_auto_filters} AutoFilter envelopes; Name has {name_records} records ({name_continued_records} continued), {name_unparsed_rgce_bytes} unparsed rgce bytes, {name_rgcb_tail_bytes} rgcb tail bytes and {name_missing_extra} missing extras; Pls has {pls_records} records ({pls_continued} continued), {pls_windows_full} full/{pls_windows_legacy212} legacy-212/{pls_windows_core100} core-100/{pls_windows_truncated} spec-truncated DEVMODEW and {pls_platform_specific} values; MsoDrawingGroup has {drawing_group_records} records ({drawing_group_continued} continued), {drawing_group_complete} complete/{drawing_group_partial} partial trees ({drawing_group_partial_complete_records} complete + {drawing_group_partial_incomplete_records} incomplete records/{drawing_group_partial_unparsed_bytes} unparsed bytes) and {} whole-byte incomplete/{drawing_group_incomplete_bytes} bytes; MsoDrawing has {drawing_records} aggregates/{drawing_segments} segments/{drawing_host_records} host records, {drawing_complete} complete/{drawing_partial} partial trees ({drawing_partial_complete_records} complete + {drawing_partial_incomplete_records} incomplete records/{drawing_partial_unparsed_bytes} unparsed bytes) and {} whole-byte incomplete/{drawing_incomplete_bytes} bytes; host types: TxO {drawing_txo_typed} typed/{drawing_txo_raw} raw with {drawing_txo_control_contexts} ControlInfo/{drawing_txo_reserved_contexts} reserved/{drawing_txo_undetermined_contexts} undetermined contexts, {drawing_txo_formula_typed} typed/{drawing_txo_formula_opaque} opaque ObjFmla ({drawing_txo_formula_bytes} bytes) and {drawing_txo_trailing_bytes} trailing bytes, Note {drawing_note_typed} typed/{drawing_note_raw} raw, Obj {drawing_obj_typed} typed/{drawing_obj_raw} raw/{drawing_obj_raw_bytes} bytes; XFExt has {xf_ext_unparsed_bytes} unparsed bytes across property types {xf_ext_unknown_types:#06x?}; StyleExt has {style_ext_unparsed_bytes} unparsed XFProp bytes; DXF has {dxf_records} records/{dxf_unparsed_bytes} unparsed XFProp bytes; SST has {sst_records} records/{sst_strings} parsed strings, {sst_extension_bytes} ExtRst bytes ({sst_extension_unparsed_bytes} unparsed), {sst_trailing_bytes} compatibility tail bytes and {} truncated tables",
