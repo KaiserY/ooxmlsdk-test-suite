@@ -4,6 +4,8 @@ use std::collections::HashSet;
 #[cfg(feature = "mce")]
 use std::io::Write;
 use std::io::{Cursor, Read, Seek};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use ooxmlsdk::common::{
     MediaDataPart, PartId, ReferenceRelationshipKind, RelationshipRef, RelationshipTargetKind,
@@ -172,6 +174,46 @@ fn package_entry_names(bytes: Vec<u8>) -> Vec<String> {
     }
     names.sort();
     names
+}
+
+fn package_entry_names_in_order(bytes: &[u8]) -> Vec<String> {
+    let archive = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
+    archive.file_names().map(str::to_string).collect()
+}
+
+fn package_raw_entry_fingerprint(
+    bytes: &[u8],
+    path: &str,
+) -> (zip::CompressionMethod, u32, Vec<u8>) {
+    let mut archive = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
+    let entry = archive.by_name(path).unwrap();
+    let start = usize::try_from(entry.data_start().unwrap()).unwrap();
+    let compressed_size = usize::try_from(entry.compressed_size()).unwrap();
+    let end = start.checked_add(compressed_size).unwrap();
+    (
+        entry.compression(),
+        entry.crc32(),
+        bytes[start..end].to_vec(),
+    )
+}
+
+fn package_archive_metadata(bytes: &[u8]) -> (Vec<u8>, Option<Vec<u8>>) {
+    let archive = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
+    (
+        archive.comment().to_vec(),
+        archive
+            .raw_zip64_extensible_data_sector()
+            .map(<[u8]>::to_vec),
+    )
+}
+
+fn unique_package_test_path(extension: &str) -> std::path::PathBuf {
+    static NEXT_ID: AtomicU64 = AtomicU64::new(1);
+    let id = NEXT_ID.fetch_add(1, Ordering::Relaxed);
+    std::env::temp_dir().join(format!(
+        "ooxmlsdk-lazy-package-{}-{id}.{extension}",
+        std::process::id()
+    ))
 }
 
 fn package_entry_data(bytes: Vec<u8>, path: &str) -> Vec<u8> {
@@ -5105,6 +5147,85 @@ fn package_save_roundtrips_unmodified_document() {
     let main_part = roundtripped.main_document_part().unwrap();
     let root = main_part.root_element(&mut roundtripped).unwrap();
     assert!(main_document_body_child_count(root) > 0);
+}
+
+#[test]
+fn lazy_bytes_save_raw_copies_every_unmodified_zip_entry() {
+    let source: Arc<[u8]> = std::fs::read(doc_sample("Document.docx")).unwrap().into();
+    let source_names = package_entry_names_in_order(&source);
+    let mut package =
+        WordprocessingDocument::new_from_bytes_with_settings(source.clone(), lazy_open_settings())
+            .unwrap();
+
+    let main_part = package.main_document_part().unwrap();
+    assert!(main_part.try_data(&package).unwrap().is_some());
+    assert!(main_part.root_element(&mut package).is_ok());
+
+    let saved = package.to_package_bytes().unwrap();
+    assert_eq!(package_entry_names_in_order(&saved), source_names);
+    assert_eq!(
+        package_archive_metadata(&saved),
+        package_archive_metadata(&source)
+    );
+    for name in package_entry_names_in_order(&source) {
+        assert_eq!(
+            package_raw_entry_fingerprint(&saved, &name),
+            package_raw_entry_fingerprint(&source, &name),
+            "unmodified ZIP entry was recompressed: {name}"
+        );
+    }
+}
+
+#[test]
+fn lazy_save_recompresses_only_the_mutated_root_part() {
+    let source: Arc<[u8]> = std::fs::read(doc_sample("Document.docx")).unwrap().into();
+    let mut package =
+        WordprocessingDocument::new_from_bytes_with_settings(source.clone(), lazy_open_settings())
+            .unwrap();
+    let main_part = package.main_document_part().unwrap();
+    let root = main_part.root_element_mut(&mut package).unwrap();
+    root.body
+        .get_or_insert_with(|| Box::new(Body::default()))
+        .body_choice
+        .push(BodyChoice::Paragraph(Box::new(Paragraph::default())));
+
+    let saved = package.to_package_bytes().unwrap();
+    assert_ne!(
+        package_raw_entry_fingerprint(&saved, "word/document.xml"),
+        package_raw_entry_fingerprint(&source, "word/document.xml")
+    );
+    for name in ["[Content_Types].xml", "_rels/.rels"] {
+        assert_eq!(
+            package_raw_entry_fingerprint(&saved, name),
+            package_raw_entry_fingerprint(&source, name),
+            "unrelated package metadata was recompressed: {name}"
+        );
+    }
+}
+
+#[test]
+fn lazy_file_package_can_save_back_to_its_source_path() {
+    let path = unique_package_test_path("docx");
+    std::fs::copy(doc_sample("Document.docx"), &path).unwrap();
+    let original = std::fs::read(&path).unwrap();
+
+    let package =
+        WordprocessingDocument::new_from_file_with_settings(&path, lazy_open_settings()).unwrap();
+    package.save_as_file(&path).unwrap();
+
+    let saved = std::fs::read(&path).unwrap();
+    assert_eq!(
+        package_entry_names_in_order(&saved),
+        package_entry_names_in_order(&original)
+    );
+    assert_eq!(
+        package_raw_entry_fingerprint(&saved, "word/document.xml"),
+        package_raw_entry_fingerprint(&original, "word/document.xml")
+    );
+    let mut reopened = WordprocessingDocument::new_from_file(&path).unwrap();
+    let main_part = reopened.main_document_part().unwrap();
+    assert!(main_part.root_element(&mut reopened).is_ok());
+    std::fs::remove_file(path).unwrap();
 }
 
 #[test]
