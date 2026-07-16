@@ -59,7 +59,7 @@ pub fn assert_cfb_round_trip(path: &Path, file_name: &str) {
 
 fn assert_streaming_matches(bytes: &[u8], expected: &CompoundFile, strict: bool, file_name: &str) {
     let cursor = Cursor::new(bytes);
-    let mut streamed = if strict {
+    let streamed = if strict {
         CompoundFileReader::from_reader_strict(cursor)
     } else {
         CompoundFileReader::from_reader(cursor)
