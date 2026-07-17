@@ -121,9 +121,15 @@ Notes:
 
 Package benchmarks run these operations for each fixture:
 
-- `read`: open package from an in-memory cursor.
-- `write`: save an already parsed package to an in-memory cursor.
-- `round_trip`: open, save, and reopen the saved package.
+- `open/lazy_cursor`: open package metadata and relationships from an in-memory
+  cursor while leaving typed Part roots unloaded.
+- `save/lazy_unloaded`: save an already opened lazy package, exercising raw
+  compressed copies for unloaded Part payloads.
+- `open/eager_cursor`: open package metadata, relationships, and all typed Part
+  roots from an in-memory cursor.
+- `save/eager_loaded`: save a package whose typed Part roots are all loaded.
+- `round_trip/eager_cursor`: eagerly open, save, and eagerly reopen the saved
+  package so both deserialization passes and serialization are measured.
 
 Typed XML benchmarks run these operations for typed root elements:
 

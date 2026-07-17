@@ -1,4 +1,6 @@
-use ooxmlsdk::schemas::schemas_microsoft_com_office_drawing_2013_main_command::ResetShapeProperties;
+use ooxmlsdk::schemas::schemas_microsoft_com_office_drawing_2013_main_command::{
+    GroupCommand, ResetShapeProperties,
+};
 use ooxmlsdk::schemas::schemas_openxmlformats_org_presentationml_2006_main::{
     NonVisualDrawingProperties, Presentation, SlideSize,
 };
@@ -73,6 +75,22 @@ fn empty_child_unit_fields_are_serialized() {
         parsed.to_xml().unwrap(),
         r#"<oac:spPr><oac:fill /></oac:spPr>"#
     );
+}
+
+#[test]
+fn any_child_wrapper_preserves_and_reparses_inner_xml() {
+    let xml = r#"<oac:grpCmd xmlns:oac="http://schemas.microsoft.com/office/drawing/2013/main/command"><oac:dgMkLst><oac:spMk id="1"/><oac:grpSpMk id="2"><oac:child/></oac:grpSpMk></oac:dgMkLst></oac:grpCmd>"#;
+    let parsed = xml.parse::<GroupCommand>().unwrap();
+
+    assert_eq!(parsed.drawing_moniker_list.len(), 2);
+    assert!(parsed.drawing_moniker_list[0].contains("spMk"));
+    assert!(parsed.drawing_moniker_list[1].contains("grpSpMk"));
+    assert!(parsed.drawing_moniker_list[1].contains("child"));
+
+    let serialized = parsed.to_xml().unwrap();
+    assert!(serialized.contains("<oac:dgMkLst>"));
+    let reparsed = serialized.parse::<GroupCommand>().unwrap();
+    assert_eq!(reparsed.drawing_moniker_list, parsed.drawing_moniker_list);
 }
 
 #[test]

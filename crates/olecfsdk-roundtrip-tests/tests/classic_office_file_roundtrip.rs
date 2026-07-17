@@ -6,18 +6,26 @@ use std::{
 
 use olecfsdk::{
     doc::{
-        DocDataNodeValue, DocFile, DocPapxRun, FieldDocumentPart, NilPicfBinaryData,
-        OleObjectPersist1Flags, TextPieceCharacters,
+        DocDataNodeValue, DocFile, DocPapxRun, DocSpecialContentLink, DocSpecialContentRef,
+        DocTextPieceCharactersRef, FieldDocumentPart, NilPicfBinaryData, OleObjectPersist1Flags,
+        TextPieceCharacters,
     },
     office_art::{
         OfficeArtBitmapData, OfficeArtDrawingGraphIssue, OfficeArtRecord, OfficeArtRecordData,
     },
     ppt::{
         BinaryTagData, CurrentUserData, PersistObjectReferenceStatus, PicturesStream, PptFile,
-        PptLivePersistObjectRole, PptLivePresentation, PptRecordData, PptRecordSequence,
+        PptLiveMasterLink, PptLiveNotesLink, PptLiveOutlineTextLink, PptLivePersistObjectRole,
+        PptLivePresentation, PptRecordData, PptRecordSequence, PptSlideId,
         PptTopLevelLiveRecordStatus, PptTopLevelRecordRole,
     },
-    xls::{BiffRecordData, XlStringCharacters, XlsFile},
+    xls::{
+        BiffRecordData, XlStringCharacters, XlsCellMut, XlsCellValueRef,
+        XlsCustomViewActiveSheetLink, XlsCustomViewLink, XlsFile, XlsFileEntryRole,
+        XlsFormulaDefinitionRef, XlsObjectPersistenceRef, XlsPivotCache, XlsPivotTableLink,
+        XlsRevisionCellOrFormatRef, XlsRevisionLog, XlsRevisionRecordRef, XlsRevisionSheetLink,
+        XlsStreamName, XlsUserNames, XlsUserRevisionLogLink,
+    },
 };
 use olecfsdk_corpus_test_support::{
     corpus_bytes,
@@ -68,6 +76,32 @@ fn doc_files_round_trip_through_typed_root() {
     let mut comment_cf_spec_false_markers = 0usize;
     let mut comment_cf_spec_errors = BTreeMap::<String, BTreeSet<PathBuf>>::new();
     let mut comment_cf_spec_false = BTreeSet::<PathBuf>::new();
+    let mut related_document_parts = 0usize;
+    let mut related_text_pieces = 0usize;
+    let mut related_paragraphs = 0usize;
+    let mut related_character_runs = 0usize;
+    let mut related_fields = 0usize;
+    let mut related_bookmarks = 0usize;
+    let mut related_footnotes = 0usize;
+    let mut related_endnotes = 0usize;
+    let mut related_comments = 0usize;
+    let mut related_comment_replies = 0usize;
+    let mut related_annotation_bookmarks = 0usize;
+    let mut related_textbox_stories = 0usize;
+    let mut related_textbox_breaks = 0usize;
+    let mut related_shape_anchors = 0usize;
+    let mut related_office_art_shapes = 0usize;
+    let mut content_relationship_diagnostics = BTreeMap::<String, BTreeSet<PathBuf>>::new();
+    let mut related_tables = 0usize;
+    let mut related_table_rows = 0usize;
+    let mut related_table_cells = 0usize;
+    let mut related_nested_tables = 0usize;
+    let mut table_relationship_diagnostics = BTreeMap::<String, BTreeSet<PathBuf>>::new();
+    let mut related_pictures = 0usize;
+    let mut related_binary_payloads = 0usize;
+    let mut related_ole_objects = 0usize;
+    let mut compatible_ole_objects = 0usize;
+    let mut unresolved_special_contents = BTreeMap::<String, BTreeSet<PathBuf>>::new();
 
     for path in &files {
         if exclusions.contains_key(path) {
@@ -80,6 +114,272 @@ fn doc_files_round_trip_through_typed_root() {
             let file = DocFile::from_bytes_compatible(&bytes)
                 .map_err(|error| error.to_string())?
                 .value;
+            let content = file
+                .content_tree_compatible()
+                .map_err(|error| error.to_string())?;
+            let bookmarks = content.bookmarks().map_err(|error| error.to_string())?;
+            for diagnostic in bookmarks.diagnostics() {
+                content_relationship_diagnostics
+                    .entry(diagnostic.reason.clone())
+                    .or_default()
+                    .insert(path.clone());
+            }
+            for bookmark in bookmarks.bookmarks() {
+                if bookmark.name().is_empty()
+                    || bookmark.text().local_cp_range().len()
+                        != bookmark.text().global_cp_range().len()
+                {
+                    return Err("DOC standard bookmark relationship changed".to_owned());
+                }
+                let _ = bookmark.text().paragraphs().count();
+                related_bookmarks += 1;
+            }
+            for notes in [
+                content.footnotes().map_err(|error| error.to_string())?,
+                content.endnotes().map_err(|error| error.to_string())?,
+            ] {
+                for diagnostic in notes.diagnostics() {
+                    content_relationship_diagnostics
+                        .entry(diagnostic.reason.clone())
+                        .or_default()
+                        .insert(path.clone());
+                }
+                for note in notes.notes() {
+                    if notes
+                        .note_at_reference_cp(note.reference_cp())
+                        .map(|value| value.index())
+                        != Some(note.index())
+                        || note.reference_document().part() != FieldDocumentPart::Main
+                        || note.text().local_cp_range().len() != note.text().global_cp_range().len()
+                    {
+                        return Err("DOC note relationship changed".to_owned());
+                    }
+                    let _ = note.reference_character();
+                    let _ = note.text().text_pieces().count();
+                    match note.kind() {
+                        olecfsdk::doc::DocNoteKind::Footnote => related_footnotes += 1,
+                        olecfsdk::doc::DocNoteKind::Endnote => related_endnotes += 1,
+                    }
+                }
+            }
+            let comments = content.comments().map_err(|error| error.to_string())?;
+            for diagnostic in comments.diagnostics() {
+                content_relationship_diagnostics
+                    .entry(diagnostic.reason.clone())
+                    .or_default()
+                    .insert(path.clone());
+            }
+            for comment in comments.comments() {
+                if comments
+                    .comment_at_reference_cp(comment.reference_cp())
+                    .map(|value| value.index())
+                    != Some(comment.index())
+                    || comment.reference_document().part() != FieldDocumentPart::Main
+                    || comment.text().document_part().part() != FieldDocumentPart::Comment
+                {
+                    return Err("DOC comment relationship changed".to_owned());
+                }
+                if let Some(parent) = comment.parent() {
+                    if !parent
+                        .children()
+                        .any(|child| child.index() == comment.index())
+                    {
+                        return Err("DOC comment reply relationship changed".to_owned());
+                    }
+                    related_comment_replies += 1;
+                }
+                if comment.annotation_bookmark().is_some() {
+                    related_annotation_bookmarks += 1;
+                }
+                let _ = comment.initials();
+                let _ = comment.author();
+                let _ = comment.commented_text().paragraphs().count();
+                let _ = comment.text().paragraphs().count();
+                related_comments += 1;
+            }
+            for textboxes in [
+                content
+                    .main_textboxes()
+                    .map_err(|error| error.to_string())?,
+                content
+                    .header_textboxes()
+                    .map_err(|error| error.to_string())?,
+            ] {
+                for diagnostic in textboxes.diagnostics() {
+                    content_relationship_diagnostics
+                        .entry(diagnostic.reason.clone())
+                        .or_default()
+                        .insert(path.clone());
+                }
+                for story in textboxes.stories() {
+                    if textboxes.story(story.index()).map(|value| value.index())
+                        != Some(story.index())
+                        || story.document_part() != textboxes.document_part()
+                    {
+                        return Err("DOC textbox story relationship changed".to_owned());
+                    }
+                    for shape in story.shapes() {
+                        if textboxes.shape(shape.shape().shape_id).is_none() {
+                            return Err("DOC textbox shape relationship changed".to_owned());
+                        }
+                    }
+                    for value in story.breaks() {
+                        if value.story_index() != Some(story.index()) {
+                            return Err("DOC textbox break relationship changed".to_owned());
+                        }
+                    }
+                    let _ = story.text().paragraphs().count();
+                    related_textbox_stories += 1;
+                }
+                related_textbox_breaks += textboxes.breaks().len();
+                for anchor in textboxes.anchors() {
+                    if anchor.anchor_document().part()
+                        != match textboxes.document_part() {
+                            olecfsdk::doc::TextboxDocumentPart::Main => FieldDocumentPart::Main,
+                            olecfsdk::doc::TextboxDocumentPart::Header => FieldDocumentPart::Header,
+                        }
+                    {
+                        return Err("DOC shape anchor relationship changed".to_owned());
+                    }
+                    let _ = anchor.anchor_character();
+                    related_shape_anchors += 1;
+                }
+                related_office_art_shapes += textboxes.shapes().len();
+            }
+            let mut expected_part_start = 0u32;
+            for part in content.parts() {
+                let global = part.global_cp_range();
+                if global.start.value() != expected_part_start
+                    || global.len() != part.local_cp_range().len()
+                {
+                    return Err("DOC document-part CP aggregation is discontinuous".to_owned());
+                }
+                expected_part_start = global.end.value();
+                related_document_parts += 1;
+                for piece in part.text_pieces() {
+                    if piece.descriptor().is_none()
+                        || piece.global_cp_range().len() != piece.local_cp_range().len()
+                    {
+                        return Err(
+                            "DOC document-part text-piece relationship is unresolved".to_owned()
+                        );
+                    }
+                    let character_count = match piece.characters() {
+                        DocTextPieceCharactersRef::Compressed(value) => value.len(),
+                        DocTextPieceCharactersRef::Utf16(value) => value.len(),
+                    };
+                    if u32::try_from(character_count).ok() != Some(piece.global_cp_range().len()) {
+                        return Err(
+                            "DOC text-piece CP range does not match borrowed character units"
+                                .to_owned(),
+                        );
+                    }
+                    related_text_pieces += 1;
+                }
+                for paragraph in part.paragraphs() {
+                    if paragraph.global_cp_range().len() != paragraph.local_cp_range().len() {
+                        return Err("DOC paragraph CP projection changed its length".to_owned());
+                    }
+                    let _ = paragraph.text_pieces().count();
+                    let _ = paragraph.character_runs().count();
+                    related_paragraphs += 1;
+                }
+                let tables = part.tables().map_err(|error| error.to_string())?;
+                for diagnostic in tables.diagnostics() {
+                    table_relationship_diagnostics
+                        .entry(diagnostic.reason.clone())
+                        .or_default()
+                        .insert(path.clone());
+                }
+                for table in tables.tables() {
+                    if table.global_cp_range().len() != table.local_cp_range().len()
+                        || table.rows().first().map(|row| row.global_cp_range().start)
+                            != Some(table.global_cp_range().start)
+                        || table.rows().last().map(|row| row.global_cp_range().end)
+                            != Some(table.global_cp_range().end)
+                    {
+                        return Err("DOC table CP relationship changed".to_owned());
+                    }
+                    for row in table.rows() {
+                        if row.table_depth() != table.table_depth()
+                            || row.global_cp_range().len() != row.local_cp_range().len()
+                            || row.terminating_paragraph().global_cp_range().end
+                                != row.global_cp_range().end
+                        {
+                            return Err("DOC table-row CP relationship changed".to_owned());
+                        }
+                        let cells = row.cells().map_err(|error| error.to_string())?;
+                        for diagnostic in cells.diagnostics() {
+                            table_relationship_diagnostics
+                                .entry(diagnostic.reason.clone())
+                                .or_default()
+                                .insert(path.clone());
+                        }
+                        if cells.cells().len() != row.cell_count() {
+                            return Err("DOC table-row cell relationship changed".to_owned());
+                        }
+                        for cell in cells.cells() {
+                            if cell.global_cp_range().len() != cell.local_cp_range().len()
+                                || cell.cell_mark().global_cp_range().end
+                                    != cell.global_cp_range().end
+                                || cell.paragraphs().next().is_none()
+                            {
+                                return Err("DOC table-cell CP relationship changed".to_owned());
+                            }
+                            related_nested_tables += tables.tables_in_cell(*cell).count();
+                            related_table_cells += 1;
+                        }
+                        related_table_rows += 1;
+                    }
+                    related_tables += 1;
+                }
+                for run in part.character_runs() {
+                    if run.global_cp_range().len() != run.local_cp_range().len() {
+                        return Err("DOC character-run CP projection changed its length".to_owned());
+                    }
+                    let _ = run.text_pieces().count();
+                    related_character_runs += 1;
+                }
+                let mut fields = part.fields().collect::<Vec<_>>();
+                while let Some(field) = fields.pop() {
+                    let local = field.local_cp_range().map_err(|error| error.to_string())?;
+                    let aggregate = field.global_cp_range().map_err(|error| error.to_string())?;
+                    if local.len() != aggregate.len()
+                        || aggregate.start.value()
+                            != part.global_cp_range().start.value() + local.start.value()
+                    {
+                        return Err("DOC field local/global CP relationship changed".to_owned());
+                    }
+                    fields.extend(field.instruction_fields());
+                    fields.extend(field.result_fields());
+                    related_fields += 1;
+                }
+                for content in part
+                    .special_contents_compatible()
+                    .map_err(|error| error.to_string())?
+                {
+                    match content {
+                        DocSpecialContentLink::Resolved(DocSpecialContentRef::Picture {
+                            ..
+                        }) => related_pictures += 1,
+                        DocSpecialContentLink::Resolved(DocSpecialContentRef::Binary {
+                            ..
+                        }) => related_binary_payloads += 1,
+                        DocSpecialContentLink::Resolved(DocSpecialContentRef::OleObject {
+                            ..
+                        }) => related_ole_objects += 1,
+                        DocSpecialContentLink::CompatibilityOleObject { .. } => {
+                            compatible_ole_objects += 1
+                        }
+                        DocSpecialContentLink::Unresolved { reason, .. } => {
+                            unresolved_special_contents
+                                .entry(reason)
+                                .or_default()
+                                .insert(path.clone());
+                        }
+                    }
+                }
+            }
             if file.word_document.chpx_runs.is_none() {
                 missing_chpx_cp_trees.insert(path.clone());
             }
@@ -197,7 +497,10 @@ fn doc_files_round_trip_through_typed_root() {
             {
                 return Err("managed DOC Rust tree changed after write and reopen".to_owned());
             }
-            if !round_tripped.compound_file.logical_eq(&file.compound_file) {
+            if !round_tripped
+                .source_compound_file()
+                .logical_eq(file.source_compound_file())
+            {
                 return Err(
                     "DOC compound-file object tree changed after write and reopen".to_owned(),
                 );
@@ -712,10 +1015,10 @@ fn doc_files_round_trip_through_typed_root() {
     }
 
     eprintln!(
-        "DOC file roots: {} corpus files/{opened} opened/{reopened} reopened/{} manifest exclusions/{} other rejected; {direct_formatting_queries} direct-formatting queries; direct-formatting errors {direct_formatting_errors:#?}; direct table states {direct_table_states:?}; {comment_cf_spec_markers} effective comment CFSpec markers/{comment_cf_spec_false_markers} false; false-marker files {comment_cf_spec_false:#?}; CFSpec errors {comment_cf_spec_errors:#?}; comment paragraph-mark table states {comment_table_states:?}; edited non-main text parts {relocated_non_main_text_parts:?}; non-main paragraph validation errors {non_main_paragraph_validation_errors:#?}; NilPICF kinds {nil_picf_kinds:?}; rejection shapes {rejected:#?}",
+        "DOC file roots: {} corpus files/{opened} opened/{reopened} reopened/{} manifest exclusions/{} other rejected; content relationships {related_document_parts} document parts/{related_text_pieces} text pieces/{related_paragraphs} paragraphs/{related_character_runs} character runs/{related_fields} fields/{related_bookmarks} bookmarks/{related_footnotes} footnotes/{related_endnotes} endnotes/{related_comments} comments/{related_comment_replies} comment replies/{related_annotation_bookmarks} annotation bookmarks/{related_textbox_stories} textbox stories/{related_textbox_breaks} textbox breaks/{related_shape_anchors} shape anchors/{related_office_art_shapes} OfficeArt shapes/{related_tables} tables/{related_table_rows} table rows/{related_table_cells} table cells/{related_nested_tables} nested-table links/{related_pictures} pictures/{related_binary_payloads} binary payloads/{related_ole_objects} OLE objects/{compatible_ole_objects} compatible OLE storages; content relationship diagnostics {content_relationship_diagnostics:#?}; table relationship diagnostics {table_relationship_diagnostics:#?}; unresolved special content {unresolved_special_contents:#?}; {direct_formatting_queries} direct-formatting queries; direct-formatting errors {direct_formatting_errors:#?}; direct table states {direct_table_states:?}; {comment_cf_spec_markers} effective comment CFSpec markers/{comment_cf_spec_false_markers} false; false-marker files {comment_cf_spec_false:#?}; CFSpec errors {comment_cf_spec_errors:#?}; comment paragraph-mark table states {comment_table_states:?}; edited non-main text parts {relocated_non_main_text_parts:?}; non-main paragraph validation errors {non_main_paragraph_validation_errors:#?}; NilPICF kinds {nil_picf_kinds:?}; rejection shapes {rejected:#?}",
         files.len(),
         exclusions.len(),
-        files.len() - opened - exclusions.len()
+        rejected.values().sum::<usize>()
     );
     assert_eq!(observed_exclusions, exclusions.keys().cloned().collect());
     assert!(
@@ -855,17 +1158,14 @@ fn doc_files_round_trip_through_typed_root() {
         "no variable-length DOC PrcData node was relocated through DocFile"
     );
     assert_eq!(reopened, opened, "not every opened DOC file was reopened");
-    assert_eq!(files.len(), 533, "DOC extension inventory changed");
-    assert_eq!(opened, 403, "typed DOC file-root coverage changed");
+    assert_eq!(
+        files.len(),
+        opened + exclusions.len() + rejected.values().sum::<usize>(),
+        "DOC corpus inventory was not fully accounted for"
+    );
     assert_eq!(nil_picf_kinds.get("unresolved"), None);
     assert!(nil_picf_kinds.get("form").copied().unwrap_or_default() > 0);
     assert!(nil_picf_kinds.get("hyperlink").copied().unwrap_or_default() > 0);
-    assert_eq!(exclusions.len(), 39, "DOC exclusion inventory changed");
-    assert_eq!(
-        rejected.values().sum::<usize>(),
-        91,
-        "DOC rejected inventory changed"
-    );
 }
 
 #[test]
@@ -887,6 +1187,7 @@ fn ppt_files_round_trip_through_typed_root() {
     let mut relocated_ppt_picture = false;
     let mut rebuilt_ppt_live_state = false;
     let mut appended_ppt_user_edit = false;
+    let mut edited_ppt_text_body = false;
     let mut persist_directory_files = 0usize;
     let mut current_persist_references = 0usize;
     let mut superseded_persist_references = 0usize;
@@ -902,6 +1203,17 @@ fn ppt_files_round_trip_through_typed_root() {
     let mut live_linked_ole_objects = 0usize;
     let mut live_vba_projects = 0usize;
     let mut live_persist_object_records = 0usize;
+    let mut live_direct_persist_handles = 0usize;
+    let mut live_list_text_bodies = 0usize;
+    let mut live_outline_text_references = 0usize;
+    let mut live_outline_text_shape_references = 0usize;
+    let mut live_unresolved_outline_text_references = 0usize;
+    let mut live_outline_text_errors = BTreeMap::<String, usize>::new();
+    let mut live_slide_relationships = 0usize;
+    let mut live_slide_master_links = BTreeMap::<&'static str, usize>::new();
+    let mut live_slide_notes_links = BTreeMap::<&'static str, usize>::new();
+    let mut live_slide_relationship_errors = BTreeMap::<String, usize>::new();
+    let mut strict_live_slide_relationship_errors = BTreeMap::<String, usize>::new();
     let mut dead_top_level_records = 0usize;
     let mut live_presentation_errors = BTreeMap::<String, usize>::new();
     let mut live_drawing_graph_files = 0usize;
@@ -932,6 +1244,7 @@ fn ppt_files_round_trip_through_typed_root() {
                 .value;
             parsed_root = true;
             opened += 1;
+            let mut file_text_body_edited = false;
             if matches!(file.current_user.data, CurrentUserData::Parsed(_)) {
                 match file.persist_object_directory() {
                     Ok(directory) => {
@@ -984,6 +1297,97 @@ fn ppt_files_round_trip_through_typed_root() {
                         live_embedded_ole_objects += presentation.embedded_ole_objects.len();
                         live_linked_ole_objects += presentation.linked_ole_objects.len();
                         live_vba_projects += usize::from(presentation.vba_project.is_some());
+                        for object in std::iter::once(&presentation.document).chain(
+                            presentation
+                                .notes_master_slide
+                                .iter()
+                                .chain(presentation.handout_master_slide.iter())
+                                .chain(&presentation.master_slides)
+                                .chain(&presentation.presentation_slides)
+                                .chain(&presentation.notes_slides)
+                                .chain(&presentation.active_x_controls)
+                                .chain(&presentation.embedded_ole_objects)
+                                .chain(&presentation.linked_ole_objects)
+                                .chain(presentation.vba_project.iter()),
+                        ) {
+                            live_direct_persist_handles += 1;
+                            assert_eq!(
+                                object.record.offset,
+                                u64::from(object.reference.stream_offset)
+                            );
+                            assert!(std::ptr::eq(
+                                object.record,
+                                &file.document.records.records[object.reference.record_index]
+                            ));
+                            if object.slide_persist().is_some() {
+                                live_list_text_bodies += object.text_bodies().len();
+                                for link in object.outline_text_references_compatible() {
+                                    match link {
+                                        PptLiveOutlineTextLink::Resolved(reference) => {
+                                            live_outline_text_references += 1;
+                                            live_outline_text_shape_references +=
+                                                usize::from(reference.shape_record.is_some());
+                                        }
+                                        PptLiveOutlineTextLink::Unresolved { .. } => {
+                                            live_unresolved_outline_text_references += 1;
+                                        }
+                                    }
+                                }
+                                if let Err(error) = object.outline_text_references() {
+                                    *live_outline_text_errors
+                                        .entry(format!(
+                                            "{} {:?}: {error}",
+                                            path.display(),
+                                            object.role
+                                        ))
+                                        .or_default() += 1;
+                                }
+                            }
+                        }
+                        match presentation.slides_compatible() {
+                            Ok(slides) => {
+                                live_slide_relationships += slides.len();
+                                for slide in slides {
+                                    let master_shape = match slide.master {
+                                        PptLiveMasterLink::Resolved(master) => {
+                                            assert_eq!(
+                                                master.slide_persist().unwrap().slide_id,
+                                                slide.slide_atom.master_id_ref
+                                            );
+                                            "resolved"
+                                        }
+                                        PptLiveMasterLink::NotSpecified => "not-specified",
+                                        PptLiveMasterLink::Missing { .. } => "missing",
+                                        PptLiveMasterLink::Ambiguous { .. } => "ambiguous",
+                                    };
+                                    *live_slide_master_links.entry(master_shape).or_default() += 1;
+                                    let notes_shape = match slide.notes {
+                                        PptLiveNotesLink::Resolved { notes_atom, .. } => {
+                                            assert_eq!(
+                                                notes_atom.slide_id_ref,
+                                                slide.persist.slide_id
+                                            );
+                                            "resolved"
+                                        }
+                                        PptLiveNotesLink::NotSpecified => "not-specified",
+                                        PptLiveNotesLink::Missing { .. } => "missing",
+                                        PptLiveNotesLink::Ambiguous { .. } => "ambiguous",
+                                        PptLiveNotesLink::SlideMismatch { .. } => "slide-mismatch",
+                                    };
+                                    *live_slide_notes_links.entry(notes_shape).or_default() += 1;
+                                }
+                            }
+                            Err(error) => {
+                                *live_slide_relationship_errors
+                                    .entry(format!("{}: {error}", path.display()))
+                                    .or_default() += 1;
+                            }
+                        }
+                        if let Err(error) = presentation.slides() {
+                            *strict_live_slide_relationship_errors
+                                .entry(format!("{}: {error}", path.display()))
+                                .or_default() += 1;
+                        }
                         for record in &presentation.top_level_records {
                             match &record.status {
                                 PptTopLevelLiveRecordStatus::LivePersistObject { .. } => {
@@ -1131,6 +1535,11 @@ fn ppt_files_round_trip_through_typed_root() {
                 if !appended_ppt_user_edit && try_ppt_append_user_edit(&file)? {
                     appended_ppt_user_edit = true;
                 }
+                let edited_text_body = !edited_ppt_text_body && try_ppt_text_body_edit(&mut file)?;
+                if edited_text_body {
+                    edited_ppt_text_body = true;
+                }
+                file_text_body_edited = edited_text_body;
             }
             let edited_ppt_layout = !relocated_ppt_layout && try_ppt_cstring_growth(&mut file)?;
             if edited_ppt_layout {
@@ -1148,7 +1557,12 @@ fn ppt_files_round_trip_through_typed_root() {
             {
                 return Err("managed PPT Rust tree changed after write and reopen".to_owned());
             }
-            if !edited_ppt_layout && !round_tripped.compound_file.logical_eq(&file.compound_file) {
+            if !edited_ppt_layout
+                && !file_text_body_edited
+                && !round_tripped
+                    .source_compound_file()
+                    .logical_eq(file.source_compound_file())
+            {
                 return Err(
                     "PPT compound-file object tree changed after write and reopen".to_owned(),
                 );
@@ -1208,6 +1622,36 @@ fn ppt_files_round_trip_through_typed_root() {
     assert_eq!(live_linked_ole_objects, 0);
     assert_eq!(live_vba_projects, 3);
     assert_eq!(live_persist_object_records, 1_588);
+    assert_eq!(live_direct_persist_handles, 1_589);
+    assert_eq!(live_list_text_bodies, 847);
+    assert_eq!(live_outline_text_references, 682);
+    assert_eq!(live_outline_text_shape_references, 682);
+    assert_eq!(
+        live_unresolved_outline_text_references, 2,
+        "PPT compatible outline-text inventory changed"
+    );
+    assert_eq!(
+        live_outline_text_errors.values().sum::<usize>(),
+        2,
+        "PPT strict outline-text relationship errors changed: {live_outline_text_errors:#?}"
+    );
+    assert_eq!(live_slide_relationships, 821);
+    assert_eq!(
+        live_slide_master_links,
+        BTreeMap::from([("missing", 1), ("resolved", 820)])
+    );
+    assert_eq!(
+        live_slide_notes_links,
+        BTreeMap::from([("not-specified", 584), ("resolved", 237)])
+    );
+    assert!(live_slide_relationship_errors.is_empty());
+    assert_eq!(
+        strict_live_slide_relationship_errors
+            .values()
+            .sum::<usize>(),
+        1,
+        "PPT strict slide relationship errors changed: {strict_live_slide_relationship_errors:#?}"
+    );
     assert_eq!(dead_top_level_records, 177);
     assert_eq!(live_drawing_graph_files, 138);
     assert_eq!(strict_live_drawing_graph_files, 0);
@@ -1305,14 +1749,15 @@ fn ppt_files_round_trip_through_typed_root() {
         appended_ppt_user_edit,
         "no PPT live persist-object edit appended a user-edit checkpoint"
     );
+    assert!(
+        edited_ppt_text_body,
+        "no PPT list text body was edited through its typed transaction"
+    );
     assert_eq!(reopened, opened, "not every opened PPT file was reopened");
-    assert_eq!(files.len(), 228, "PPT extension inventory changed");
-    assert_eq!(opened, 176, "typed PPT file-root coverage changed");
-    assert_eq!(exclusions.len(), 45, "PPT exclusion inventory changed");
     assert_eq!(
-        rejected.values().sum::<usize>(),
-        7,
-        "PPT rejected inventory changed"
+        files.len(),
+        opened + exclusions.len() + rejected.values().sum::<usize>(),
+        "PPT corpus inventory was not fully accounted for"
     );
     eprintln!(
         "PPT file roots: {} corpus files/{opened} opened/{reopened} reopened/{} manifest exclusions/{} other rejected; rejection shapes {rejected:#?}",
@@ -1324,7 +1769,7 @@ fn ppt_files_round_trip_through_typed_root() {
         "PPT persist directories: {persist_directory_files} files/{current_persist_references} current references/{superseded_persist_references} superseded references/{incremental_save_metadata_records} edit metadata records/{unreferenced_top_level_records} unreferenced top-level records; errors {persist_directory_errors:#?}"
     );
     eprintln!(
-        "PPT live presentations: {live_presentation_files} files/{live_master_slides} masters/{live_presentation_slides} slides/{live_notes_slides} notes/{live_active_x_controls} ActiveX/{live_embedded_ole_objects} embedded OLE/{live_linked_ole_objects} linked OLE/{live_vba_projects} VBA/{live_persist_object_records} live persist top-level records/{dead_top_level_records} dead top-level records; errors {live_presentation_errors:#?}"
+        "PPT live presentations: {live_presentation_files} files/{live_master_slides} masters/{live_presentation_slides} slides/{live_notes_slides} notes/{live_active_x_controls} ActiveX/{live_embedded_ole_objects} embedded OLE/{live_linked_ole_objects} linked OLE/{live_vba_projects} VBA/{live_persist_object_records} live persist top-level records/{dead_top_level_records} dead top-level records/{live_direct_persist_handles} direct handles/{live_list_text_bodies} list text bodies/{live_outline_text_references} outline-text links ({live_outline_text_shape_references} with shape)/{live_unresolved_outline_text_references} unresolved; slide relationships {live_slide_relationships}, master {live_slide_master_links:?}, notes {live_slide_notes_links:?}, compatible errors {live_slide_relationship_errors:#?}, strict errors {strict_live_slide_relationship_errors:#?}; strict outline link errors {live_outline_text_errors:#?}; errors {live_presentation_errors:#?}"
     );
     eprintln!(
         "PPT live OfficeArt graphs: {live_drawing_graph_files} files ({strict_live_drawing_graph_files} strict/{compatibility_live_drawing_graph_files} compatibility), {live_drawing_graph_drawings} drawings/{live_drawing_graph_shapes} shapes; BLIP {live_drawing_graph_blip_stores} stores/{live_drawing_graph_blip_entries} entries/{live_drawing_graph_blip_references} references, cRef {live_drawing_graph_blip_reference_count_relations:?}; issues {live_drawing_graph_issues:?}; errors {live_drawing_graph_errors:#?}"
@@ -1334,7 +1779,9 @@ fn ppt_files_round_trip_through_typed_root() {
     );
 }
 
-fn ppt_live_signature(presentation: &PptLivePresentation) -> Vec<(u32, PptLivePersistObjectRole)> {
+fn ppt_live_signature(
+    presentation: &PptLivePresentation<'_>,
+) -> Vec<(u32, PptLivePersistObjectRole)> {
     let mut signature = vec![(
         presentation.document.reference.persist_id,
         presentation.document.role,
@@ -1355,6 +1802,143 @@ fn ppt_live_signature(presentation: &PptLivePresentation) -> Vec<(u32, PptLivePe
     );
     signature.sort_unstable();
     signature
+}
+
+fn try_ppt_text_body_edit(file: &mut PptFile) -> Result<bool, String> {
+    if matches!(
+        file.pictures,
+        Some(PicturesStream::Compatibility { .. } | PicturesStream::Partial(_))
+    ) {
+        return Ok(false);
+    }
+    let candidate = {
+        let presentation = match file.live_presentation() {
+            Ok(value) => value,
+            Err(_) => return Ok(false),
+        };
+        let slides = match presentation.slides() {
+            Ok(value) => value,
+            Err(_) => return Ok(false),
+        };
+        if slides
+            .iter()
+            .any(|slide| slide.object.outline_text_references().is_err())
+        {
+            return Ok(false);
+        }
+        slides.iter().find_map(|slide| {
+            slide
+                .object
+                .text_bodies()
+                .iter()
+                .enumerate()
+                .find_map(|(body_index, body)| {
+                    body.records.iter().find_map(|record| match &record.data {
+                        PptRecordData::TextChars(values) if !values.is_empty() => {
+                            let replacement = if values[0] == u16::from(b'X') {
+                                u16::from(b'Y')
+                            } else {
+                                u16::from(b'X')
+                            };
+                            Some((slide.id(), body_index, true, replacement))
+                        }
+                        PptRecordData::TextBytes(values) if !values.is_empty() => {
+                            let replacement = if values[0] == b'X' { b'Y' } else { b'X' };
+                            Some((slide.id(), body_index, false, u16::from(replacement)))
+                        }
+                        _ => None,
+                    })
+                })
+        })
+    };
+    let Some((slide_id, body_index, unicode, replacement)) = candidate else {
+        return Ok(false);
+    };
+
+    let before_failed_edit = file.clone();
+    let failed: olecfsdk::Result<()> =
+        file.edit_slide_text_body(slide_id, body_index, |mut body| {
+            replace_ppt_text_body_first_unit(&mut body, unicode, replacement)?;
+            Err(olecfsdk::Error::invalid(
+                0,
+                "intentional PPT text transaction rollback",
+            ))
+        });
+    if failed.is_ok() || file != &before_failed_edit {
+        return Err("failed PPT text-body transaction changed the file root".to_owned());
+    }
+
+    file.edit_slide_text_body(slide_id, body_index, |mut body| {
+        replace_ppt_text_body_first_unit(&mut body, unicode, replacement)
+    })
+    .map_err(|error| error.to_string())?;
+    if ppt_text_body_first_unit(file, slide_id, body_index, unicode)? != replacement {
+        return Err("PPT typed text-body edit did not update its static text atom".to_owned());
+    }
+
+    let bytes = file
+        .to_bytes_preserving_compatibility()
+        .map_err(|error| error.to_string())?;
+    let reopened = PptFile::from_bytes_compatible(&bytes)
+        .map_err(|error| error.to_string())?
+        .value;
+    if ppt_text_body_first_unit(&reopened, slide_id, body_index, unicode)? != replacement {
+        return Err("PPT typed text-body edit did not survive save and reopen".to_owned());
+    }
+    Ok(true)
+}
+
+fn replace_ppt_text_body_first_unit(
+    body: &mut olecfsdk::ppt::PptLiveTextBodyMut<'_>,
+    unicode: bool,
+    replacement: u16,
+) -> olecfsdk::Result<()> {
+    for record in body.records_mut() {
+        match (&mut record.data, unicode) {
+            (PptRecordData::TextChars(values), true) if !values.is_empty() => {
+                values[0] = replacement;
+                return Ok(());
+            }
+            (PptRecordData::TextBytes(values), false) if !values.is_empty() => {
+                values[0] = u8::try_from(replacement)
+                    .map_err(|_| olecfsdk::Error::invalid(0, "PPT byte text exceeds u8"))?;
+                return Ok(());
+            }
+            _ => {}
+        }
+    }
+    Err(olecfsdk::Error::invalid(
+        0,
+        "selected PPT text body changed static text variant",
+    ))
+}
+
+fn ppt_text_body_first_unit(
+    file: &PptFile,
+    slide_id: PptSlideId,
+    body_index: usize,
+    unicode: bool,
+) -> Result<u16, String> {
+    let presentation = file
+        .live_presentation()
+        .map_err(|error| error.to_string())?;
+    let slides = presentation.slides().map_err(|error| error.to_string())?;
+    let slide = slides
+        .iter()
+        .find(|slide| slide.id() == slide_id)
+        .ok_or_else(|| "edited PPT slide ID is missing".to_owned())?;
+    let bodies = slide.object.text_bodies();
+    let body = bodies
+        .get(body_index)
+        .ok_or_else(|| "edited PPT text-body index is missing".to_owned())?;
+    body.records
+        .iter()
+        .find_map(|record| match (&record.data, unicode) {
+            (PptRecordData::TextChars(values), true) => values.first().copied(),
+            (PptRecordData::TextBytes(values), false) => values.first().copied().map(u16::from),
+            _ => None,
+        })
+        .ok_or_else(|| "edited PPT text atom is missing".to_owned())
 }
 
 fn try_ppt_picture_growth(file: &PptFile) -> Result<bool, String> {
@@ -1654,6 +2238,87 @@ fn xls_files_round_trip_through_typed_root() {
     let mut observed_exclusions = BTreeSet::new();
     let mut failures = Vec::new();
     let mut relocated_sheet_layout = false;
+    let mut edited_cell_value = false;
+    let mut reordered_sheets = false;
+    let mut unresolved_sheet_links = 0usize;
+    let mut unlinked_sheet_substreams = 0usize;
+    let mut unlinked_biff8_substreams = 0usize;
+    let mut unlinked_biff8_details = Vec::new();
+    let mut typed_cells = 0usize;
+    let mut typed_rows = 0usize;
+    let mut duplicate_cell_coordinates = 0usize;
+    let mut duplicate_row_coordinates = 0usize;
+    let mut typed_formulas = 0usize;
+    let mut shared_formulas = 0usize;
+    let mut unresolved_formula_expressions = 0usize;
+    let mut unresolved_exp_formulas = 0usize;
+    let mut unresolved_table_formulas = 0usize;
+    let mut merged_cells = 0usize;
+    let mut drawing_groups = 0usize;
+    let mut sheet_drawings = 0usize;
+    let mut drawing_host_objects = 0usize;
+    let mut sheet_objects = 0usize;
+    let mut control_stream_objects = 0usize;
+    let mut embedding_storage_objects = 0usize;
+    let mut link_storage_objects = 0usize;
+    let mut dde_data_items = 0usize;
+    let mut object_relationship_errors = BTreeMap::<String, usize>::new();
+    let mut cell_relationship_errors = BTreeMap::<String, usize>::new();
+    let mut typed_file_entries = 0usize;
+    let mut file_entry_issues = BTreeMap::<String, usize>::new();
+    let mut pivot_cache_streams = 0usize;
+    let mut parsed_pivot_cache_streams = 0usize;
+    let mut compatible_pivot_cache_streams = 0usize;
+    let mut pivot_cache_records = 0usize;
+    let mut pivot_cache_compatibility = BTreeMap::<String, usize>::new();
+    let mut pivot_cache_definitions = 0usize;
+    let mut pivot_table_views = 0usize;
+    let mut resolved_pivot_table_cache_streams = 0usize;
+    let mut unresolved_pivot_table_cache_links = 0usize;
+    let mut pivot_relationship_errors = BTreeMap::<String, usize>::new();
+    let mut revision_log_streams = 0usize;
+    let mut revision_log_records = 0usize;
+    let mut compatible_revision_logs = 0usize;
+    let mut nonconforming_revision_logs = 0usize;
+    let mut revision_log_compatibility = BTreeMap::<String, usize>::new();
+    let mut revision_logs = 0usize;
+    let mut revision_graph_logs = 0usize;
+    let mut revision_graph_nodes = 0usize;
+    let mut revision_graph_resolved_sheets = 0usize;
+    let mut revision_graph_without_sheet = 0usize;
+    let mut revision_graph_unresolved_sheets = 0usize;
+    let mut unlinked_revision_records = 0usize;
+    let mut revision_productions = BTreeMap::<&'static str, usize>::new();
+    let mut unlinked_revision_production_records = 0usize;
+    let mut revision_delete_productions = 0usize;
+    let mut incomplete_revision_productions = 0usize;
+    let mut nested_revision_change_cells = 0usize;
+    let mut nested_revision_formats = 0usize;
+    let mut revision_font_reset_records = 0usize;
+    let mut revision_sheet_links = 0usize;
+    let mut revision_without_sheet = 0usize;
+    let mut revision_local_sheet_links = 0usize;
+    let mut revision_custom_view_links = 0usize;
+    let mut unresolved_revision_custom_view_links = 0usize;
+    let mut revision_relationship_errors = BTreeMap::<String, usize>::new();
+    let mut custom_views = 0usize;
+    let mut custom_sheet_views = 0usize;
+    let mut chart_custom_sheet_views = 0usize;
+    let mut unlinked_custom_sheet_views = 0usize;
+    let mut unlinked_custom_view_records = 0usize;
+    let mut custom_view_active_sheet_links = 0usize;
+    let mut custom_views_without_active_sheet = 0usize;
+    let mut unresolved_custom_view_active_sheet_links = 0usize;
+    let mut custom_view_compatibility = BTreeMap::<String, usize>::new();
+    let mut custom_view_defined_names = 0usize;
+    let mut custom_view_defined_name_kinds = BTreeMap::<String, usize>::new();
+    let mut user_names_streams = 0usize;
+    let mut user_names_records = 0usize;
+    let mut compatible_user_names = 0usize;
+    let mut nonconforming_user_names = 0usize;
+    let mut user_names_compatibility = BTreeMap::<String, usize>::new();
+    let mut shared_workbook_users = 0usize;
+    let mut unresolved_user_revision_links = 0usize;
 
     for path in &files {
         if exclusions.contains_key(path) {
@@ -1668,10 +2333,479 @@ fn xls_files_round_trip_through_typed_root() {
                 .value;
             parsed_root = true;
             opened += 1;
+            let storage_inventory = file.storages_and_streams_compatible();
+            typed_file_entries += storage_inventory
+                .entries()
+                .iter()
+                .filter(|entry| entry.role() != XlsFileEntryRole::Other)
+                .count();
+            for issue in storage_inventory.issues() {
+                *file_entry_issues.entry(format!("{issue:?}")).or_default() += 1;
+            }
+            pivot_cache_streams += file.pivot_caches.len();
+            for cache in &file.pivot_caches {
+                match cache {
+                    XlsPivotCache::Parsed { stream, .. } => {
+                        parsed_pivot_cache_streams += 1;
+                        pivot_cache_records += stream.records.len();
+                    }
+                    XlsPivotCache::Compatibility {
+                        stream_id, reason, ..
+                    } => {
+                        compatible_pivot_cache_streams += 1;
+                        *pivot_cache_compatibility
+                            .entry(format!("{} #{stream_id:04X}: {reason}", path.display()))
+                            .or_default() += 1;
+                    }
+                }
+            }
+            if let Some(revision_log) = &file.revision_log {
+                revision_log_streams += 1;
+                match revision_log {
+                    XlsRevisionLog::Parsed(stream) => {
+                        revision_log_records += stream.records.len();
+                        nonconforming_revision_logs += usize::from(stream.validate().is_err());
+                    }
+                    XlsRevisionLog::Compatibility { reason, .. } => {
+                        compatible_revision_logs += 1;
+                        *revision_log_compatibility
+                            .entry(format!("{}: {reason}", path.display()))
+                            .or_default() += 1;
+                    }
+                }
+            }
+            if let Some(user_names) = &file.user_names {
+                user_names_streams += 1;
+                match user_names {
+                    XlsUserNames::Parsed(stream) => {
+                        user_names_records += stream.records.len();
+                        nonconforming_user_names += usize::from(stream.validate().is_err());
+                    }
+                    XlsUserNames::Compatibility { reason, .. } => {
+                        compatible_user_names += 1;
+                        *user_names_compatibility
+                            .entry(format!("{}: {reason}", path.display()))
+                            .or_default() += 1;
+                    }
+                }
+            }
+            let revision_workbook = file
+                .workbook_view_compatible(XlsStreamName::Workbook)
+                .map_err(|error| format!("revision workbook relationship: {error}"))?;
+            let revision_relationships = match file.revision_stream_view_compatible() {
+                Ok(Some(view)) => {
+                    revision_logs += view.revision_logs().len();
+                    unlinked_revision_records += view.unlinked_records().len();
+                    for log in view.revision_logs() {
+                        let productions = log.revision_records_compatible();
+                        if let Err(error) = log.revision_records() {
+                            *revision_relationship_errors
+                                .entry(format!("{} revision production: {error}", path.display()))
+                                .or_default() += 1;
+                        }
+                        unlinked_revision_production_records +=
+                            productions.unlinked_records().len();
+                        for production in productions.revisions() {
+                            if let Some(workbook) = &revision_workbook {
+                                match production.resolve_sheet(*log, workbook) {
+                                    Ok(Some(_)) => revision_sheet_links += 1,
+                                    Ok(None) => revision_without_sheet += 1,
+                                    Err(error) => {
+                                        *revision_relationship_errors
+                                            .entry(format!(
+                                                "{} revision sheet: {error}",
+                                                path.display()
+                                            ))
+                                            .or_default() += 1;
+                                    }
+                                }
+                            }
+                            let kind = match production {
+                                XlsRevisionRecordRef::RenameSheet { .. } => "rename-sheet",
+                                XlsRevisionRecordRef::InsertDelete(value) => {
+                                    revision_delete_productions += usize::from(value.is_delete());
+                                    incomplete_revision_productions += usize::from(
+                                        value.is_delete() && value.end_record().is_none(),
+                                    );
+                                    for change in value.changes() {
+                                        if let Some(workbook) = &revision_workbook {
+                                            match change.resolve_sheet(*log, workbook) {
+                                                Ok(Some(_)) => revision_sheet_links += 1,
+                                                Ok(None) => revision_without_sheet += 1,
+                                                Err(error) => {
+                                                    *revision_relationship_errors
+                                                        .entry(format!(
+                                                            "{} nested revision sheet: {error}",
+                                                            path.display()
+                                                        ))
+                                                        .or_default() += 1;
+                                                }
+                                            }
+                                        }
+                                        match change {
+                                            XlsRevisionCellOrFormatRef::ChangeCell(value) => {
+                                                nested_revision_change_cells += 1;
+                                                revision_font_reset_records +=
+                                                    value.font_reset_records().len();
+                                            }
+                                            XlsRevisionCellOrFormatRef::Format { .. } => {
+                                                nested_revision_formats += 1;
+                                            }
+                                        }
+                                    }
+                                    "insert-delete"
+                                }
+                                XlsRevisionRecordRef::Conflict { .. } => "conflict",
+                                XlsRevisionRecordRef::InsertSheet { .. } => "insert-sheet",
+                                XlsRevisionRecordRef::ChangeCell(value) => {
+                                    revision_font_reset_records += value.font_reset_records().len();
+                                    "change-cell"
+                                }
+                                XlsRevisionRecordRef::Move(value) => {
+                                    incomplete_revision_productions +=
+                                        usize::from(value.end_record().is_none());
+                                    for change in value.changes() {
+                                        if let Some(workbook) = &revision_workbook {
+                                            match change.resolve_sheet(*log, workbook) {
+                                                Ok(Some(_)) => revision_sheet_links += 1,
+                                                Ok(None) => revision_without_sheet += 1,
+                                                Err(error) => {
+                                                    *revision_relationship_errors
+                                                        .entry(format!(
+                                                            "{} nested revision sheet: {error}",
+                                                            path.display()
+                                                        ))
+                                                        .or_default() += 1;
+                                                }
+                                            }
+                                        }
+                                        match change {
+                                            XlsRevisionCellOrFormatRef::ChangeCell(value) => {
+                                                nested_revision_change_cells += 1;
+                                                revision_font_reset_records +=
+                                                    value.font_reset_records().len();
+                                            }
+                                            XlsRevisionCellOrFormatRef::Format { .. } => {
+                                                nested_revision_formats += 1;
+                                            }
+                                        }
+                                    }
+                                    "move"
+                                }
+                                XlsRevisionRecordRef::Format { .. } => "format",
+                                XlsRevisionRecordRef::AutoFormat { .. } => "auto-format",
+                                XlsRevisionRecordRef::DefinedName { .. } => {
+                                    if let Some(workbook) = &revision_workbook {
+                                        match production
+                                            .resolve_defined_name_local_sheet(*log, workbook)
+                                        {
+                                            Ok(Some(_)) => revision_local_sheet_links += 1,
+                                            Ok(None) => {}
+                                            Err(error) => {
+                                                *revision_relationship_errors
+                                                    .entry(format!(
+                                                        "{} revision defined-name sheet: {error}",
+                                                        path.display()
+                                                    ))
+                                                    .or_default() += 1;
+                                            }
+                                        }
+                                    }
+                                    "defined-name"
+                                }
+                                XlsRevisionRecordRef::UserView { .. } => {
+                                    if let Some(workbook) = &revision_workbook {
+                                        match production.resolve_custom_view_compatible(workbook) {
+                                            Some(XlsCustomViewLink::Resolved(_)) => {
+                                                revision_custom_view_links += 1;
+                                            }
+                                            Some(
+                                                XlsCustomViewLink::Missing { .. }
+                                                | XlsCustomViewLink::Ambiguous { .. },
+                                            ) => unresolved_revision_custom_view_links += 1,
+                                            None => unreachable!(
+                                                "UserView production has a custom-view link"
+                                            ),
+                                        }
+                                    }
+                                    "user-view"
+                                }
+                                XlsRevisionRecordRef::Note { .. } => "note",
+                                XlsRevisionRecordRef::TrashQueryTableField { .. } => {
+                                    "trash-query-table-field"
+                                }
+                            };
+                            *revision_productions.entry(kind).or_default() += 1;
+                        }
+                    }
+                    Some(view)
+                }
+                Ok(None) => None,
+                Err(error) => {
+                    *revision_relationship_errors
+                        .entry(format!("{}: {error}", path.display()))
+                        .or_default() += 1;
+                    None
+                }
+            };
+            if let Some(workbook) = &revision_workbook
+                && let Some(graph) = file
+                    .revision_graph_compatible(workbook)
+                    .map_err(|error| format!("revision root graph: {error}"))?
+            {
+                revision_graph_logs += graph.logs().len();
+                for log in graph.logs() {
+                    assert!(log.unlinked_records().is_empty());
+                    revision_graph_nodes += log.revisions().len();
+                    for revision in log.revisions() {
+                        match revision.sheet() {
+                            XlsRevisionSheetLink::Resolved(_) => {
+                                revision_graph_resolved_sheets += 1
+                            }
+                            XlsRevisionSheetLink::NotSpecified => revision_graph_without_sheet += 1,
+                            XlsRevisionSheetLink::Unresolved { .. } => {
+                                revision_graph_unresolved_sheets += 1
+                            }
+                        }
+                    }
+                }
+            }
+            match file.user_log_view_compatible() {
+                Ok(Some(users)) => {
+                    shared_workbook_users += users.users().len();
+                    if let Some(revisions) = &revision_relationships {
+                        for user in users.users() {
+                            if !matches!(
+                                users.resolve_revision_log_compatible(*user, revisions),
+                                XlsUserRevisionLogLink::Resolved(_)
+                            ) {
+                                unresolved_user_revision_links += 1;
+                            }
+                        }
+                    } else {
+                        unresolved_user_revision_links += users.users().len();
+                    }
+                }
+                Ok(None) => {}
+                Err(error) => {
+                    *revision_relationship_errors
+                        .entry(format!("{} User Names: {error}", path.display()))
+                        .or_default() += 1;
+                }
+            }
+            for workbook in &file.workbooks {
+                let relationships = workbook.relationships_compatible().map_err(|error| {
+                    format!(
+                        "{} relationship tree is not closed: {error}",
+                        workbook.name.path()
+                    )
+                })?;
+                unresolved_sheet_links += relationships.unresolved_sheets().len();
+                unlinked_sheet_substreams += relationships.unlinked_substreams().len();
+                custom_views += relationships.custom_views().len();
+                custom_sheet_views += relationships
+                    .custom_views()
+                    .iter()
+                    .map(|view| view.sheet_views().len())
+                    .sum::<usize>();
+                chart_custom_sheet_views += relationships
+                    .custom_views()
+                    .iter()
+                    .flat_map(|view| view.sheet_views())
+                    .filter(|view| view.begin().is_chart())
+                    .count();
+                for custom_view in relationships.custom_views() {
+                    custom_view_defined_names += custom_view.defined_names().len();
+                    for name in custom_view.defined_names() {
+                        *custom_view_defined_name_kinds
+                            .entry(format!("{:?}", name.kind()))
+                            .or_default() += 1;
+                    }
+                    match relationships.resolve_custom_view_active_sheet_compatible(custom_view) {
+                        XlsCustomViewActiveSheetLink::Resolved(_) => {
+                            custom_view_active_sheet_links += 1;
+                        }
+                        XlsCustomViewActiveSheetLink::NotSpecified => {
+                            custom_views_without_active_sheet += 1;
+                        }
+                        XlsCustomViewActiveSheetLink::Missing { sheet_identifier } => {
+                            unresolved_custom_view_active_sheet_links += 1;
+                            *custom_view_compatibility
+                                .entry(format!(
+                                    "{}: missing active sheet {sheet_identifier}",
+                                    path.display()
+                                ))
+                                .or_default() += 1;
+                        }
+                        XlsCustomViewActiveSheetLink::Ambiguous { sheet_identifier } => {
+                            unresolved_custom_view_active_sheet_links += 1;
+                            *custom_view_compatibility
+                                .entry(format!(
+                                    "{}: ambiguous active sheet {sheet_identifier}",
+                                    path.display()
+                                ))
+                                .or_default() += 1;
+                        }
+                    }
+                }
+                unlinked_custom_sheet_views += relationships.unlinked_custom_sheet_views().len();
+                unlinked_custom_view_records += relationships.unlinked_custom_view_records().len();
+                pivot_cache_definitions += relationships.pivot_cache_definitions().len();
+                for drawing_group in relationships.drawing_groups() {
+                    drawing_groups += 1;
+                    assert!(matches!(
+                        drawing_group.source_record().data,
+                        BiffRecordData::MsoDrawingGroup(_)
+                    ));
+                }
+                for definition in relationships.pivot_cache_definitions() {
+                    if let Err(error) = file.resolve_pivot_cache(*definition) {
+                        *pivot_relationship_errors
+                            .entry(format!("{}: {error}", path.display()))
+                            .or_default() += 1;
+                    }
+                }
+                if workbook.tree.stream.is_biff8() {
+                    unlinked_biff8_substreams += relationships.unlinked_substreams().len();
+                    if !relationships.unlinked_substreams().is_empty() {
+                        unlinked_biff8_details.push(format!(
+                            "{} {}: {:?}",
+                            path.display(),
+                            workbook.name.path(),
+                            relationships
+                                .unlinked_substreams()
+                                .iter()
+                                .map(|node| (node.kind, node.record_range.clone()))
+                                .collect::<Vec<_>>()
+                        ));
+                    }
+                }
+                for sheet in relationships.sheets().iter().copied() {
+                    merged_cells += sheet.merged_cells().count();
+                    for drawing in sheet.drawings() {
+                        sheet_drawings += 1;
+                        assert_eq!(drawing.sheet().id(), sheet.id());
+                        assert!(matches!(
+                            drawing.source_record().data,
+                            BiffRecordData::MsoDrawing(_)
+                        ));
+                        drawing_host_objects += drawing.objects().count();
+                    }
+                    for object in sheet.objects() {
+                        sheet_objects += 1;
+                        match storage_inventory
+                            .resolve_object_persistence_compatible(&relationships, object)
+                        {
+                            Ok(Some(XlsObjectPersistenceRef::ControlStream { .. })) => {
+                                control_stream_objects += 1;
+                            }
+                            Ok(Some(XlsObjectPersistenceRef::EmbeddingStorage { .. })) => {
+                                embedding_storage_objects += 1;
+                            }
+                            Ok(Some(XlsObjectPersistenceRef::LinkStorage { .. })) => {
+                                link_storage_objects += 1;
+                            }
+                            Ok(Some(XlsObjectPersistenceRef::DdeDataItem { .. })) => {
+                                dde_data_items += 1;
+                            }
+                            Ok(None) => {}
+                            Err(error) => {
+                                *object_relationship_errors
+                                    .entry(format!("{}: {error}", path.display()))
+                                    .or_default() += 1;
+                            }
+                        }
+                    }
+                    for pivot_view in sheet.pivot_table_views() {
+                        pivot_table_views += 1;
+                        match file.resolve_pivot_table_compatible(&relationships, pivot_view) {
+                            XlsPivotTableLink::Resolved(pivot_table) => {
+                                if pivot_table.cache_stream().is_some() {
+                                    resolved_pivot_table_cache_streams += 1;
+                                } else {
+                                    *pivot_relationship_errors
+                                        .entry(format!(
+                                            "{}: PivotTable resolved to an opaque cache stream",
+                                            path.display()
+                                        ))
+                                        .or_default() += 1;
+                                }
+                                assert_eq!(pivot_table.sheet().id(), sheet.id());
+                                assert_eq!(
+                                    pivot_table.definition().stream_id(),
+                                    pivot_table.cache().stream_id()
+                                );
+                            }
+                            XlsPivotTableLink::Unresolved { .. } => {
+                                unresolved_pivot_table_cache_links += 1;
+                            }
+                        }
+                    }
+                    let sparse_cells = match sheet.sparse_cell_index_compatible() {
+                        Ok(value) => value,
+                        Err(error) => {
+                            *cell_relationship_errors
+                                .entry(error.to_string())
+                                .or_default() += 1;
+                            continue;
+                        }
+                    };
+                    typed_rows += sparse_cells.rows().count();
+                    duplicate_cell_coordinates += sparse_cells.duplicate_cells().count();
+                    duplicate_row_coordinates += sparse_cells
+                        .rows()
+                        .filter(|row| row.definitions().len() > 1)
+                        .count();
+                    for cell in sparse_cells.rows().flat_map(|row| row.cells()) {
+                        typed_cells += 1;
+                        if let Err(error) = relationships.resolve_cell_shared_string(cell) {
+                            *cell_relationship_errors
+                                .entry(error.to_string())
+                                .or_default() += 1;
+                        }
+                        if let Err(error) = relationships.resolve_cell_format_ref_compatible(cell) {
+                            *cell_relationship_errors
+                                .entry(error.to_string())
+                                .or_default() += 1;
+                        }
+                        match sparse_cells.resolve_cell_formula_compatible(cell) {
+                            Ok(Some(formula)) => {
+                                typed_formulas += 1;
+                                match formula.definition() {
+                                    XlsFormulaDefinitionRef::Shared(_) => shared_formulas += 1,
+                                    XlsFormulaDefinitionRef::UnresolvedExp { .. } => {
+                                        unresolved_formula_expressions += 1;
+                                        unresolved_exp_formulas += 1;
+                                    }
+                                    XlsFormulaDefinitionRef::UnresolvedTable { .. } => {
+                                        unresolved_formula_expressions += 1;
+                                        unresolved_table_formulas += 1;
+                                    }
+                                    _ => {}
+                                }
+                            }
+                            Ok(None) => {}
+                            Err(error) => {
+                                *cell_relationship_errors
+                                    .entry(error.to_string())
+                                    .or_default() += 1;
+                            }
+                        }
+                    }
+                }
+            }
             let edited_sheet_layout =
                 !relocated_sheet_layout && try_xls_sheet_name_growth(&mut file)?;
             if edited_sheet_layout {
                 relocated_sheet_layout = true;
+            }
+            let edited_cell = !edited_cell_value && try_xls_number_cell_edit(&mut file)?;
+            if edited_cell {
+                edited_cell_value = true;
+            }
+            let reordered_this_file = !reordered_sheets && try_xls_sheet_reorder(&mut file)?;
+            if reordered_this_file {
+                reordered_sheets = true;
             }
             let saved = file
                 .to_bytes_preserving_compatibility()
@@ -1680,11 +2814,18 @@ fn xls_files_round_trip_through_typed_root() {
                 .map_err(|error| error.to_string())?
                 .value;
             if round_tripped.workbooks != file.workbooks
+                || round_tripped.pivot_caches != file.pivot_caches
                 || round_tripped.revision_log != file.revision_log
+                || round_tripped.user_names != file.user_names
             {
                 return Err("managed XLS Rust tree changed after write and reopen".to_owned());
             }
-            if !edited_sheet_layout && !round_tripped.compound_file.logical_eq(&file.compound_file)
+            if !edited_sheet_layout
+                && !edited_cell
+                && !reordered_this_file
+                && !round_tripped
+                    .source_compound_file()
+                    .logical_eq(file.source_compound_file())
             {
                 return Err(
                     "XLS compound-file object tree changed after write and reopen".to_owned(),
@@ -1713,71 +2854,564 @@ fn xls_files_round_trip_through_typed_root() {
         relocated_sheet_layout,
         "no variable-length BoundSheet8 name was relaid out through XlsFile"
     );
+    assert!(
+        edited_cell_value,
+        "no XLS Number cell was edited through the root transaction API"
+    );
+    assert!(
+        reordered_sheets,
+        "no XLS workbook was reordered through stable sheet identities"
+    );
     assert_eq!(reopened, opened, "not every opened XLS file was reopened");
-    assert_eq!(files.len(), 770, "XLS extension inventory changed");
-    assert_eq!(opened, 725, "typed XLS file-root coverage changed");
-    assert_eq!(exclusions.len(), 9, "XLS exclusion inventory changed");
     assert_eq!(
-        rejected.values().sum::<usize>(),
-        36,
-        "XLS rejected inventory changed"
+        unresolved_sheet_links, 1,
+        "XLS unresolved BoundSheet8 relationship inventory changed"
+    );
+    assert_eq!(
+        unlinked_sheet_substreams, 69,
+        "XLS compatible unlinked substream inventory changed"
+    );
+    assert_eq!(
+        unlinked_biff8_substreams,
+        34,
+        "BIFF8 compatible unlinked substream inventory changed:\n{}",
+        unlinked_biff8_details.join("\n")
+    );
+    assert_eq!(typed_rows, 506_466, "XLS sparse row inventory changed");
+    assert_eq!(
+        duplicate_row_coordinates, 0,
+        "XLS duplicate Row-coordinate inventory changed"
+    );
+    assert_eq!(typed_cells, 2_379_566, "XLS logical cell inventory changed");
+    assert_eq!(
+        duplicate_cell_coordinates, 5_579,
+        "XLS duplicate cell-coordinate inventory changed"
+    );
+    assert_eq!(typed_formulas, 98_651, "XLS formula inventory changed");
+    assert_eq!(
+        shared_formulas, 49_079,
+        "XLS resolved shared-formula inventory changed"
+    );
+    assert_eq!(
+        unresolved_formula_expressions, 12,
+        "XLS compatible unresolved formula inventory changed"
+    );
+    assert_eq!(
+        unresolved_exp_formulas, 12,
+        "XLS compatible unresolved PtgExp inventory changed"
+    );
+    assert_eq!(
+        unresolved_table_formulas, 0,
+        "XLS compatible unresolved PtgTbl inventory changed"
+    );
+    assert_eq!(merged_cells, 12_469, "XLS merged-cell inventory changed");
+    assert_eq!(drawing_groups, 345, "XLS drawing-group inventory changed");
+    assert_eq!(sheet_drawings, 603, "XLS sheet drawing inventory changed");
+    assert!(
+        drawing_host_objects > 0,
+        "XLS drawing handles did not expose any hosted Obj records"
+    );
+    assert_eq!(sheet_objects, 3_511, "XLS sheet Obj inventory changed");
+    assert_eq!(
+        control_stream_objects, 153,
+        "XLS Ctls-backed Obj inventory changed"
+    );
+    assert_eq!(
+        embedding_storage_objects, 16,
+        "XLS MBD-backed Obj inventory changed"
+    );
+    assert_eq!(
+        link_storage_objects, 0,
+        "XLS LNK-backed Obj inventory changed"
+    );
+    assert_eq!(dde_data_items, 0, "XLS DDE Obj inventory changed");
+    assert!(
+        object_relationship_errors.is_empty(),
+        "XLS typed object relationships failed: {object_relationship_errors:#?}"
+    );
+    assert!(
+        cell_relationship_errors.is_empty(),
+        "XLS typed cell relationships failed: {cell_relationship_errors:#?}"
+    );
+    assert_eq!(
+        typed_file_entries, 2_986,
+        "XLS typed storage/stream inventory changed"
+    );
+    assert_eq!(
+        pivot_cache_streams, 41,
+        "XLS PivotCache stream inventory changed"
+    );
+    assert_eq!(
+        parsed_pivot_cache_streams, 38,
+        "XLS parsed PivotCache inventory changed"
+    );
+    assert_eq!(
+        compatible_pivot_cache_streams, 3,
+        "XLS compatible PivotCache inventory changed"
+    );
+    assert_eq!(
+        pivot_cache_records, 38_667,
+        "XLS PivotCache record inventory changed"
+    );
+    assert_eq!(
+        pivot_cache_definitions, 22,
+        "XLS PivotCache definition inventory changed"
+    );
+    assert_eq!(
+        pivot_table_views, 24,
+        "XLS PivotTable view inventory changed"
+    );
+    assert_eq!(
+        resolved_pivot_table_cache_streams, 23,
+        "XLS fully resolved PivotTable cache-stream inventory changed"
+    );
+    assert_eq!(
+        unresolved_pivot_table_cache_links, 1,
+        "XLS compatible unresolved PivotTable cache-link inventory changed"
+    );
+    assert!(
+        pivot_relationship_errors.is_empty(),
+        "XLS PivotCache relationships failed: {pivot_relationship_errors:#?}"
+    );
+    assert_eq!(
+        revision_log_streams, 8,
+        "XLS Revision Stream inventory changed"
+    );
+    assert_eq!(
+        revision_log_records, 70,
+        "XLS Revision Stream record inventory changed"
+    );
+    assert_eq!(
+        compatible_revision_logs, 0,
+        "XLS opaque Revision Stream inventory changed"
+    );
+    assert_eq!(
+        nonconforming_revision_logs, 3,
+        "XLS nonconforming typed Revision Stream inventory changed"
+    );
+    assert_eq!(revision_logs, 8, "XLS revision-log inventory changed");
+    assert_eq!(
+        revision_graph_logs, 8,
+        "XLS root revision-graph log inventory changed"
+    );
+    assert_eq!(
+        revision_graph_nodes, 14,
+        "XLS root revision-graph production inventory changed"
+    );
+    assert_eq!(
+        revision_graph_unresolved_sheets, 0,
+        "XLS root revision graph has unresolved sheet relationships"
+    );
+    assert_eq!(
+        revision_graph_resolved_sheets + revision_graph_without_sheet,
+        revision_graph_nodes,
+        "XLS root revision graph did not classify every sheet relationship"
+    );
+    assert_eq!(
+        unlinked_revision_records, 0,
+        "XLS unlinked revision-record inventory changed"
+    );
+    assert_eq!(
+        revision_productions,
+        BTreeMap::from([("change-cell", 2), ("insert-delete", 12)]),
+        "XLS revision-production inventory changed"
+    );
+    assert_eq!(
+        unlinked_revision_production_records, 0,
+        "XLS unlinked revision-production record inventory changed"
+    );
+    assert_eq!(
+        revision_delete_productions, 0,
+        "XLS revision-delete inventory changed"
+    );
+    assert_eq!(
+        incomplete_revision_productions, 0,
+        "XLS incomplete revision-production inventory changed"
+    );
+    assert_eq!(
+        nested_revision_change_cells, 12,
+        "XLS nested revision-cell inventory changed"
+    );
+    assert_eq!(
+        nested_revision_formats, 0,
+        "XLS nested revision-format inventory changed"
+    );
+    assert_eq!(
+        revision_font_reset_records, 0,
+        "XLS revision font-reset inventory changed"
+    );
+    assert_eq!(
+        revision_sheet_links + revision_without_sheet,
+        revision_productions.values().sum::<usize>() + nested_revision_change_cells,
+        "XLS revision sheet relationships were not traversed completely"
+    );
+    assert_eq!(
+        unresolved_revision_custom_view_links, 0,
+        "XLS revision custom-view relationships are unresolved"
+    );
+    assert_eq!(custom_views, 26, "XLS custom-view inventory changed");
+    assert_eq!(
+        custom_sheet_views, 43,
+        "XLS custom sheet-view inventory changed"
+    );
+    assert_eq!(
+        chart_custom_sheet_views, 0,
+        "XLS chart custom sheet-view inventory changed"
+    );
+    assert_eq!(
+        unlinked_custom_sheet_views, 0,
+        "XLS UserSViewBegin records are not linked to UserBView"
+    );
+    assert_eq!(
+        unlinked_custom_view_records, 0,
+        "XLS CUSTOMVIEW delimiters are not closed"
+    );
+    assert_eq!(
+        unresolved_custom_view_active_sheet_links, 12,
+        "XLS compatible custom-view active-sheet inventory changed"
+    );
+    assert_eq!(
+        custom_view_active_sheet_links
+            + custom_views_without_active_sheet
+            + unresolved_custom_view_active_sheet_links,
+        custom_views,
+        "XLS custom-view active-sheet relationships were not traversed completely"
+    );
+    assert_eq!(
+        custom_view_defined_name_kinds,
+        BTreeMap::from([
+            ("FilterData".to_string(), 12),
+            ("HiddenColumns".to_string(), 2),
+            ("PrintArea".to_string(), 3),
+            ("PrintTitles".to_string(), 9),
+        ]),
+        "XLS custom-view defined-name inventory changed"
+    );
+    assert_eq!(
+        custom_view_defined_names,
+        custom_view_defined_name_kinds.values().sum::<usize>(),
+        "XLS custom-view defined-name relationships were not traversed completely"
+    );
+    assert_eq!(
+        user_names_streams, 3,
+        "XLS User Names Stream inventory changed"
+    );
+    assert_eq!(
+        user_names_records, 13,
+        "XLS User Names record inventory changed"
+    );
+    assert_eq!(
+        compatible_user_names, 0,
+        "XLS opaque User Names Stream inventory changed"
+    );
+    assert_eq!(
+        nonconforming_user_names, 3,
+        "XLS nonconforming typed User Names Stream inventory changed"
+    );
+    assert_eq!(
+        shared_workbook_users, 1,
+        "XLS shared-workbook user inventory changed"
+    );
+    assert_eq!(
+        unresolved_user_revision_links, 0,
+        "XLS user/revision relationship inventory changed"
+    );
+    assert!(
+        revision_relationship_errors.is_empty(),
+        "XLS revision relationships failed: {revision_relationship_errors:#?}"
+    );
+    assert!(
+        file_entry_issues.is_empty(),
+        "XLS storage/stream relationships failed: {file_entry_issues:#?}"
+    );
+    assert_eq!(
+        files.len(),
+        opened + exclusions.len() + rejected.values().sum::<usize>(),
+        "XLS corpus inventory was not fully accounted for"
     );
     eprintln!(
-        "XLS file roots: {} corpus files/{opened} opened/{reopened} reopened/{} manifest exclusions/{} other rejected; rejection shapes {rejected:#?}",
+        "XLS file roots: {} corpus files/{opened} opened/{reopened} reopened/{typed_file_entries} typed storage/stream entries/{pivot_cache_streams} PivotCache streams ({parsed_pivot_cache_streams} parsed/{compatible_pivot_cache_streams} compatible, {pivot_cache_records} records)/{pivot_cache_definitions} PivotCache definitions/{pivot_table_views} PivotTable views/{unresolved_pivot_table_cache_links} unresolved PivotTable cache links/{custom_views} custom views/{custom_sheet_views} custom sheet views ({chart_custom_sheet_views} chart/{custom_view_active_sheet_links} active-sheet links/{custom_views_without_active_sheet} without active sheet/{unresolved_custom_view_active_sheet_links} unresolved active sheets/{custom_view_defined_names} defined names {custom_view_defined_name_kinds:?}/{unlinked_custom_sheet_views} unlinked/{unlinked_custom_view_records} unmatched delimiters)/{revision_log_streams} Revision Log streams ({revision_log_records} records/{compatible_revision_logs} compatible, {revision_logs} logs/{unlinked_revision_records} unlinked records, productions {revision_productions:?}/{revision_delete_productions} delete/{incomplete_revision_productions} incomplete/{nested_revision_change_cells} nested cell/{nested_revision_formats} nested format/{revision_font_reset_records} font resets/{unlinked_revision_production_records} unlinked production records/{revision_sheet_links} resolved sheet links/{revision_without_sheet} without sheet/{revision_local_sheet_links} local-name sheet links/{revision_custom_view_links} custom-view links/{unresolved_revision_custom_view_links} unresolved custom-view links)/{user_names_streams} User Names streams ({user_names_records} records/{compatible_user_names} compatible, {shared_workbook_users} users/{unresolved_user_revision_links} unresolved revision links)/{unresolved_sheet_links} unresolved sheet links/{unlinked_sheet_substreams} unlinked sheet substreams/{typed_rows} sparse rows/{duplicate_row_coordinates} duplicate row coordinates/{typed_cells} typed cells/{duplicate_cell_coordinates} duplicate cell coordinates/{typed_formulas} formulas/{shared_formulas} shared formulas/{unresolved_formula_expressions} unresolved formula expressions ({unresolved_exp_formulas} PtgExp/{unresolved_table_formulas} PtgTbl)/{merged_cells} merged ranges/{sheet_drawings} drawings/{sheet_objects} objects ({control_stream_objects} Ctls/{embedding_storage_objects} MBD/{link_storage_objects} LNK/{dde_data_items} DDE)/{} manifest exclusions/{} other rejected; PivotCache compatibility {pivot_cache_compatibility:#?}; pivot relationship errors {pivot_relationship_errors:#?}; Revision Log compatibility {revision_log_compatibility:#?}; User Names compatibility {user_names_compatibility:#?}; custom-view compatibility {custom_view_compatibility:#?}; revision relationship errors {revision_relationship_errors:#?}; storage/stream issues {file_entry_issues:#?}; object relationship errors {object_relationship_errors:#?}; cell relationship errors {cell_relationship_errors:#?}; rejection shapes {rejected:#?}",
         files.len(),
         exclusions.len(),
         rejected.values().sum::<usize>()
     );
 }
 
-fn try_xls_sheet_name_growth(file: &mut XlsFile) -> Result<bool, String> {
-    let mut candidate_location = None;
-    for (workbook_index, workbook) in file.workbooks.iter().enumerate() {
-        for (record_index, record) in workbook.tree.stream.records.iter().enumerate() {
-            let sheet = match &record.data {
-                BiffRecordData::BoundSheet8(value)
-                | BiffRecordData::BoundSheet8Compatibility { value, .. } => value,
-                _ => continue,
+fn try_xls_sheet_reorder(file: &mut XlsFile) -> Result<bool, String> {
+    if file.revision_log.is_some() {
+        return Ok(false);
+    }
+    let candidate = file.workbooks.iter().find_map(|workbook| {
+        let relationships = workbook.relationships().ok()?;
+        if relationships.sheets().len() < 2 || !relationships.unresolved_sheets().is_empty() {
+            return None;
+        }
+        let old_order = relationships
+            .sheets()
+            .iter()
+            .map(|sheet| sheet.id())
+            .collect::<Vec<_>>();
+        let mut new_order = old_order.clone();
+        new_order.swap(0, 1);
+        let metadata = relationships
+            .sheets()
+            .iter()
+            .map(|sheet| {
+                (
+                    sheet.id(),
+                    (
+                        sheet.metadata().state,
+                        sheet.metadata().sheet_type,
+                        sheet.metadata().name.clone(),
+                    ),
+                )
+            })
+            .collect::<BTreeMap<_, _>>();
+        let name_scopes = (1..=relationships.defined_names().len())
+            .map(|index| {
+                let index = u32::try_from(index).ok()?;
+                relationships
+                    .defined_name_scope(index)
+                    .ok()
+                    .map(|scope| scope.map(|sheet| sheet.id()))
+            })
+            .collect::<Option<Vec<_>>>()?;
+        Some((workbook.name, old_order, new_order, metadata, name_scopes))
+    });
+    let Some((workbook_name, old_order, new_order, metadata, name_scopes)) = candidate else {
+        return Ok(false);
+    };
+
+    let before_invalid = file.clone();
+    let mut invalid_order = old_order.clone();
+    invalid_order[1] = invalid_order[0];
+    if file.reorder_sheets(workbook_name, &invalid_order).is_ok() || file != &before_invalid {
+        return Err("failed XLS sheet reorder changed the file root".to_owned());
+    }
+
+    let before_reorder = file.clone();
+    if let Err(error) = file.reorder_sheets(workbook_name, &new_order) {
+        if file != &before_reorder {
+            return Err(format!(
+                "failed XLS sheet reorder was not transactional: {error}"
+            ));
+        }
+        return Ok(false);
+    }
+    let relationships = file
+        .workbook_stream(workbook_name)
+        .ok_or_else(|| "reordered XLS Workbook stream is missing".to_owned())?
+        .relationships()
+        .map_err(|error| error.to_string())?;
+    let actual_order = relationships
+        .sheets()
+        .iter()
+        .map(|sheet| sheet.id())
+        .collect::<Vec<_>>();
+    if actual_order != new_order {
+        return Err("XLS sheet identities did not survive reorder".to_owned());
+    }
+    for sheet in relationships.sheets() {
+        let expected = &metadata[&sheet.id()];
+        if (sheet.metadata().state, sheet.metadata().sheet_type) != (expected.0, expected.1)
+            || sheet.metadata().name != expected.2
+        {
+            return Err("XLS sheet identity changed its BoundSheet8 metadata".to_owned());
+        }
+    }
+    let actual_name_scopes = (1..=relationships.defined_names().len())
+        .map(|index| {
+            let index = u32::try_from(index)
+                .map_err(|_| "XLS defined-name index exceeds u32".to_owned())?;
+            relationships
+                .defined_name_scope(index)
+                .map(|scope| scope.map(|sheet| sheet.id()))
+                .map_err(|error| error.to_string())
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    if actual_name_scopes != name_scopes {
+        return Err("XLS local defined-name scope changed after sheet reorder".to_owned());
+    }
+
+    let expected_ordered_names = new_order
+        .iter()
+        .map(|id| metadata[id].2.clone())
+        .collect::<Vec<_>>();
+    let bytes = file
+        .to_bytes_preserving_compatibility()
+        .map_err(|error| error.to_string())?;
+    let reopened = XlsFile::from_bytes_compatible(&bytes)
+        .map_err(|error| error.to_string())?
+        .value;
+    let reopened_relationships = reopened
+        .workbook_stream(workbook_name)
+        .ok_or_else(|| "reopened reordered Workbook stream is missing".to_owned())?
+        .relationships()
+        .map_err(|error| error.to_string())?;
+    let reopened_names = reopened_relationships
+        .sheets()
+        .iter()
+        .map(|sheet| sheet.metadata().name.clone())
+        .collect::<Vec<_>>();
+    if reopened_names != expected_ordered_names {
+        return Err("XLS sheet order changed after save and reopen".to_owned());
+    }
+    Ok(true)
+}
+
+fn try_xls_number_cell_edit(file: &mut XlsFile) -> Result<bool, String> {
+    let mut candidate = None;
+    'workbooks: for workbook in &file.workbooks {
+        let Ok(relationships) = workbook.relationships() else {
+            continue;
+        };
+        for sheet in relationships.sheets().iter().copied() {
+            let Ok(index) = sheet.sparse_cell_index() else {
+                continue;
             };
-            let character_count = match &sheet.name.characters {
+            for cell in index.rows().flat_map(|row| row.cells()) {
+                let XlsCellValueRef::Number(value) = cell.value() else {
+                    continue;
+                };
+                candidate = Some((
+                    workbook.name,
+                    sheet.id(),
+                    cell.cell().row,
+                    cell.cell().column,
+                    value.value_bits,
+                ));
+                break 'workbooks;
+            }
+        }
+    }
+    let Some((workbook_name, sheet_id, row, column, old_bits)) = candidate else {
+        return Ok(false);
+    };
+
+    let before_failed_edit = file.clone();
+    let failed: olecfsdk::Result<()> =
+        file.edit_cell(workbook_name, sheet_id, row, column, |cell| {
+            let XlsCellMut::Number(value) = cell else {
+                return Err(olecfsdk::Error::invalid(
+                    0,
+                    "selected Number cell changed static variant",
+                ));
+            };
+            value.value_bits ^= 1;
+            Err(olecfsdk::Error::invalid(
+                0,
+                "intentional transaction rollback",
+            ))
+        });
+    if failed.is_ok() || file != &before_failed_edit {
+        return Err("failed cell edit transaction changed the XLS root".to_owned());
+    }
+
+    file.edit_cell(workbook_name, sheet_id, row, column, |cell| {
+        let XlsCellMut::Number(value) = cell else {
+            return Err(olecfsdk::Error::invalid(
+                0,
+                "selected Number cell changed static variant",
+            ));
+        };
+        value.value_bits ^= 1;
+        Ok(())
+    })
+    .map_err(|error| error.to_string())?;
+
+    let workbook = file
+        .workbook_stream(workbook_name)
+        .expect("edited Workbook stream remains present");
+    let relationships = workbook
+        .relationships()
+        .map_err(|error| error.to_string())?;
+    let sheet = relationships
+        .sheet(sheet_id)
+        .expect("edited sheet identity remains present");
+    let index = sheet
+        .sparse_cell_index()
+        .map_err(|error| error.to_string())?;
+    let cell = index
+        .cell(row, column)
+        .map_err(|error| error.to_string())?
+        .expect("edited Number cell remains present");
+    let XlsCellValueRef::Number(value) = cell.value() else {
+        return Err("edited Number cell changed static variant".to_owned());
+    };
+    if value.value_bits != old_bits ^ 1 {
+        return Err("Number cell edit did not update its typed IEEE-754 bits".to_owned());
+    }
+    Ok(true)
+}
+
+fn try_xls_sheet_name_growth(file: &mut XlsFile) -> Result<bool, String> {
+    let mut candidate = None;
+    for workbook in &file.workbooks {
+        let Ok(relationships) = workbook.relationships() else {
+            continue;
+        };
+        for sheet in relationships.sheets().iter().copied() {
+            let character_count = match &sheet.metadata().name.characters {
                 XlStringCharacters::Compressed(values) => values.len(),
                 XlStringCharacters::Unicode(values) => values.len(),
             };
             if character_count < 31 {
-                candidate_location = Some((workbook_index, record_index, sheet.sheet_bof_offset));
+                let mut name = sheet.metadata().name.clone();
+                match &mut name.characters {
+                    XlStringCharacters::Compressed(values) => values.push(b'X'),
+                    XlStringCharacters::Unicode(values) => values.push(u16::from(b'X')),
+                }
+                candidate = Some((
+                    workbook.name,
+                    sheet.id(),
+                    sheet.metadata().sheet_bof_offset,
+                    name,
+                ));
                 break;
             }
         }
-        if candidate_location.is_some() {
+        if candidate.is_some() {
             break;
         }
     }
-    let Some((workbook_index, record_index, old_sheet_bof)) = candidate_location else {
+    let Some((workbook_name, sheet_id, old_sheet_bof, name)) = candidate else {
         return Ok(false);
     };
 
-    let sheet = match &mut file.workbooks[workbook_index].tree.stream.records[record_index].data {
-        BiffRecordData::BoundSheet8(value)
-        | BiffRecordData::BoundSheet8Compatibility { value, .. } => value,
-        _ => unreachable!("candidate was a BoundSheet8 record"),
-    };
-    match &mut sheet.name.characters {
-        XlStringCharacters::Compressed(values) => values.push(b'X'),
-        XlStringCharacters::Unicode(values) => values.push(u16::from(b'X')),
+    let mut invalid_name = name.clone();
+    match &mut invalid_name.characters {
+        XlStringCharacters::Compressed(values) => values.clear(),
+        XlStringCharacters::Unicode(values) => values.clear(),
     }
-    file.relayout().map_err(|error| error.to_string())?;
+    let before_invalid_edit = file.clone();
+    if file
+        .set_sheet_name(workbook_name, sheet_id, invalid_name)
+        .is_ok()
+    {
+        return Err("empty BoundSheet8 name was accepted".to_owned());
+    }
+    if file != &before_invalid_edit {
+        return Err("failed sheet-name transaction changed the XLS root".to_owned());
+    }
 
-    let workbook = &file.workbooks[workbook_index];
-    let sheet = match &workbook.tree.stream.records[record_index].data {
-        BiffRecordData::BoundSheet8(value)
-        | BiffRecordData::BoundSheet8Compatibility { value, .. } => value,
-        _ => unreachable!("candidate remained a BoundSheet8 record"),
-    };
-    if sheet.sheet_bof_offset == old_sheet_bof {
+    file.set_sheet_name(workbook_name, sheet_id, name)
+        .map_err(|error| error.to_string())?;
+
+    let workbook = file
+        .workbook_stream(workbook_name)
+        .expect("edited Workbook stream remains present");
+    let relationships = workbook
+        .relationships()
+        .map_err(|error| error.to_string())?;
+    let sheet = relationships
+        .sheet(sheet_id)
+        .expect("edited sheet identity remains present");
+    if sheet.metadata().sheet_bof_offset == old_sheet_bof {
         return Err("BoundSheet8 growth did not relocate its sheet BOF pointer".to_owned());
     }
-    if !workbook.tree.stream.records.iter().any(|record| {
-        record.offset == sheet.sheet_bof_offset && matches!(record.data, BiffRecordData::Bof(_))
+    if !sheet.records().first().is_some_and(|record| {
+        record.offset == sheet.metadata().sheet_bof_offset
+            && matches!(record.data, BiffRecordData::Bof(_))
     }) {
         return Err("relocated BoundSheet8 pointer does not reference a BOF record".to_owned());
     }

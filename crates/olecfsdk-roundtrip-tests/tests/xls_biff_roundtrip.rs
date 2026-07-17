@@ -16,10 +16,10 @@ use olecfsdk::{
     xls::{
         AutoFilterOperandValue, BiffRecordData, BkHimImage, Cf12ConditionData, DConnConnection,
         DevModeWPublic, DxfN12, ExtPropertyData, ExtRstBody, ExternNameBody, FeatureData,
-        FeatureHeaderData, HyperlinkObject, LhSubrecordData, MsoDrawingData, MsoDrawingHostData,
-        ObjFormulaData, ObjSubrecordData, ParamQryData, PrinterSettings, RtdOperation,
-        SortFieldParent, SstCompletion, SstExtensionData, SupBookLink, TxoContext, XfPropertyData,
-        XlStringCharacters, XlsFile, XmlTkData,
+        FeatureHeaderData, HyperlinkObject, LhSubrecordData, MAX_BIFF_RECORD_DATA, MsoDrawingData,
+        MsoDrawingHostData, ObjFormulaData, ObjSubrecordData, ParamQryData, PrinterSettings,
+        RtdOperation, SortFieldParent, SstCompletion, SstExtensionData, SupBookLink, TxoContext,
+        XfPropertyData, XlStringCharacters, XlsFile, XmlTkData,
     },
 };
 use olecfsdk_corpus_test_support::manifest::{ExpectationMode, read_manifest};
@@ -71,6 +71,7 @@ fn legacy_office_workbook_streams_round_trip() {
     let mut pls_truncated_public_bytes = 0usize;
     let mut pls_platform_specific_bytes = 0usize;
     let mut pls_trailing_bytes = 0usize;
+    let mut pls_edit_resegmented = false;
     let mut pls_truncated_sizes = BTreeMap::<u16, usize>::new();
     let mut pls_platform_shapes = BTreeMap::<(u16, usize), usize>::new();
     let mut bk_him_records = 0usize;
@@ -78,6 +79,7 @@ fn legacy_office_workbook_streams_round_trip() {
     let mut bk_him_native = 0usize;
     let mut bk_him_image_bytes = 0usize;
     let mut bk_him_continued = 0usize;
+    let mut bk_him_edit_resegmented = false;
     let mut im_data_records = 0usize;
     let mut im_data_bitmap_bytes = 0usize;
     let mut real_time_data_records = 0usize;
@@ -133,6 +135,7 @@ fn legacy_office_workbook_streams_round_trip() {
     let mut frt_arch_id_records = 0usize;
     let mut frt_arch_ids = BTreeMap::<u32, usize>::new();
     let mut drawing_group_records = 0usize;
+    let mut drawing_edit_resegmented = false;
     let mut drawing_graphs = 0usize;
     let mut drawing_graphs_strict = 0usize;
     let mut drawing_graph_drawings = 0usize;
@@ -180,6 +183,7 @@ fn legacy_office_workbook_streams_round_trip() {
     let mut drawing_incomplete = Vec::new();
     let mut drawing_incomplete_boundaries = BTreeMap::<Option<u16>, usize>::new();
     let mut drawing_txo_typed = 0usize;
+    let mut txo_edit_rederived = false;
     let mut drawing_txo_raw = 0usize;
     let mut drawing_txo_formula_bytes = 0usize;
     let mut drawing_txo_formula_shapes = BTreeMap::<usize, usize>::new();
@@ -258,6 +262,7 @@ fn legacy_office_workbook_streams_round_trip() {
     let mut extern_name_records = 0usize;
     let mut extern_name_formula_records = 0usize;
     let mut extern_name_cached_link_records = 0usize;
+    let mut extern_name_ole_dde_link_records = 0usize;
     let mut extern_name_compatibility_records = 0usize;
     let mut extern_name_compatibility_bytes = 0usize;
     let mut extern_name_compatibility_samples = Vec::new();
@@ -358,12 +363,16 @@ fn legacy_office_workbook_streams_round_trip() {
     let mut sst_extension_unparsed_samples = Vec::new();
     let mut sst_trailing_bytes = 0usize;
     let mut sst_truncated = Vec::new();
+    let mut sst_edit_resegmented = false;
     let mut root_truncated_diagnostics = 0usize;
     let mut root_nonconforming_diagnostics = 0usize;
     let mut root_workbook_structure_diagnostics = 0usize;
     let mut root_bof_diagnostics = 0usize;
     let mut root_end_object_diagnostics = 0usize;
     let mut root_isstinf_diagnostics = 0usize;
+    let mut root_pivot_cache_diagnostics = 0usize;
+    let mut root_revision_stream_diagnostics = 0usize;
+    let mut root_user_names_diagnostics = 0usize;
     let mut root_bof_diagnostic_shapes = BTreeMap::<String, usize>::new();
     let mut root_workbook_diagnostic_shapes = BTreeMap::<(String, String), usize>::new();
     let mut root_workbook_diagnostic_samples = Vec::new();
@@ -418,6 +427,11 @@ fn legacy_office_workbook_streams_round_trip() {
                         root_end_object_diagnostics +=
                             usize::from(diagnostic.structure == "EndObject");
                         root_isstinf_diagnostics += usize::from(diagnostic.structure == "ISSTInf");
+                        root_pivot_cache_diagnostics += usize::from(diagnostic.structure == "SXDB");
+                        root_revision_stream_diagnostics +=
+                            usize::from(diagnostic.structure == "Revision Stream");
+                        root_user_names_diagnostics +=
+                            usize::from(diagnostic.structure == "User Names Stream");
                         if diagnostic.structure == "BOF" {
                             root_bof_diagnostic_files.insert(path.clone());
                             *root_bof_diagnostic_shapes
@@ -771,6 +785,9 @@ fn legacy_office_workbook_streams_round_trip() {
                                 }
                                 ExternNameBody::CachedLinkValues { .. } => {
                                     extern_name_cached_link_records += 1
+                                }
+                                ExternNameBody::OleDdeLink(_) => {
+                                    extern_name_ole_dde_link_records += 1
                                 }
                                 ExternNameBody::Compatibility(bytes) => {
                                     extern_name_compatibility_records += 1;
@@ -2411,6 +2428,476 @@ fn legacy_office_workbook_streams_round_trip() {
                 ));
             }
             root_reopened_files += 1;
+
+            if !pls_edit_resegmented {
+                let mut edited = file.clone();
+                let mut selected = None;
+                'workbooks: for (workbook_index, workbook) in
+                    edited.workbooks.iter_mut().enumerate()
+                {
+                    for (record_index, record) in
+                        workbook.tree.stream.records.iter_mut().enumerate()
+                    {
+                        let BiffRecordData::Pls(pls) = &mut record.data else {
+                            continue;
+                        };
+                        if pls.physical_segment_lengths.len() < 2 {
+                            continue;
+                        }
+                        let grew = match &mut pls.settings {
+                            PrinterSettings::WindowsUnicode(devmode)
+                            | PrinterSettings::LengthPrefixedWindowsUnicode { devmode, .. } => {
+                                devmode.trailing.push(0);
+                                true
+                            }
+                            PrinterSettings::PlatformSpecific(payload)
+                            | PrinterSettings::MacXmlPlist(payload) => {
+                                payload.push(0);
+                                true
+                            }
+                            PrinterSettings::MacPrintRecord(_)
+                            | PrinterSettings::LegacyPageLayout(_) => false,
+                        };
+                        if !grew {
+                            continue;
+                        }
+                        let old_lengths = pls.physical_segment_lengths.clone();
+                        let logical_len = old_lengths
+                            .iter()
+                            .map(|length| usize::from(*length))
+                            .sum::<usize>()
+                            + 1;
+                        selected = Some((workbook_index, record_index, old_lengths, logical_len));
+                        break 'workbooks;
+                    }
+                }
+                if let Some((workbook_index, record_index, old_lengths, logical_len)) = selected {
+                    let saved = edited.to_bytes_preserving_compatibility()?;
+                    let reopened = XlsFile::from_bytes_compatible(&saved)?.value;
+                    let BiffRecordData::Pls(pls) =
+                        &reopened.workbooks[workbook_index].tree.stream.records[record_index].data
+                    else {
+                        return Err(olecfsdk::Error::invalid(
+                            0,
+                            "edited Pls changed record identity after reopen",
+                        ));
+                    };
+                    assert_ne!(pls.physical_segment_lengths, old_lengths);
+                    assert_eq!(
+                        pls.physical_segment_lengths
+                            .iter()
+                            .map(|length| usize::from(*length))
+                            .sum::<usize>(),
+                        logical_len
+                    );
+                    assert!(
+                        pls.physical_segment_lengths
+                            .iter()
+                            .all(|length| usize::from(*length) <= MAX_BIFF_RECORD_DATA)
+                    );
+                    pls_edit_resegmented = true;
+                }
+            }
+
+            if !bk_him_edit_resegmented {
+                let mut edited = file.clone();
+                let mut selected = None;
+                'workbooks: for (workbook_index, workbook) in
+                    edited.workbooks.iter_mut().enumerate()
+                {
+                    for (record_index, record) in
+                        workbook.tree.stream.records.iter_mut().enumerate()
+                    {
+                        let BiffRecordData::BkHim(value) = &mut record.data else {
+                            continue;
+                        };
+                        if value.physical_segment_lengths.len() < 2 {
+                            continue;
+                        }
+                        match &mut value.image {
+                            BkHimImage::Bitmap(bytes) | BkHimImage::Native(bytes) => bytes.push(0),
+                        }
+                        let old_lengths = value.physical_segment_lengths.clone();
+                        let logical_len = old_lengths
+                            .iter()
+                            .map(|length| usize::from(*length))
+                            .sum::<usize>()
+                            + 1;
+                        selected = Some((workbook_index, record_index, old_lengths, logical_len));
+                        break 'workbooks;
+                    }
+                }
+                if let Some((workbook_index, record_index, old_lengths, logical_len)) = selected {
+                    let saved = edited.to_bytes_preserving_compatibility()?;
+                    let reopened = XlsFile::from_bytes_compatible(&saved)?.value;
+                    let BiffRecordData::BkHim(value) =
+                        &reopened.workbooks[workbook_index].tree.stream.records[record_index].data
+                    else {
+                        return Err(olecfsdk::Error::invalid(
+                            0,
+                            "edited BkHim changed record identity after reopen",
+                        ));
+                    };
+                    assert_ne!(value.physical_segment_lengths, old_lengths);
+                    assert_eq!(
+                        value
+                            .physical_segment_lengths
+                            .iter()
+                            .map(|length| usize::from(*length))
+                            .sum::<usize>(),
+                        logical_len
+                    );
+                    assert!(
+                        value
+                            .physical_segment_lengths
+                            .iter()
+                            .all(|length| usize::from(*length) <= MAX_BIFF_RECORD_DATA)
+                    );
+                    bk_him_edit_resegmented = true;
+                }
+            }
+
+            if !drawing_edit_resegmented && !expected_invalid.contains(&path) {
+                let mut edited = file.clone();
+                let mut selected = None;
+                'workbooks: for (workbook_index, workbook) in
+                    edited.workbooks.iter_mut().enumerate()
+                {
+                    for (record_index, record) in
+                        workbook.tree.stream.records.iter_mut().enumerate()
+                    {
+                        let BiffRecordData::MsoDrawing(drawing) = &mut record.data else {
+                            continue;
+                        };
+                        if drawing.physical_segments.len() < 2 || drawing.host_records.is_empty() {
+                            continue;
+                        }
+                        let MsoDrawingData::Complete(stream) = &mut drawing.data else {
+                            continue;
+                        };
+                        let mut grew = false;
+                        stream.visit_mut(|office_art_record| {
+                            if grew {
+                                return;
+                            }
+                            let OfficeArtRecordData::PropertyTable(table) =
+                                &mut office_art_record.data
+                            else {
+                                return;
+                            };
+                            for property in &mut table.properties {
+                                let OfficeArtPropertyValue::Utf16String { code_units, .. } =
+                                    &mut property.value
+                                else {
+                                    continue;
+                                };
+                                let insertion = if code_units.last().is_some_and(|unit| *unit == 0)
+                                {
+                                    code_units.len() - 1
+                                } else {
+                                    code_units.len()
+                                };
+                                code_units.insert(insertion, u16::from(b'X'));
+                                grew = true;
+                                break;
+                            }
+                        });
+                        if !grew {
+                            continue;
+                        }
+                        stream.relayout()?;
+                        let expected_data = drawing.data.clone();
+                        let old_segments = drawing.physical_segments.clone();
+                        let expected_hosts = drawing.host_records.len();
+                        selected = Some((
+                            workbook_index,
+                            record_index,
+                            expected_data,
+                            old_segments,
+                            expected_hosts,
+                        ));
+                        break 'workbooks;
+                    }
+                }
+                if let Some((
+                    workbook_index,
+                    record_index,
+                    expected_data,
+                    old_segments,
+                    expected_hosts,
+                )) = selected
+                {
+                    let saved = edited.to_bytes_preserving_compatibility()?;
+                    let reopened = XlsFile::from_bytes_compatible(&saved)?.value;
+                    let BiffRecordData::MsoDrawing(drawing) =
+                        &reopened.workbooks[workbook_index].tree.stream.records[record_index].data
+                    else {
+                        return Err(olecfsdk::Error::invalid(
+                            0,
+                            "edited MsoDrawing changed record identity after reopen",
+                        ));
+                    };
+                    assert_eq!(drawing.data, expected_data);
+                    assert_eq!(drawing.host_records.len(), expected_hosts);
+                    assert_ne!(drawing.physical_segments, old_segments);
+                    assert!(
+                        drawing
+                            .physical_segments
+                            .iter()
+                            .all(|segment| usize::from(segment.payload_length)
+                                <= MAX_BIFF_RECORD_DATA)
+                    );
+                    drawing_edit_resegmented = true;
+                }
+            }
+
+            if !txo_edit_rederived && !expected_invalid.contains(&path) {
+                let mut edited = file.clone();
+                let mut selected = None;
+                'workbooks: for (workbook_index, workbook) in
+                    edited.workbooks.iter_mut().enumerate()
+                {
+                    for (record_index, record) in
+                        workbook.tree.stream.records.iter_mut().enumerate()
+                    {
+                        let BiffRecordData::MsoDrawing(drawing) = &mut record.data else {
+                            continue;
+                        };
+                        for (host_index, host) in drawing.host_records.iter_mut().enumerate() {
+                            let MsoDrawingHostData::Txo(txo) = &mut host.data else {
+                                continue;
+                            };
+                            let Some(chunk) = txo.text_chunks.first_mut() else {
+                                continue;
+                            };
+                            let Some(mut added_run) = txo.runs.first().copied() else {
+                                continue;
+                            };
+                            match &mut chunk.characters {
+                                XlStringCharacters::Compressed(characters) => characters.push(b'X'),
+                                XlStringCharacters::Unicode(characters) => {
+                                    characters.push(u16::from(b'X'))
+                                }
+                            }
+                            added_run.format.character_index = txo.declared_text_length;
+                            txo.runs.push(added_run);
+                            let expected_text_length = txo
+                                .text_chunks
+                                .iter()
+                                .map(|chunk| chunk.character_count())
+                                .sum::<usize>();
+                            let expected_run_length =
+                                (txo.runs.len() + usize::from(txo.last_run.is_some())) * 8;
+                            let old_formatting_lengths = txo.formatting_segment_lengths.clone();
+                            selected = Some((
+                                workbook_index,
+                                record_index,
+                                host_index,
+                                expected_text_length,
+                                expected_run_length,
+                                old_formatting_lengths,
+                            ));
+                            break 'workbooks;
+                        }
+                    }
+                }
+                if let Some((
+                    workbook_index,
+                    record_index,
+                    host_index,
+                    expected_text_length,
+                    expected_run_length,
+                    old_formatting_lengths,
+                )) = selected
+                {
+                    let saved = edited.to_bytes_preserving_compatibility()?;
+                    let reopened = XlsFile::from_bytes_compatible(&saved)?.value;
+                    let BiffRecordData::MsoDrawing(drawing) =
+                        &reopened.workbooks[workbook_index].tree.stream.records[record_index].data
+                    else {
+                        return Err(olecfsdk::Error::invalid(
+                            0,
+                            "edited TxO changed its MsoDrawing identity after reopen",
+                        ));
+                    };
+                    let MsoDrawingHostData::Txo(txo) = &drawing.host_records[host_index].data
+                    else {
+                        return Err(olecfsdk::Error::invalid(
+                            0,
+                            "edited TxO changed host identity after reopen",
+                        ));
+                    };
+                    assert_eq!(usize::from(txo.declared_text_length), expected_text_length);
+                    assert_eq!(
+                        usize::from(txo.declared_run_data_length),
+                        expected_run_length
+                    );
+                    assert_eq!(
+                        txo.last_run.unwrap().format.character_index,
+                        txo.declared_text_length
+                    );
+                    assert_ne!(txo.formatting_segment_lengths, old_formatting_lengths);
+                    assert_eq!(
+                        txo.formatting_segment_lengths
+                            .iter()
+                            .map(|length| usize::from(*length))
+                            .sum::<usize>(),
+                        expected_run_length
+                    );
+                    txo_edit_rederived = true;
+                }
+            }
+
+            if !sst_edit_resegmented && !expected_invalid.contains(&path) {
+                let mut edited = file.clone();
+                let mut selected = None;
+                'workbooks: for (workbook_index, workbook) in
+                    edited.workbooks.iter_mut().enumerate()
+                {
+                    let ext_sst_index = workbook
+                        .tree
+                        .stream
+                        .records
+                        .iter()
+                        .position(|record| matches!(record.data, BiffRecordData::ExtSst(_)));
+                    let Some(ext_sst_index) = ext_sst_index else {
+                        continue;
+                    };
+                    for (record_index, record) in
+                        workbook.tree.stream.records.iter_mut().enumerate()
+                    {
+                        let BiffRecordData::Sst(sst) = &mut record.data else {
+                            continue;
+                        };
+                        if !matches!(sst.completion, SstCompletion::Complete)
+                            || sst.physical_segments.len() < 2
+                        {
+                            continue;
+                        }
+                        let Some((string_index, chunk_index)) = sst
+                            .strings
+                            .iter()
+                            .enumerate()
+                            .find_map(|(string_index, string)| {
+                                (!string.character_chunks.is_empty())
+                                    .then_some((string_index, string.character_chunks.len() - 1))
+                            })
+                        else {
+                            continue;
+                        };
+                        let chunk = &mut sst.strings[string_index].character_chunks[chunk_index];
+                        match &mut chunk.characters {
+                            XlStringCharacters::Compressed(characters) => characters.push(b'X'),
+                            XlStringCharacters::Unicode(characters) => {
+                                characters.push(u16::from(b'X'))
+                            }
+                        }
+                        let expected_text = sst.strings[string_index]
+                            .character_chunks
+                            .iter()
+                            .flat_map(|chunk| match &chunk.characters {
+                                XlStringCharacters::Compressed(characters) => characters
+                                    .iter()
+                                    .copied()
+                                    .map(u16::from)
+                                    .collect::<Vec<_>>(),
+                                XlStringCharacters::Unicode(characters) => characters.clone(),
+                            })
+                            .collect::<Vec<_>>();
+                        selected = Some((
+                            workbook_index,
+                            record_index,
+                            ext_sst_index,
+                            string_index,
+                            expected_text,
+                            sst.physical_segments.clone(),
+                        ));
+                        break 'workbooks;
+                    }
+                }
+                if let Some((
+                    workbook_index,
+                    record_index,
+                    ext_sst_index,
+                    string_index,
+                    expected_text,
+                    old_segments,
+                )) = selected
+                {
+                    let saved = edited.to_bytes_preserving_compatibility()?;
+                    let reopened = XlsFile::from_bytes_compatible(&saved)?.value;
+                    let records = &reopened.workbooks[workbook_index].tree.stream.records;
+                    let BiffRecordData::Sst(sst) = &records[record_index].data else {
+                        return Err(olecfsdk::Error::invalid(
+                            0,
+                            "edited SST changed record identity after reopen",
+                        ));
+                    };
+                    let actual_text = sst.strings[string_index]
+                        .character_chunks
+                        .iter()
+                        .flat_map(|chunk| match &chunk.characters {
+                            XlStringCharacters::Compressed(characters) => characters
+                                .iter()
+                                .copied()
+                                .map(u16::from)
+                                .collect::<Vec<_>>(),
+                            XlStringCharacters::Unicode(characters) => characters.clone(),
+                        })
+                        .collect::<Vec<_>>();
+                    assert_eq!(actual_text, expected_text);
+                    assert_eq!(
+                        usize::from(sst.strings[string_index].declared_character_count),
+                        expected_text.len()
+                    );
+                    assert_ne!(sst.physical_segments, old_segments);
+                    assert!(sst.physical_segments.iter().all(|segment| {
+                        usize::from(segment.logical_byte_count)
+                            + usize::from(segment.continuation_encoding.is_some())
+                            <= MAX_BIFF_RECORD_DATA
+                    }));
+
+                    let BiffRecordData::ExtSst(ext_sst) = &records[ext_sst_index].data else {
+                        return Err(olecfsdk::Error::invalid(
+                            0,
+                            "edited SST lost its ExtSST record after reopen",
+                        ));
+                    };
+                    let expected_strings_per_bucket =
+                        ((sst.strings.len() as u32 / 128) + 1).max(8) as u16;
+                    assert_eq!(ext_sst.strings_per_bucket, expected_strings_per_bucket);
+                    assert_eq!(
+                        ext_sst.buckets.len(),
+                        sst.strings
+                            .len()
+                            .div_ceil(usize::from(expected_strings_per_bucket))
+                    );
+                    let mut physical_segments = Vec::with_capacity(sst.physical_segments.len());
+                    let mut physical_header = records[record_index].offset;
+                    for segment in &sst.physical_segments {
+                        let payload_length = usize::from(segment.logical_byte_count)
+                            + usize::from(segment.continuation_encoding.is_some());
+                        physical_segments.push((physical_header, payload_length));
+                        physical_header = physical_header
+                            .checked_add(u32::try_from(payload_length + 4).unwrap())
+                            .unwrap();
+                    }
+                    for bucket in &ext_sst.buckets {
+                        let header = bucket
+                            .stream_offset
+                            .checked_sub(u32::from(bucket.record_offset))
+                            .unwrap();
+                        let (_, payload_length) = physical_segments
+                            .iter()
+                            .find(|(segment_header, _)| *segment_header == header)
+                            .expect("ExtSST bucket must reference an SST physical record");
+                        assert!(bucket.record_offset >= 4);
+                        assert!(usize::from(bucket.record_offset) < payload_length + 4);
+                        assert_eq!(bucket.reserved, 0);
+                    }
+                    sst_edit_resegmented = true;
+                }
+            }
             Ok::<_, olecfsdk::Error>(())
         })();
         if let Err(error) = result {
@@ -2426,6 +2913,23 @@ fn legacy_office_workbook_streams_round_trip() {
         }
     }
     assert!(checked > 0, "no Workbook/Book streams found in XLS corpus");
+    assert!(
+        pls_edit_resegmented,
+        "no continued Pls corpus edit was exercised"
+    );
+    assert!(
+        bk_him_edit_resegmented,
+        "no continued BkHim corpus edit was exercised"
+    );
+    assert!(
+        drawing_edit_resegmented,
+        "no continued MsoDrawing corpus edit was exercised"
+    );
+    assert!(txo_edit_rederived, "no typed TxO corpus edit was exercised");
+    assert!(
+        sst_edit_resegmented,
+        "no continued SST corpus edit was exercised"
+    );
     assert_eq!(checked, 734, "XLS file-root coverage changed");
     assert_eq!(
         root_parsed_files, 725,
@@ -2487,7 +2991,10 @@ fn legacy_office_workbook_streams_round_trip() {
             + root_workbook_structure_diagnostics
             + root_bof_diagnostics
             + root_end_object_diagnostics
-            + root_isstinf_diagnostics,
+            + root_isstinf_diagnostics
+            + root_pivot_cache_diagnostics
+            + root_revision_stream_diagnostics
+            + root_user_names_diagnostics,
         "every retained nonconforming XLS structure requires one root diagnostic"
     );
     assert_eq!(
@@ -2505,6 +3012,18 @@ fn legacy_office_workbook_streams_round_trip() {
     assert_eq!(
         root_isstinf_diagnostics, 24,
         "ISSTInf compatibility coverage changed"
+    );
+    assert_eq!(
+        root_pivot_cache_diagnostics, 5,
+        "typed PivotCache compatibility coverage changed"
+    );
+    assert_eq!(
+        root_revision_stream_diagnostics, 3,
+        "typed Revision Stream compatibility coverage changed"
+    );
+    assert_eq!(
+        root_user_names_diagnostics, 3,
+        "typed User Names compatibility coverage changed"
     );
     assert_eq!(drawing_obj_raw, 0, "Obj records fell back to raw payloads");
     assert_eq!(
@@ -2556,6 +3075,9 @@ fn legacy_office_workbook_streams_round_trip() {
     assert_eq!(sup_book_compatibility, 0);
     assert_eq!(sup_book_trailing_bytes, 0);
     assert_eq!(extern_name_records, 730);
+    assert_eq!(extern_name_formula_records, 126);
+    assert_eq!(extern_name_cached_link_records, 0);
+    assert_eq!(extern_name_ole_dde_link_records, 0);
     assert_eq!(extern_name_compatibility_records, 0);
     assert_eq!(extern_name_compatibility_bytes, 0);
     assert_eq!(hyperlink_records, 409);
@@ -3139,7 +3661,7 @@ fn legacy_office_workbook_streams_round_trip() {
         "XLS drawing graphs: {drawing_graphs} complete ({drawing_graphs_strict} strict), {drawing_graph_drawings} drawings/{drawing_graph_shapes} shapes, {drawing_graph_absent} absent; csp {drawing_graph_shape_count_bases:?}; spidCur {drawing_graph_current_shape_id_relations:?}; spidMax {drawing_graph_maximum_shape_id_relations:?}; cspSaved {drawing_graph_saved_shape_count_relations:?}; cdgSaved {drawing_graph_saved_drawing_count_relations:?}; IDCL cursor {drawing_graph_cluster_cursor_relations:?}; BLIP {drawing_graph_blip_stores} stores/{drawing_graph_blip_entries} entries/{drawing_graph_blip_references} references, cRef {drawing_graph_blip_reference_count_relations:?}; issues {drawing_graph_issues:?}, errors {drawing_graph_errors:?}"
     );
     eprintln!(
-        "checked {checked} XLS file roots ({root_parsed_files} parsed/{root_reopened_files} written and reopened): {biff8} BIFF8, {legacy} legacy; {} unknown BIFF record types remain; newly static formal records {newly_static_formal_records:?}; Formula has {formula_unparsed_rgce_bytes} unparsed rgce bytes, {formula_rgcb_bytes} unparsed rgcb bytes and {formula_missing_extra} explicit missing-extra compatibility states; SharedFormula has {shared_formula_records} records, {shared_formula_unparsed_rgce_bytes} unparsed rgce and {shared_formula_rgcb_bytes} rgcb bytes; Array has {array_records} records, {array_unparsed_rgce_bytes} unparsed rgce and {array_rgcb_bytes} rgcb bytes; SupBook has {sup_book_records} records, {sup_book_compatibility} compatibility values and {sup_book_trailing_bytes} retained trailing bytes; ExternName has {extern_name_records} records ({extern_name_formula_records} formula/{extern_name_cached_link_records} cached-link/{extern_name_compatibility_records} compatibility with {extern_name_compatibility_bytes} bytes); Hyperlink has {hyperlink_records} records, {hyperlink_compatibility_records} compatibility/{hyperlink_compatibility_bytes} bytes, {hyperlink_truncated_records} truncated ({hyperlink_truncated_url_records} typed URL moniker/{hyperlink_truncated_url_address_bytes} address bytes, {hyperlink_truncated_bytes} generic bytes) and {hyperlink_trailing_bytes} trailing bytes; DV has {data_validation_records} records, {data_validation_unparsed_rgce_bytes} unparsed rgce bytes and {data_validation_missing_extra} missing extras; CF has {conditional_formatting_records} records, {conditional_formatting_unparsed_rgce_bytes} unparsed rgce bytes and {conditional_formatting_missing_extra} missing extras; CFEx has {cfex_records} records ({cfex_cf12_records} CF12/{cfex_non_cf12_records} non-CF12, {cfex_formats} DXFN12 and {cfex_extension_unparsed_bytes} unparsed extension bytes); CF12 has {cf12_records} records/types {cf12_types:?}/{cf12_unparsed_formula_bytes} unparsed formula bytes; CrtMlFrt has {crt_ml_frt_records} records/{xml_tk_records} XmlTk values {xml_tk_kinds:?}; LinkedData has {linked_data_records} records, {linked_data_unparsed_rgce_bytes} unparsed rgce bytes and {linked_data_missing_extra} missing extras; FeatHdr has {feature_header_records} records ({feature_header_none} empty/{feature_header_enhanced_protection} protection/{feature_header_property_bag_store} property-bag/{feature_header_malformed} malformed with {feature_header_malformed_bytes} bytes); Feat has {feature_records} records ({feature_protection} protection/{feature_formula_errors} formula-error/{feature_smart_tags} smart-tag, {feature_security_descriptors} security descriptors); DConn has {dconn_records} records ({dconn_text} text/{dconn_web} web); Feature11 has {feature11_records} records/{feature11_fields} fields/{feature11_formats} DXFN12List/{feature11_auto_filters} AutoFilter envelopes; Name has {name_records} records ({name_continued_records} continued), {name_unparsed_rgce_bytes} unparsed rgce bytes, {name_rgcb_tail_bytes} rgcb tail bytes and {name_missing_extra} missing extras; Pls has {pls_records} records ({pls_continued} continued), {pls_windows_full} full/{pls_windows_legacy212} legacy-212/{pls_windows_core100} core-100/{pls_windows_truncated} spec-truncated DEVMODEW and {pls_platform_specific} values; MsoDrawingGroup has {drawing_group_records} records ({drawing_group_continued} continued), {drawing_group_complete} complete/{drawing_group_partial} partial trees ({drawing_group_partial_complete_records} complete + {drawing_group_partial_incomplete_records} incomplete records/{drawing_group_partial_unparsed_bytes} unparsed bytes) and {} whole-byte incomplete/{drawing_group_incomplete_bytes} bytes; MsoDrawing has {drawing_records} aggregates/{drawing_segments} segments/{drawing_host_records} host records, {drawing_complete} complete/{drawing_partial} partial trees ({drawing_partial_complete_records} complete + {drawing_partial_incomplete_records} incomplete records/{drawing_partial_unparsed_bytes} unparsed bytes) and {} whole-byte incomplete/{drawing_incomplete_bytes} bytes; host types: TxO {drawing_txo_typed} typed/{drawing_txo_raw} raw with {drawing_txo_control_contexts} ControlInfo/{drawing_txo_reserved_contexts} reserved/{drawing_txo_undetermined_contexts} undetermined contexts, {drawing_txo_formula_typed} typed/{drawing_txo_formula_opaque} opaque ObjFmla ({drawing_txo_formula_bytes} bytes) and {drawing_txo_trailing_bytes} trailing bytes, Note {drawing_note_typed} typed/{drawing_note_raw} raw, Obj {drawing_obj_typed} typed/{drawing_obj_raw} raw/{drawing_obj_raw_bytes} bytes; XFExt has {xf_ext_unparsed_bytes} unparsed bytes across property types {xf_ext_unknown_types:#06x?}; StyleExt has {style_ext_unparsed_bytes} unparsed XFProp bytes; DXF has {dxf_records} records/{dxf_unparsed_bytes} unparsed XFProp bytes; SST has {sst_records} records/{sst_strings} parsed strings, {sst_extension_bytes} ExtRst bytes ({sst_extension_unparsed_bytes} unparsed), {sst_trailing_bytes} compatibility tail bytes and {} truncated tables",
+        "checked {checked} XLS file roots ({root_parsed_files} parsed/{root_reopened_files} written and reopened): {biff8} BIFF8, {legacy} legacy; {} unknown BIFF record types remain; newly static formal records {newly_static_formal_records:?}; Formula has {formula_unparsed_rgce_bytes} unparsed rgce bytes, {formula_rgcb_bytes} unparsed rgcb bytes and {formula_missing_extra} explicit missing-extra compatibility states; SharedFormula has {shared_formula_records} records, {shared_formula_unparsed_rgce_bytes} unparsed rgce and {shared_formula_rgcb_bytes} rgcb bytes; Array has {array_records} records, {array_unparsed_rgce_bytes} unparsed rgce and {array_rgcb_bytes} rgcb bytes; SupBook has {sup_book_records} records, {sup_book_compatibility} compatibility values and {sup_book_trailing_bytes} retained trailing bytes; ExternName has {extern_name_records} records ({extern_name_formula_records} formula/{extern_name_cached_link_records} cached-link/{extern_name_ole_dde_link_records} OLE-DDE link/{extern_name_compatibility_records} compatibility with {extern_name_compatibility_bytes} bytes); Hyperlink has {hyperlink_records} records, {hyperlink_compatibility_records} compatibility/{hyperlink_compatibility_bytes} bytes, {hyperlink_truncated_records} truncated ({hyperlink_truncated_url_records} typed URL moniker/{hyperlink_truncated_url_address_bytes} address bytes, {hyperlink_truncated_bytes} generic bytes) and {hyperlink_trailing_bytes} trailing bytes; DV has {data_validation_records} records, {data_validation_unparsed_rgce_bytes} unparsed rgce bytes and {data_validation_missing_extra} missing extras; CF has {conditional_formatting_records} records, {conditional_formatting_unparsed_rgce_bytes} unparsed rgce bytes and {conditional_formatting_missing_extra} missing extras; CFEx has {cfex_records} records ({cfex_cf12_records} CF12/{cfex_non_cf12_records} non-CF12, {cfex_formats} DXFN12 and {cfex_extension_unparsed_bytes} unparsed extension bytes); CF12 has {cf12_records} records/types {cf12_types:?}/{cf12_unparsed_formula_bytes} unparsed formula bytes; CrtMlFrt has {crt_ml_frt_records} records/{xml_tk_records} XmlTk values {xml_tk_kinds:?}; LinkedData has {linked_data_records} records, {linked_data_unparsed_rgce_bytes} unparsed rgce bytes and {linked_data_missing_extra} missing extras; FeatHdr has {feature_header_records} records ({feature_header_none} empty/{feature_header_enhanced_protection} protection/{feature_header_property_bag_store} property-bag/{feature_header_malformed} malformed with {feature_header_malformed_bytes} bytes); Feat has {feature_records} records ({feature_protection} protection/{feature_formula_errors} formula-error/{feature_smart_tags} smart-tag, {feature_security_descriptors} security descriptors); DConn has {dconn_records} records ({dconn_text} text/{dconn_web} web); Feature11 has {feature11_records} records/{feature11_fields} fields/{feature11_formats} DXFN12List/{feature11_auto_filters} AutoFilter envelopes; Name has {name_records} records ({name_continued_records} continued), {name_unparsed_rgce_bytes} unparsed rgce bytes, {name_rgcb_tail_bytes} rgcb tail bytes and {name_missing_extra} missing extras; Pls has {pls_records} records ({pls_continued} continued), {pls_windows_full} full/{pls_windows_legacy212} legacy-212/{pls_windows_core100} core-100/{pls_windows_truncated} spec-truncated DEVMODEW and {pls_platform_specific} values; MsoDrawingGroup has {drawing_group_records} records ({drawing_group_continued} continued), {drawing_group_complete} complete/{drawing_group_partial} partial trees ({drawing_group_partial_complete_records} complete + {drawing_group_partial_incomplete_records} incomplete records/{drawing_group_partial_unparsed_bytes} unparsed bytes) and {} whole-byte incomplete/{drawing_group_incomplete_bytes} bytes; MsoDrawing has {drawing_records} aggregates/{drawing_segments} segments/{drawing_host_records} host records, {drawing_complete} complete/{drawing_partial} partial trees ({drawing_partial_complete_records} complete + {drawing_partial_incomplete_records} incomplete records/{drawing_partial_unparsed_bytes} unparsed bytes) and {} whole-byte incomplete/{drawing_incomplete_bytes} bytes; host types: TxO {drawing_txo_typed} typed/{drawing_txo_raw} raw with {drawing_txo_control_contexts} ControlInfo/{drawing_txo_reserved_contexts} reserved/{drawing_txo_undetermined_contexts} undetermined contexts, {drawing_txo_formula_typed} typed/{drawing_txo_formula_opaque} opaque ObjFmla ({drawing_txo_formula_bytes} bytes) and {drawing_txo_trailing_bytes} trailing bytes, Note {drawing_note_typed} typed/{drawing_note_raw} raw, Obj {drawing_obj_typed} typed/{drawing_obj_raw} raw/{drawing_obj_raw_bytes} bytes; XFExt has {xf_ext_unparsed_bytes} unparsed bytes across property types {xf_ext_unknown_types:#06x?}; StyleExt has {style_ext_unparsed_bytes} unparsed XFProp bytes; DXF has {dxf_records} records/{dxf_unparsed_bytes} unparsed XFProp bytes; SST has {sst_records} records/{sst_strings} parsed strings, {sst_extension_bytes} ExtRst bytes ({sst_extension_unparsed_bytes} unparsed), {sst_trailing_bytes} compatibility tail bytes and {} truncated tables",
         unknown_types.len(),
         drawing_group_incomplete.len(),
         drawing_incomplete.len(),

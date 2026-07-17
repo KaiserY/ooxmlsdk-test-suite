@@ -54,3 +54,7 @@ zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
 [profile.bench]
 # Enough for cargo-flamegraph/perf symbolization without full debug-info bloat.
 debug = "line-tables-only"
+
+[profile.test]
+# Preserve line-level backtraces without full debug-info codegen and artifact bloat.
+debug = "line-tables-only"

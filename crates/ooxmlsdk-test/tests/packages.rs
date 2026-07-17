@@ -4,7 +4,6 @@ use std::collections::HashSet;
 #[cfg(feature = "mce")]
 use std::io::Write;
 use std::io::{Cursor, Read, Seek};
-use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use ooxmlsdk::common::{
@@ -31,14 +30,12 @@ use ooxmlsdk::schemas::schemas_openxmlformats_org_wordprocessingml_2006_main::{
     Body, BodyChoice, Document, Header, Paragraph, ParagraphChoice, Run, RunChoice,
     SdtPropertiesChoice, Text, TextType,
 };
-#[cfg(feature = "mce")]
-use ooxmlsdk::sdk::SdkType;
 use ooxmlsdk::sdk::{
     AlternativeFormatImportPartType, CustomPropertyPartType, CustomXmlPartType,
     EmbeddedControlPersistenceBinaryDataPartType, EmbeddedControlPersistencePartType,
     EmbeddedObjectPartType, EmbeddedPackagePartType, FontPartType, MailMergeRecipientDataPartType,
     MediaDataPartType, OpenSettings, PackageOpenMode, PresentationDocumentType, SdkPackage,
-    SdkPart, SpreadsheetDocumentType, ThumbnailPartType, WordprocessingDocumentType,
+    SdkPart, SdkType, SpreadsheetDocumentType, ThumbnailPartType, WordprocessingDocumentType,
     is_encrypted_office_file, is_encrypted_office_file_path,
 };
 use ooxmlsdk::sdk::{
@@ -94,6 +91,13 @@ fn saved_zip_part(bytes: &[u8], part_name: &str) -> String {
 fn lazy_open_settings() -> OpenSettings {
     OpenSettings {
         open_mode: PackageOpenMode::Lazy,
+        ..Default::default()
+    }
+}
+
+fn eager_open_settings() -> OpenSettings {
+    OpenSettings {
+        open_mode: PackageOpenMode::Eager,
         ..Default::default()
     }
 }
@@ -194,16 +198,6 @@ fn package_raw_entry_fingerprint(
         entry.compression(),
         entry.crc32(),
         bytes[start..end].to_vec(),
-    )
-}
-
-fn package_archive_metadata(bytes: &[u8]) -> (Vec<u8>, Option<Vec<u8>>) {
-    let archive = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
-    (
-        archive.comment().to_vec(),
-        archive
-            .raw_zip64_extensible_data_sector()
-            .map(<[u8]>::to_vec),
     )
 }
 
@@ -462,16 +456,16 @@ fn wordprocessing_part_xml_is_written_as_utf8_without_bom() {
 fn wordprocessing_document_supports_eager_and_lazy_root_loading() {
     let path = doc_sample("Of16-01.docx");
 
-    let mut eager = WordprocessingDocument::new_from_file(&path).unwrap();
-    let eager_main = eager.main_document_part().unwrap();
-    let eager_root = eager_main.root_element(&mut eager).unwrap();
-    assert!(main_document_body_child_count(eager_root) > 0);
-
-    let mut lazy =
-        WordprocessingDocument::new_from_file_with_settings(&path, lazy_open_settings()).unwrap();
+    let mut lazy = WordprocessingDocument::new_from_file(&path).unwrap();
     let lazy_main = lazy.main_document_part().unwrap();
+    assert!(!lazy_main.is_root_element_loaded(&lazy));
     let lazy_root = lazy_main.root_element(&mut lazy).unwrap();
     assert!(main_document_body_child_count(lazy_root) > 0);
+
+    let eager =
+        WordprocessingDocument::new_from_file_with_settings(&path, eager_open_settings()).unwrap();
+    let eager_main = eager.main_document_part().unwrap();
+    assert!(eager_main.is_root_element_loaded(&eager));
 }
 
 #[test]
@@ -846,7 +840,7 @@ fn open_settings_default_markup_compatibility_matches_upstream() {
             target_file_format_version: FileFormatVersion::Office2007,
         }
     );
-    assert_eq!(settings.open_mode, PackageOpenMode::Eager);
+    assert_eq!(settings.open_mode, PackageOpenMode::Lazy);
 
     let implicit = WordprocessingDocument::new_from_file(doc_sample("Document.docx")).unwrap();
     assert_eq!(implicit.open_settings(), &settings);
@@ -856,13 +850,13 @@ fn open_settings_default_markup_compatibility_matches_upstream() {
             .unwrap();
     assert_eq!(explicit.open_settings(), &settings);
 
-    let lazy_settings = lazy_open_settings();
-    let lazy = WordprocessingDocument::new_from_file_with_settings(
+    let eager_settings = eager_open_settings();
+    let eager = WordprocessingDocument::new_from_file_with_settings(
         doc_sample("Document.docx"),
-        lazy_settings,
+        eager_settings,
     )
     .unwrap();
-    assert_eq!(lazy.open_settings(), &lazy_settings);
+    assert_eq!(eager.open_settings(), &eager_settings);
 
     let spreadsheet =
         SpreadsheetDocument::new_from_file(doc_sample("basicspreadsheet.xlsx")).unwrap();
@@ -5136,7 +5130,7 @@ fn model3d_reference_relationship_parts_use_powerpoint_content_type() {
 fn package_save_roundtrips_unmodified_document() {
     let original = WordprocessingDocument::new_from_file_with_settings(
         doc_sample("Of16-01.docx"),
-        lazy_open_settings(),
+        eager_open_settings(),
     )
     .unwrap();
     let mut buffer = Cursor::new(Vec::new());
@@ -5150,57 +5144,61 @@ fn package_save_roundtrips_unmodified_document() {
 }
 
 #[test]
-fn lazy_bytes_save_raw_copies_every_unmodified_zip_entry() {
-    let source: Arc<[u8]> = std::fs::read(doc_sample("Document.docx")).unwrap().into();
+fn default_lazy_save_raw_copies_unloaded_part_payloads() {
+    let source = std::fs::read(doc_sample("Document.docx")).unwrap();
     let source_names = package_entry_names_in_order(&source);
-    let mut package =
-        WordprocessingDocument::new_from_bytes_with_settings(source.clone(), lazy_open_settings())
-            .unwrap();
+    let package = WordprocessingDocument::new(Cursor::new(source.clone())).unwrap();
 
     let main_part = package.main_document_part().unwrap();
-    assert!(main_part.try_data(&package).unwrap().is_some());
-    assert!(main_part.root_element(&mut package).is_ok());
+    assert!(!main_part.is_root_element_loaded(&package));
 
     let saved = package.to_package_bytes().unwrap();
     assert_eq!(package_entry_names_in_order(&saved), source_names);
     assert_eq!(
-        package_archive_metadata(&saved),
-        package_archive_metadata(&source)
-    );
-    for name in package_entry_names_in_order(&source) {
-        assert_eq!(
-            package_raw_entry_fingerprint(&saved, &name),
-            package_raw_entry_fingerprint(&source, &name),
-            "unmodified ZIP entry was recompressed: {name}"
-        );
-    }
-}
-
-#[test]
-fn lazy_save_recompresses_only_the_mutated_root_part() {
-    let source: Arc<[u8]> = std::fs::read(doc_sample("Document.docx")).unwrap().into();
-    let mut package =
-        WordprocessingDocument::new_from_bytes_with_settings(source.clone(), lazy_open_settings())
-            .unwrap();
-    let main_part = package.main_document_part().unwrap();
-    let root = main_part.root_element_mut(&mut package).unwrap();
-    root.body
-        .get_or_insert_with(|| Box::new(Body::default()))
-        .body_choice
-        .push(BodyChoice::Paragraph(Box::new(Paragraph::default())));
-
-    let saved = package.to_package_bytes().unwrap();
-    assert_ne!(
         package_raw_entry_fingerprint(&saved, "word/document.xml"),
         package_raw_entry_fingerprint(&source, "word/document.xml")
     );
+    assert_ne!(
+        package_raw_entry_fingerprint(&saved, "[Content_Types].xml"),
+        package_raw_entry_fingerprint(&source, "[Content_Types].xml")
+    );
+    assert_ne!(
+        package_raw_entry_fingerprint(&saved, "_rels/.rels"),
+        package_raw_entry_fingerprint(&source, "_rels/.rels")
+    );
+}
+
+#[test]
+fn lazy_save_serializes_every_loaded_root_without_a_dirty_check() {
+    let source = std::fs::read(doc_sample("Document.docx")).unwrap();
+    let mut package = WordprocessingDocument::new_with_settings(
+        Cursor::new(source.clone()),
+        lazy_open_settings(),
+    )
+    .unwrap();
+    let main_part = package.main_document_part().unwrap();
+    let serialized_root = main_part
+        .root_element(&mut package)
+        .unwrap()
+        .to_xml()
+        .unwrap();
+
+    let saved = package.to_package_bytes().unwrap();
+    assert_eq!(
+        package_entry_data(saved.clone(), "word/document.xml"),
+        serialized_root.as_bytes()
+    );
     for name in ["[Content_Types].xml", "_rels/.rels"] {
-        assert_eq!(
+        assert_ne!(
             package_raw_entry_fingerprint(&saved, name),
             package_raw_entry_fingerprint(&source, name),
-            "unrelated package metadata was recompressed: {name}"
+            "parsed package metadata was raw-copied: {name}"
         );
     }
+    assert_eq!(
+        package_raw_entry_fingerprint(&saved, "docProps/app.xml"),
+        package_raw_entry_fingerprint(&source, "docProps/app.xml")
+    );
 }
 
 #[test]

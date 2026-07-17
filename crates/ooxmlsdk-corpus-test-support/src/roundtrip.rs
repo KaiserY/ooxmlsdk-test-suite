@@ -12,7 +12,7 @@ use ooxmlsdk::parts::{
     spreadsheet_document::SpreadsheetDocument, wordprocessing_document::WordprocessingDocument,
 };
 use ooxmlsdk::schemas::schemas_openxmlformats_org_wordprocessingml_2006_main::BodyChoice;
-use ooxmlsdk::sdk::{SdkPackage, SdkPart};
+use ooxmlsdk::sdk::{OpenSettings, PackageOpenMode, SdkPackage, SdkPart};
 use quick_xml::{Reader, XmlVersion, escape::unescape, events::Event};
 use serde::Deserialize;
 use zip::ZipArchive;
@@ -24,6 +24,13 @@ enum DocSampleKind {
     Presentation,
 }
 
+fn eager_open_settings() -> OpenSettings {
+    OpenSettings {
+        open_mode: PackageOpenMode::Eager,
+        ..Default::default()
+    }
+}
+
 pub fn assert_package_file_round_trip(path: &Path, file_name: &str) {
     let kind = doc_sample_kind(file_name);
     let original_bytes = fs::read(path).unwrap_or_else(|err| {
@@ -32,7 +39,11 @@ pub fn assert_package_file_round_trip(path: &Path, file_name: &str) {
 
     match kind {
         DocSampleKind::Wordprocessing => {
-            let mut original = WordprocessingDocument::new_from_file(path).unwrap_or_else(|err| {
+            let mut original = WordprocessingDocument::new_from_file_with_settings(
+                path,
+                eager_open_settings(),
+            )
+            .unwrap_or_else(|err| {
         panic!("round-trip failed for {file_name} while opening original wordprocessing package {path:?}: {err:?}");
       });
             let mut buffer = Cursor::new(Vec::new());
@@ -42,7 +53,10 @@ pub fn assert_package_file_round_trip(path: &Path, file_name: &str) {
                 );
             });
             let roundtripped_bytes = buffer.into_inner();
-            let mut reopened = WordprocessingDocument::new(Cursor::new(roundtripped_bytes.clone())).unwrap_or_else(|err| {
+            let mut reopened = WordprocessingDocument::new_with_settings(
+                Cursor::new(roundtripped_bytes.clone()),
+                eager_open_settings(),
+            ).unwrap_or_else(|err| {
         panic!("round-trip failed for {file_name} while reopening saved wordprocessing package: {err:?}");
       });
             assert_wordprocessing_document_round_trip(&original, &reopened);
@@ -51,7 +65,11 @@ pub fn assert_package_file_round_trip(path: &Path, file_name: &str) {
             clear_deep_recursive_word_tables_for_known_fixture(&mut reopened, file_name);
         }
         DocSampleKind::Spreadsheet => {
-            let original = SpreadsheetDocument::new_from_file(path).unwrap_or_else(|err| {
+            let original = SpreadsheetDocument::new_from_file_with_settings(
+                path,
+                eager_open_settings(),
+            )
+            .unwrap_or_else(|err| {
         panic!("round-trip failed for {file_name} while opening original spreadsheet package {path:?}: {err:?}");
       });
             let mut buffer = Cursor::new(Vec::new());
@@ -61,7 +79,10 @@ pub fn assert_package_file_round_trip(path: &Path, file_name: &str) {
                 );
             });
             let roundtripped_bytes = buffer.into_inner();
-            let reopened = SpreadsheetDocument::new(Cursor::new(roundtripped_bytes.clone()))
+            let reopened = SpreadsheetDocument::new_with_settings(
+                Cursor::new(roundtripped_bytes.clone()),
+                eager_open_settings(),
+            )
         .unwrap_or_else(|err| {
           panic!(
             "round-trip failed for {file_name} while reopening saved spreadsheet package: {err:?}"
@@ -71,7 +92,11 @@ pub fn assert_package_file_round_trip(path: &Path, file_name: &str) {
             assert_doc_sample_zip_equivalent(&original_bytes, &roundtripped_bytes, file_name);
         }
         DocSampleKind::Presentation => {
-            let original = PresentationDocument::new_from_file(path).unwrap_or_else(|err| {
+            let original = PresentationDocument::new_from_file_with_settings(
+                path,
+                eager_open_settings(),
+            )
+            .unwrap_or_else(|err| {
         panic!("round-trip failed for {file_name} while opening original presentation package {path:?}: {err:?}");
       });
             let mut buffer = Cursor::new(Vec::new());
@@ -81,7 +106,10 @@ pub fn assert_package_file_round_trip(path: &Path, file_name: &str) {
                 );
             });
             let roundtripped_bytes = buffer.into_inner();
-            let reopened = PresentationDocument::new(Cursor::new(roundtripped_bytes.clone()))
+            let reopened = PresentationDocument::new_with_settings(
+                Cursor::new(roundtripped_bytes.clone()),
+                eager_open_settings(),
+            )
         .unwrap_or_else(|err| {
           panic!(
             "round-trip failed for {file_name} while reopening saved presentation package: {err:?}"
@@ -126,32 +154,36 @@ pub fn assert_package_file_invalid(path: &Path, file_name: &str) {
         return;
     }
 
-    let result = match kind {
-        DocSampleKind::Wordprocessing => {
-            WordprocessingDocument::new_from_file(path).and_then(|mut package| {
-                package
-                    .main_document_part()?
-                    .root_element(&mut package)
-                    .map(|_| ())
-            })
-        }
-        DocSampleKind::Spreadsheet => {
-            SpreadsheetDocument::new_from_file(path).and_then(|mut package| {
-                package
-                    .workbook_part()?
-                    .root_element(&mut package)
-                    .map(|_| ())
-            })
-        }
-        DocSampleKind::Presentation => {
-            PresentationDocument::new_from_file(path).and_then(|mut package| {
-                package
-                    .presentation_part()?
-                    .root_element(&mut package)
-                    .map(|_| ())
-            })
-        }
-    };
+    let result =
+        match kind {
+            DocSampleKind::Wordprocessing => {
+                WordprocessingDocument::new_from_file_with_settings(path, eager_open_settings())
+                    .and_then(|mut package| {
+                        package
+                            .main_document_part()?
+                            .root_element(&mut package)
+                            .map(|_| ())
+                    })
+            }
+            DocSampleKind::Spreadsheet => {
+                SpreadsheetDocument::new_from_file_with_settings(path, eager_open_settings())
+                    .and_then(|mut package| {
+                        package
+                            .workbook_part()?
+                            .root_element(&mut package)
+                            .map(|_| ())
+                    })
+            }
+            DocSampleKind::Presentation => {
+                PresentationDocument::new_from_file_with_settings(path, eager_open_settings())
+                    .and_then(|mut package| {
+                        package
+                            .presentation_part()?
+                            .root_element(&mut package)
+                            .map(|_| ())
+                    })
+            }
+        };
 
     assert!(
         result.is_err(),
