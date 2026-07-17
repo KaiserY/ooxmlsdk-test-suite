@@ -9,5 +9,5 @@ This directory contains license files copied from LibreOffice core. The copied
 corpus files retain their upstream licensing terms.
 
 The binary Office corpus was synchronized from LibreOffice core commit
-`9feef7299e94a9f68f0e715700b6efc06073c78d`. The checked-in `COPYING`,
+`a9b98f039c8533af22d2ff6eb8b48a01c9e1876e`. The checked-in `COPYING`,
 `COPYING.LGPL`, and `COPYING.MPL` files match that commit.

@@ -11,10 +11,10 @@ notice terms of their original projects. See `../licenses/` and
 
 | Corpus | Path | OOXML files | Binary Office files | License | Source | Manifest | License files |
 | --- | --- | ---: | ---: | --- | --- | --- | --- |
-| Apache POI | `corpus/Apache-POI` | 677 | 743 | Apache-2.0 | `https://github.com/apache/poi` | `corpus/Apache-POI/manifest.toml` | `licenses/Apache-POI/LICENSE`, `licenses/Apache-POI/NOTICE` |
-| LibreOffice | `corpus/LibreOffice` | 3368 | 790 | MPL-2.0 | `https://github.com/LibreOffice/core` | `corpus/LibreOffice/manifest.toml` | `licenses/LibreOffice/COPYING.MPL`, `licenses/LibreOffice/COPYING.LGPL`, `licenses/LibreOffice/COPYING` |
+| Apache POI | `corpus/Apache-POI` | 682 | 743 | Apache-2.0 | `https://github.com/apache/poi` | `corpus/Apache-POI/manifest.toml` | `licenses/Apache-POI/LICENSE`, `licenses/Apache-POI/NOTICE` |
+| LibreOffice | `corpus/LibreOffice` | 3388 | 790 | MPL-2.0 | `https://github.com/LibreOffice/core` | `corpus/LibreOffice/manifest.toml` | `licenses/LibreOffice/COPYING.MPL`, `licenses/LibreOffice/COPYING.LGPL`, `licenses/LibreOffice/COPYING` |
 | libemf2svg | `corpus/libemf2svg` | 0 | 0 | GPL-2.0-only | `https://github.com/kakwa/libemf2svg` | `corpus/libemf2svg/manifest.toml` | `licenses/libemf2svg/LICENSE`, `licenses/libemf2svg/libuemf-COPYING` |
-| Open-XML-SDK | `corpus/Open-XML-SDK` | 884 | 0 | MIT | `https://github.com/dotnet/Open-XML-SDK` | `corpus/Open-XML-SDK/manifest.toml` | `licenses/Open-XML-SDK/LICENSE`, `licenses/Open-XML-SDK/NOTICE` |
+| Open-XML-SDK | `corpus/Open-XML-SDK` | 886 | 0 | MIT | `https://github.com/dotnet/Open-XML-SDK` | `corpus/Open-XML-SDK/manifest.toml` | `licenses/Open-XML-SDK/LICENSE`, `licenses/Open-XML-SDK/NOTICE` |
 
 The OOXML count includes supported Office package fixtures only:
 `docx`, `dotx`, `docm`, `dotm`, `xlsx`, `xltx`, `xlsm`, `xltm`, `pptx`,
@@ -30,5 +30,5 @@ fixture counts are:
 | Corpus | EMF/WMF files | Used by |
 | --- | ---: | --- |
 | Apache POI | 22 | POI parser behavior and corpus roundtrip |
-| LibreOffice | 130 | emfio and graphicfilter pass/fail corpus roundtrip |
+| LibreOffice | 156 | emfio and graphicfilter pass/fail corpus roundtrip |
 | libemf2svg | 240 | converter resource and corrupted-input corpus roundtrip |

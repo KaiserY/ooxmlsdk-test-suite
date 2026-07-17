@@ -4,7 +4,7 @@ name = "Apache POI"
 path = "corpus/Apache-POI"
 license = "Apache-2.0"
 source = "https://github.com/apache/poi"
-source_commit = "dfa53082b3e04412a4440c77862f17061cb2e97f"
+source_commit = "913c78891bd0cd20945b050c63abfb8c66c88009"
 default_roundtrip = false
 
 [[expectation]]

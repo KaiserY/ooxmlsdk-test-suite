@@ -4,7 +4,7 @@ name = "LibreOffice"
 path = "corpus/LibreOffice"
 license = "MPL-2.0"
 source = "https://github.com/LibreOffice/core"
-source_commit = "9feef7299e94a9f68f0e715700b6efc06073c78d"
+source_commit = "a9b98f039c8533af22d2ff6eb8b48a01c9e1876e"
 default_roundtrip = false
 
 [[expectation]]

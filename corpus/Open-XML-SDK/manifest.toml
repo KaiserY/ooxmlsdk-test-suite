@@ -4,6 +4,7 @@ name = "Open-XML-SDK"
 path = "corpus/Open-XML-SDK"
 license = "MIT"
 source = "https://github.com/dotnet/Open-XML-SDK"
+source_commit = "00967dc871f06776ae969762c6703d062308a6c9"
 default_roundtrip = false
 
 [[expectation]]

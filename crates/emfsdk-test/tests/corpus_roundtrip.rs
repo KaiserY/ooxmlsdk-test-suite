@@ -7,6 +7,7 @@ enum Expectation {
     Roundtrip,
     Reject,
     ApachePoi,
+    LibreOffice,
 }
 
 struct CorpusSet {
@@ -20,28 +21,8 @@ const CORPUS_SETS: &[CorpusSet] = &[
         expectation: Expectation::ApachePoi,
     },
     CorpusSet {
-        root: "LibreOffice/emfio/qa/cppunit/emf/data",
-        expectation: Expectation::Roundtrip,
-    },
-    CorpusSet {
-        root: "LibreOffice/emfio/qa/cppunit/wmf/data",
-        expectation: Expectation::Roundtrip,
-    },
-    CorpusSet {
-        root: "LibreOffice/vcl/qa/cppunit/graphicfilter/data/emf/pass",
-        expectation: Expectation::Roundtrip,
-    },
-    CorpusSet {
-        root: "LibreOffice/vcl/qa/cppunit/graphicfilter/data/wmf/pass",
-        expectation: Expectation::Roundtrip,
-    },
-    CorpusSet {
-        root: "LibreOffice/vcl/qa/cppunit/graphicfilter/data/emf/fail",
-        expectation: Expectation::Reject,
-    },
-    CorpusSet {
-        root: "LibreOffice/vcl/qa/cppunit/graphicfilter/data/wmf/fail",
-        expectation: Expectation::Reject,
+        root: "LibreOffice",
+        expectation: Expectation::LibreOffice,
     },
     CorpusSet {
         root: "libemf2svg/tests/resources/emf",
@@ -81,6 +62,10 @@ fn upstream_metafile_corpus_matches_source_expectations() {
                     expect_parse_rejected(&path)
                 }
                 Expectation::ApachePoi => emfsdk_test::roundtrip_metafile(&path),
+                Expectation::LibreOffice if libreoffice_expects_reject(&path) => {
+                    expect_parse_rejected(&path)
+                }
+                Expectation::LibreOffice => emfsdk_test::roundtrip_metafile(&path),
             };
             if let Err(err) = result {
                 failures.push(format!("{}: {err}", relative_path(&path).display()));
@@ -111,4 +96,15 @@ fn apache_poi_expects_reject(path: &Path) -> bool {
                 | "Apache-POI/test-data/spreadsheet/61294.emf"
         )
     )
+}
+
+fn libreoffice_expects_reject(path: &Path) -> bool {
+    let relative = relative_path(path);
+    let Some(relative) = relative.to_str() else {
+        return false;
+    };
+
+    relative.contains("/graphicfilter/data/emf/fail/")
+        || relative.contains("/graphicfilter/data/wmf/fail/")
+        || relative == "LibreOffice/framework/qa/complex/broken_document/test_documents/dbf.dbf.emf"
 }

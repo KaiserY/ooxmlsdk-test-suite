@@ -41,9 +41,27 @@ pub fn office_document_kind(path_or_name: impl AsRef<Path>) -> Option<OfficeDocu
         .extension()
         .and_then(|ext| ext.to_str())
     {
-        Some("docx" | "dotx" | "docm" | "dotm") => Some(OfficeDocumentKind::Wordprocessing),
-        Some("xlsx" | "xltx" | "xlsm" | "xltm") => Some(OfficeDocumentKind::Spreadsheet),
-        Some("pptx" | "potx" | "pptm" | "potm") => Some(OfficeDocumentKind::Presentation),
+        Some(ext)
+            if ["docx", "dotx", "docm", "dotm"]
+                .iter()
+                .any(|expected| ext.eq_ignore_ascii_case(expected)) =>
+        {
+            Some(OfficeDocumentKind::Wordprocessing)
+        }
+        Some(ext)
+            if ["xlsx", "xltx", "xlsm", "xltm"]
+                .iter()
+                .any(|expected| ext.eq_ignore_ascii_case(expected)) =>
+        {
+            Some(OfficeDocumentKind::Spreadsheet)
+        }
+        Some(ext)
+            if ["pptx", "potx", "pptm", "potm"]
+                .iter()
+                .any(|expected| ext.eq_ignore_ascii_case(expected)) =>
+        {
+            Some(OfficeDocumentKind::Presentation)
+        }
         _ => None,
     }
 }

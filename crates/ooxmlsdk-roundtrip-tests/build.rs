@@ -201,23 +201,25 @@ fn collect_doc_files_recursive(dir: &Path, workspace_dir: &Path, files: &mut Vec
 }
 
 fn is_supported_document_path(path: &Path) -> bool {
-    matches!(
-        path.extension().and_then(|ext| ext.to_str()),
-        Some(
-            "docx"
-                | "dotx"
-                | "docm"
-                | "dotm"
-                | "xlsx"
-                | "xltx"
-                | "xlsm"
-                | "xltm"
-                | "pptx"
-                | "potx"
-                | "pptm"
-                | "potm"
-        )
-    )
+    path.extension()
+        .and_then(|ext| ext.to_str())
+        .is_some_and(|ext| {
+            matches!(
+                ext.to_ascii_lowercase().as_str(),
+                "docx"
+                    | "dotx"
+                    | "docm"
+                    | "dotm"
+                    | "xlsx"
+                    | "xltx"
+                    | "xlsm"
+                    | "xltm"
+                    | "pptx"
+                    | "potx"
+                    | "pptm"
+                    | "potm"
+            )
+        })
 }
 
 fn slugify(input: &str) -> String {
