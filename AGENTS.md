@@ -82,6 +82,10 @@ to a git or registry dependency.
   run the LibreOffice round-trip corpus lane.
 - `cargo test -p ooxmlsdk-roundtrip-tests --test open_xml_sdk_roundtrip -- --ignored`:
   run the Open-XML-SDK round-trip corpus lane.
+- `cargo test -p ooxmlsdk-roundtrip-tests --test pandoc_roundtrip -- --ignored`:
+  run the Pandoc round-trip corpus lane.
+- `cargo test -p ooxmlsdk-roundtrip-tests --test closedxml_roundtrip -- --ignored`:
+  run the ClosedXML round-trip corpus lane.
 
 Round-trip corpus tests are generated per supported Office package file and are
 ignored by default. Run ignored corpus tests explicitly, and expect long runtime

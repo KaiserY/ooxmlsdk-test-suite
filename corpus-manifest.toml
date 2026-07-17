@@ -17,3 +17,13 @@ manifest = "corpus/LibreOffice/manifest.toml"
 id = "libemf2svg"
 path = "corpus/libemf2svg"
 manifest = "corpus/libemf2svg/manifest.toml"
+
+[[corpus]]
+id = "pandoc"
+path = "corpus/Pandoc"
+manifest = "corpus/Pandoc/manifest.toml"
+
+[[corpus]]
+id = "closedxml"
+path = "corpus/ClosedXML"
+manifest = "corpus/ClosedXML/manifest.toml"

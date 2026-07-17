@@ -2,78 +2,33 @@ use std::path::{Path, PathBuf};
 
 use emfsdk_test::{assert_all_ok, collect_metafiles, corpus_dir, expect_parse_rejected};
 
-#[derive(Clone, Copy)]
-enum Expectation {
-    Roundtrip,
-    Reject,
-    ApachePoi,
-    LibreOffice,
-}
-
-struct CorpusSet {
-    root: &'static str,
-    expectation: Expectation,
-}
-
-const CORPUS_SETS: &[CorpusSet] = &[
-    CorpusSet {
-        root: "Apache-POI/test-data",
-        expectation: Expectation::ApachePoi,
-    },
-    CorpusSet {
-        root: "LibreOffice",
-        expectation: Expectation::LibreOffice,
-    },
-    CorpusSet {
-        root: "libemf2svg/tests/resources/emf",
-        expectation: Expectation::Roundtrip,
-    },
-    CorpusSet {
-        root: "libemf2svg/tests/resources/emf-ea",
-        expectation: Expectation::Roundtrip,
-    },
-    CorpusSet {
-        root: "libemf2svg/vendor/libuemf",
-        expectation: Expectation::Roundtrip,
-    },
-    CorpusSet {
-        root: "libemf2svg/tests/resources/emf-corrupted",
-        expectation: Expectation::Reject,
-    },
-];
-
 #[test]
 fn upstream_metafile_corpus_matches_source_expectations() {
     let mut failures = Vec::new();
+    let root = corpus_dir("");
+    let files = collect_metafiles(&root);
+    assert!(!files.is_empty(), "no EMF/WMF corpus files found");
 
-    for set in CORPUS_SETS {
-        let root = corpus_dir(set.root);
-        let files = collect_metafiles(&root);
-        if files.is_empty() {
-            failures.push(format!("{}: no EMF/WMF files found", set.root));
-            continue;
-        }
-
-        for path in files {
-            let result = match set.expectation {
-                Expectation::Roundtrip => emfsdk_test::roundtrip_metafile(&path),
-                Expectation::Reject => expect_parse_rejected(&path),
-                Expectation::ApachePoi if apache_poi_expects_reject(&path) => {
-                    expect_parse_rejected(&path)
-                }
-                Expectation::ApachePoi => emfsdk_test::roundtrip_metafile(&path),
-                Expectation::LibreOffice if libreoffice_expects_reject(&path) => {
-                    expect_parse_rejected(&path)
-                }
-                Expectation::LibreOffice => emfsdk_test::roundtrip_metafile(&path),
-            };
-            if let Err(err) = result {
-                failures.push(format!("{}: {err}", relative_path(&path).display()));
-            }
+    for path in files {
+        let result = if expects_parse_rejected(&path) {
+            expect_parse_rejected(&path)
+        } else {
+            emfsdk_test::roundtrip_metafile(&path)
+        };
+        if let Err(err) = result {
+            failures.push(format!("{}: {err}", relative_path(&path).display()));
         }
     }
 
     assert_all_ok(failures);
+}
+
+fn expects_parse_rejected(path: &Path) -> bool {
+    apache_poi_expects_reject(path)
+        || libreoffice_expects_reject(path)
+        || relative_path(path)
+            .to_str()
+            .is_some_and(|path| path.starts_with("libemf2svg/tests/resources/emf-corrupted/"))
 }
 
 fn relative_path(path: &Path) -> PathBuf {

@@ -13,59 +13,54 @@ fn main() {
         .and_then(Path::parent)
         .expect("test crate should be under crates/");
     let out_dir = PathBuf::from(env::var("OUT_DIR").expect("missing OUT_DIR"));
+    let workspace_manifest_path = workspace_dir.join("corpus-manifest.toml");
 
     println!(
         "cargo:rerun-if-changed={}",
-        workspace_dir.join("corpus-manifest.toml").display()
+        workspace_manifest_path.display()
     );
 
-    generate_corpus_tests(
-        workspace_dir,
-        &out_dir,
-        CorpusConfig {
-            dir_name: "Open-XML-SDK",
-            fn_prefix: "open_xml_sdk",
-            out_file: "open_xml_sdk_roundtrip_tests.rs",
-        },
-    );
-    generate_corpus_tests(
-        workspace_dir,
-        &out_dir,
-        CorpusConfig {
-            dir_name: "Apache-POI",
-            fn_prefix: "apache_poi",
-            out_file: "apache_poi_roundtrip_tests.rs",
-        },
-    );
-    generate_corpus_tests(
-        workspace_dir,
-        &out_dir,
-        CorpusConfig {
-            dir_name: "LibreOffice",
-            fn_prefix: "libreoffice",
-            out_file: "libreoffice_roundtrip_tests.rs",
-        },
-    );
+    let raw = fs::read_to_string(&workspace_manifest_path).expect("read corpus-manifest.toml");
+    let manifest: WorkspaceCorpusManifest =
+        toml::from_str(&raw).expect("parse corpus-manifest.toml");
+    for corpus in &manifest.corpus {
+        generate_corpus_tests(workspace_dir, &out_dir, corpus);
+    }
 }
 
-#[derive(Clone, Copy)]
-struct CorpusConfig {
-    dir_name: &'static str,
-    fn_prefix: &'static str,
-    out_file: &'static str,
+#[derive(Deserialize)]
+struct WorkspaceCorpusManifest {
+    #[serde(default)]
+    corpus: Vec<WorkspaceCorpusEntry>,
 }
 
-fn generate_corpus_tests(workspace_dir: &Path, out_dir: &Path, config: CorpusConfig) {
-    let corpus_dir = workspace_dir.join("corpus").join(config.dir_name);
-    let out_file = out_dir.join(config.out_file);
+#[derive(Deserialize)]
+struct WorkspaceCorpusEntry {
+    id: String,
+    path: String,
+    #[serde(default)]
+    manifest: Option<String>,
+}
+
+fn generate_corpus_tests(workspace_dir: &Path, out_dir: &Path, config: &WorkspaceCorpusEntry) {
+    let corpus_dir = workspace_dir.join(&config.path);
+    let corpus_dir_name = Path::new(&config.path)
+        .strip_prefix("corpus")
+        .unwrap_or_else(|_| Path::new(&config.path))
+        .to_string_lossy()
+        .replace('\\', "/");
+    let manifest_path = config
+        .manifest
+        .as_ref()
+        .map(|path| workspace_dir.join(path))
+        .unwrap_or_else(|| corpus_dir.join("manifest.toml"));
+    let out_file = out_dir.join(format!("{}_roundtrip_tests.rs", config.id));
+    let fn_prefix = slugify(&config.id);
 
     println!("cargo:rerun-if-changed={}", corpus_dir.display());
-    println!(
-        "cargo:rerun-if-changed={}",
-        corpus_dir.join("manifest.toml").display()
-    );
+    println!("cargo:rerun-if-changed={}", manifest_path.display());
 
-    let expectations = read_expectations(&corpus_dir.join("manifest.toml"), config.dir_name);
+    let expectations = read_expectations(&manifest_path, &corpus_dir_name);
     let mut files = collect_doc_files(&corpus_dir, workspace_dir);
     files.sort();
 
@@ -83,22 +78,22 @@ fn generate_corpus_tests(workspace_dir: &Path, out_dir: &Path, config: CorpusCon
         match expectations.get(&file_name).copied().unwrap_or(ExpectationMode::RoundTrip) {
       ExpectationMode::RoundTrip => generated.push_str(&format!(
         "#[test]\n#[ignore = \"corpus round-trip tests are run explicitly\"]\nfn round_trip_{}_{slug}() {{\n  let path = ooxmlsdk_corpus_test_support::corpus_file_path({file_name:?});\n  ooxmlsdk_corpus_test_support::roundtrip::assert_package_file_round_trip(&path, {file_name:?});\n}}\n\n",
-        config.fn_prefix
+        fn_prefix
       )),
       ExpectationMode::OpenOnly => generated.push_str(&format!(
         "#[test]\n#[ignore = \"corpus open-only tests are run explicitly\"]\nfn open_only_{}_{slug}() {{\n  let path = ooxmlsdk_corpus_test_support::corpus_file_path({file_name:?});\n  ooxmlsdk_corpus_test_support::roundtrip::assert_package_file_opens(&path, {file_name:?});\n}}\n\n",
-        config.fn_prefix
+        fn_prefix
       )),
       ExpectationMode::Invalid => generated.push_str(&format!(
         "#[test]\n#[ignore = \"corpus invalid-package tests are run explicitly\"]\nfn invalid_{}_{slug}() {{\n  let path = ooxmlsdk_corpus_test_support::corpus_file_path({file_name:?});\n  ooxmlsdk_corpus_test_support::roundtrip::assert_package_file_invalid(&path, {file_name:?});\n}}\n\n",
-        config.fn_prefix
+        fn_prefix
       )),
       ExpectationMode::Unsupported | ExpectationMode::RequiresPassword => {
         panic!("OOXML roundtrip expectations do not support unsupported or requires_password for {file_name}")
       }
       ExpectationMode::KnownFailure => generated.push_str(&format!(
         "#[test]\n#[ignore = \"known corpus failure\"]\nfn known_failure_{}_{slug}() {{\n  let path = ooxmlsdk_corpus_test_support::corpus_file_path({file_name:?});\n  ooxmlsdk_corpus_test_support::roundtrip::assert_package_file_round_trip(&path, {file_name:?});\n}}\n\n",
-        config.fn_prefix
+        fn_prefix
       )),
     }
     }
@@ -106,7 +101,7 @@ fn generate_corpus_tests(workspace_dir: &Path, out_dir: &Path, config: CorpusCon
     fs::write(&out_file, generated).unwrap_or_else(|err| {
         panic!(
             "write generated {} round-trip tests {}: {err}",
-            config.dir_name,
+            config.id,
             out_file.display()
         )
     });

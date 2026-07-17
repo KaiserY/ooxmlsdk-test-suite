@@ -1,0 +1,8 @@
+[corpus]
+id = "pandoc"
+name = "Pandoc"
+path = "corpus/Pandoc"
+license = "GPL-2.0-or-later"
+source = "https://github.com/jgm/pandoc"
+source_commit = "db8d64fe6f55f446bc36796d3dc20f823f55bc4e"
+default_roundtrip = false
