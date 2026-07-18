@@ -399,3 +399,103 @@ fn office_golden_libreoffice_sd_qa_unit_data_pptx_tdf113163() {
 
     assert_eq!(report.page_diffs.len(), 1);
 }
+
+#[test]
+#[ignore = "run Office golden corpus cases explicitly"]
+fn office_golden_libreoffice_sd_qa_unit_data_pptx_hidden_group_shape() {
+    let report = compare_office_golden(
+        OfficeGoldenCase {
+            id: "libreoffice_sd_qa_unit_data_pptx_hidden_group_shape",
+            corpus: "LibreOffice",
+            source: "sd/qa/unit/data/pptx/hidden_group_shape.pptx",
+            source_sha256: "bc152de991fe0a8d09f98857a28f6c322d29c811e90a993403d6b2317ef1a49c",
+            golden_sha256: "f26413f18d83fc5ccb2533b3900264e5934902057a46b27bdb4d6ae1cbdd0f4f",
+            environment_id: "238d45fa17f25b86fbd61ee81bb755cb9692dbd5ba881afdea771268e08e9157",
+            ui_language: "zh-CN",
+        },
+        VisualTolerance::OFFICE_FIXED_OUTPUT,
+    )
+    .unwrap();
+
+    assert_eq!(report.page_diffs.len(), 1);
+}
+
+#[test]
+#[ignore = "run Office golden corpus cases explicitly"]
+fn office_golden_libreoffice_sd_qa_unit_data_pptx_tdf156808() {
+    let report = compare_office_golden(
+        OfficeGoldenCase {
+            id: "libreoffice_sd_qa_unit_data_pptx_tdf156808",
+            corpus: "LibreOffice",
+            source: "sd/qa/unit/data/pptx/tdf156808.pptx",
+            source_sha256: "0d57c775c27505280c33a81f712dab5fc63109bb87cfe1ec4a4b8c4569e9a871",
+            golden_sha256: "92ed98faf3d785f10b42480d910d7e233885da88862fe2a29d788195387f58b3",
+            environment_id: "238d45fa17f25b86fbd61ee81bb755cb9692dbd5ba881afdea771268e08e9157",
+            ui_language: "zh-CN",
+        },
+        VisualTolerance::OFFICE_FIXED_OUTPUT,
+    )
+    .unwrap();
+
+    assert_eq!(report.page_diffs.len(), 1);
+}
+
+#[test]
+#[ignore = "run Office golden corpus cases explicitly"]
+fn office_golden_libreoffice_sd_qa_unit_data_pptx_tdf157635() {
+    let report = compare_office_golden(
+        OfficeGoldenCase {
+            id: "libreoffice_sd_qa_unit_data_pptx_tdf157635",
+            corpus: "LibreOffice",
+            source: "sd/qa/unit/data/pptx/tdf157635.pptx",
+            source_sha256: "69ab485d66268c0dd80c2baf92a452ba4ded049c05d19121fdbff011b5eea89e",
+            golden_sha256: "dbc68eff3bb2e498c4e31010377c25b028b26febaa1b7186ea2d26118a7eafbc",
+            environment_id: "238d45fa17f25b86fbd61ee81bb755cb9692dbd5ba881afdea771268e08e9157",
+            ui_language: "zh-CN",
+        },
+        VisualTolerance::OFFICE_FIXED_OUTPUT,
+    )
+    .unwrap();
+
+    assert_eq!(report.page_diffs.len(), 1);
+}
+
+#[test]
+#[ignore = "run Office golden corpus cases explicitly"]
+fn office_golden_libreoffice_sd_qa_unit_data_pptx_tdf157793() {
+    let report = compare_office_golden(
+        OfficeGoldenCase {
+            id: "libreoffice_sd_qa_unit_data_pptx_tdf157793",
+            corpus: "LibreOffice",
+            source: "sd/qa/unit/data/pptx/tdf157793.pptx",
+            source_sha256: "a34f6efb632cda5a24627783828c413db5bf4b4c6dacc5149f31961692b06325",
+            golden_sha256: "935fd2724dd93784eca0388e1b02faa0ecd6556f257273883009e8e78510379b",
+            environment_id: "238d45fa17f25b86fbd61ee81bb755cb9692dbd5ba881afdea771268e08e9157",
+            ui_language: "zh-CN",
+        },
+        VisualTolerance::OFFICE_FIXED_OUTPUT,
+    )
+    .unwrap();
+
+    assert_eq!(report.page_diffs.len(), 1);
+}
+
+#[test]
+#[ignore = "run Office golden corpus cases explicitly"]
+fn office_golden_libreoffice_sd_qa_unit_data_pptx_tdf169496_hidden_graphic() {
+    let report = compare_office_golden(
+        OfficeGoldenCase {
+            id: "libreoffice_sd_qa_unit_data_pptx_tdf169496_hidden_graphic",
+            corpus: "LibreOffice",
+            source: "sd/qa/unit/data/pptx/tdf169496_hidden_graphic.pptx",
+            source_sha256: "f717ca4657257b538466c772eca2a4d4886cb5b919c2ad5f044377fcee124fc8",
+            golden_sha256: "9bd9f41a61e70230f88f56df9d505ad5e78bc0b550f20a36ce1775ebc59fc824",
+            environment_id: "238d45fa17f25b86fbd61ee81bb755cb9692dbd5ba881afdea771268e08e9157",
+            ui_language: "zh-CN",
+        },
+        VisualTolerance::OFFICE_FIXED_OUTPUT,
+    )
+    .unwrap();
+
+    assert_eq!(report.page_diffs.len(), 1);
+}

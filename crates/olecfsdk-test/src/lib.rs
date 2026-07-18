@@ -2,10 +2,13 @@
 
 mod corpus;
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 pub use corpus::audit_classic_office_file_roots;
 use serde::{Deserialize, Serialize};
+
+pub const COVERAGE_SCHEMA_VERSION: u32 = 2;
+pub const COVERAGE_EVIDENCE_SCHEMA_VERSION: u32 = 1;
 
 #[derive(Clone, Copy, Debug, Deserialize, Ord, PartialOrd, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -19,6 +22,17 @@ pub enum CoverageDomain {
     OfficeArt,
     Forms,
 }
+
+pub const ALL_COVERAGE_DOMAINS: [CoverageDomain; 8] = [
+    CoverageDomain::Cfb,
+    CoverageDomain::Doc,
+    CoverageDomain::Xls,
+    CoverageDomain::Ppt,
+    CoverageDomain::Vba,
+    CoverageDomain::OlePropertySet,
+    CoverageDomain::OfficeArt,
+    CoverageDomain::Forms,
+];
 
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct CoverageCounts {
@@ -61,10 +75,95 @@ pub struct CoverageCategoryReport {
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub rejection_reasons: BTreeMap<String, u64>,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub exclusion_reasons: BTreeMap<String, u64>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub round_trip_failure_reasons: BTreeMap<String, u64>,
     /// Domain-specific stable counters such as records, bytes, or typed leaves.
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub metrics: BTreeMap<String, u64>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DebtDisposition {
+    SpecificationOpaque,
+    UnknownExtension,
+    Compatibility,
+    Malformed,
+    TemporaryUntyped,
+}
+
+impl DebtDisposition {
+    const fn name(self) -> &'static str {
+        match self {
+            Self::SpecificationOpaque => "specification_opaque",
+            Self::UnknownExtension => "unknown_extension",
+            Self::Compatibility => "compatibility",
+            Self::Malformed => "malformed",
+            Self::TemporaryUntyped => "temporary_untyped",
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct CoverageDebtEvidence {
+    pub disposition: DebtDisposition,
+    pub summary: String,
+    pub specification: Vec<String>,
+    pub upstream: Vec<String>,
+    pub corpus_examples: Vec<String>,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct CoverageEvidenceCatalog {
+    pub schema_version: u32,
+    pub categories: BTreeMap<CoverageDomain, BTreeMap<String, CoverageDebtEvidence>>,
+}
+
+impl CoverageEvidenceCatalog {
+    pub fn validate(&self) -> Result<(), String> {
+        if self.schema_version != COVERAGE_EVIDENCE_SCHEMA_VERSION {
+            return Err(format!(
+                "unsupported coverage evidence schema version {}",
+                self.schema_version
+            ));
+        }
+        validate_domain_inventory("coverage evidence", self.categories.keys().copied())?;
+        for (domain, entries) in &self.categories {
+            for (key, evidence) in entries {
+                if !key.starts_with(&format!("debt.{}.", evidence.disposition.name()))
+                    || [".units", ".records", ".bytes"]
+                        .iter()
+                        .any(|suffix| key.ends_with(suffix))
+                    || key.split('.').any(str::is_empty)
+                {
+                    return Err(format!("{domain:?} has invalid debt evidence key {key}"));
+                }
+                if evidence.summary.trim().is_empty()
+                    || evidence.specification.is_empty()
+                    || evidence.upstream.is_empty()
+                    || evidence.corpus_examples.is_empty()
+                    || evidence
+                        .specification
+                        .iter()
+                        .chain(&evidence.upstream)
+                        .chain(&evidence.corpus_examples)
+                        .any(|value| value.trim().is_empty())
+                {
+                    return Err(format!("{domain:?}.{key} has incomplete debt evidence"));
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+pub fn bundled_coverage_evidence() -> Result<CoverageEvidenceCatalog, String> {
+    let catalog =
+        serde_json::from_str::<CoverageEvidenceCatalog>(include_str!("../coverage-evidence.json"))
+            .map_err(|error| format!("invalid bundled coverage evidence: {error}"))?;
+    catalog.validate()?;
+    Ok(catalog)
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -76,22 +175,34 @@ pub struct CoverageReport {
 impl Default for CoverageReport {
     fn default() -> Self {
         Self {
-            schema_version: 1,
-            categories: BTreeMap::new(),
+            schema_version: COVERAGE_SCHEMA_VERSION,
+            categories: ALL_COVERAGE_DOMAINS
+                .into_iter()
+                .map(|domain| (domain, CoverageCategoryReport::default()))
+                .collect(),
         }
     }
 }
 
 impl CoverageReport {
     pub fn validate(&self) -> Result<(), String> {
-        if self.schema_version != 1 {
+        if self.schema_version != COVERAGE_SCHEMA_VERSION {
             return Err(format!(
                 "unsupported coverage report schema version {}",
                 self.schema_version
             ));
         }
+        validate_domain_inventory("coverage report", self.categories.keys().copied())?;
         for (domain, category) in &self.categories {
             category.counts.validate(*domain)?;
+            validate_disposition_metrics(*domain, category)?;
+            let excluded = category.exclusion_reasons.values().sum::<u64>();
+            if excluded != category.counts.excluded {
+                return Err(format!(
+                    "{domain:?} exclusion reasons account for {excluded}, expected {}",
+                    category.counts.excluded
+                ));
+            }
             let rejected = category.rejection_reasons.values().sum::<u64>();
             if rejected != category.counts.rejected {
                 return Err(format!(
@@ -124,6 +235,7 @@ impl CoverageReport {
                 self.schema_version, ratchet.schema_version
             ));
         }
+        validate_domain_inventory("coverage ratchet", ratchet.categories.keys().copied())?;
         let mut regressions = Vec::new();
         for (domain, threshold) in &ratchet.categories {
             let Some(actual) = self.categories.get(domain) else {
@@ -140,6 +252,169 @@ impl CoverageReport {
                 regressions.join("\n")
             ))
         }
+    }
+
+    pub fn assert_debt_has_evidence(
+        &self,
+        catalog: &CoverageEvidenceCatalog,
+    ) -> Result<(), String> {
+        catalog.validate()?;
+        let mut missing = BTreeSet::new();
+        for (domain, category) in &self.categories {
+            let evidence = catalog
+                .categories
+                .get(domain)
+                .expect("validated evidence catalog has every domain");
+            for metric in category
+                .metrics
+                .keys()
+                .filter(|metric| metric.starts_with("debt."))
+            {
+                let Some(family) = debt_metric_family(metric) else {
+                    missing.insert(format!("{domain:?}.{metric}: invalid debt metric measure"));
+                    continue;
+                };
+                if !evidence.contains_key(family) {
+                    missing.insert(format!("{domain:?}.{family}: debt has no evidence"));
+                }
+            }
+        }
+        if missing.is_empty() {
+            Ok(())
+        } else {
+            Err(missing.into_iter().collect::<Vec<_>>().join("\n"))
+        }
+    }
+}
+
+fn debt_metric_family(metric: &str) -> Option<&str> {
+    [".units", ".records", ".bytes"]
+        .into_iter()
+        .find_map(|suffix| metric.strip_suffix(suffix))
+}
+
+fn validate_disposition_metrics(
+    domain: CoverageDomain,
+    category: &CoverageCategoryReport,
+) -> Result<(), String> {
+    const DISPOSITIONS: [&str; 7] = [
+        "typed",
+        "specification_opaque",
+        "external_leaf",
+        "unknown_extension",
+        "compatibility",
+        "malformed",
+        "temporary_untyped",
+    ];
+    const MEASURES: [&str; 3] = ["units", "records", "bytes"];
+    for metric in category
+        .metrics
+        .keys()
+        .filter(|metric| metric.starts_with("disposition."))
+    {
+        let parts = metric.split('.').collect::<Vec<_>>();
+        if parts.len() != 3 || !DISPOSITIONS.contains(&parts[1]) || !MEASURES.contains(&parts[2]) {
+            return Err(format!(
+                "{domain:?} has invalid disposition metric {metric}"
+            ));
+        }
+    }
+
+    let classified_records = category
+        .metrics
+        .iter()
+        .filter(|(metric, _)| metric.starts_with("disposition.") && metric.ends_with(".records"))
+        .map(|(_, count)| *count)
+        .sum::<u64>();
+    let expected_records = match domain {
+        CoverageDomain::Xls => category.metrics.get("biff_records").copied(),
+        CoverageDomain::Ppt => category.metrics.get("records").copied(),
+        CoverageDomain::Vba => category.metrics.get("structural_records").copied(),
+        CoverageDomain::OfficeArt => Some(
+            category.metrics.get("records").copied().unwrap_or_default()
+                + category
+                    .metrics
+                    .get("complete_records_in_partial_units")
+                    .copied()
+                    .unwrap_or_default()
+                + category
+                    .metrics
+                    .get("incomplete_records")
+                    .copied()
+                    .unwrap_or_default(),
+        ),
+        _ => None,
+    };
+    if let Some(expected_records) = expected_records
+        && classified_records != expected_records
+    {
+        return Err(format!(
+            "{domain:?} disposition records account for {classified_records}, expected {expected_records}"
+        ));
+    }
+    if domain == CoverageDomain::OlePropertySet {
+        validate_disposition_conservation(category, domain, "units", "properties")?;
+        validate_disposition_conservation(category, domain, "bytes", "property_bytes")?;
+    }
+    if domain == CoverageDomain::Doc {
+        validate_disposition_conservation(category, domain, "units", "content_nodes")?;
+    }
+    if domain == CoverageDomain::Vba {
+        validate_disposition_conservation(category, domain, "units", "leaf_units")?;
+        validate_disposition_conservation(category, domain, "bytes", "leaf_bytes")?;
+    }
+    if domain == CoverageDomain::Forms {
+        validate_disposition_conservation(category, domain, "units", "sites")?;
+    }
+    Ok(())
+}
+
+fn validate_disposition_conservation(
+    category: &CoverageCategoryReport,
+    domain: CoverageDomain,
+    measure: &str,
+    expected_metric: &str,
+) -> Result<(), String> {
+    let suffix = format!(".{measure}");
+    let classified = category
+        .metrics
+        .iter()
+        .filter(|(metric, _)| metric.starts_with("disposition.") && metric.ends_with(&suffix))
+        .map(|(_, count)| *count)
+        .sum::<u64>();
+    let expected = category
+        .metrics
+        .get(expected_metric)
+        .copied()
+        .unwrap_or_default();
+    if classified == expected {
+        Ok(())
+    } else {
+        Err(format!(
+            "{domain:?} disposition {measure} account for {classified}, expected {expected}"
+        ))
+    }
+}
+
+fn validate_domain_inventory(
+    label: &str,
+    actual: impl IntoIterator<Item = CoverageDomain>,
+) -> Result<(), String> {
+    let actual = actual.into_iter().collect::<Vec<_>>();
+    let missing = ALL_COVERAGE_DOMAINS
+        .into_iter()
+        .filter(|domain| !actual.contains(domain))
+        .collect::<Vec<_>>();
+    let unexpected = actual
+        .into_iter()
+        .filter(|domain| !ALL_COVERAGE_DOMAINS.contains(domain))
+        .collect::<Vec<_>>();
+    if missing.is_empty() && unexpected.is_empty() {
+        Ok(())
+    } else {
+        Err(format!(
+            "{label} domain inventory differs: missing={missing:?}, unexpected={unexpected:?}"
+        ))
     }
 }
 
@@ -224,6 +499,17 @@ impl CoverageThreshold {
                 regressions,
             );
         }
+        for metric in actual
+            .metrics
+            .keys()
+            .filter(|metric| metric.starts_with("debt."))
+        {
+            if !self.maximum_metrics.contains_key(metric) {
+                regressions.push(format!(
+                    "{domain:?}.{metric}: debt metric has no ratchet ceiling"
+                ));
+            }
+        }
         check_maximum(
             domain,
             "excluded",
@@ -295,6 +581,30 @@ mod tests {
     }
 
     #[test]
+    fn every_domain_and_exclusion_reason_is_required() {
+        let mut report = CoverageReport::default();
+        report.categories.remove(&CoverageDomain::Forms);
+        assert!(report.validate().unwrap_err().contains("Forms"));
+
+        let mut report = CoverageReport::default();
+        let doc = report.categories.get_mut(&CoverageDomain::Doc).unwrap();
+        doc.counts.discovered = 1;
+        doc.counts.excluded = 1;
+        assert!(report.validate().unwrap_err().contains("exclusion reasons"));
+
+        let mut ratchet =
+            serde_json::from_str::<CoverageRatchet>(include_str!("../coverage-ratchet.json"))
+                .unwrap();
+        ratchet.categories.remove(&CoverageDomain::Forms);
+        assert!(
+            CoverageReport::default()
+                .assert_meets(&ratchet)
+                .unwrap_err()
+                .contains("coverage ratchet domain inventory")
+        );
+    }
+
+    #[test]
     fn ratchet_allows_coverage_growth_and_rejects_regressions() {
         let actual = CoverageCategoryReport {
             counts: CoverageCounts {
@@ -336,6 +646,117 @@ mod tests {
         assert!(regressions.iter().any(|value| value.contains("rejected")));
         assert!(regressions.iter().any(|value| value.contains("records")));
         assert!(regressions.iter().any(|value| value.contains("unknown")));
+
+        let mut unratcheted = actual.clone();
+        unratcheted
+            .metrics
+            .insert("debt.unknown_extension.type_0xffff.records".to_owned(), 1);
+        threshold.collect_regressions(CoverageDomain::Cfb, &unratcheted, &mut regressions);
+        assert!(
+            regressions
+                .iter()
+                .any(|value| value.contains("no ratchet ceiling"))
+        );
+    }
+
+    #[test]
+    fn exhaustive_record_dispositions_and_metric_names_are_checked() {
+        let mut report = CoverageReport::default();
+        let xls = report.categories.get_mut(&CoverageDomain::Xls).unwrap();
+        xls.metrics.insert("biff_records".to_owned(), 2);
+        xls.metrics
+            .insert("disposition.typed.records".to_owned(), 1);
+        assert!(
+            report
+                .validate()
+                .unwrap_err()
+                .contains("disposition records")
+        );
+
+        let mut report = CoverageReport::default();
+        report
+            .categories
+            .get_mut(&CoverageDomain::Doc)
+            .unwrap()
+            .metrics
+            .insert("disposition.typo.records".to_owned(), 1);
+        assert!(
+            report
+                .validate()
+                .unwrap_err()
+                .contains("invalid disposition metric")
+        );
+
+        let mut report = CoverageReport::default();
+        let doc = report.categories.get_mut(&CoverageDomain::Doc).unwrap();
+        doc.metrics.insert("content_nodes".to_owned(), 2);
+        doc.metrics.insert("disposition.typed.units".to_owned(), 1);
+        assert!(report.validate().unwrap_err().contains("disposition units"));
+
+        let mut report = CoverageReport::default();
+        let oleps = report
+            .categories
+            .get_mut(&CoverageDomain::OlePropertySet)
+            .unwrap();
+        oleps.metrics.insert("properties".to_owned(), 2);
+        oleps.metrics.insert("property_bytes".to_owned(), 12);
+        oleps
+            .metrics
+            .insert("disposition.typed.units".to_owned(), 1);
+        oleps
+            .metrics
+            .insert("disposition.typed.bytes".to_owned(), 12);
+        assert!(report.validate().unwrap_err().contains("disposition units"));
+    }
+
+    #[test]
+    fn every_emitted_debt_family_requires_structured_evidence() {
+        let catalog = bundled_coverage_evidence().unwrap();
+        let ratchet =
+            serde_json::from_str::<CoverageRatchet>(include_str!("../coverage-ratchet.json"))
+                .unwrap();
+        for (domain, evidence) in &catalog.categories {
+            let maximum_metrics = &ratchet.categories.get(domain).unwrap().maximum_metrics;
+            for family in evidence.keys() {
+                assert!(
+                    maximum_metrics
+                        .keys()
+                        .any(|metric| debt_metric_family(metric) == Some(family)),
+                    "{domain:?}.{family} has evidence but no ratchet ceiling"
+                );
+            }
+            for metric in maximum_metrics
+                .keys()
+                .filter(|metric| metric.starts_with("debt."))
+            {
+                let family = debt_metric_family(metric).unwrap();
+                assert!(
+                    evidence.contains_key(family),
+                    "{domain:?}.{metric} has a debt ceiling but no evidence"
+                );
+            }
+        }
+        let mut report = CoverageReport::default();
+        report
+            .categories
+            .get_mut(&CoverageDomain::Ppt)
+            .unwrap()
+            .metrics
+            .insert("debt.unknown_extension.type_0x0080.records".to_owned(), 1);
+        report.assert_debt_has_evidence(&catalog).unwrap();
+
+        report
+            .categories
+            .get_mut(&CoverageDomain::Ppt)
+            .unwrap()
+            .metrics
+            .insert("debt.unknown_extension.type_0xdead.records".to_owned(), 1);
+        assert!(
+            report
+                .assert_debt_has_evidence(&catalog)
+                .unwrap_err()
+                .contains("debt has no evidence")
+        );
     }
 
     #[test]

@@ -179,7 +179,7 @@ not self-evident from the fixture.
 | Golden inventory | complete | 4,400 converted OOXML cases: 2,707 DOCX, 798 PPTX, 895 XLSX. |
 | Comparison contract | defined | Fixed golden policy and layered comparison model recorded in this document. |
 | Incremental corpus harness | complete | Shared manifest/hash, document/text, and fixed-raster comparison helper plus exact-filterable ignored case test are in place. |
-| Admitted cases | 20 / 4,400 | PPTX: 20 admitted and all 20 pass the enabled comparison contract. |
+| Admitted cases | 29 / 4,400 | DOCX: 2, PPTX: 25, XLSX: 2; all admitted cases pass the enabled comparison contract. |
 | Failure clustering | active | Closed clusters now include editor-only placeholder prompts, inherited and shape-aware DrawingML shadows, slide-background fills, page-relative and transformed linear gradients, trailing duplicate gradient-stop normalization, transformed preset and custom shape geometry, vector bitmap clipping, rounded and arrow preset geometry, direct empty effect-list replacement, DrawingML theme-font and supplemental script-font resolution, PowerPoint text color/metric resolution, mixed-size centered text measurement, sRGB-relative grayscale image effects, clustered-column chart layout, automatic numeric-axis scaling, chart data-label visibility, fixed-format page-grid serialization, GDI+ gradient interpolation, and full-canvas EMF clip-mask replay. No admitted case is currently failing. |
 | Autonomous optimization | active | Continue one case at a time; rerun every admitted case and both affected subsystem crates. |
 
@@ -985,45 +985,60 @@ not self-evident from the fixture.
     bounds for axis-aligned rectangle clips, rotated-rectangle fallback, and
     empty rectangle intersections.
 
+### First Cross-Format Framework Batch
+
+Completed on 2026-07-18 without changing any golden PDF or manifest:
+
+- DOCX admitted `desktop/qa/data/blank_text.docx` and
+  `sw/qa/extras/ww8export/data/empty_group.docx`.
+- PPTX admitted `hidden_group_shape.pptx`, `tdf156808.pptx`,
+  `tdf157635.pptx`, `tdf157793.pptx`, and
+  `tdf169496_hidden_graphic.pptx`.
+- XLSX admitted `tdf135828_Shape_Rect.xlsx` and
+  `tdf169496_hidden_graphic.xlsx`.
+- `w:pgSz` dimensions now retain their normative twentieth-of-a-point values
+  instead of passing through LibreOffice's mm100 sloppy paper fitting. The
+  fixed-output profile's omitted-page-size default is A4, matching the recorded
+  Office environment.
+- MediaBox comparison accepts at most `0.1pt` of fixed-output quantization.
+  This covers the observed `0.04pt` difference between the exact 210 x 297mm
+  A4 conversion and Office's serialized MediaBox while remaining below one
+  raster pixel. Larger page-model differences still fail before text or raster
+  comparison.
+- Font-dependent DOCX candidates were not admitted. No UI-language-to-font
+  rule was inferred from the golden output alone.
+- Other screened candidates were not admitted: DOCX `cloud.docx` exceeded the
+  unchanged raster threshold; XLSX `empty_chart.xlsx` emitted an extra
+  candidate chart title, and `image_hyperlink.xlsx` had a page-count mismatch.
+
 ### Latest Verification
 
-Completed on 2026-07-15 using the default Cargo target directories:
+Completed on 2026-07-18 using the default Cargo target directories:
 
-- `cargo test -p ooxmlsdk-layout`: 90 implementation tests passed.
+- `cargo test -p ooxmlsdk-layout`: 97 implementation tests passed.
 - `cargo test -p ooxmlsdk-pdf`: 2 implementation tests passed.
-- `cargo test -p ooxmlsdk-layout-test`: all tests passed.
-- `cargo test -p ooxmlsdk-pdf-test`: all default tests passed, including 285
-  mapped DOCX, 198 mapped PPTX, and 197 mapped XLSX cases; Office corpus cases
-  remain ignored in the default lane by policy.
 - `cargo test -p ooxmlsdk-pdf-test --test office_golden_pptx -- --ignored`:
-  all twenty admitted cases passed together.
-- `cargo test -p ooxmlsdk-pdf-test --test mapped_pptx_pdf_fixtures
-  mapped_pptx_tdf113163_preserves_all_black_png_export_output -- --exact`:
-  passed.
-- `cargo test -p emfsdk --features render`: 93 tests passed.
-- `cargo clippy --workspace --all-targets --all-features -- -D warnings` in the
-  EMF SDK repository: passed.
-- `cargo clippy --workspace --all-targets -- -D warnings` in the implementation
-  repository:
-  passed.
-- `cargo clippy --workspace --tests -- -D warnings` in the test-suite
-  repository:
-  passed.
+  all 25 admitted PPTX cases passed together.
+- `cargo test -p ooxmlsdk-pdf-test --test office_golden_docx -- --ignored`:
+  both admitted DOCX cases passed together.
+- `cargo test -p ooxmlsdk-pdf-test --test office_golden_xlsx -- --ignored`:
+  both admitted XLSX cases passed together.
+- Workspace-wide tests and Clippy were intentionally not run for this focused
+  iteration.
 
 Comparison-layer counts for admitted cases:
 
 | Format | Conversion | Page geometry | Text | Graphics | Visible output |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| PPTX | 20 / 20 | 20 / 20 | 20 / 20 | 20 / 20 | 20 / 20 |
-| DOCX | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 |
-| XLSX | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 |
+| PPTX | 25 / 25 | 25 / 25 | 25 / 25 | 25 / 25 | 25 / 25 |
+| DOCX | 2 / 2 | 2 / 2 | 2 / 2 | 2 / 2 | 2 / 2 |
+| XLSX | 2 / 2 | 2 / 2 | 2 / 2 | 2 / 2 | 2 / 2 |
 
 ### Next Case
 
-No twenty-first case has been admitted yet. Select one PPTX whose first failing
-layer is independently diagnosable, record its source/golden hashes, and add
-exactly one ignored exact-filterable golden test. Do not start a second new
-case until that twenty-first case passes the same contract.
+Select the next font-independent case with an independently diagnosable first
+failure. Keep rejected candidates out of the admitted lanes, and rerun all
+cases for the affected format before admitting another batch.
 
 ## Recommended Implementation Order
 

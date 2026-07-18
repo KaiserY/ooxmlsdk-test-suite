@@ -19,6 +19,10 @@ const TEXT_EDGE_TOLERANCE_PT: f32 = 2.0;
 const TEXT_WIDTH_TOLERANCE_RATIO: f32 = 0.01;
 const TEXT_MASK_PADDING_PT: f32 = 1.0;
 const TEXT_FONT_SIZE_TOLERANCE_PT: f32 = 0.12;
+// ISO paper sizes convert to fractional PDF points, while Office serializes
+// the MediaBox through its fixed-output device grid. Keep this well below one
+// rendered pixel while accepting the observed sub-tenth-point quantization.
+const MEDIA_BOX_TOLERANCE_PT: f32 = 0.1;
 
 #[derive(Clone, Copy, Debug)]
 pub struct OfficeGoldenCase {
@@ -266,7 +270,7 @@ fn assert_document_contract(
         ]
         .into_iter()
         .fold(0.0_f32, f32::max);
-        if max_delta > 0.01 {
+        if max_delta > MEDIA_BOX_TOLERANCE_PT {
             return Err(CalibrationError::OfficeGolden(format!(
                 "case {case_id} page {page_index} media box mismatch: candidate={candidate_box:?}, golden={golden_box:?}"
             )));

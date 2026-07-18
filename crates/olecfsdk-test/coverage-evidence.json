@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "categories": {
+    "cfb": {},
+    "doc": {
+      "debt.malformed.object.missing_obj_info": {
+        "disposition": "malformed",
+        "summary": "These ObjectPool child storages are physically preserved, but they cannot be promoted to typed embedded-object nodes because the mandatory descriptor stream is absent.",
+        "specification": [
+          "[MS-DOC] 2.1.4.1 states that every storage within ObjectPool contains a \\003ObjInfo stream holding an ODT descriptor."
+        ],
+        "upstream": [
+          "LibreOffice ww8par4.cxx and msdffimp.cxx look up \\003ObjInfo when importing Word embedded objects, while wrtww8gr.cxx creates the four-byte descriptor stream when it is absent during export."
+        ],
+        "corpus_examples": [
+          "Apache-POI/test-data/document/Bug50936_3.doc (/ObjectPool/_1058353733)",
+          "Apache-POI/test-data/document/Bug53380_3.doc and 53379.doc (/ObjectPool/_991730255)",
+          "Apache-POI/test-data/document/equation.doc (/ObjectPool/_60575120)",
+          "LibreOffice/chart2/qa/extras/data/doc/chart.doc (/ObjectPool/_2147483647)"
+        ]
+      },
+      "debt.malformed.table.atrdextra": {
+        "disposition": "malformed",
+        "summary": "The FIB declares an AtrdExtra range beyond the bounded Table stream; compatible mode retains the declaration without inventing missing comment-extension records.",
+        "specification": [
+          "[MS-DOC] 2.9.5 defines AtrdExtra as an array parallel to PlcfandRef, and FibRgFcLcb2000 defines fcAtrdExtra/lcbAtrdExtra as its bounded Table-stream range."
+        ],
+        "upstream": [
+          "LibreOffice ww8scan.cxx accepts AtrdExtra only after both seeking to fcAtrdExtra and proving that the remaining Table stream contains lcbAtrdExtra bytes; otherwise it clears the length."
+        ],
+        "corpus_examples": [
+          "LibreOffice/sw/qa/core/data/ww8/pass/CVE-2007-1347-1.doc (declared AtrdExtra is outside the stream; zero recoverable bytes)"
+        ]
+      },
+      "debt.malformed.table.plcfwkb": {
+        "disposition": "malformed",
+        "summary": "The declared PlcfWKB payload is not a valid PLC of fixed twelve-byte WKB records, so its bytes are retained only as a known malformed table.",
+        "specification": [
+          "[MS-DOC] 2.9.281 defines PlcfWKB as a PLC whose data elements are WKB structures of exactly 12 bytes each."
+        ],
+        "upstream": [
+          "LibreOffice ww8scan.cxx constructs its PlcfWKB reader with a fixed 12-byte data-element size, and ww8struc.hxx models the corresponding WW8_WKB record."
+        ],
+        "corpus_examples": [
+          "LibreOffice/sw/qa/core/data/ww8/pass/CVE-2007-1347-1.doc (66-byte payload cannot satisfy PlcfWKB PLC framing)"
+        ]
+      },
+      "debt.specification_opaque.deprecated_numbering_field_cache": {
+        "disposition": "specification_opaque",
+        "summary": "The deprecated numbering field cache has no normative payload layout to expose as a Rust node; its bounded bytes remain explicit and preserved.",
+        "specification": [
+          "[MS-DOC] 2.5.6 says the cache at fcPlcfBteLvc SHOULD NOT be emitted, SHOULD be ignored, and lcbPlcfBteLvc SHOULD be zero; product notes say Word 2007 and later write zero."
+        ],
+        "upstream": [
+          "Apache POI names FIB field 86 as PLCFBTELVC but deliberately omits it from FileInformationBlock's typed known-field set, causing the generic unhandled-data preservation path to own it."
+        ],
+        "corpus_examples": [
+          "Audited Apache POI and LibreOffice DOC corpus (114 bounded legacy cache ranges, 1,952 bytes total)"
+        ]
+      },
+      "debt.unknown_extension.table.msoenvelope.version_454682": {
+        "disposition": "unknown_extension",
+        "summary": "The payload occupies the MsoEnvelope FIB range but declares version 454682, outside the version-dependent layouts documented for versions 6 and 8; its 554 bytes are preserved without guessing an encoding.",
+        "specification": [
+          "[MS-OSHARED] 2.3.8.2 defines MsoEnvelope and specifies its strings and optional fields only for Ver 6 and Ver 8."
+        ],
+        "upstream": [
+          "Apache POI HWPF has no typed MsoEnvelope decoder and routes unrecognized FIB-referenced data through its UnhandledDataStructure preservation mechanism."
+        ],
+        "corpus_examples": [
+          "Apache-POI/test-data/document/Bug52032_2.doc (MsoEnvelope Ver 454682, 554 preserved bytes)"
+        ]
+      }
+    },
+    "xls": {},
+    "ppt": {
+      "debt.compatibility.type_0x0000": {
+        "disposition": "compatibility",
+        "summary": "Producer padding and legacy envelopes use recType 0x0000; preserve them, but do not treat them as a new MS-PPT extension.",
+        "specification": [
+          "[MS-PPT] 2.1.2 permits unknown child records to be ignored and optionally preserved; 2.13.24 does not assign recType 0x0000."
+        ],
+        "upstream": [
+          "Apache POI RecordTypes declares Unknown(0, null), preserves it through UnknownRecordPlaceholder, and TestBugs.bug38256 locks a real type-0 producer regression."
+        ],
+        "corpus_examples": [
+          "Apache-POI/test-data/slideshow/38256.ppt (60 zero-length padding records)",
+          "Apache-POI/test-data/slideshow/bug56240.ppt (one 65,535-byte legacy producer envelope)"
+        ]
+      },
+      "debt.compatibility.type_0x200a": {
+        "disposition": "compatibility",
+        "summary": "A producer-specific eight-byte handout atom has a stable layout but no assignment in the current MS-PPT RecordType enumeration.",
+        "specification": [
+          "[MS-PPT] 2.1.2 defines preservation for records absent from 2.13.24; recType 0x200A is absent from that enumeration."
+        ],
+        "upstream": [
+          "Neither Apache POI RecordTypes nor LibreOffice svdfppt.hxx assigns recType 0x200A; olecfsdk preserves its observed fixed eight-byte form as HandoutCompatibilityAtom."
+        ],
+        "corpus_examples": [
+          "LibreOffice/sd/qa/unit/data/ppt/pass/crash-2.ppt (one version-2, instance-1, eight-byte record)"
+        ]
+      },
+      "debt.unknown_extension.type_0x0080": {
+        "disposition": "unknown_extension",
+        "summary": "Structurally framed zero-length record with an unassigned recType; its semantics remain unknown and its bytes are preserved.",
+        "specification": [
+          "[MS-PPT] 2.1.2 requires unknown recType values to be ignored and permits preservation; 2.13.24 does not assign 0x0080."
+        ],
+        "upstream": [
+          "Apache POI RecordTypes.forTypeID falls back to UnknownRecordPlaceholder, while LibreOffice svdfppt.hxx has no 0x0080 record constant."
+        ],
+        "corpus_examples": [
+          "LibreOffice/sd/qa/unit/data/ppt/pass/crash-2.ppt (offset 0x44C, version 0, instance 0x808, length 0)"
+        ]
+      },
+      "debt.unknown_extension.type_0x779f": {
+        "disposition": "unknown_extension",
+        "summary": "Structurally framed four-byte record with an unassigned recType; its semantics remain unknown and its bytes are preserved.",
+        "specification": [
+          "[MS-PPT] 2.1.2 requires unknown recType values to be ignored and permits preservation; 2.13.24 does not assign 0x779F."
+        ],
+        "upstream": [
+          "Apache POI RecordTypes.forTypeID falls back to UnknownRecordPlaceholder, while LibreOffice svdfppt.hxx has no 0x779F record constant."
+        ],
+        "corpus_examples": [
+          "LibreOffice/sd/qa/unit/data/ppt/pass/EDB-39395-1.ppt (offset 0x2B25D, version 0, instance 0, length 4)"
+        ]
+      }
+    },
+    "vba": {},
+    "ole_property_set": {},
+    "office_art": {
+      "debt.malformed.type_0xf004": {
+        "disposition": "malformed",
+        "summary": "recType 0xF004 is the known OfficeArtSpContainer container type, but one producer emitted it with atom framing; preserve the nonconforming body without calling it an extension.",
+        "specification": [
+          "[MS-ODRAW] 2.2.14 defines OfficeArtSpContainer as a container record with recVer 0xF."
+        ],
+        "upstream": [
+          "Apache POI EscherRecordTypes and LibreOffice OfficeArt constants both identify 0xF004 as the shape-container type."
+        ],
+        "corpus_examples": [
+          "Audited DOC/XLS/PPT OfficeArt corpus (one atom-framed 0xF004 record, 66 body bytes)"
+        ]
+      }
+    },
+    "forms": {}
+  }
+}
