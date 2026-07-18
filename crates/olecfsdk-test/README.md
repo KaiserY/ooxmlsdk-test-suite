@@ -68,12 +68,12 @@ four-byte zero `dir` Reserved field is modeled and checked, not counted as an
 unexplained tail.
 
 Forms coverage recursively inventories the control tree instead of counting
-only root storages. The six corpus roots contain eight parent storages and
-eight Sites: six streamed controls plus two embedded parent controls. Their
-observed persistence is two command buttons, three list-box MorphData controls,
-and one tab strip; all eight Sites are typed. Class-table entries, external COM
-persistence, compatibility, malformed, specification-opaque, temporary-untyped,
-and unknown-extension Sites have explicit zero ceilings.
+only roots with a control CLSID. Twelve outermost storages with direct `f`/`o`
+streams contain 18 parent storages and 60 Sites, including zero-CLSID UserForms
+and nested Page/Frame/MultiPage controls without double-counting them as roots.
+All 60 Sites are typed. Class-table entries, external COM persistence,
+compatibility, malformed, specification-opaque, temporary-untyped, and
+unknown-extension Sites retain explicit ceilings.
 
 DOC coverage walks the file root rather than stopping at text pieces. The 403
 supported roots currently contain 89,587 table/data/object/content nodes:

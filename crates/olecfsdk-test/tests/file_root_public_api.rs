@@ -8,20 +8,328 @@ use olecfsdk::{
     Error, Result, SaveOptions,
     cfb::CompoundFile,
     common::CodePage,
-    doc::{DocFile, TextPieceCharacters},
-    forms::FormPropertyMask,
+    doc::{
+        DocBlockRef, DocCp, DocFile, DocOutlineLevel, FieldDocumentPart, TextPieceCharacters,
+        TextPieceEncoding,
+    },
+    forms::{FormPropertyMask, LocatedParentControlStorage},
     ppt::{
-        CurrentUserData, ExternalStorageAtom, ExternalStorageVba, PptFile, PptRecordData,
-        PptSlideId,
+        CurrentUserData, ExternalStorageAtom, ExternalStorageVba, PptFile, PptLiveNotesLink,
+        PptLiveTextAtomRef, PptPlaceholderType, PptRecordData, PptSlideId, PptTextEncoding,
+        PptTextType,
     },
     property_set::{Property, PropertySetStream, PropertyType, TypedPropertyValue},
     shared_content::{OfficePropertySetKind, OfficeSharedContent},
     vba::cache::VbaProjectStream,
-    xls::{XlStringCharacters, XlsFile, XlsSheetId, XlsStreamName},
+    xls::{
+        ObjPictureFlags, ShortXlUnicodeString, XlsCellValue, XlsFile, XlsFormulaCachedValue,
+        XlsHyperlinkTarget, XlsNumberFormatRef, XlsObjectPersistenceRef, XlsSheetId, XlsStreamName,
+    },
 };
 use olecfsdk_corpus_test_support::corpus_file_path;
 
 static TEMP_FILE_SEQUENCE: AtomicU64 = AtomicU64::new(0);
+
+#[test]
+fn ppt_slide_shape_text_placeholder_and_notes_relationships_are_native() {
+    let basic = PptFile::open(fixture(
+        "Apache-POI/test-data/slideshow/basic_test_ppt_file.ppt",
+    ))
+    .expect("strictly open PPT relationship fixture");
+    assert_basic_ppt_relationships(&basic);
+    let basic_bytes = basic.to_bytes().expect("save PPT relationship fixture");
+    let basic_reopened =
+        PptFile::from_bytes(&basic_bytes).expect("strictly reopen PPT relationship fixture");
+    assert_basic_ppt_relationships(&basic_reopened);
+
+    let mixed = PptFile::open(fixture("Apache-POI/test-data/slideshow/SampleShow.ppt"))
+        .expect("strictly open mixed-encoding PPT fixture");
+    assert_mixed_ppt_text_and_notes(&mixed);
+    let mixed_bytes = mixed.to_bytes().expect("save mixed-encoding PPT fixture");
+    let mixed_reopened =
+        PptFile::from_bytes(&mixed_bytes).expect("strictly reopen mixed-encoding PPT fixture");
+    assert_mixed_ppt_text_and_notes(&mixed_reopened);
+    assert_second_cycle_logically_stable(
+        mixed_reopened.source_compound_file(),
+        &mixed_reopened
+            .to_bytes()
+            .expect("save mixed-encoding PPT a second time"),
+    );
+}
+
+#[test]
+fn ppt_table_marker_and_child_shape_identity_are_native() {
+    let file = PptFile::open(fixture("Apache-POI/test-data/slideshow/table_test.ppt"))
+        .expect("strictly open PPT table fixture");
+    assert_ppt_table_relationships(&file);
+    let bytes = file.to_bytes().expect("save PPT table fixture");
+    let reopened = PptFile::from_bytes(&bytes).expect("strictly reopen PPT table fixture");
+    assert_ppt_table_relationships(&reopened);
+    assert_second_cycle_logically_stable(
+        reopened.source_compound_file(),
+        &reopened.to_bytes().expect("save PPT table a second time"),
+    );
+}
+
+#[test]
+fn ppt_utf16_is_string_and_unpaired_surrogate_is_compatible_only() {
+    let path = fixture("Apache-POI/test-data/slideshow/54880_chinese.ppt");
+    let source = fs::read(&path).expect("read PPT UTF-16 fixture");
+    let file = PptFile::from_bytes(&source).expect("strictly open PPT UTF-16 fixture");
+    let live = file
+        .live_presentation()
+        .expect("resolve strict PPT UTF-16 presentation");
+    let slides = live.slides().expect("resolve strict PPT UTF-16 slides");
+    assert_eq!(slides.len(), 1);
+    let atoms = slides[0]
+        .object
+        .record_text_bodies()
+        .into_iter()
+        .flat_map(|body| body.character_atoms())
+        .collect::<Vec<_>>();
+    assert_eq!(atoms.len(), 1);
+    let PptLiveTextAtomRef::String {
+        source_record,
+        value,
+        encoding,
+    } = atoms[0]
+    else {
+        panic!("strict PPT UTF-16 text is a Rust string");
+    };
+    assert_eq!(encoding, PptTextEncoding::Utf16);
+    assert_eq!(
+        source_record.header.record_type,
+        olecfsdk::ppt::TEXT_CHARS_ATOM
+    );
+    assert_eq!(
+        value,
+        "Single byte\r複数の文字\rカタカナ\rﾊﾝｶｸ\r表十ソ\r𠮟\r表Mixパﾋﾟ𠮟"
+    );
+    let units = value.encode_utf16().collect::<Vec<_>>();
+    let unit_index = units
+        .windows(2)
+        .position(|pair| pair == [0xd842, 0xdf9f])
+        .expect("PPT UTF-16 text contains the expected surrogate pair");
+    let record_offset = source_record.offset;
+
+    let strict_bytes = file.to_bytes().expect("save conforming PPT UTF-16");
+    let strict_reopened =
+        PptFile::from_bytes(&strict_bytes).expect("strictly reopen conforming PPT UTF-16");
+    assert_second_cycle_logically_stable(
+        strict_reopened.source_compound_file(),
+        &strict_reopened
+            .to_bytes()
+            .expect("save conforming PPT UTF-16 a second time"),
+    );
+
+    let mut malformed = CompoundFile::from_bytes(&source).expect("open PPT UTF-16 CFB");
+    let document = malformed
+        .stream_mut("/PowerPoint Document")
+        .expect("PPT has PowerPoint Document stream");
+    let byte_offset = usize::try_from(record_offset)
+        .expect("PPT record offset fits usize")
+        .checked_add(8 + (unit_index + 1) * 2)
+        .expect("PPT UTF-16 byte offset does not overflow");
+    document[byte_offset..byte_offset + 2].copy_from_slice(&u16::from(b'A').to_le_bytes());
+    let malformed_bytes = malformed
+        .to_bytes()
+        .expect("serialize malformed PPT UTF-16");
+
+    let strict_error = PptFile::from_bytes(&malformed_bytes)
+        .expect_err("strict PPT rejects an unpaired UTF-16 surrogate");
+    assert!(strict_error.to_string().contains("unpaired surrogate"));
+
+    let compatible = PptFile::from_bytes_compatible(&malformed_bytes)
+        .expect("compatible PPT preserves an unpaired UTF-16 surrogate");
+    assert!(compatible.diagnostics.iter().any(|diagnostic| {
+        diagnostic.structure == "TextCharsAtom" && diagnostic.message.contains("unpaired surrogate")
+    }));
+    let compatible_live = compatible
+        .value
+        .live_presentation_compatible()
+        .expect("resolve compatible PPT presentation")
+        .into_value();
+    let compatible_slides = compatible_live
+        .slides_compatible()
+        .expect("resolve compatible PPT slides");
+    let compatible_atoms = compatible_slides[0]
+        .object
+        .record_text_bodies()
+        .into_iter()
+        .flat_map(|body| body.character_atoms())
+        .collect::<Vec<_>>();
+    assert_eq!(compatible_atoms.len(), 1);
+    let PptLiveTextAtomRef::CompatibilityUtf16 { code_units, .. } = compatible_atoms[0] else {
+        panic!("malformed PPT UTF-16 remains an explicit compatibility value");
+    };
+    assert_eq!(&code_units[unit_index..unit_index + 2], &[0xd842, 0x0041]);
+    assert!(compatible.value.to_bytes().is_err());
+
+    let saved = compatible
+        .value
+        .to_bytes_preserving_compatibility()
+        .expect("preserve malformed PPT UTF-16 explicitly");
+    let reopened = PptFile::from_bytes_compatible(&saved)
+        .expect("compatibly reopen malformed PPT UTF-16")
+        .value;
+    let reopened_live = reopened
+        .live_presentation_compatible()
+        .expect("resolve reopened compatible PPT presentation")
+        .into_value();
+    let reopened_slides = reopened_live
+        .slides_compatible()
+        .expect("resolve reopened compatible PPT slides");
+    let reopened_atoms = reopened_slides[0]
+        .object
+        .record_text_bodies()
+        .into_iter()
+        .flat_map(|body| body.character_atoms())
+        .collect::<Vec<_>>();
+    let PptLiveTextAtomRef::CompatibilityUtf16 { code_units, .. } = reopened_atoms[0] else {
+        panic!("reopened malformed PPT UTF-16 remains explicit");
+    };
+    assert_eq!(&code_units[unit_index..unit_index + 2], &[0xd842, 0x0041]);
+    assert_second_cycle_logically_stable(
+        reopened.source_compound_file(),
+        &reopened
+            .to_bytes_preserving_compatibility()
+            .expect("save malformed PPT UTF-16 a second time"),
+    );
+}
+
+#[test]
+fn xls_cells_formulas_formats_comments_hyperlinks_and_merges_are_native() {
+    assert_strict_xls_cycle(
+        "Apache-POI/test-data/spreadsheet/SimpleWithFormula.xls",
+        assert_xls_formula_values,
+    );
+    assert_strict_xls_cycle(
+        "Apache-POI/test-data/spreadsheet/Formatting.xls",
+        assert_xls_number_formats,
+    );
+    assert_strict_xls_cycle(
+        "Apache-POI/test-data/spreadsheet/SimpleWithComments.xls",
+        assert_xls_comments,
+    );
+    assert_strict_xls_cycle(
+        "Apache-POI/test-data/spreadsheet/WithTwoHyperLinks.xls",
+        assert_xls_hyperlinks,
+    );
+    assert_strict_xls_cycle(
+        "Apache-POI/test-data/spreadsheet/13796.xls",
+        assert_xls_merged_range,
+    );
+}
+
+#[test]
+fn doc_sections_join_main_ranges_sed_sepx_and_blocks() {
+    let file = DocFile::open(fixture("Apache-POI/test-data/document/Bug53453Section.doc"))
+        .expect("strictly open DOC section fixture");
+    assert_doc_sections(&file);
+    let bytes = file.to_bytes().expect("save DOC section fixture");
+    let reopened = DocFile::from_bytes(&bytes).expect("strictly reopen DOC section fixture");
+    assert_doc_sections(&reopened);
+    assert_second_cycle_logically_stable(
+        reopened.source_compound_file(),
+        &reopened
+            .to_bytes()
+            .expect("save DOC sections a second time"),
+    );
+}
+
+#[test]
+fn doc_paragraph_style_outline_and_block_order_are_native() {
+    let file = DocFile::open(fixture("Apache-POI/test-data/document/Lists.doc"))
+        .expect("strictly open DOC outline fixture");
+    let tree = file.content_tree().expect("traverse DOC outline fixture");
+    let main = tree.part(FieldDocumentPart::Main).expect("DOC Main part");
+    let blocks = main.blocks().expect("derive DOC block order");
+    assert!(blocks.diagnostics().is_empty());
+    assert_eq!(blocks.blocks().len(), 40);
+    assert!(
+        blocks
+            .blocks()
+            .iter()
+            .all(|block| matches!(block, DocBlockRef::Paragraph(_)))
+    );
+    let expected_boundaries = [
+        0, 16, 68, 85, 90, 95, 123, 138, 143, 148, 206, 213, 220, 249, 256, 263, 270, 277, 284,
+        291, 298, 305, 312, 319, 326, 352, 357, 362, 369, 376, 385, 394, 405, 414, 419, 472, 486,
+        501, 522, 531, 532,
+    ];
+    assert_eq!(
+        blocks
+            .blocks()
+            .iter()
+            .map(|block| {
+                let range = block.local_cp_range();
+                (range.start.value(), range.end.value())
+            })
+            .collect::<Vec<_>>(),
+        expected_boundaries
+            .windows(2)
+            .map(|range| (range[0], range[1]))
+            .collect::<Vec<_>>()
+    );
+
+    let paragraphs = main.paragraphs().collect::<Vec<_>>();
+    let styles = paragraphs
+        .iter()
+        .map(|paragraph| paragraph.style().expect("resolve paragraph style"))
+        .collect::<Vec<_>>();
+    assert_eq!(styles[0].style_index(), 1);
+    assert_eq!(styles[0].source().base.invariant_style_id, 1);
+    let inherited = styles[0].properties().expect("resolve inherited style");
+    assert_eq!(inherited.style_index, 1);
+    assert_eq!(inherited.lineage.last(), Some(&1));
+    assert_eq!(
+        paragraphs
+            .iter()
+            .enumerate()
+            .filter_map(|(index, paragraph)| {
+                let level = paragraph.outline_level().expect("resolve outline level");
+                (level != DocOutlineLevel::BodyText).then_some((
+                    index,
+                    paragraph.local_cp_range().start.value(),
+                    level,
+                ))
+            })
+            .collect::<Vec<_>>(),
+        vec![(0, 0, DocOutlineLevel::Level1)]
+    );
+}
+
+#[test]
+fn doc_blocks_emit_tables_once_and_preserve_nested_table_identity() {
+    let strict = DocFile::open(fixture("Apache-POI/test-data/document/simple-table.doc"))
+        .expect("strictly open DOC table fixture");
+    assert_simple_doc_table_blocks(&strict);
+    let strict_bytes = strict.to_bytes().expect("save strict DOC table fixture");
+    assert_simple_doc_table_blocks(
+        &DocFile::from_bytes(&strict_bytes).expect("strictly reopen DOC table fixture"),
+    );
+
+    let nested_path = fixture("Apache-POI/test-data/document/innertable.doc");
+    assert!(DocFile::open(&nested_path).is_err());
+    let nested =
+        DocFile::open_compatible(&nested_path).expect("compatibly open nested DOC table fixture");
+    assert!(!nested.diagnostics.is_empty());
+    assert_nested_doc_table_blocks(&nested.value);
+    let nested_bytes = nested
+        .value
+        .to_bytes_preserving_compatibility()
+        .expect("preserve compatible nested DOC table fixture");
+    let reopened = DocFile::from_bytes_compatible(&nested_bytes)
+        .expect("compatibly reopen nested DOC table fixture")
+        .value;
+    assert_nested_doc_table_blocks(&reopened);
+    assert_second_cycle_logically_stable(
+        reopened.source_compound_file(),
+        &reopened
+            .to_bytes_preserving_compatibility()
+            .expect("save nested DOC table fixture a second time"),
+    );
+}
 
 struct TempOutput(PathBuf);
 
@@ -82,17 +390,8 @@ fn doc_public_file_root_opens_edits_saves_and_reopens() {
 
     let source_snapshot = file.source_compound_file().clone();
     let (cp, replacement, expected) = first_editable_doc_character(&file);
-    let incompatible_replacement = match &replacement {
-        TextPieceCharacters::Compressed(_) => TextPieceCharacters::Utf16(vec![expected]),
-        TextPieceCharacters::Utf16(_) => {
-            TextPieceCharacters::Compressed(vec![u8::try_from(expected).unwrap_or(b'X')])
-        }
-    };
     let before_failed_edit = file.clone();
-    assert!(
-        file.replace_main_text_range(cp..cp + 1, incompatible_replacement)
-            .is_err()
-    );
+    assert!(file.replace_main_text_range(cp..cp + 1, "\r").is_err());
     assert_eq!(file, before_failed_edit);
     file.replace_main_text_range(cp..cp + 1, replacement)
         .expect("edit DOC text through the file-root API");
@@ -121,6 +420,125 @@ fn doc_public_file_root_opens_edits_saves_and_reopens() {
 }
 
 #[test]
+fn doc_utf16_is_string_and_unpaired_surrogate_is_compatible_only() {
+    let path = fixture("Apache-POI/test-data/document/simple.doc");
+    let source = fs::read(&path).expect("read DOC UTF-16 upgrade fixture");
+    let file = DocFile::from_bytes(&source).expect("strictly open DOC UTF-16 upgrade fixture");
+    let (emoji_cp, _, _) = first_editable_doc_character(&file);
+    let mut emoji_file = file.clone();
+    emoji_file
+        .replace_main_text_range(emoji_cp..emoji_cp + 1, "😀")
+        .expect("replace one DOC code unit with a surrogate pair");
+    let emoji_bytes = emoji_file.to_bytes().expect("save DOC surrogate pair");
+    let emoji_reopened = DocFile::from_bytes(&emoji_bytes).expect("strictly reopen DOC emoji");
+    let emoji_main = emoji_reopened
+        .content_tree()
+        .expect("traverse DOC emoji content")
+        .part(FieldDocumentPart::Main)
+        .expect("DOC has Main part");
+    assert_eq!(emoji_main.character_at(DocCp::new(emoji_cp)), Some(0xd83d));
+    assert_eq!(
+        emoji_main.character_at(DocCp::new(emoji_cp + 1)),
+        Some(0xde00)
+    );
+    assert!(
+        emoji_reopened
+            .word_document
+            .text_pieces
+            .iter()
+            .any(|piece| {
+                matches!(
+                    &piece.value.characters,
+                    TextPieceCharacters::String(value) if value.value.contains('😀')
+                )
+            })
+    );
+    assert_second_cycle_logically_stable(
+        emoji_reopened.source_compound_file(),
+        &emoji_reopened
+            .to_bytes()
+            .expect("save DOC emoji second cycle"),
+    );
+
+    let (piece_index, file_offset, unit_index) = emoji_reopened
+        .word_document
+        .text_pieces
+        .iter()
+        .enumerate()
+        .find_map(|(piece_index, piece)| {
+            let TextPieceCharacters::String(value) = &piece.value.characters else {
+                return None;
+            };
+            if value.encoding != TextPieceEncoding::Utf16 {
+                return None;
+            }
+            let units = value.value.encode_utf16().collect::<Vec<_>>();
+            let unit_index = units.windows(2).position(|pair| pair == [0xd83d, 0xde00])?;
+            Some((piece_index, piece.value.file_offset, unit_index))
+        })
+        .expect("reopened DOC has the inserted surrogate pair");
+
+    let mut malformed =
+        CompoundFile::from_bytes(&emoji_bytes).expect("open DOC surrogate-pair CFB");
+    let word = malformed
+        .stream_mut("/WordDocument")
+        .expect("Unicode DOC has WordDocument stream");
+    let byte_offset = usize::try_from(file_offset)
+        .expect("DOC file offset fits usize")
+        .checked_add((unit_index + 1) * 2)
+        .expect("DOC UTF-16 byte offset does not overflow");
+    word[byte_offset..byte_offset + 2].copy_from_slice(&u16::from(b'A').to_le_bytes());
+    let malformed_bytes = malformed
+        .to_bytes()
+        .expect("serialize malformed Unicode DOC");
+
+    let strict_error = DocFile::from_bytes(&malformed_bytes)
+        .expect_err("strict DOC rejects an unpaired UTF-16 surrogate");
+    assert!(
+        strict_error
+            .to_string()
+            .contains("unpaired UTF-16 surrogate")
+    );
+
+    let compatible = DocFile::from_bytes_compatible(&malformed_bytes)
+        .expect("compatible DOC preserves an unpaired UTF-16 surrogate");
+    assert!(compatible.diagnostics.iter().any(|diagnostic| {
+        diagnostic.structure == "PlcPcd" && diagnostic.message.contains("unpaired UTF-16 surrogate")
+    }));
+    let compatible_units = compatible.value.word_document.text_pieces[piece_index]
+        .value
+        .characters
+        .compatibility_code_units()
+        .expect("malformed text piece is an explicit compatibility value");
+    assert_eq!(
+        &compatible_units[unit_index..unit_index + 2],
+        &[0xd83d, 0x0041]
+    );
+    assert!(compatible.value.to_bytes().is_err());
+
+    let saved = compatible
+        .value
+        .to_bytes_preserving_compatibility()
+        .expect("preserve malformed DOC UTF-16 explicitly");
+    let reopened = DocFile::from_bytes_compatible(&saved)
+        .expect("compatibly reopen malformed DOC UTF-16")
+        .value;
+    assert_eq!(
+        reopened.word_document.text_pieces[piece_index]
+            .value
+            .characters
+            .compatibility_code_units()
+            .expect("reopened malformed text remains explicit")[unit_index..unit_index + 2],
+        [0xd83d, 0x0041]
+    );
+    assert!(
+        CompoundFile::from_bytes(&malformed_bytes)
+            .expect("reopen malformed source CFB")
+            .logical_eq(reopened.source_compound_file())
+    );
+}
+
+#[test]
 fn xls_public_file_root_opens_edits_saves_and_reopens() {
     let path = fixture("Apache-POI/test-data/spreadsheet/Simple.xls");
     let bytes = fs::read(&path).expect("read XLS fixture");
@@ -143,10 +561,7 @@ fn xls_public_file_root_opens_edits_saves_and_reopens() {
     let (workbook_name, sheet_id, edited_name) = xls_sheet_name_edit(&file);
     let source_snapshot = file.source_compound_file().clone();
     let mut invalid_name = edited_name.clone();
-    match &mut invalid_name.characters {
-        XlStringCharacters::Compressed(characters) => characters.clear(),
-        XlStringCharacters::Unicode(characters) => characters.clear(),
-    }
+    invalid_name.value.clear();
     let before_failed_edit = file.clone();
     assert!(
         file.set_sheet_name(workbook_name, sheet_id, invalid_name)
@@ -180,6 +595,30 @@ fn xls_public_file_root_opens_edits_saves_and_reopens() {
         saved.source_compound_file(),
         &saved.to_bytes().expect("save XLS a second time"),
     );
+}
+
+#[test]
+fn xls_sheet_name_uses_lossless_rust_string_with_physical_encoding_metadata() {
+    let path = fixture("Apache-POI/test-data/spreadsheet/Simple.xls");
+    let source = fs::read(&path).expect("read XLS Unicode fixture");
+    for (value, expected_utf16_flag, expected_code_units) in [("Café", 0, 4), ("A😀中", 1, 4)] {
+        let mut file = XlsFile::from_bytes(&source).expect("strictly open XLS Unicode fixture");
+        let (workbook_name, sheet_id, _) = xls_sheet_name_edit(&file);
+        let name = ShortXlUnicodeString::new(value);
+        assert_eq!(name.value, value);
+        assert_eq!(name.flags & 1, expected_utf16_flag);
+        assert_eq!(name.value.encode_utf16().count(), expected_code_units);
+
+        file.set_sheet_name(workbook_name, sheet_id, name.clone())
+            .expect("set Rust String sheet name");
+        let saved = file.to_bytes().expect("save Rust String sheet name");
+        let reopened = XlsFile::from_bytes(&saved).expect("strictly reopen Rust String sheet name");
+        assert_eq!(xls_sheet_name(&reopened, workbook_name, sheet_id), name);
+        assert_second_cycle_logically_stable(
+            reopened.source_compound_file(),
+            &reopened.to_bytes().expect("save Unicode XLS second cycle"),
+        );
+    }
 }
 
 #[test]
@@ -393,6 +832,13 @@ fn host_forms_designer_is_owned_transactional_and_cycle_stable() {
             .expect("canonicalize Forms fixture CFB metadata"),
     )
     .expect("reopen canonical Forms fixture CFB");
+    assert_eq!(
+        LocatedParentControlStorage::discover_root_paths_below(
+            &forms_source,
+            Path::new("/_VBA_PROJECT_CUR"),
+        ),
+        vec![PathBuf::from("/_VBA_PROJECT_CUR/UserForm1")]
+    );
     let mut xls_compound = forms_source.clone();
     insert_test_vba_signature(&mut xls_compound);
     let mut xls = XlsFile::from_compound_file(xls_compound).expect("open Forms XLS strictly");
@@ -537,6 +983,87 @@ fn host_forms_designer_is_owned_transactional_and_cycle_stable() {
             .to_bytes()
             .expect("save Forms PPT second cycle"),
     );
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct XlsActiveXPersistenceSnapshot {
+    workbook: XlsStreamName,
+    sheet: XlsSheetId,
+    object_id: u16,
+    stream_path: PathBuf,
+    offset: u32,
+    data: Vec<u8>,
+}
+
+#[test]
+fn xls_activex_host_relationship_resolves_exact_ctls_slices_across_save() {
+    let path = fixture("Apache-POI/test-data/spreadsheet/WithCheckBoxes.xls");
+    let bytes = fs::read(&path).expect("read XLS ActiveX fixture");
+    let file = XlsFile::from_bytes_compatible(&bytes)
+        .expect("compatibly open XLS ActiveX fixture")
+        .value;
+    let before = xls_activex_persistence_snapshot(&file);
+    assert_eq!(before.len(), 1);
+    assert_eq!(before[0].stream_path, Path::new("/Ctls"));
+    assert_eq!(before[0].offset, 0);
+    assert_eq!(before[0].data.len(), 104);
+
+    let saved = file
+        .to_bytes_preserving_compatibility()
+        .expect("save XLS ActiveX fixture");
+    let reopened = XlsFile::from_bytes_compatible(&saved)
+        .expect("compatibly reopen XLS ActiveX fixture")
+        .value;
+    assert_eq!(xls_activex_persistence_snapshot(&reopened), before);
+    assert_second_cycle_logically_stable(
+        reopened.source_compound_file(),
+        &reopened
+            .to_bytes_preserving_compatibility()
+            .expect("save XLS ActiveX fixture second cycle"),
+    );
+}
+
+fn xls_activex_persistence_snapshot(file: &XlsFile) -> Vec<XlsActiveXPersistenceSnapshot> {
+    let inventory = file.storages_and_streams_compatible();
+    let mut snapshot = Vec::new();
+    for workbook in &file.workbooks {
+        let view = workbook
+            .relationships_compatible()
+            .expect("traverse XLS ActiveX workbook relationships");
+        for sheet in view.sheets() {
+            for object in sheet.objects() {
+                if !object
+                    .picture_flags()
+                    .is_some_and(|flags| flags.contains(ObjPictureFlags::CONTROL_STREAM))
+                {
+                    continue;
+                }
+                let persistence = inventory
+                    .resolve_object_persistence_compatible(&view, object)
+                    .expect("resolve ActiveX Obj persistence");
+                let Some(XlsObjectPersistenceRef::ControlStream {
+                    stream,
+                    offset,
+                    data,
+                }) = persistence
+                else {
+                    panic!("ActiveX Obj must resolve to an exact Ctls stream slice");
+                };
+                snapshot.push(XlsActiveXPersistenceSnapshot {
+                    workbook: workbook.name,
+                    sheet: sheet.id(),
+                    object_id: object
+                        .id()
+                        .expect("ActiveX Obj has an FtCmo identity")
+                        .value(),
+                    stream_path: stream.path.clone(),
+                    offset,
+                    data: data.to_vec(),
+                });
+            }
+        }
+    }
+    snapshot
 }
 
 fn shared_form_picture_tiling(shared: &OfficeSharedContent) -> bool {
@@ -1048,12 +1575,686 @@ fn fixture(relative_path: &str) -> PathBuf {
     path
 }
 
+fn assert_strict_xls_cycle(relative: &str, verify: fn(&XlsFile)) {
+    let file = XlsFile::open(fixture(relative)).expect("strictly open XLS native-object fixture");
+    verify(&file);
+    let bytes = file.to_bytes().expect("save XLS native-object fixture");
+    let reopened = XlsFile::from_bytes(&bytes).expect("strictly reopen XLS native-object fixture");
+    verify(&reopened);
+    assert_second_cycle_logically_stable(
+        reopened.source_compound_file(),
+        &reopened
+            .to_bytes()
+            .expect("save XLS native-object fixture a second time"),
+    );
+}
+
+fn assert_xls_formula_values(file: &XlsFile) {
+    assert_eq!(file.workbooks.len(), 1);
+    let view = file.workbooks[0]
+        .relationships()
+        .expect("resolve strict XLS formula relationships");
+    assert_eq!(view.sheets().len(), 3);
+    let sheet = view.sheets()[0];
+    let index = sheet
+        .sparse_cell_index()
+        .expect("build strict XLS formula cell index");
+    assert_eq!(index.len(), 3);
+    let first = index.cell(0, 0).expect("lookup A1").expect("A1 exists");
+    let second = index.cell(1, 0).expect("lookup A2").expect("A2 exists");
+    let formula_cell = index.cell(2, 0).expect("lookup A3").expect("A3 exists");
+    assert_eq!(
+        view.resolve_cell_value(&index, first)
+            .expect("resolve A1 stored value"),
+        XlsCellValue::String("replaceme".to_owned())
+    );
+    assert_eq!(
+        view.resolve_cell_value(&index, second)
+            .expect("resolve A2 stored value"),
+        XlsCellValue::String("replaceme".to_owned())
+    );
+    assert_eq!(
+        view.resolve_cell_value(&index, formula_cell)
+            .expect("resolve A3 formula cache"),
+        XlsCellValue::Formula(XlsFormulaCachedValue::String(
+            "replacemereplaceme".to_owned()
+        ))
+    );
+    let formula = index
+        .resolve_cell_formula(formula_cell)
+        .expect("resolve A3 formula relationship")
+        .expect("A3 is a formula cell");
+    assert!(std::ptr::eq(
+        formula.source_record(),
+        formula_cell.source_record()
+    ));
+    assert_eq!(formula.formula().tokens.rgce.tokens.len(), 3);
+    assert!(matches!(
+        formula.definition(),
+        olecfsdk::xls::XlsFormulaDefinitionRef::Inline(_)
+    ));
+    assert_eq!(
+        formula
+            .cached_value()
+            .expect("resolve native formula cache"),
+        XlsFormulaCachedValue::String("replacemereplaceme".to_owned())
+    );
+}
+
+fn assert_xls_number_formats(file: &XlsFile) {
+    let view = file.workbooks[0]
+        .relationships()
+        .expect("resolve strict XLS formatting relationships");
+    let sheet = view.sheets()[0];
+    let index = sheet
+        .sparse_cell_index()
+        .expect("build strict XLS formatting cell index");
+    let built_in_cell = index.cell(1, 1).expect("lookup B2").expect("B2 exists");
+    assert_eq!(
+        view.resolve_cell_value(&index, built_in_cell)
+            .expect("resolve B2 stored value"),
+        XlsCellValue::Number(39045.0)
+    );
+    let built_in = view
+        .resolve_cell_format_ref(built_in_cell)
+        .expect("resolve B2 XF and format");
+    assert_eq!(built_in.number_format, XlsNumberFormatRef::BuiltIn(14));
+    assert_eq!(built_in.custom_number_format_code, None);
+
+    let custom_cell = index.cell(2, 1).expect("lookup B3").expect("B3 exists");
+    let custom = view
+        .resolve_cell_format_ref(custom_cell)
+        .expect("resolve B3 XF and custom format");
+    let XlsNumberFormatRef::Custom(format) = custom.number_format else {
+        panic!("B3 references a custom Format record");
+    };
+    assert_eq!(format.format_index, 165);
+    assert_eq!(
+        custom.custom_number_format_code.as_deref(),
+        Some("yyyy/mm/dd")
+    );
+    assert_eq!(custom.xf.number_format_index, format.format_index);
+}
+
+fn assert_xls_comments(file: &XlsFile) {
+    let view = file.workbooks[0]
+        .relationships()
+        .expect("resolve strict XLS comment relationships");
+    let sheet = view.sheets()[0];
+    let comments = sheet.comments().expect("join NoteSh, Obj and TxO comments");
+    assert_eq!(comments.len(), 3);
+    assert_eq!(
+        comments
+            .iter()
+            .map(|comment| (
+                comment.note().row,
+                comment.note().column,
+                comment.note().object_id,
+                comment
+                    .note()
+                    .flags
+                    .contains(olecfsdk::xls::NoteFlags::SHOW),
+                comment.author.as_str(),
+                comment.content.as_str(),
+            ))
+            .collect::<Vec<_>>(),
+        vec![
+            (0, 1, 1, false, "Yegor Kozlov", "Yegor Kozlov:\nfirst cell"),
+            (1, 1, 2, false, "Yegor Kozlov", "Yegor Kozlov:\nsecond cell"),
+            (2, 1, 3, true, "Yegor Kozlov", "Yegor Kozlov:\nthird cell"),
+        ]
+    );
+    for comment in &comments {
+        assert_eq!(
+            comment
+                .object()
+                .id()
+                .expect("comment Obj has cmo.id")
+                .value(),
+            comment.note().object_id
+        );
+        assert!(std::ptr::eq(
+            comment.source_record(),
+            comment.object().source_record()
+        ));
+        assert!(matches!(
+            comment.text_host().data,
+            olecfsdk::xls::MsoDrawingHostData::Txo(_)
+        ));
+        assert_eq!(
+            comment.text_object().declared_text_length as usize,
+            comment.content.encode_utf16().count()
+        );
+    }
+    let index = sheet
+        .sparse_cell_index()
+        .expect("build strict XLS comment cell index");
+    let b1 = index.cell(0, 1).expect("lookup B1").expect("B1 exists");
+    let comment = index
+        .comment(b1)
+        .expect("resolve B1 comment")
+        .expect("B1 has a comment");
+    assert_eq!(comment.note().object_id, 1);
+    assert_eq!(comment.content, "Yegor Kozlov:\nfirst cell");
+}
+
+fn assert_xls_hyperlinks(file: &XlsFile) {
+    let view = file.workbooks[0]
+        .relationships()
+        .expect("resolve strict XLS hyperlink relationships");
+    let sheet = view.sheets()[0];
+    let links = sheet.hyperlinks().expect("resolve strict HLink records");
+    assert_eq!(links.len(), 2);
+    assert_eq!(
+        links
+            .iter()
+            .map(|link| (
+                link.value().first_row,
+                link.value().first_column,
+                link.display_name.as_deref(),
+                match &link.target {
+                    Some(XlsHyperlinkTarget::Url(value)) => Some(value.as_str()),
+                    _ => None,
+                },
+            ))
+            .collect::<Vec<_>>(),
+        vec![
+            (4, 0, Some("Foo"), Some("http://poi.apache.org/")),
+            (8, 1, Some("Bar"), Some("http://poi.apache.org/hssf/")),
+        ]
+    );
+    assert!(links.iter().all(|link| {
+        link.target_frame_name.is_none()
+            && link.location.is_none()
+            && matches!(
+                link.source_record().data,
+                olecfsdk::xls::BiffRecordData::Hyperlink(_)
+            )
+    }));
+    let index = sheet
+        .sparse_cell_index()
+        .expect("build strict XLS hyperlink cell index");
+    let a5 = index.cell(4, 0).expect("lookup A5").expect("A5 exists");
+    let a5_links = index.hyperlinks(a5).expect("resolve A5 hyperlinks");
+    assert_eq!(a5_links.len(), 1);
+    assert_eq!(a5_links[0].display_name.as_deref(), Some("Foo"));
+}
+
+fn assert_xls_merged_range(file: &XlsFile) {
+    let view = file.workbooks[0]
+        .relationships()
+        .expect("resolve strict XLS merged-range relationships");
+    let sheet = view.sheets()[0];
+    let ranges = sheet.merged_cells().collect::<Vec<_>>();
+    assert_eq!(ranges.len(), 1);
+    assert_eq!(
+        (
+            ranges[0].first_row,
+            ranges[0].last_row,
+            ranges[0].first_column,
+            ranges[0].last_column
+        ),
+        (0, 0, 1, 2)
+    );
+    let index = sheet
+        .sparse_cell_index()
+        .expect("build strict XLS merged-range cell index");
+    let b1 = index.cell(0, 1).expect("lookup B1").expect("B1 exists");
+    let cell_ranges = index.merged_ranges(b1).expect("resolve B1 merged ranges");
+    assert_eq!(cell_ranges, ranges);
+}
+
 fn assert_second_cycle_logically_stable(first: &CompoundFile, bytes: &[u8]) {
     let second = CompoundFile::from_bytes_strict(bytes).expect("reopen second-cycle CFB strictly");
     assert!(first.logical_eq(&second));
 }
 
-fn first_editable_doc_character(file: &DocFile) -> (u32, TextPieceCharacters, u16) {
+fn assert_doc_sections(file: &DocFile) {
+    let tree = file
+        .content_tree()
+        .expect("traverse strict DOC section tree");
+    let main = tree.part(FieldDocumentPart::Main).expect("DOC Main part");
+    let sections = main.sections().expect("join DOC section relationships");
+    assert_eq!(
+        sections
+            .sections()
+            .iter()
+            .map(|section| (
+                section.section_index(),
+                section.local_cp_range().start.value(),
+                section.local_cp_range().end.value(),
+                section.global_cp_range().start.value(),
+                section.global_cp_range().end.value(),
+                section
+                    .blocks()
+                    .expect("derive section blocks")
+                    .blocks()
+                    .len(),
+            ))
+            .collect::<Vec<_>>(),
+        vec![(0, 0, 10, 0, 10, 2), (1, 10, 19, 10, 19, 1)]
+    );
+    for (index, section) in sections.sections().iter().copied().enumerate() {
+        assert_eq!(section.document_part().part(), FieldDocumentPart::Main);
+        assert_eq!(section.properties().section_index, index);
+        assert_eq!(section.source().sepx_offset, section.properties().offset);
+        assert!(section.properties().value.is_some());
+    }
+    assert!(
+        tree.part(FieldDocumentPart::Header)
+            .expect("DOC Header part")
+            .sections()
+            .is_err()
+    );
+}
+
+fn assert_basic_ppt_relationships(file: &PptFile) {
+    let live = file
+        .live_presentation()
+        .expect("resolve strict PPT live presentation");
+    let slides = live.slides().expect("resolve strict PPT slides");
+    assert_eq!(slides.len(), 2);
+    let expected_shape_ids = [vec![2048, 2050, 2051, 2049], vec![5120, 5122, 5123, 5121]];
+    let expected_roles = [
+        vec![PptTextType::CenterTitle, PptTextType::CenterBody],
+        vec![PptTextType::Title, PptTextType::Body],
+    ];
+    let expected_placeholders = [
+        vec![
+            PptPlaceholderType::CenterTitle,
+            PptPlaceholderType::SubTitle,
+        ],
+        vec![PptPlaceholderType::Title, PptPlaceholderType::Body],
+    ];
+    let expected_strings = [
+        vec![
+            "This is a test title",
+            "This is a test subtitle\rThis is on page 1",
+        ],
+        vec![
+            "This is the title on page 2",
+            "This is page two\rIt has several blocks of text\rNone of them have formatting",
+        ],
+    ];
+    let expected_notes = [
+        "These are the notes for page 1",
+        "These are the notes on page two, again lacking formatting",
+    ];
+
+    for (slide_index, slide) in slides.iter().copied().enumerate() {
+        let shapes = slide.shapes().expect("resolve PPT slide shapes");
+        assert_eq!(
+            shapes
+                .iter()
+                .map(|shape| shape.shape_id())
+                .collect::<Vec<_>>(),
+            expected_shape_ids[slide_index]
+        );
+        assert_eq!(
+            shapes
+                .iter()
+                .filter_map(|shape| shape.placeholder.map(|value| value.placement_id))
+                .collect::<Vec<_>>(),
+            expected_placeholders[slide_index]
+        );
+        let bodies = slide.object.text_bodies();
+        assert_eq!(
+            bodies
+                .iter()
+                .map(|body| body.header.text_type)
+                .collect::<Vec<_>>(),
+            expected_roles[slide_index]
+        );
+        assert_eq!(
+            bodies
+                .iter()
+                .flat_map(|body| body.character_atoms())
+                .map(|atom| match atom {
+                    PptLiveTextAtomRef::String {
+                        source_record,
+                        value,
+                        encoding,
+                    } => {
+                        assert_eq!(encoding, PptTextEncoding::Bytes);
+                        assert_eq!(
+                            source_record.header.record_type,
+                            olecfsdk::ppt::TEXT_BYTES_ATOM
+                        );
+                        value
+                    }
+                    PptLiveTextAtomRef::CompatibilityUtf16 { .. } => {
+                        panic!("strict PPT has compatibility UTF-16")
+                    }
+                })
+                .collect::<Vec<_>>(),
+            expected_strings[slide_index]
+        );
+        assert_eq!(
+            bodies
+                .iter()
+                .flat_map(|body| body.style_text_properties())
+                .count(),
+            0
+        );
+        let text_shapes = shapes
+            .iter()
+            .filter_map(|shape| shape.outline_text.map(|text| (shape, text)))
+            .collect::<Vec<_>>();
+        assert_eq!(text_shapes.len(), 2);
+        for (expected_index, (shape, text)) in text_shapes.into_iter().enumerate() {
+            assert_eq!(text.value.index as usize, expected_index);
+            assert!(std::ptr::eq(
+                text.text_body.header_record,
+                bodies[expected_index].header_record
+            ));
+            assert!(
+                text.shape_record
+                    .is_some_and(|record| std::ptr::eq(record, shape.source_record))
+            );
+        }
+        let PptLiveNotesLink::Resolved {
+            object, notes_atom, ..
+        } = slide.notes
+        else {
+            panic!("PPT slide notes relationship is resolved");
+        };
+        assert_eq!(notes_atom.slide_id_ref, slide.id().value());
+        let note_bodies = object.record_text_bodies();
+        assert_eq!(note_bodies.len(), 1);
+        assert_eq!(
+            note_bodies[0]
+                .character_atoms()
+                .map(|atom| match atom {
+                    PptLiveTextAtomRef::String { value, .. } => value,
+                    PptLiveTextAtomRef::CompatibilityUtf16 { .. } => {
+                        panic!("strict notes have compatibility UTF-16")
+                    }
+                })
+                .collect::<Vec<_>>(),
+            vec![expected_notes[slide_index]]
+        );
+    }
+}
+
+fn assert_mixed_ppt_text_and_notes(file: &PptFile) {
+    let live = file
+        .live_presentation()
+        .expect("resolve mixed-encoding PPT presentation");
+    let slides = live.slides().expect("resolve mixed-encoding PPT slides");
+    assert_eq!(slides.len(), 2);
+    let expected = [
+        vec![
+            (PptTextEncoding::Bytes, "Title of the first slide"),
+            (
+                PptTextEncoding::Bytes,
+                "Subtitle of the first slide\r\rThis bit is in italic green",
+            ),
+        ],
+        vec![
+            (PptTextEncoding::Bytes, "This is the second slide"),
+            (
+                PptTextEncoding::Utf16,
+                "It has bullet points on it\rThey’re fun, aren’t they?\rEspecially in a different font like Arial Black at 16 point!",
+            ),
+        ],
+    ];
+    let expected_notes = [
+        vec!["I am the notes of the first slide", "*"],
+        vec![
+            "These are the notes of the 2nd slide\rTHIS LINE IS BOLD",
+            "*",
+        ],
+    ];
+    let expected_styles = [
+        vec![Vec::new(), vec![(56, 1, 2)]],
+        vec![Vec::new(), vec![(113, 1, 2)]],
+    ];
+    for (index, slide) in slides.iter().copied().enumerate() {
+        let bodies = slide.object.record_text_bodies();
+        assert_eq!(
+            bodies
+                .iter()
+                .map(|body| {
+                    body.style_text_properties()
+                        .map(|style| {
+                            (
+                                style.corresponding_text_character_count,
+                                style.paragraph_runs.len(),
+                                style.character_runs.len(),
+                            )
+                        })
+                        .collect::<Vec<_>>()
+                })
+                .collect::<Vec<_>>(),
+            expected_styles[index]
+        );
+        assert_eq!(
+            bodies
+                .into_iter()
+                .flat_map(|body| body.character_atoms())
+                .map(|atom| match atom {
+                    PptLiveTextAtomRef::String {
+                        value, encoding, ..
+                    } => (encoding, value),
+                    PptLiveTextAtomRef::CompatibilityUtf16 { .. } => {
+                        panic!("strict PPT has compatibility UTF-16")
+                    }
+                })
+                .collect::<Vec<_>>(),
+            expected[index]
+        );
+        let PptLiveNotesLink::Resolved { object, .. } = slide.notes else {
+            panic!("mixed PPT slide notes relationship is resolved");
+        };
+        assert_eq!(
+            object
+                .record_text_bodies()
+                .into_iter()
+                .flat_map(|body| body.character_atoms())
+                .map(|atom| match atom {
+                    PptLiveTextAtomRef::String { value, .. } => value,
+                    PptLiveTextAtomRef::CompatibilityUtf16 { .. } => {
+                        panic!("strict PPT notes have compatibility UTF-16")
+                    }
+                })
+                .collect::<Vec<_>>(),
+            expected_notes[index]
+        );
+    }
+}
+
+fn assert_ppt_table_relationships(file: &PptFile) {
+    let live = file
+        .live_presentation()
+        .expect("resolve PPT table presentation");
+    let slides = live.slides().expect("resolve PPT table slide");
+    assert_eq!(slides.len(), 1);
+    let shapes = slides[0].shapes().expect("resolve PPT table shapes");
+    assert_eq!(shapes.len(), 31);
+    let table = shapes
+        .iter()
+        .find(|shape| shape.is_table())
+        .copied()
+        .expect("PPT table marker exists");
+    assert_eq!(table.shape_id(), 2050);
+    assert_eq!(table.shape_type(), 0);
+    let property = table
+        .table_property
+        .expect("PPT table property source exists");
+    assert_eq!(property.property_id, 0x039f);
+    assert!(matches!(
+        property.value,
+        olecfsdk::office_art::OfficeArtPropertyValue::Simple(value) if value & 1 != 0
+    ));
+    let children = table.child_shapes();
+    assert_eq!(
+        children
+            .iter()
+            .map(|shape| shape.shape_id())
+            .collect::<Vec<_>>(),
+        (2051..=2079).collect::<Vec<_>>()
+    );
+    assert_eq!(
+        children
+            .iter()
+            .filter(|shape| shape.shape_type() == 1)
+            .count(),
+        18
+    );
+    assert_eq!(
+        children
+            .iter()
+            .filter(|shape| shape.shape_type() == 20)
+            .count(),
+        11
+    );
+    assert!(children.iter().all(|shape| {
+        shape.group_record.is_some_and(|group| {
+            table
+                .group_record
+                .is_some_and(|owner| std::ptr::eq(group, owner))
+        })
+    }));
+}
+
+fn assert_simple_doc_table_blocks(file: &DocFile) {
+    let tree = file.content_tree().expect("traverse strict DOC table tree");
+    let main = tree.part(FieldDocumentPart::Main).expect("DOC Main part");
+    let blocks = main.blocks().expect("derive strict DOC block order");
+    assert!(blocks.diagnostics().is_empty());
+    assert_eq!(blocks.blocks().len(), 3);
+    assert_eq!(
+        blocks
+            .blocks()
+            .iter()
+            .map(|block| {
+                let range = block.local_cp_range();
+                (
+                    matches!(block, DocBlockRef::Table(_)),
+                    range.start.value(),
+                    range.end.value(),
+                )
+            })
+            .collect::<Vec<_>>(),
+        vec![(false, 0, 154), (true, 154, 210), (false, 210, 240)]
+    );
+    let DocBlockRef::Table(table) = &blocks.blocks()[1] else {
+        panic!("middle DOC block is the physical table");
+    };
+    assert_eq!(table.table_depth(), 1);
+    assert_eq!(table.rows().len(), 2);
+    assert_eq!(table.local_cp_range(), blocks.blocks()[1].local_cp_range());
+    assert_eq!(
+        table
+            .rows()
+            .iter()
+            .map(|row| row.cells().expect("derive strict DOC cells").cells().len())
+            .collect::<Vec<_>>(),
+        vec![3, 3]
+    );
+    for row in table.rows() {
+        let cells = row.cells().expect("derive strict DOC cells");
+        assert!(cells.diagnostics().is_empty());
+        assert_eq!(
+            cells
+                .cells()
+                .first()
+                .expect("row has cells")
+                .global_cp_range()
+                .start,
+            row.global_cp_range().start
+        );
+        assert_eq!(
+            cells
+                .cells()
+                .last()
+                .expect("row has cells")
+                .global_cp_range()
+                .end,
+            row.terminating_paragraph().global_cp_range().start
+        );
+        assert_eq!(
+            row.terminating_paragraph().global_cp_range().end,
+            row.global_cp_range().end
+        );
+        for cell in cells.cells() {
+            assert_eq!(
+                cell.cell_mark().global_cp_range().end,
+                cell.global_cp_range().end
+            );
+            assert_eq!(cell.row().global_cp_range(), row.global_cp_range());
+        }
+    }
+}
+
+fn assert_nested_doc_table_blocks(file: &DocFile) {
+    let tree = file
+        .content_tree_compatible()
+        .expect("traverse compatible nested DOC table tree");
+    let main = tree.part(FieldDocumentPart::Main).expect("DOC Main part");
+    let blocks = main.blocks().expect("derive compatible DOC block order");
+    assert!(blocks.diagnostics().is_empty());
+    assert_eq!(
+        blocks
+            .blocks()
+            .iter()
+            .map(|block| {
+                let range = block.local_cp_range();
+                (
+                    matches!(block, DocBlockRef::Table(_)),
+                    range.start.value(),
+                    range.end.value(),
+                )
+            })
+            .collect::<Vec<_>>(),
+        vec![(true, 0, 33), (false, 33, 34)]
+    );
+    let tables = main.tables().expect("derive all nested DOC tables");
+    assert_eq!(tables.tables().len(), 2);
+    assert_eq!(
+        tables
+            .tables()
+            .iter()
+            .map(|table| {
+                (
+                    table.table_depth(),
+                    table.rows().len(),
+                    table
+                        .rows()
+                        .iter()
+                        .map(|row| row.cells().expect("derive nested DOC cells").cells().len())
+                        .collect::<Vec<_>>(),
+                )
+            })
+            .collect::<Vec<_>>(),
+        vec![(1, 3, vec![3, 3, 3]), (2, 2, vec![2, 2])]
+    );
+    let outer = &tables.tables()[0];
+    let nested_owners = outer
+        .rows()
+        .iter()
+        .enumerate()
+        .flat_map(|(row_index, row)| {
+            row.cells()
+                .expect("derive outer DOC cells")
+                .cells()
+                .iter()
+                .copied()
+                .enumerate()
+                .map(move |(cell_index, cell)| (row_index, cell_index, cell))
+                .collect::<Vec<_>>()
+        })
+        .filter_map(|(row, cell, source)| {
+            let nested = tables.tables_in_cell(source).collect::<Vec<_>>();
+            (!nested.is_empty()).then(|| (row, cell, nested[0].global_cp_range()))
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(nested_owners.len(), 1);
+    assert_eq!((nested_owners[0].0, nested_owners[0].1), (1, 1));
+    assert_eq!(nested_owners[0].2, tables.tables()[1].global_cp_range());
+}
+
+fn first_editable_doc_character(file: &DocFile) -> (u32, String, u16) {
     let main_length = u32::try_from(file.word_document.fib.rg_lw.ccp_text)
         .expect("DOC main-text character count is nonnegative");
     for piece in &file.word_document.text_pieces {
@@ -1061,44 +2262,21 @@ fn first_editable_doc_character(file: &DocFile) -> (u32, TextPieceCharacters, u1
         if start >= main_length {
             break;
         }
-        match &piece.value.characters {
-            TextPieceCharacters::Compressed(characters) => {
-                if let Some((index, character)) = characters
-                    .iter()
-                    .copied()
-                    .enumerate()
-                    .find(|(_, character)| character.is_ascii_alphabetic())
-                {
-                    let edited = if character == b'X' { b'Y' } else { b'X' };
-                    return (
-                        start + u32::try_from(index).expect("DOC text index fits u32"),
-                        TextPieceCharacters::Compressed(vec![edited]),
-                        u16::from(edited),
-                    );
-                }
+        let TextPieceCharacters::String(value) = &piece.value.characters else {
+            continue;
+        };
+        let mut unit_index = 0usize;
+        for character in value.value.chars() {
+            let character_units = character.len_utf16();
+            if character_units == 1 && character.is_alphabetic() {
+                let edited = if character == 'X' { "Y" } else { "X" };
+                return (
+                    start + u32::try_from(unit_index).expect("DOC text index fits u32"),
+                    edited.to_owned(),
+                    u16::from(edited.as_bytes()[0]),
+                );
             }
-            TextPieceCharacters::Utf16(characters) => {
-                if let Some((index, character)) =
-                    characters
-                        .iter()
-                        .copied()
-                        .enumerate()
-                        .find(|(_, character)| {
-                            char::from_u32(u32::from(*character)).is_some_and(char::is_alphabetic)
-                        })
-                {
-                    let edited = if character == u16::from(b'X') {
-                        u16::from(b'Y')
-                    } else {
-                        u16::from(b'X')
-                    };
-                    return (
-                        start + u32::try_from(index).expect("DOC text index fits u32"),
-                        TextPieceCharacters::Utf16(vec![edited]),
-                        edited,
-                    );
-                }
-            }
+            unit_index += character_units;
         }
     }
     panic!("DOC fixture has no editable main-text character");
@@ -1113,8 +2291,12 @@ fn doc_character_at(file: &DocFile, cp: u32) -> u16 {
         }
         let index = usize::try_from(cp - start).expect("DOC text index fits usize");
         return match &piece.value.characters {
-            TextPieceCharacters::Compressed(characters) => u16::from(characters[index]),
-            TextPieceCharacters::Utf16(characters) => characters[index],
+            TextPieceCharacters::String(value) => value
+                .value
+                .encode_utf16()
+                .nth(index)
+                .expect("DOC CP selects a String code unit"),
+            TextPieceCharacters::CompatibilityUtf16 { code_units } => code_units[index],
         };
     }
     panic!("DOC character CP {cp} is missing after reopen");
@@ -1133,15 +2315,16 @@ fn xls_sheet_name_edit(
             .expect("traverse strict XLS workbook relationships");
         if let Some(sheet) = relationships.sheets().first().copied() {
             let mut name = sheet.metadata().name.clone();
-            match &mut name.characters {
-                XlStringCharacters::Compressed(characters) if characters.len() < 31 => {
-                    characters.push(b'X');
-                }
-                XlStringCharacters::Unicode(characters) if characters.len() < 31 => {
-                    characters.push(u16::from(b'X'));
-                }
-                XlStringCharacters::Compressed(characters) => characters[0] = b'X',
-                XlStringCharacters::Unicode(characters) => characters[0] = u16::from(b'X'),
+            if name.value.encode_utf16().count() < 31 {
+                name.value.push('X');
+            } else {
+                let first_character_bytes = name
+                    .value
+                    .chars()
+                    .next()
+                    .expect("sheet names are nonempty")
+                    .len_utf8();
+                name.value.replace_range(..first_character_bytes, "X");
             }
             return (workbook.name, sheet.id(), name);
         }
@@ -1167,7 +2350,7 @@ fn xls_sheet_name(
         .clone()
 }
 
-fn ppt_text_edit(file: &PptFile) -> (PptSlideId, usize, bool, u16) {
+fn ppt_text_edit(file: &PptFile) -> (PptSlideId, usize, bool, char) {
     let presentation = file
         .live_presentation()
         .expect("traverse strict PPT live presentation");
@@ -1176,16 +2359,20 @@ fn ppt_text_edit(file: &PptFile) -> (PptSlideId, usize, bool, u16) {
             for record in body.records {
                 match &record.data {
                     PptRecordData::TextChars(characters) if !characters.is_empty() => {
-                        let replacement = if characters[0] == u16::from(b'X') {
-                            u16::from(b'Y')
+                        let replacement = if characters.starts_with('X') {
+                            'Y'
                         } else {
-                            u16::from(b'X')
+                            'X'
                         };
                         return (slide.id(), body_index, true, replacement);
                     }
                     PptRecordData::TextBytes(characters) if !characters.is_empty() => {
-                        let replacement = if characters[0] == b'X' { b'Y' } else { b'X' };
-                        return (slide.id(), body_index, false, u16::from(replacement));
+                        let replacement = if characters.starts_with('X') {
+                            'Y'
+                        } else {
+                            'X'
+                        };
+                        return (slide.id(), body_index, false, replacement);
                     }
                     _ => {}
                 }
@@ -1198,17 +2385,26 @@ fn ppt_text_edit(file: &PptFile) -> (PptSlideId, usize, bool, u16) {
 fn replace_ppt_text_body_first_unit(
     body: &mut olecfsdk::ppt::PptLiveTextBodyMut<'_>,
     unicode: bool,
-    replacement: u16,
+    replacement: char,
 ) -> olecfsdk::Result<()> {
     for record in body.records_mut() {
         match (&mut record.data, unicode) {
             (PptRecordData::TextChars(characters), true) if !characters.is_empty() => {
-                characters[0] = replacement;
+                let end = characters
+                    .chars()
+                    .next()
+                    .expect("nonempty PPT String")
+                    .len_utf8();
+                characters.replace_range(..end, &replacement.to_string());
                 return Ok(());
             }
             (PptRecordData::TextBytes(characters), false) if !characters.is_empty() => {
-                characters[0] = u8::try_from(replacement)
-                    .map_err(|_| olecfsdk::Error::invalid(0, "PPT byte text exceeds u8"))?;
+                let end = characters
+                    .chars()
+                    .next()
+                    .expect("nonempty PPT String")
+                    .len_utf8();
+                characters.replace_range(..end, &replacement.to_string());
                 return Ok(());
             }
             _ => {}
@@ -1225,7 +2421,7 @@ fn ppt_text_body_first_unit(
     slide_id: PptSlideId,
     body_index: usize,
     unicode: bool,
-) -> u16 {
+) -> char {
     let presentation = file
         .live_presentation()
         .expect("traverse reopened PPT presentation");
@@ -1239,10 +2435,8 @@ fn ppt_text_body_first_unit(
         .records
         .iter()
         .find_map(|record| match (&record.data, unicode) {
-            (PptRecordData::TextChars(characters), true) => characters.first().copied(),
-            (PptRecordData::TextBytes(characters), false) => {
-                characters.first().copied().map(u16::from)
-            }
+            (PptRecordData::TextChars(characters), true)
+            | (PptRecordData::TextBytes(characters), false) => characters.chars().next(),
             _ => None,
         })
         .expect("edited PPT text atom remains present")

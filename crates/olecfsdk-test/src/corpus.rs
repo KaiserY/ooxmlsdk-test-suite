@@ -6,14 +6,21 @@ use std::{
 
 use olecfsdk::{
     cfb::CompoundFile,
+    common::Guid,
     doc::{DocDataNodeValue, DocFile, DocOfficeArtRecordTree},
-    forms::{CachedControlClass, FormControlPersistence, ParentControlStorage, SiteClassIndex},
+    forms::{
+        CachedControlClass, FormControlPersistence, LocatedParentControlStorage,
+        ParentControlStorage, SiteClassIndex,
+    },
     limits::Limits,
     office_art::{OfficeArtPartialStream, OfficeArtRecordData, OfficeArtStream},
     ppt::{PicturesStream, PptFile, PptRecordData},
     property_set::{ArrayValue, PropertySetStream, TypedPropertyValue, VectorValue},
     vba::{VbaProject, directory::DirRecord, project::ProjectRecordKind},
-    xls::{BiffRecordData, MsoDrawingData, XlsFile},
+    xls::{
+        BiffRecordData, MsoDrawingData, ObjPictureFlags, XlsFile, XlsFileEntryRole,
+        XlsObjectPersistenceRef,
+    },
 };
 use olecfsdk_corpus_test_support::{
     corpus_bytes, corpus_root,
@@ -585,11 +592,6 @@ fn attempt_ole_property_set(bytes: &[u8]) -> Attempt {
 }
 
 fn audit_forms(corpus: &Path, report: &mut CoverageReport) -> Result<(), String> {
-    const CLASSES: [&str; 3] = [
-        "46e31370-3f7a-11ce-bed6-00aa00611080",
-        "6e182020-f460-11ce-9bcd-00aa00608e01",
-        "c62a69f0-16dc-11ce-9e98-00aa00574a4f",
-    ];
     let category = report
         .categories
         .get_mut(&CoverageDomain::Forms)
@@ -601,15 +603,15 @@ fn audit_forms(corpus: &Path, report: &mut CoverageReport) -> Result<(), String>
         let Ok(compound) = CompoundFile::from_bytes(&bytes) else {
             continue;
         };
-        let paths = compound
-            .entries()
-            .iter()
-            .filter(|entry| {
-                entry.is_storage() && CLASSES.contains(&entry.clsid.to_string().as_str())
-            })
-            .map(|entry| entry.path.clone())
-            .collect::<Vec<_>>();
-        for storage_path in paths {
+        if matches!(
+            path.extension().and_then(|extension| extension.to_str()),
+            Some("xls" | "xlt")
+        ) {
+            record_xls_activex_metrics(&bytes, category);
+        }
+        for storage_path in
+            LocatedParentControlStorage::discover_root_paths_below(&compound, Path::new("/"))
+        {
             category.counts.discovered += 1;
             if let Ok(entries) = compound.walk_storage(&storage_path) {
                 increment_metric(category, "storage_entries", entries.len() as u64);
@@ -697,7 +699,9 @@ fn record_forms_metrics(category: &mut CoverageCategoryReport, storage: &ParentC
 }
 
 fn forms_parent_class_name(storage: &ParentControlStorage) -> &'static str {
-    if storage.class_id == ParentControlStorage::MULTI_PAGE_CLASS_ID {
+    if storage.class_id == Guid::ZERO {
+        "user_form"
+    } else if storage.class_id == ParentControlStorage::MULTI_PAGE_CLASS_ID {
         "multi_page"
     } else if storage.class_id == ParentControlStorage::FRAME_CLASS_ID {
         "frame"
@@ -705,6 +709,60 @@ fn forms_parent_class_name(storage: &ParentControlStorage) -> &'static str {
         "page"
     } else {
         "unexpected"
+    }
+}
+
+fn record_xls_activex_metrics(bytes: &[u8], category: &mut CoverageCategoryReport) {
+    let Ok(outcome) = XlsFile::from_bytes_compatible(bytes) else {
+        return;
+    };
+    let file = outcome.value;
+    let inventory = file.storages_and_streams_compatible();
+    for entry in inventory.by_role(XlsFileEntryRole::ControlStream) {
+        increment_metric(category, "activex.control_streams", 1);
+        increment_metric(
+            category,
+            "activex.control_stream_bytes",
+            entry.entry().data.len() as u64,
+        );
+    }
+
+    for workbook in &file.workbooks {
+        let Ok(view) = workbook.relationships_compatible() else {
+            continue;
+        };
+        for sheet in view.sheets() {
+            for object in sheet.objects() {
+                if !object
+                    .picture_flags()
+                    .is_some_and(|flags| flags.contains(ObjPictureFlags::CONTROL_STREAM))
+                {
+                    continue;
+                }
+                increment_metric(category, "activex.host_objects", 1);
+                increment_metric(category, "activex.relationship.typed.units", 1);
+                match inventory.resolve_object_persistence_compatible(&view, object) {
+                    Ok(Some(XlsObjectPersistenceRef::ControlStream { data, .. })) => {
+                        increment_metric(category, "activex.resolved_persistence.units", 1);
+                        increment_metric(
+                            category,
+                            "activex.resolved_persistence.bytes",
+                            data.len() as u64,
+                        );
+                        increment_metric(category, "activex.payload.external_leaf.units", 1);
+                        increment_metric(
+                            category,
+                            "activex.payload.external_leaf.bytes",
+                            data.len() as u64,
+                        );
+                    }
+                    Ok(Some(_)) | Ok(None) | Err(_) => {
+                        increment_metric(category, "activex.unresolved_persistence.units", 1);
+                        increment_metric(category, "activex.relationship.malformed.units", 1);
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -1659,6 +1717,41 @@ fn record_xls_disposition(
 
 fn record_ppt_disposition(category: &mut CoverageCategoryReport, data: &PptRecordData) {
     let disposition = match data {
+        PptRecordData::TextChars(value) => {
+            increment_metric(
+                category,
+                "text_code_units",
+                value.encode_utf16().count() as u64,
+            );
+            Disposition::Typed
+        }
+        PptRecordData::TextBytes(value) => {
+            increment_metric(category, "text_code_units", value.chars().count() as u64);
+            Disposition::Typed
+        }
+        PptRecordData::CompatibilityTextChars(code_units)
+        | PptRecordData::CompatibilityCString(code_units) => {
+            increment_disposition(
+                category,
+                Disposition::Compatibility,
+                "bytes",
+                (code_units.len() as u64) * 2,
+            );
+            increment_metric(
+                category,
+                "compatibility_utf16_code_units",
+                code_units.len() as u64,
+            );
+            Disposition::Compatibility
+        }
+        PptRecordData::CString(value) => {
+            increment_metric(
+                category,
+                "cstring_code_units",
+                value.encode_utf16().count() as u64,
+            );
+            Disposition::Typed
+        }
         PptRecordData::Unknown(value) if value.record_type == 0 => {
             increment_disposition(
                 category,
