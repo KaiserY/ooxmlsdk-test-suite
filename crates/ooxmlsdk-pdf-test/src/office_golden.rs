@@ -1,5 +1,8 @@
+use std::collections::BTreeMap;
+use std::fmt;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
 
 use image::ImageFormat;
 use serde_json::Value;
@@ -25,14 +28,14 @@ const TEXT_FONT_SIZE_TOLERANCE_PT: f32 = 0.12;
 const MEDIA_BOX_TOLERANCE_PT: f32 = 0.1;
 
 #[derive(Clone, Copy, Debug)]
-pub struct OfficeGoldenCase {
-    pub id: &'static str,
-    pub corpus: &'static str,
-    pub source: &'static str,
-    pub source_sha256: &'static str,
-    pub golden_sha256: &'static str,
-    pub environment_id: &'static str,
-    pub ui_language: &'static str,
+pub struct OfficeGoldenCase<'a> {
+    pub id: &'a str,
+    pub corpus: &'a str,
+    pub source: &'a str,
+    pub source_sha256: &'a str,
+    pub golden_sha256: &'a str,
+    pub environment_id: &'a str,
+    pub ui_language: &'a str,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -66,29 +69,109 @@ pub struct VisualDiffMetrics {
 
 #[derive(Clone, Debug)]
 pub struct OfficeGoldenReport {
-    pub case_id: &'static str,
+    pub case_id: String,
     pub candidate: PdfSummary,
     pub golden: PdfSummary,
     pub page_diffs: Vec<VisualDiffMetrics>,
     pub artifact_dir: Option<PathBuf>,
 }
 
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub enum OfficeGoldenComparisonLayer {
+    Identity,
+    Conversion,
+    PdfExtraction,
+    PageGeometry,
+    Text,
+    VisibleOutput,
+    ComparisonArtifact,
+}
+
+impl OfficeGoldenComparisonLayer {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Identity => "identity",
+            Self::Conversion => "conversion",
+            Self::PdfExtraction => "pdf-extraction",
+            Self::PageGeometry => "page-geometry",
+            Self::Text => "text",
+            Self::VisibleOutput => "visible-output",
+            Self::ComparisonArtifact => "comparison-artifact",
+        }
+    }
+}
+
+impl std::str::FromStr for OfficeGoldenComparisonLayer {
+    type Err = String;
+
+    fn from_str(value: &str) -> std::result::Result<Self, Self::Err> {
+        match value {
+            "identity" => Ok(Self::Identity),
+            "conversion" => Ok(Self::Conversion),
+            "pdf-extraction" => Ok(Self::PdfExtraction),
+            "page-geometry" => Ok(Self::PageGeometry),
+            "text" => Ok(Self::Text),
+            "visible-output" => Ok(Self::VisibleOutput),
+            "comparison-artifact" => Ok(Self::ComparisonArtifact),
+            _ => Err(format!("unknown Office golden comparison layer {value:?}")),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct OfficeGoldenFailure {
+    pub layer: OfficeGoldenComparisonLayer,
+    pub message: String,
+}
+
+impl OfficeGoldenFailure {
+    fn new(layer: OfficeGoldenComparisonLayer, error: impl fmt::Display) -> Self {
+        Self {
+            layer,
+            message: error.to_string(),
+        }
+    }
+}
+
+impl fmt::Display for OfficeGoldenFailure {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(formatter, "{}: {}", self.layer.as_str(), self.message)
+    }
+}
+
+impl std::error::Error for OfficeGoldenFailure {}
+
+type DetailedResult<T> = std::result::Result<T, OfficeGoldenFailure>;
+
 pub fn compare_office_golden(
-    case: OfficeGoldenCase,
+    case: OfficeGoldenCase<'_>,
     tolerance: VisualTolerance,
 ) -> Result<OfficeGoldenReport> {
+    compare_office_golden_detailed(case, tolerance)
+        .map_err(|error| CalibrationError::OfficeGolden(error.to_string()))
+}
+
+pub fn compare_office_golden_detailed(
+    case: OfficeGoldenCase<'_>,
+    tolerance: VisualTolerance,
+) -> DetailedResult<OfficeGoldenReport> {
     let root = workspace_root();
     let source_path = root.join("corpus").join(case.corpus).join(case.source);
     let golden_path = root
         .join("corpus_pdf_conv")
         .join(case.corpus)
         .join(format!("{}.pdf", case.source));
-    verify_manifest_record(&root, case)?;
+    verify_manifest_record(&root, case)
+        .map_err(|error| OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::Identity, error))?;
 
-    let source_bytes = fs::read(&source_path)?;
-    verify_sha256("source", &source_path, &source_bytes, case.source_sha256)?;
-    let golden_pdf = fs::read(&golden_path)?;
-    verify_sha256("golden", &golden_path, &golden_pdf, case.golden_sha256)?;
+    let source_bytes = fs::read(&source_path)
+        .map_err(|error| OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::Identity, error))?;
+    verify_sha256("source", &source_path, &source_bytes, case.source_sha256)
+        .map_err(|error| OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::Identity, error))?;
+    let golden_pdf = fs::read(&golden_path)
+        .map_err(|error| OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::Identity, error))?;
+    verify_sha256("golden", &golden_path, &golden_pdf, case.golden_sha256)
+        .map_err(|error| OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::Identity, error))?;
     let candidate_pdf = crate::render::render_fixture_pdf_with_options(
         &source_path,
         ooxmlsdk_pdf::PdfOptions {
@@ -99,58 +182,92 @@ pub fn compare_office_golden(
             ui_language: Some(case.ui_language.to_string()),
             ..Default::default()
         },
-    )?;
+    )
+    .map_err(|error| OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::Conversion, error))?;
 
-    let candidate =
-        PdfSummary::from_bytes(&candidate_pdf).map_err(CalibrationError::PdfiumExtraction)?;
-    let golden = PdfSummary::from_bytes(&golden_pdf).map_err(CalibrationError::PdfiumExtraction)?;
+    let candidate = PdfSummary::from_bytes(&candidate_pdf).map_err(|error| {
+        OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::PdfExtraction, error)
+    })?;
+    let golden = PdfSummary::from_bytes(&golden_pdf).map_err(|error| {
+        OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::PdfExtraction, error)
+    })?;
 
-    let text_masks = match assert_document_contract(case.id, &candidate, &golden) {
+    let text_masks = match assert_page_geometry_contract(case.id, &candidate, &golden)
+        .map_err(|error| OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::PageGeometry, error))
+        .and_then(|()| {
+            assert_text_contract(case.id, &candidate, &golden)
+                .map_err(|error| OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::Text, error))
+        }) {
         Ok(text_masks) => text_masks,
         Err(error) => {
-            let artifact_dir = write_candidate_artifact(case.id, &candidate_pdf)?;
-            return Err(CalibrationError::OfficeGolden(format!(
-                "{error}; artifacts={}",
-                artifact_dir.display()
-            )));
+            let artifact_dir =
+                write_candidate_artifact(case.id, &candidate_pdf).map_err(|artifact_error| {
+                    OfficeGoldenFailure::new(
+                        OfficeGoldenComparisonLayer::ComparisonArtifact,
+                        artifact_error,
+                    )
+                })?;
+            return Err(OfficeGoldenFailure {
+                layer: error.layer,
+                message: format!("{}; artifacts={}", error.message, artifact_dir.display()),
+            });
         }
     };
 
     let mut page_diffs = Vec::with_capacity(golden.page_count);
-    let mut rendered_pages = Vec::with_capacity(golden.page_count);
     let mut visual_passes = true;
+    let mut failing_pages = Vec::new();
+    let mut artifact_dir = None;
     for page_index in 0..golden.page_count {
         let candidate_page = rendered_page_image_from_pdf(&candidate_pdf, page_index, RASTER_WIDTH)
-            .map_err(CalibrationError::PdfiumExtraction)?;
+            .map_err(|error| {
+                OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::PdfExtraction, error)
+            })?;
         let golden_page = rendered_page_image_from_pdf(&golden_pdf, page_index, RASTER_WIDTH)
-            .map_err(CalibrationError::PdfiumExtraction)?;
+            .map_err(|error| {
+                OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::PdfExtraction, error)
+            })?;
         let metrics = visual_diff_metrics(
             &candidate_page,
             &golden_page,
             tolerance.significant_channel_delta,
             text_masks.get(page_index).map(Vec::as_slice).unwrap_or(&[]),
-            parse_pdf_rect(&golden.media_boxes[page_index])
-                .map_err(CalibrationError::PdfiumExtraction)?,
-        )?;
-        visual_passes &= metrics.significant_pixel_fraction
+            parse_pdf_rect(&golden.media_boxes[page_index]).map_err(|error| {
+                OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::PdfExtraction, error)
+            })?,
+        )
+        .map_err(|error| {
+            OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::VisibleOutput, error)
+        })?;
+        let page_passes = metrics.significant_pixel_fraction
             <= tolerance.max_significant_pixel_fraction
             && metrics.mean_absolute_channel_delta <= tolerance.max_mean_absolute_channel_delta;
+        visual_passes &= page_passes;
+        if !page_passes {
+            if artifact_dir.is_none() {
+                artifact_dir = Some(write_candidate_artifact(case.id, &candidate_pdf).map_err(
+                    |error| {
+                        OfficeGoldenFailure::new(
+                            OfficeGoldenComparisonLayer::ComparisonArtifact,
+                            error,
+                        )
+                    },
+                )?);
+            }
+            let artifact_dir = artifact_dir
+                .as_deref()
+                .expect("failure artifact directory should be initialized");
+            write_failure_page_artifacts(artifact_dir, page_index, &candidate_page, &golden_page)
+                .map_err(|error| {
+                OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::ComparisonArtifact, error)
+            })?;
+            failing_pages.push(page_index);
+        }
         page_diffs.push(metrics);
-        rendered_pages.push((candidate_page, golden_page));
     }
 
-    let artifact_dir = if visual_passes {
-        None
-    } else {
-        Some(write_failure_artifacts(
-            case.id,
-            &candidate_pdf,
-            &rendered_pages,
-        )?)
-    };
-
     let report = OfficeGoldenReport {
-        case_id: case.id,
+        case_id: case.id.to_string(),
         candidate,
         golden,
         page_diffs,
@@ -159,55 +276,90 @@ pub fn compare_office_golden(
     if visual_passes {
         Ok(report)
     } else {
-        Err(CalibrationError::OfficeGolden(format!(
-            "case {} exceeds {:?}; page diffs={:?}; artifacts={}",
-            case.id,
-            tolerance,
-            report.page_diffs,
-            report
-                .artifact_dir
-                .as_deref()
-                .map_or_else(|| "none".into(), |path| path.display().to_string())
-        )))
+        let max_significant_pixel_fraction = failing_pages
+            .iter()
+            .map(|&page_index| report.page_diffs[page_index].significant_pixel_fraction)
+            .fold(0.0_f64, f64::max);
+        let max_mean_absolute_channel_delta = failing_pages
+            .iter()
+            .map(|&page_index| report.page_diffs[page_index].mean_absolute_channel_delta)
+            .fold(0.0_f64, f64::max);
+        let max_channel_delta = failing_pages
+            .iter()
+            .map(|&page_index| report.page_diffs[page_index].max_channel_delta)
+            .max()
+            .unwrap_or(0);
+        Err(OfficeGoldenFailure::new(
+            OfficeGoldenComparisonLayer::VisibleOutput,
+            format!(
+                "case {} exceeds {:?}; failing pages={} ({} of {}); maxima: significant_pixel_fraction={}, mean_absolute_channel_delta={}, max_channel_delta={}; artifacts={}",
+                case.id,
+                tolerance,
+                format_page_ranges(&failing_pages),
+                failing_pages.len(),
+                report.page_diffs.len(),
+                max_significant_pixel_fraction,
+                max_mean_absolute_channel_delta,
+                max_channel_delta,
+                report
+                    .artifact_dir
+                    .as_deref()
+                    .map_or_else(|| "none".into(), |path| path.display().to_string())
+            ),
+        ))
     }
 }
 
-fn verify_manifest_record(root: &Path, case: OfficeGoldenCase) -> Result<()> {
-    let manifest_path = root
-        .join("corpus_pdf_conv")
-        .join(case.corpus)
-        .join("manifest.jsonl");
-    let manifest = fs::read_to_string(&manifest_path)?;
-    let mut matching = Vec::new();
-    for (line_index, line) in manifest.lines().enumerate() {
-        let record: Value = serde_json::from_str(line).map_err(|error| {
-            CalibrationError::OfficeGolden(format!(
-                "invalid JSON at {}:{}: {error}",
-                manifest_path.display(),
-                line_index + 1
-            ))
-        })?;
-        if record.get("file").and_then(Value::as_str) == Some(case.source) {
-            matching.push(record);
-        }
-    }
-    let [record] = matching.as_slice() else {
+#[derive(Debug)]
+struct ConversionManifestIdentity {
+    status: String,
+    reference_engine: String,
+    source_sha256: String,
+    output_sha256: String,
+    environment_id: String,
+    output: String,
+}
+
+static CONVERSION_MANIFEST_IDENTITIES: OnceLock<
+    std::result::Result<BTreeMap<(String, String), ConversionManifestIdentity>, String>,
+> = OnceLock::new();
+
+fn verify_manifest_record(root: &Path, case: OfficeGoldenCase<'_>) -> Result<()> {
+    let records = CONVERSION_MANIFEST_IDENTITIES
+        .get_or_init(|| load_conversion_manifest_identities(root))
+        .as_ref()
+        .map_err(|error| CalibrationError::OfficeGolden(error.clone()))?;
+    let key = (case.corpus.to_string(), case.source.to_string());
+    let Some(record) = records.get(&key) else {
         return Err(CalibrationError::OfficeGolden(format!(
-            "expected exactly one manifest record for {}/{}, found {}",
-            case.corpus,
-            case.source,
-            matching.len()
+            "expected exactly one manifest record for {}/{}, found 0",
+            case.corpus, case.source
         )));
     };
-    for (field, expected) in [
-        ("status", "converted"),
-        ("reference_engine", "Microsoft Office"),
-        ("source_sha256", case.source_sha256),
-        ("output_sha256", case.golden_sha256),
-        ("environment_id", case.environment_id),
+    for (field, actual, expected) in [
+        ("status", record.status.as_str(), "converted"),
+        (
+            "reference_engine",
+            record.reference_engine.as_str(),
+            "Microsoft Office",
+        ),
+        (
+            "source_sha256",
+            record.source_sha256.as_str(),
+            case.source_sha256,
+        ),
+        (
+            "output_sha256",
+            record.output_sha256.as_str(),
+            case.golden_sha256,
+        ),
+        (
+            "environment_id",
+            record.environment_id.as_str(),
+            case.environment_id,
+        ),
     ] {
-        let actual = record.get(field).and_then(Value::as_str);
-        if actual != Some(expected) {
+        if actual != expected {
             return Err(CalibrationError::OfficeGolden(format!(
                 "manifest field {field} mismatch for {}: actual={actual:?}, expected={expected:?}",
                 case.id
@@ -215,13 +367,75 @@ fn verify_manifest_record(root: &Path, case: OfficeGoldenCase) -> Result<()> {
         }
     }
     let expected_output = format!("{}.pdf", case.source);
-    if record.get("output").and_then(Value::as_str) != Some(expected_output.as_str()) {
+    if record.output != expected_output {
         return Err(CalibrationError::OfficeGolden(format!(
             "manifest output mismatch for {}",
             case.id
         )));
     }
     Ok(())
+}
+
+fn load_conversion_manifest_identities(
+    root: &Path,
+) -> std::result::Result<BTreeMap<(String, String), ConversionManifestIdentity>, String> {
+    let conversion_root = root.join("corpus_pdf_conv");
+    let mut manifest_paths = fs::read_dir(&conversion_root)
+        .map_err(|error| format!("could not scan {}: {error}", conversion_root.display()))?
+        .filter_map(|entry| entry.ok())
+        .map(|entry| entry.path().join("manifest.jsonl"))
+        .filter(|path| path.is_file())
+        .collect::<Vec<_>>();
+    manifest_paths.sort();
+
+    let mut records = BTreeMap::new();
+    for manifest_path in manifest_paths {
+        let corpus = manifest_path
+            .parent()
+            .and_then(Path::file_name)
+            .and_then(|name| name.to_str())
+            .ok_or_else(|| format!("invalid corpus path {}", manifest_path.display()))?;
+        let manifest = fs::read_to_string(&manifest_path)
+            .map_err(|error| format!("could not read {}: {error}", manifest_path.display()))?;
+        for (line_index, line) in manifest.lines().enumerate() {
+            let record: Value = serde_json::from_str(line).map_err(|error| {
+                format!(
+                    "invalid JSON at {}:{}: {error}",
+                    manifest_path.display(),
+                    line_index + 1
+                )
+            })?;
+            let string = |field: &str| {
+                record
+                    .get(field)
+                    .and_then(Value::as_str)
+                    .map(ToString::to_string)
+                    .ok_or_else(|| {
+                        format!(
+                            "missing string field {field:?} at {}:{}",
+                            manifest_path.display(),
+                            line_index + 1
+                        )
+                    })
+            };
+            let source = string("file")?;
+            let key = (corpus.to_string(), source.clone());
+            let identity = ConversionManifestIdentity {
+                status: string("status")?,
+                reference_engine: string("reference_engine")?,
+                source_sha256: string("source_sha256")?,
+                output_sha256: string("output_sha256")?,
+                environment_id: string("environment_id")?,
+                output: string("output")?,
+            };
+            if records.insert(key, identity).is_some() {
+                return Err(format!(
+                    "duplicate conversion manifest record for {corpus}/{source}"
+                ));
+            }
+        }
+    }
+    Ok(records)
 }
 
 fn verify_sha256(label: &str, path: &Path, bytes: &[u8], expected: &str) -> Result<()> {
@@ -235,11 +449,11 @@ fn verify_sha256(label: &str, path: &Path, bytes: &[u8], expected: &str) -> Resu
     Ok(())
 }
 
-fn assert_document_contract(
+fn assert_page_geometry_contract(
     case_id: &str,
     candidate: &PdfSummary,
     golden: &PdfSummary,
-) -> Result<Vec<Vec<PdfBounds>>> {
+) -> Result<()> {
     if candidate.page_count != golden.page_count {
         return Err(CalibrationError::OfficeGolden(format!(
             "case {case_id} page count mismatch: candidate={}, golden={}",
@@ -276,7 +490,14 @@ fn assert_document_contract(
             )));
         }
     }
+    Ok(())
+}
 
+fn assert_text_contract(
+    case_id: &str,
+    candidate: &PdfSummary,
+    golden: &PdfSummary,
+) -> Result<Vec<Vec<PdfBounds>>> {
     let candidate_text = normalized_page_text(candidate);
     let golden_text = normalized_page_text(golden);
     if candidate_text != golden_text {
@@ -588,42 +809,68 @@ fn pixel_is_in_text_mask(
     })
 }
 
-fn write_failure_artifacts(
-    case_id: &str,
-    candidate_pdf: &[u8],
-    pages: &[(RenderedPageImage, RenderedPageImage)],
-) -> Result<PathBuf> {
-    let artifact_dir = write_candidate_artifact(case_id, candidate_pdf)?;
-    for (page_index, (candidate, golden)) in pages.iter().enumerate() {
-        write_png(
-            &artifact_dir.join(format!("page-{page_index}-candidate.png")),
-            candidate,
-            &candidate.rgba,
-        )?;
-        write_png(
-            &artifact_dir.join(format!("page-{page_index}-golden.png")),
-            golden,
-            &golden.rgba,
-        )?;
-        let diff = candidate
-            .rgba
-            .chunks_exact(4)
-            .zip(golden.rgba.chunks_exact(4))
-            .flat_map(|(candidate_pixel, golden_pixel)| {
-                let delta = (0..3)
-                    .map(|channel| candidate_pixel[channel].abs_diff(golden_pixel[channel]))
-                    .max()
-                    .unwrap_or(0);
-                [delta, 0, 0, 255]
-            })
-            .collect::<Vec<_>>();
-        write_png(
-            &artifact_dir.join(format!("page-{page_index}-diff.png")),
-            candidate,
-            &diff,
-        )?;
+fn write_failure_page_artifacts(
+    artifact_dir: &Path,
+    page_index: usize,
+    candidate: &RenderedPageImage,
+    golden: &RenderedPageImage,
+) -> Result<()> {
+    write_png(
+        &artifact_dir.join(format!("page-{page_index}-candidate.png")),
+        candidate,
+        &candidate.rgba,
+    )?;
+    write_png(
+        &artifact_dir.join(format!("page-{page_index}-golden.png")),
+        golden,
+        &golden.rgba,
+    )?;
+    let diff = candidate
+        .rgba
+        .chunks_exact(4)
+        .zip(golden.rgba.chunks_exact(4))
+        .flat_map(|(candidate_pixel, golden_pixel)| {
+            let delta = (0..3)
+                .map(|channel| candidate_pixel[channel].abs_diff(golden_pixel[channel]))
+                .max()
+                .unwrap_or(0);
+            [delta, 0, 0, 255]
+        })
+        .collect::<Vec<_>>();
+    write_png(
+        &artifact_dir.join(format!("page-{page_index}-diff.png")),
+        candidate,
+        &diff,
+    )?;
+    Ok(())
+}
+
+fn format_page_ranges(page_indices: &[usize]) -> String {
+    let Some((&first, rest)) = page_indices.split_first() else {
+        return "none".to_string();
+    };
+    let mut ranges = Vec::new();
+    let mut start = first;
+    let mut end = first;
+    for &page_index in rest {
+        if page_index == end + 1 {
+            end = page_index;
+            continue;
+        }
+        ranges.push(format_page_range(start, end));
+        start = page_index;
+        end = page_index;
     }
-    Ok(artifact_dir)
+    ranges.push(format_page_range(start, end));
+    ranges.join(",")
+}
+
+fn format_page_range(start: usize, end: usize) -> String {
+    if start == end {
+        start.to_string()
+    } else {
+        format!("{start}-{end}")
+    }
 }
 
 fn write_candidate_artifact(case_id: &str, candidate_pdf: &[u8]) -> Result<PathBuf> {
@@ -649,7 +896,7 @@ fn write_png(path: &Path, page: &RenderedPageImage, rgba: &[u8]) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::normalize_extracted_text;
+    use super::{format_page_ranges, normalize_extracted_text};
 
     #[test]
     fn extracted_text_normalization_ignores_pdf_object_spacing_around_punctuation() {
@@ -661,5 +908,12 @@ mod tests {
             normalize_extracted_text("slideMaster. Two shapes (one)"),
             "slideMaster. Two shapes (one)"
         );
+    }
+
+    #[test]
+    fn page_range_summary_coalesces_consecutive_failures() {
+        assert_eq!(format_page_ranges(&[]), "none");
+        assert_eq!(format_page_ranges(&[0]), "0");
+        assert_eq!(format_page_ranges(&[0, 1, 2, 4, 7, 8]), "0-2,4,7-8");
     }
 }

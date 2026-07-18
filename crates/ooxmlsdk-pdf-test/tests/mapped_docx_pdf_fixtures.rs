@@ -2720,6 +2720,18 @@ fn mapped_fixture_bnc891663_keeps_following_row_text_below_image() {
 // Source: ../core/sw/qa/extras/ooxmlexport/ooxmlexport19.cxx:testTdf150408_isLvl_RoundTrip
 fn mapped_fixture_list_with_lgl_preserves_legal_numbering_labels() {
     let summary = render_summary("listWithLgl.docx");
+    // LibreOffice's OOXML importer initializes an omitted w:pgSz to
+    // PAPER_LETTER; see DomainMapper.cxx and PropertyMap.cxx.
+    assert_media_box_close(
+        &summary,
+        0,
+        PdfBounds {
+            left: 0.0,
+            bottom: 0.0,
+            right: 612.0,
+            top: 792.0,
+        },
+    );
     for expected in ["CH I", "Sect 1.01", "CH II", "Sect 2.01"] {
         assert_page_contains(&summary, 0, expected);
     }

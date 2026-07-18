@@ -1700,9 +1700,11 @@ dependencies = [
  "lopdf 0.41.0",
  "ooxmlsdk-pdf",
  "pdfium-render",
+ "serde",
  "serde_json",
  "sha2 0.10.9",
  "thiserror",
+ "toml",
  "walkdir",
 ]
 

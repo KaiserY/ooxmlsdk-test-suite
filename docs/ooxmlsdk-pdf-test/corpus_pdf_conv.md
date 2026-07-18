@@ -66,33 +66,37 @@ outside this lane until the renderer has the corresponding source readers.
 
 ## Test And Result Model
 
-Admit corpus cases incrementally. Do not generate or register all 4,400 cases
-up front. Each admitted source/golden pair gets one independently addressable
-test, and only one new case is worked on at a time.
+The corpus lane now follows the same default-scan/exception-manifest model as
+the package round-trip corpora:
 
-The intended split is:
+- converted DOCX/PPTX/XLSX records in the immutable conversion JSONL files are
+  candidates by default;
+- passing cases are not listed in a manifest;
+- `corpus_pdf_conv/golden-errors.toml` records only exact known-error sources;
+- error classes centralize the comparison layer, observed reason, and evidence,
+  while exact source arrays avoid repeating that metadata;
+- wildcard exceptions are unsupported;
+- the ratchet visits candidates deterministically by source size, output size,
+  corpus, and source path until its per-format pass target is reached.
 
-- the existing Office conversion manifests own source/golden identity, hashes,
-  export environment, and conversion status;
-- each admitted DOCX/PPTX/XLSX source and its fixed golden PDF receive a stable,
-  exact-filterable test case;
-- the current case is analyzed and fixed before the next case is added;
-- this document records the current case, completed case count, comparison
-  policy, failure clusters, source findings, and implementation progress;
-- each fixed behavior gains a focused non-corpus regression test in
-  `ooxmlsdk-layout-test` or `ooxmlsdk-pdf-test` according to ownership.
+The current ratchet requires 100 distinct full-contract passes: 10 DOCX, 88
+PPTX, and 2 XLSX. The distribution reflects measured pass rates during the
+initial scan rather than an assumed capability split. The earlier 29 explicit
+case tests remain as focused historical regressions, but they are not added to
+the 100-case ratchet total.
 
-This is deliberately more controlled than a full manifest-generated lane.
-Manifest-driven generation can be reconsidered only after the comparison
-contract, font environment, runtime cost, and failure classifications have
-proved stable across a meaningful manually admitted set.
+Known errors are skipped during the normal breadth ratchet so expanding the
+passing prefix does not repeatedly render hundreds of unchanged failures. Set
+`OOXMLSDK_GOLDEN_AUDIT_ERRORS=1` to execute known errors and detect stale
+exceptions that now pass. Setting `OOXMLSDK_GOLDEN_CASE` always executes that
+exact case, including a known error.
 
-### Per-Case Completion Gate
+### Source-Backed Fix Gate
 
 Use this sequence for every case:
 
 1. Select one source document and verify its manifest record and golden hash.
-2. Add one exact-filterable corpus test for that pair.
+2. Reproduce it with `OOXMLSDK_GOLDEN_CASE=<corpus>/<source>`.
 3. Produce the candidate PDF without modifying the golden.
 4. Compare the candidate through the applicable comparison layers.
 5. Classify the earliest incorrect layer and locate the owning ECMA/Microsoft,
@@ -100,9 +104,8 @@ Use this sequence for every case:
 6. Implement the source-backed fix and keep unrelated cases passing.
 7. Add a focused layout/PDF/font regression test when the fix represents a
    reusable behavior rather than fixture-specific plumbing.
-8. Record the result, evidence, verification command, and next selected case in
-   this document.
-9. Add the next corpus case only after the current test passes.
+8. Remove its exact error entry after the corpus comparison passes, then run
+   the affected format ratchet.
 
 A case is not complete merely because the candidate PDF parses or looks closer.
 It is complete when its enabled comparison contract passes and the underlying
@@ -159,17 +162,40 @@ not self-evident from the fixture.
 
 ## Execution Policy
 
-- Corpus golden tests are explicit and independently filterable; whether they
-  are ignored by default is decided when the first harness case lands.
-- Support exact-case and comparison-layer filtering first. Add corpus, format,
-  shard, and maximum-page filters only when the admitted set requires them.
-- Work serially on the current case and do not admit a later case while it is
-  failing.
+- The three streamed corpus ratchets are ignored by default and selected by
+  DOCX, PPTX, or XLSX test name.
+- `OOXMLSDK_GOLDEN_CASE=<corpus>/<source>` selects one exact converted record;
+  `OOXMLSDK_GOLDEN_CORPUS=<corpus>` restricts a format ratchet to one corpus.
+- `OOXMLSDK_GOLDEN_AUDIT_ERRORS=1` reruns exact known failures and reports
+  stale entries or comparison-layer drift.
+- Comparison failures are structured as identity, conversion, PDF extraction,
+  page geometry, text, visible output, or comparison-artifact layers. Console
+  output groups by layer and shows at most three cases per group.
+- The complete per-case failure list is written once to
+  `target/office-golden/scan-<format>-errors.jsonl`; one record represents one
+  document, never one page.
+- Page raster comparison is streamed. Candidate and golden RGBA pages are not
+  retained after comparison, and PNG artifacts are written only for failing
+  pages. Consecutive failed page indexes are reported as ranges with aggregate
+  maxima instead of one metric dump per page.
+- Conversion manifests are parsed and indexed once per test process rather
+  than rescanned for every case.
 - Keep Cargo commands sequential and use the default test-suite `target/`.
 - Do not weaken thresholds, exclude a file, or label an environmental
   difference without recording the evidence and decision here.
 - Do not change golden PDFs or their manifests as part of an implementation
   fix.
+
+Run the ratchet from the test-suite root:
+
+```sh
+cargo test -p ooxmlsdk-pdf-test --test office_golden_corpus -- --ignored
+OOXMLSDK_GOLDEN_CASE='LibreOffice/path/to/case.pptx' \
+  cargo test -p ooxmlsdk-pdf-test --test office_golden_corpus \
+  office_golden_pptx_corpus_ratchet -- --ignored --nocapture
+OOXMLSDK_GOLDEN_AUDIT_ERRORS=1 \
+  cargo test -p ooxmlsdk-pdf-test --test office_golden_corpus -- --ignored
+```
 
 ## Progress
 
@@ -178,10 +204,10 @@ not self-evident from the fixture.
 | Reference collection | complete | ECMA-376 Parts 1-4 plus current MS-OI29500, MS-OE376, MS-DOCX, MS-XLSX, MS-PPTX, and MS-ODRAWXML are locally searchable. |
 | Golden inventory | complete | 4,400 converted OOXML cases: 2,707 DOCX, 798 PPTX, 895 XLSX. |
 | Comparison contract | defined | Fixed golden policy and layered comparison model recorded in this document. |
-| Incremental corpus harness | complete | Shared manifest/hash, document/text, and fixed-raster comparison helper plus exact-filterable ignored case test are in place. |
-| Admitted cases | 29 / 4,400 | DOCX: 2, PPTX: 25, XLSX: 2; all admitted cases pass the enabled comparison contract. |
-| Failure clustering | active | Closed clusters now include editor-only placeholder prompts, inherited and shape-aware DrawingML shadows, slide-background fills, page-relative and transformed linear gradients, trailing duplicate gradient-stop normalization, transformed preset and custom shape geometry, vector bitmap clipping, rounded and arrow preset geometry, direct empty effect-list replacement, DrawingML theme-font and supplemental script-font resolution, PowerPoint text color/metric resolution, mixed-size centered text measurement, sRGB-relative grayscale image effects, clustered-column chart layout, automatic numeric-axis scaling, chart data-label visibility, fixed-format page-grid serialization, GDI+ gradient interpolation, and full-canvas EMF clip-mask replay. No admitted case is currently failing. |
-| Autonomous optimization | active | Continue one case at a time; rerun every admitted case and both affected subsystem crates. |
+| Streamed corpus harness | complete | Default conversion-manifest scan, structured failure layers, cached identity index, failed-page-only artifacts, compact page ranges, errors-only manifest, and explicit error audit are in place. |
+| Ratchet passes | 100 / 4,400 | DOCX: 10, PPTX: 88, XLSX: 2; all run the unchanged full comparison contract. The earlier 29 explicit tests remain separate. |
+| Known errors | 350 exact sources | DOCX: 55, PPTX: 208, XLSX: 87. They are grouped by evidence-backed class and remain available to exact-case and full-audit execution. |
+| Autonomous optimization | active | Select a known error, locate specification/LibreOffice evidence, fix only source-backed layout/PDF behavior, remove the exact exception, and raise the ratchet gradually. |
 
 ### First Completed Case
 

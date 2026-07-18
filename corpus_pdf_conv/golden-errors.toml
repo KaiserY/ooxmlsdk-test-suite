@@ -1,0 +1,843 @@
+# The conversion JSONL files and PDFs are immutable reference inputs. Golden
+# comparison succeeds by default; add only exact, evidence-backed exceptions
+# here. Wildcards and pass lists are intentionally unsupported.
+schema_version = 1
+
+[[class]]
+id = "office-locale-default-font"
+layer = "text"
+reason = "The candidate resolves these unqualified Word runs to Calibri while the Office golden uses DengXian. Office documents that the default theme-font languages depend on the Office installation language and installed keyboards, so no general zh-CN font mapping is inferred from the golden alone."
+evidence = [
+  "corpus_pdf_conv/environment.json",
+  "references/references/[MS-OI29500]-260519.md:9600",
+]
+
+[[class]]
+id = "word-nested-table-content"
+layer = "text"
+reason = "The candidate omits the inner-table text that is present in the Office golden; the root cause is not established."
+evidence = [
+  "corpus_pdf_conv/LibreOffice/sw/qa/extras/ooxmlimport/data/tdf111550.docx.pdf",
+]
+
+[[class]]
+id = "word-page-count"
+layer = "page-geometry"
+reason = "The candidate produces one page while the Office golden contains four; the layout cause is not established."
+evidence = [
+  "corpus_pdf_conv/LibreOffice/sw/qa/extras/ooxmlimport/data/tdf108714.docx.pdf",
+]
+
+[[class]]
+id = "word-table-name-text"
+layer = "text"
+reason = "The candidate emits a space in the rendered table name that is absent from the Office golden; the import/layout cause is not established."
+evidence = [
+  "corpus_pdf_conv/LibreOffice/sw/qa/extras/ooxmlexport/data/tdf109306.docx.pdf",
+]
+
+[[class]]
+id = "word-run-spacing-text"
+layer = "text"
+reason = "The candidate separates characters inside two words while the Office golden renders the words continuously; the run-layout cause is not established."
+evidence = [
+  "corpus_pdf_conv/LibreOffice/sw/qa/extras/ooxmlimport/data/tdf124670.docx.pdf",
+]
+
+[[class]]
+id = "word-font-style"
+layer = "text"
+reason = "The candidate uses Calibri while the Office golden uses Times New Roman for the table text; the style-resolution cause is not established."
+evidence = [
+  "corpus_pdf_conv/LibreOffice/sw/qa/extras/ooxmlimport/data/tdf141969-font_in_table_with_style.docx.pdf",
+]
+
+[[class]]
+id = "word-visible-cloud"
+layer = "visible-output"
+reason = "The non-text raster difference covers 1.137 percent of the page and exceeds the shared one-percent Office fixed-output contract; no rendering fix is inferred from the image alone."
+evidence = [
+  "corpus_pdf_conv/LibreOffice/sw/qa/extras/ooxmlexport/data/cloud.docx.pdf",
+]
+
+[[class]]
+id = "word-altchunk-html"
+layer = "text"
+reason = "The candidate omits the HTML AltChunk text that is present in the Office golden; AltChunk import is not implemented by assumption."
+evidence = [
+  "corpus_pdf_conv/LibreOffice/sw/qa/writerfilter/dmapper/data/alt-chunk-html.docx.pdf",
+]
+
+[[class]]
+id = "word-numbering-format-text"
+layer = "text"
+reason = "The candidate renders the list label as decimal 1 while the Office golden renders lower Roman i; the numbering-format cause is not established."
+evidence = ["Office golden PDF addressed by each exact error entry"]
+
+[[class]]
+id = "word-footer-field-text"
+layer = "text"
+reason = "The candidate omits the Page 1 of 1 footer field text that is present in the Office golden; the footer/field cause is not established."
+evidence = ["Office golden PDF addressed by each exact error entry"]
+
+[[class]]
+id = "word-text-order"
+layer = "text"
+reason = "The candidate text ordering differs from the Office golden; the style, field, or list layout cause is not established."
+evidence = ["Office golden PDF addressed by each exact error entry"]
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/sdt_after_section_break.docx"
+class = "office-locale-default-font"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlimport/data/tdf108350.docx"
+class = "office-locale-default-font"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlimport/data/tdf109524.docx"
+class = "office-locale-default-font"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlimport/data/tdf108408.docx"
+class = "office-locale-default-font"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlimport/data/xml_space.docx"
+class = "office-locale-default-font"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlimport/data/tdf108806.docx"
+class = "office-locale-default-font"
+
+[[error]]
+corpus = "Apache-POI"
+source = "test-data/openxml4j/TestCreatePackageOUTPUT.docx"
+class = "office-locale-default-font"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlimport/data/tdf111550.docx"
+class = "word-nested-table-content"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlimport/data/tdf108714.docx"
+class = "word-page-count"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/tdf109306.docx"
+class = "word-table-name-text"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlimport/data/tdf124670.docx"
+class = "word-run-spacing-text"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/lastEmptyLineWithDirectFormatting.docx"
+class = "office-locale-default-font"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/layout/data/tdf117188.docx"
+class = "office-locale-default-font"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/tdf155945.docx"
+class = "office-locale-default-font"
+
+[[error]]
+corpus = "Apache-POI"
+source = "test-data/openxml4j/TestOpenPackageOUTPUT.docx"
+class = "office-locale-default-font"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlimport/data/tdf141969-font_in_table_with_style.docx"
+class = "word-font-style"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/tdf149313.docx"
+class = "office-locale-default-font"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/tdf132185.docx"
+class = "word-numbering-format-text"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/cloud.docx"
+class = "word-visible-cloud"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlimport/data/tdf156078_rightTabOutsideParaRightIndent.docx"
+class = "office-locale-default-font"
+
+[[error]]
+corpus = "Apache-POI"
+source = "test-data/document/Bug60341.docx"
+class = "word-footer-field-text"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/tdf104713_undefinedStyles.docx"
+class = "word-text-order"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/writerfilter/dmapper/data/alt-chunk-html.docx"
+class = "word-altchunk-html"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/tdf149200.docx"
+class = "office-locale-default-font"
+
+[[class]]
+id = "word-text-style"
+layer = "text"
+reason = "The candidate text font/fill style differs from the Office golden; the style-resolution cause is not established."
+evidence = ["Office golden PDF addressed by each exact error entry"]
+
+[[class]]
+id = "word-list-label-text"
+layer = "text"
+reason = "The candidate emits an extra list-label token that is absent from the Office golden; the numbering cause is not established."
+evidence = ["Office golden PDF addressed by each exact error entry"]
+
+[[class]]
+id = "word-text-line-position"
+layer = "text"
+reason = "The candidate text line edge or baseline differs from the Office golden beyond the shared two-point contract; the layout cause is not established."
+evidence = ["Office golden PDF addressed by each exact error entry"]
+
+[[class]]
+id = "word-math"
+layer = "text"
+reason = "The candidate omits Office Math text that is present in the Office golden; no math-layout behavior is inferred from the golden alone."
+evidence = ["Office golden PDF addressed by each exact error entry"]
+
+[[class]]
+id = "word-east-asian-font"
+layer = "text"
+reason = "The candidate uses Liberation Serif while the Office golden uses MS PMincho; the East Asian font-resolution cause is not established."
+evidence = ["Office golden PDF addressed by each exact error entry"]
+
+[[class]]
+id = "word-placeholder-content"
+layer = "text"
+reason = "The candidate renders placeholder text while the Office golden renders the bound content; the content-control cause is not established."
+evidence = ["Office golden PDF addressed by each exact error entry"]
+
+[[class]]
+id = "word-list-layout-text"
+layer = "text"
+reason = "The candidate list text is duplicated and split while the Office golden renders two continuous entries; the numbering/layout cause is not established."
+evidence = ["Office golden PDF addressed by each exact error entry"]
+
+[[class]]
+id = "word-visible-output"
+layer = "visible-output"
+reason = "The non-text raster difference exceeds the shared Office fixed-output contract; no rendering fix is inferred from the image alone."
+evidence = ["Office golden PDF addressed by each exact error entry"]
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/tdf150542.docx"
+class = "office-locale-default-font"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/listWithLgl.docx"
+class = "word-text-order"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/tdf149198.docx"
+class = "word-text-style"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/tdf148455_2.docx"
+class = "word-list-label-text"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/tdf148455_1.docx"
+class = "word-list-label-text"
+
+[[error]]
+corpus = "Apache-POI"
+source = "test-data/document/55733.docx"
+class = "word-text-line-position"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/math-placeholders.docx"
+class = "word-math"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/math-escaping.docx"
+class = "word-math"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/math-overstrike.docx"
+class = "word-math"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/math-rad.docx"
+class = "word-math"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/math-matrix.docx"
+class = "word-math"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/math-lim.docx"
+class = "word-math"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/math-vertical_stacks.docx"
+class = "word-math"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlimport/data/tdf103931.docx"
+class = "word-east-asian-font"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/math-accents.docx"
+class = "word-math"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/math-nary.docx"
+class = "word-math"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/math-overbrace_underbrace.docx"
+class = "word-math"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/tdf148360.docx"
+class = "office-locale-default-font"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/math-d.docx"
+class = "word-math"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/tdf151912.docx"
+class = "word-placeholder-content"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/math-subscripts.docx"
+class = "word-math"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/tdf148132.docx"
+class = "word-list-layout-text"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/odfexport/data/tdf168980.docx"
+class = "word-page-count"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/fdo69548.docx"
+class = "word-text-line-position"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/math-literal.docx"
+class = "word-math"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/tdf131203.docx"
+class = "word-page-count"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/fdo47669.docx"
+class = "word-east-asian-font"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/odfexport/data/tdf128504.docx"
+class = "word-text-line-position"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlimport/data/n780645.docx"
+class = "word-text-line-position"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/para-shadow.docx"
+class = "word-text-line-position"
+
+[[error]]
+corpus = "LibreOffice"
+source = "sw/qa/extras/ooxmlexport/data/fdo70838.docx"
+class = "word-visible-output"
+
+[[class]]
+id = "presentation-text-parity"
+layer = "text"
+reason = "The candidate extracted text, text style, or line geometry differs from the Office golden; the presentation text/layout cause is not established."
+evidence = ["Office golden PDF addressed by each exact error source"]
+
+[[class]]
+id = "presentation-visible-output"
+layer = "visible-output"
+reason = "The non-text raster difference exceeds the shared Office fixed-output contract; no presentation rendering fix is inferred from the image alone."
+evidence = ["Office golden PDF addressed by each exact error source"]
+
+[[error]]
+corpus = "Apache-POI"
+class = "presentation-text-parity"
+sources = [
+  "test-data/slideshow/49386-null_dates.pptx",
+]
+
+[[error]]
+corpus = "LibreOffice"
+class = "presentation-text-parity"
+sources = [
+  "sd/qa/unit/data/pptx/trailing-paragraphs.pptx",
+  "oox/qa/unit/data/outliner-list-style.pptx",
+  "sd/qa/unit/data/pptx/tdf165261.pptx",
+  "sd/qa/unit/data/pptx/tdf160487.pptx",
+  "svx/qa/unit/data/3d_rotated_text.pptx",
+  "sd/qa/unit/data/pptx/tdf169524.pptx",
+  "sd/qa/unit/data/pptx/tdf168835.pptx",
+  "sd/qa/unit/data/pptx/tdf119015.pptx",
+  "sd/qa/unit/data/pptx/tdf113198.pptx",
+  "sd/qa/unit/data/pptx/presLeftAlign.pptx",
+  "sd/qa/unit/data/pptx/tdf136830.pptx",
+  "xmloff/qa/unit/data/ReferenceShapeFill.pptx",
+  "sd/qa/unit/data/pptx/tdf156718.pptx",
+  "sd/qa/unit/data/pptx/tdf119087.pptx",
+  "sd/qa/unit/data/pptx/tdf128206.pptx",
+  "oox/qa/unit/data/tdf149551_vert270AndTextRot.pptx",
+  "oox/qa/unit/data/tdf149551_TextRot.pptx",
+  "oox/qa/unit/data/tdf125085_WordArtFontTheme.pptx",
+  "oox/qa/unit/data/tdf125582_TextOnCircle.pptx",
+  "sd/qa/unit/data/pptx/tdf104201.pptx",
+  "svx/qa/unit/data/tdf145004_gap_by_ScaleX.pptx",
+  "xmloff/qa/unit/data/tdf149551_verticalText.pptx",
+  "svx/qa/unit/data/auto-height-multi-col-shape.pptx",
+  "sd/qa/unit/data/pptx/tdf169694.pptx",
+  "sd/qa/unit/data/pptx/tdf51340.pptx",
+  "oox/qa/unit/data/theme-tint.pptx",
+  "sd/qa/unit/data/pptx/tdf162283.pptx",
+  "oox/qa/unit/data/tdf125085_WordArtFontText.pptx",
+  "sd/qa/unit/data/pptx/tdf128212.pptx",
+  "sd/qa/unit/data/pptx/tdf128213-shaperot.pptx",
+  "sd/qa/unit/data/pptx/tdf128213.pptx",
+  "sd/qa/unit/data/pptx/tdf157740.pptx",
+  "oox/qa/unit/data/Scene3d_legacyObliqueBottomRight.pptx",
+  "sd/qa/unit/data/pptx/tdf140865Wordart3D.pptx",
+  "sd/qa/unit/data/pptx/tdf160490.pptx",
+  "sd/qa/unit/data/pptx/tdf144918.pptx",
+  "sd/qa/unit/data/pptx/hyperlinkOnImage.pptx",
+  "sd/qa/unit/data/pptx/tdf150719.pptx",
+  "oox/qa/unit/data/Scene3d_isometricRightUp.pptx",
+  "sd/qa/unit/data/pptx/tdf149865.pptx",
+  "sd/qa/unit/data/pptx/tdf144616.pptx",
+  "sd/qa/unit/data/pptx/tdf149314.pptx",
+  "sd/qa/unit/data/pptx/tdf119187.pptx",
+  "sd/qa/unit/data/pptx/tdf148965.pptx",
+  "svx/qa/unit/data/tdf165521_fixedCellHeight.pptx",
+  "oox/qa/unit/data/tdf155327_WordArtDefaultColor.pptx",
+  "oox/qa/unit/data/tdf151008_eaVertAnchor.pptx",
+  "oox/qa/unit/data/testTdf132557_footerCustomShapes.pptx",
+  "sd/qa/unit/data/pptx/tdf165732.pptx",
+  "sd/qa/unit/data/pptx/tdf96061.pptx",
+  "sd/qa/unit/data/pptx/tdf131554.pptx",
+  "sd/qa/unit/data/pptx/tdf148810_PARA_OUTLLEVEL.pptx",
+  "sd/qa/unit/data/pptx/tdf92222.pptx",
+  "sd/qa/unit/data/pptx/open-as-read-only.pptx",
+  "sd/qa/unit/data/pptx/tdf157529.pptx",
+  "chart2/qa/extras/data/pptx/tdf128345_ChartArea_CG_TS.pptx",
+  "chart2/qa/extras/data/pptx/tdf128345_ChartWall_CS_TG.pptx",
+  "chart2/qa/extras/data/pptx/tdf128345_Legend_CS_TG_axial.pptx",
+  "oox/qa/unit/data/tdf139618_ImportWordArtGradient.pptx",
+  "sd/qa/unit/data/pptx/connector-shape-animations.pptx",
+  "sd/qa/unit/data/pptx/smartart-composite-infer-right.pptx",
+  "sd/qa/unit/data/pptx/tdf165321.pptx",
+  "sd/qa/unit/data/pptx/bnc480256-2.pptx",
+  "sd/qa/unit/data/pptx/tdf148685.pptx",
+  "chart2/qa/extras/data/pptx/tdf48041.pptx",
+  "sd/qa/unit/data/pptx/tdf90626.pptx",
+  "sd/qa/unit/data/pptx/bnc862510_7.pptx",
+  "sd/qa/unit/data/pptx/tdf79082.pptx",
+  "sd/qa/unit/data/pptx/tdf149551_SmartArt_Pyramid.pptx",
+  "sd/qa/unit/data/pptx/bnc904423.pptx",
+  "oox/qa/unit/data/tdf149551_vert_and_padding.pptx",
+  "sd/qa/unit/data/pptx/tdf141704.pptx",
+  "sd/qa/unit/data/pptx/ShapeLineProperties.pptx",
+  "sd/qa/unit/data/pptx/tdf149551_SmartArt_Gear.pptx",
+  "sd/qa/unit/data/pptx/bnc887230.pptx",
+  "oox/qa/unit/data/tdf149538_upright.pptx",
+  "oox/qa/unit/data/tdf131082.pptx",
+  "sd/qa/unit/data/pptx/multicol.pptx",
+  "sd/qa/unit/data/ppt/placeholder-priority.pptx",
+  "oox/qa/unit/data/tdf139618_ThemeColorTransparency.pptx",
+  "sd/qa/unit/data/pptx/tdf149551_SmartArt_Venn.pptx",
+  "sd/qa/unit/data/pptx/tdf149551_SmartArt_Pie.pptx",
+  "svx/qa/unit/data/0-width-text-wrap.pptx",
+  "sd/qa/unit/data/pptx/tdf145528_SmartArt_Matrix.pptx",
+  "sd/qa/unit/data/pptx/tdf135953_SmartArt_textposition.pptx",
+  "sd/qa/unit/data/pptx/tdf132302_SmartArt_rightArrow.pptx",
+  "sd/qa/unit/data/pptx/tdfpictureplaceholder.pptx",
+]
+
+[[error]]
+corpus = "Apache-POI"
+class = "presentation-visible-output"
+sources = [
+  "test-data/slideshow/bug60993.pptx",
+]
+
+[[error]]
+corpus = "LibreOffice"
+class = "presentation-visible-output"
+sources = [
+  "sd/qa/unit/data/pptx/master-bg-color.pptx",
+  "oox/qa/unit/data/tdf163803_image_with_fill.pptx",
+  "sd/qa/unit/data/pptx/presetDashDot.pptx",
+  "oox/qa/unit/data/tdf144742_mathEqual_mathNotEqual.pptx",
+  "sd/qa/unit/data/pptx/croppedTo0.pptx",
+  "sd/qa/unit/data/pptx/tdf147459.pptx",
+  "sd/qa/unit/data/pptx/shape-glow-effect.pptx",
+  "oox/qa/unit/data/Scene3d_lightRig_modernCamera.pptx",
+  "oox/qa/unit/data/Scene3d_lightRig_legacyCamera.pptx",
+  "oox/qa/unit/data/Scene3d_shape_rotation.pptx",
+  "xmloff/qa/unit/data/Scene3d_LightRig_threePt.pptx",
+  "oox/qa/unit/data/tdf113187_arcTo_withoutReferences.pptx",
+  "sd/qa/unit/data/pptx/tdf134053_dashdot.pptx",
+  "svx/qa/unit/data/tdf124740_HandleInOOXMLUserShape.pptx",
+  "oox/qa/unit/data/Scene3d_legacyPerspectiveTopRight.pptx",
+  "oox/qa/unit/data/tdf147978_enhancedPath_subpath.pptx",
+  "oox/qa/unit/data/Scene3d_material_wireframe.pptx",
+  "svx/qa/unit/data/tdf122323_swingAngle_larger360deg.pptx",
+  "oox/qa/unit/data/Scene3d_perspectiveContrastingLeft.pptx",
+  "oox/qa/unit/data/Scene3d_obliqueTopRight.pptx",
+  "oox/qa/unit/data/Scene3d_lightRig_dir_rotation.pptx",
+  "sd/qa/unit/data/pptx/tdf144917.pptx",
+  "oox/qa/unit/data/Scene3d_lightRig_default.pptx",
+  "oox/qa/unit/data/Scene3d_orthographicFront.pptx",
+  "sd/qa/unit/data/pptx/tdf154858.pptx",
+  "oox/qa/unit/data/tdf141463_GroupTransform.pptx",
+  "sd/qa/unit/data/pptx/tdf149697.pptx",
+  "oox/qa/unit/data/tdf144742_funnel.pptx",
+  "oox/qa/unit/data/Scene3d_material_highlight.pptx",
+  "sd/qa/unit/data/pptx/tdf156829.pptx",
+  "sd/qa/unit/data/pptx/tdf125346.pptx",
+  "sd/qa/unit/data/pptx/tdf137675.pptx",
+  "sd/qa/unit/data/pptx/tdf153008-srcRect-smallNegBound.pptx",
+  "sd/qa/unit/data/pptx/connectors.pptx",
+  "sd/qa/unit/data/pptx/tdf125346_2.pptx",
+  "sd/qa/filter/eppt/data/custom-shape-bitmap-fill.pptx",
+  "sd/qa/unit/data/pptx/tdf152434.pptx",
+  "oox/qa/unit/data/Scene3d_cropped_image.pptx",
+  "oox/qa/unit/data/Scene3d_pureImage.pptx",
+]
+
+[[class]]
+id = "presentation-page-geometry"
+layer = "page-geometry"
+reason = "The candidate slide page geometry differs from the Office golden beyond the shared media-box contract; the cause is not established."
+evidence = ["Office golden PDF addressed by each exact error source"]
+
+[[error]]
+corpus = "LibreOffice"
+class = "presentation-page-geometry"
+sources = [
+  "sd/qa/unit/data/pptx/page_transparent_bitmap.pptx",
+]
+
+[[error]]
+corpus = "Apache-POI"
+class = "presentation-text-parity"
+sources = [
+  "test-data/slideshow/prProps.pptx",
+  "test-data/slideshow/copy-slide-demo.pptx",
+  "test-data/slideshow/60042.pptx",
+  "test-data/slideshow/bug63290.pptx",
+  "test-data/xmldsign/hello-world-unsigned.pptx",
+  "test-data/slideshow/rain.pptx",
+  "test-data/slideshow/table_test2.pptx",
+]
+
+[[error]]
+corpus = "LibreOffice"
+class = "presentation-text-parity"
+sources = [
+  "svx/qa/unit/data/tdf148000_CurvedTextWidth.pptx",
+  "svx/qa/unit/data/tdf148000_EOLinCurvedText.pptx",
+  "sd/qa/unit/data/pptx/tdf93097.pptx",
+  "sd/qa/unit/data/pptx/tdf165341.pptx",
+  "sd/qa/unit/data/smoketest.pptx",
+  "sd/qa/unit/data/strict_ooxml.pptx",
+  "sd/qa/unit/data/pptx/smartart-missing-bullet.pptx",
+  "sd/qa/unit/data/pptx/tdf128550.pptx",
+  "sd/qa/unit/data/pptx/tdf120028.pptx",
+  "sd/qa/unit/data/theme.pptx",
+  "oox/qa/unit/data/shape-text-alignment.pptx",
+  "sd/qa/unit/data/pptx/tdf143129.pptx",
+  "sd/qa/unit/data/pptx/tdf115394.pptx",
+  "sd/qa/unit/data/pptx/tdf169825_vertical_layouts.pptx",
+  "oox/qa/unit/data/camera-rotation-revolution-nonwps.pptx",
+  "sd/qa/unit/data/pptx/tdf118776.pptx",
+  "sd/qa/unit/data/pptx/tdf157285.pptx",
+  "sd/qa/unit/data/pptx/rightToLeftParagraph.pptx",
+  "sd/qa/unit/data/pptx/chart_pt_color_bg1.pptx",
+  "sd/qa/unit/data/pptx/ShapeTextInflateTop.pptx",
+  "sd/qa/unit/data/pptx/NumberedList-12ab-ab-34.pptx",
+  "sd/qa/unit/data/pptx/tcPr-vert-roundtrip.pptx",
+  "svx/qa/unit/data/clip-vertical-overflow.pptx",
+  "sd/qa/unit/data/pptx/tdf100926.pptx",
+  "sd/qa/unit/data/pptx/tdf100926_ODP.pptx",
+  "sd/qa/unit/data/pptx/tdf147121.pptx",
+  "sd/qa/unit/data/pptx/n778859.pptx",
+  "sd/qa/unit/data/pptx/tdf135843_export.pptx",
+  "sd/qa/unit/data/pptx/tdf134862.pptx",
+  "svx/qa/unit/data/tdf126060_3D_Z_Rotation.pptx",
+  "sd/qa/unit/data/pptx/n90255.pptx",
+  "sd/qa/unit/data/pptx/slidenum_field.pptx",
+  "sd/qa/unit/data/pptx/tdf151547-transparent-white-text.pptx",
+  "sd/qa/unit/data/pptx/n828390_2.pptx",
+  "oox/qa/unit/data/transparent-text.pptx",
+  "sd/qa/unit/data/pptx/n828390.pptx",
+  "sd/qa/unit/data/pptx/n862510_4.pptx",
+  "sd/qa/unit/data/pptx/paraMarginAndIndentation.pptx",
+  "sd/qa/unit/data/pptx/tdf102261_testParaTabStopDefaultDistance.pptx",
+  "sd/qa/unit/data/pptx/bulletMarginAndIndent.pptx",
+  "sd/qa/unit/data/pptx/bulletColor.pptx",
+  "sd/qa/unit/data/pptx/tdf142645.pptx",
+  "oox/qa/unit/data/testTdf157019_objPlaceholderCustomShape.pptx",
+  "oox/qa/unit/data/theme.pptx",
+  "sd/qa/unit/data/pptx/tdf144092-tableHeight.pptx",
+  "sd/qa/unit/data/pptx/tdf114913.pptx",
+  "sd/qa/unit/data/pptx/forum-mso-de-138303.pptx",
+  "chart2/qa/extras/xshape/data/pptx/tdf149204.pptx",
+  "chart2/qa/extras/data/pptx/chart.pptx",
+  "sd/qa/unit/data/pptx/n83889.pptx",
+  "sd/qa/unit/data/pptx/tdf132472.pptx",
+  "sd/qa/unit/data/pptx/tdf113818-swivel.pptx",
+  "oox/qa/unit/data/import-characters.pptx",
+  "sd/qa/unit/data/pptx/tdf157216.pptx",
+]
+
+[[error]]
+corpus = "Open-XML-SDK"
+class = "presentation-text-parity"
+sources = [
+  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/block_hyperlink_crash.pptx",
+  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/marL51206400_mainPpr_LeftMarginMaximum.pptx",
+]
+
+[[error]]
+corpus = "LibreOffice"
+class = "presentation-visible-output"
+sources = [
+  "sd/qa/unit/data/pptx/tdf140714.pptx",
+  "oox/qa/unit/data/graphic-stroke.pptx",
+  "sd/qa/unit/data/pptx/tdf128596.pptx",
+  "sd/qa/unit/data/pptx/effectOrder.pptx",
+  "sd/qa/unit/data/pptx/tdf105739.pptx",
+  "sd/qa/unit/data/pptx/tdf107608.pptx",
+  "sd/qa/unit/data/pptx/tdf152606.pptx",
+  "sd/qa/unit/data/pptx/tdf156649.pptx",
+  "sd/qa/unit/data/pptx/glue_point_leaving_directions.pptx",
+  "sd/qa/unit/data/pptx/tdf152070.pptx",
+  "sd/qa/unit/data/pptx/shape-blur-effect.pptx",
+  "sd/qa/unit/data/pptx/tdf165670.pptx",
+  "sd/qa/unit/data/pptx/tdf148665.pptx",
+  "sd/qa/unit/data/pptx/tdf151767.pptx",
+  "sd/qa/unit/data/pptx/tdf135843_insideH.pptx",
+]
+
+[[error]]
+corpus = "Open-XML-SDK"
+class = "presentation-visible-output"
+sources = [
+  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/linkedpicture.pptx",
+]
+
+[[class]]
+id = "spreadsheet-page-geometry"
+layer = "page-geometry"
+reason = "The candidate worksheet page count or media box differs from the Office golden; the print-layout cause is not established."
+evidence = ["Office golden PDF addressed by each exact error source"]
+
+[[class]]
+id = "spreadsheet-text-parity"
+layer = "text"
+reason = "The candidate extracted text, text style, or line geometry differs from the Office golden; the worksheet text/layout cause is not established."
+evidence = ["Office golden PDF addressed by each exact error source"]
+
+[[error]]
+corpus = "Apache-POI"
+class = "spreadsheet-page-geometry"
+sources = [
+  "test-data/spreadsheet/59021.xlsx",
+  "test-data/spreadsheet/47889.xlsx",
+  "test-data/spreadsheet/56295.xlsx",
+]
+
+[[error]]
+corpus = "LibreOffice"
+class = "spreadsheet-page-geometry"
+sources = [
+  "sc/qa/unit/data/xlsx/tdf122336.xlsx",
+  "sc/qa/unit/data/xlsx/seconds-without-truncate-and-decimals.xlsx",
+  "sc/qa/unit/data/xlsx/check-boolean.xlsx",
+  "sc/qa/unit/data/xlsx/tdf104310.xlsx",
+  "sc/qa/unit/data/xlsx/databar.xlsx",
+  "sc/qa/unit/data/xlsx/empty.xlsx",
+]
+
+[[error]]
+corpus = "Apache-POI"
+class = "spreadsheet-text-parity"
+sources = [
+  "test-data/spreadsheet/xlsx-jdbc.xlsx",
+  "test-data/spreadsheet/link-external-workbook-a.xlsx",
+  "test-data/spreadsheet/DataValidationListTooLong.xlsx",
+  "test-data/spreadsheet/link-external-workbook-b.xlsx",
+  "test-data/spreadsheet/64508.xlsx",
+  "test-data/openxml4j/51444.xlsx",
+  "test-data/spreadsheet/66365.xlsx",
+  "test-data/spreadsheet/62272.xlsx",
+  "test-data/spreadsheet/bug60858.xlsx",
+  "test-data/spreadsheet/52348.xlsx",
+]
+
+[[error]]
+corpus = "LibreOffice"
+class = "spreadsheet-text-parity"
+sources = [
+  "sc/qa/unit/data/xlsx/tdf121887.xlsx",
+  "package/qa/cppunit/data/pass/no_usb_2024-11-06.xlsx",
+  "sc/qa/unit/data/xlsx/tdf147955.xlsx",
+  "sc/qa/unit/data/xlsx/tdf122191.xlsx",
+  "sc/qa/unit/data/xlsx/tdf55417.xlsx",
+  "sc/qa/unit/data/xlsx/tdf141495.xlsx",
+  "sc/qa/unit/data/xlsx/tdf82984_zip64XLSXImport.xlsx",
+  "sc/qa/uitest/data/tdf118938.xlsx",
+  "sw/qa/extras/mailmerge/data/onecell.xlsx",
+  "sc/qa/unit/data/xlsx/tdf155046.xlsx",
+  "sc/qa/unit/data/xlsx/open-as-read-only.xlsx",
+  "sc/qa/unit/data/xlsx/tdf134455.xlsx",
+  "sc/qa/unit/data/xlsx/tdf155402.xlsx",
+]
+
+[[error]]
+corpus = "Apache-POI"
+class = "spreadsheet-page-geometry"
+sources = [
+  "test-data/spreadsheet/70005-countifs.xlsx",
+  "test-data/spreadsheet/59775.xlsx",
+  "test-data/spreadsheet/bug54803.xlsx",
+  "test-data/spreadsheet/tile-range-test.xlsx",
+  "test-data/spreadsheet/56278.xlsx",
+]
+
+[[error]]
+corpus = "LibreOffice"
+class = "spreadsheet-page-geometry"
+sources = [
+  "sc/qa/unit/data/xlsx/enhancedProtectionRangeShorthand.xlsx",
+  "sc/qa/unit/data/xlsx/named-ranges-global.xlsx",
+  "sc/qa/unit/uicalc/data/tdf136113.xlsx",
+  "libreofficekit/qa/data/join/calc-100-textjitter.xlsx",
+  "sc/qa/unit/data/xlsx/colorscale.xlsx",
+  "sc/qa/unit/data/xlsx/tdf160371.xlsx",
+  "sc/qa/unit/data/xlsx/autofilter.xlsx",
+  "sc/qa/unit/data/xlsx/tdf137091.xlsx",
+  "sc/qa/uitest/data/autofilter/tdf140968.xlsx",
+  "chart2/qa/extras/data/xlsx/fdo78080.xlsx",
+  "sc/qa/unit/data/xlsx/tdf159581_optimalRowHeight.xlsx",
+  "sc/qa/unit/data/xlsx/preserve_space.xlsx",
+  "sc/qa/unit/data/xlsx/universal-content.xlsx",
+  "chart2/qa/extras/data/xlsx/deleted_data_labels.xlsx",
+  "chart2/qa/extras/data/xlsx/pieOfPieChart.xlsx",
+  "sc/qa/unit/data/xlsx/cell-value.xlsx",
+  "chart2/qa/extras/data/xlsx/barOfPieChart.xlsx",
+]
+
+[[error]]
+corpus = "Apache-POI"
+class = "spreadsheet-text-parity"
+sources = [
+  "test-data/spreadsheet/59746_NoRowNums.xlsx",
+  "test-data/spreadsheet/ShrinkToFit.xlsx",
+  "test-data/spreadsheet/60384.xlsx",
+  "test-data/spreadsheet/56822-Countifs.xlsx",
+  "test-data/spreadsheet/51963.xlsx",
+  "test-data/spreadsheet/56957.xlsx",
+  "test-data/spreadsheet/49325.xlsx",
+  "test-data/spreadsheet/50786-indexed_colours.xlsx",
+  "test-data/spreadsheet/noSharedStringTable.xlsx",
+]
+
+[[error]]
+corpus = "LibreOffice"
+class = "spreadsheet-text-parity"
+sources = [
+  "sc/qa/unit/data/xlsx/tdf98481.xlsx",
+  "sc/qa/unit/data/xlsx/tdf144642_RowHeight_10mm_SavedByCalc.xlsx",
+  "sc/qa/unit/data/xlsx/tdf41425.xlsx",
+  "sc/qa/unit/data/xlsx/tdf115022.xlsx",
+  "sc/qa/unit/tiledrendering/data/validity.xlsx",
+  "sc/qa/unit/data/xlsx/tdf142905.xlsx",
+  "sc/qa/unit/uicalc/data/tdf119155.xlsx",
+  "sc/qa/unit/data/xlsx/tdf139934.xlsx",
+  "sc/qa/unit/data/xlsx/tdf167689_xmlMaps_and_xmlColumnPr.xlsx",
+  "sc/qa/unit/data/xlsx/row-index-1-based.xlsx",
+  "sc/qa/unit/data/xlsx/escape-unicode.xlsx",
+  "chart2/qa/extras/data/xlsx/tdf137734.xlsx",
+  "sc/qa/unit/data/xlsx/tdf76047_externalLink.xlsx",
+  "sc/qa/unit/data/xlsx/tdf85617.xlsx",
+  "sc/qa/uitest/data/tdf153622.xlsx",
+  "chart2/qa/extras/data/xlsx/chart.xlsx",
+  "sc/qa/unit/data/xlsx/cell-note.xlsx",
+  "sc/qa/unit/data/xlsx/change-tracking.xlsx",
+  "chart2/qa/extras/data/xlsx/tdf130657.xlsx",
+  "chart2/qa/extras/data/xlsx/tdf128732.xlsx",
+  "chart2/qa/extras/data/xlsx/testChartTitlePropertiesGradientFill.xlsx",
+  "sc/qa/unit/data/xlsx/tdf73063.xlsx",
+  "sc/qa/unit/data/xlsx/ProtecteSheet1234Pass.xlsx",
+  "sc/qa/unit/data/xlsx/database.xlsx",
+]

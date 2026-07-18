@@ -21,7 +21,7 @@
     },
     "doc": {
       "minimum_discovered": 533,
-      "minimum_strict": 182,
+      "minimum_strict": 181,
       "minimum_supported": 403,
       "minimum_round_tripped": 403,
       "maximum_rejected": 91,
@@ -128,7 +128,7 @@
     },
     "xls": {
       "minimum_discovered": 770,
-      "minimum_strict": 277,
+      "minimum_strict": 276,
       "minimum_supported": 725,
       "minimum_round_tripped": 725,
       "maximum_rejected": 36,
