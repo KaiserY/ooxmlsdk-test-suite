@@ -4,8 +4,8 @@ use emfsdk::{DeviceIndependentBitmap, DibColorUsage, EmfMetafile, WmfMetafile};
 use olecfsdk::{
     cfb::CompoundFile,
     office_art::{
-        OfficeArtBitmapData, OfficeArtMetafileData, OfficeArtPartialStream, OfficeArtRecord,
-        OfficeArtRecordData, OfficeArtStream,
+        OfficeArtBStoreDelay, OfficeArtBitmapData, OfficeArtMetafileData, OfficeArtPartialStream,
+        OfficeArtRecord, OfficeArtRecordData, OfficeArtStream,
     },
     ppt::{BinaryTagData, PicturesStream, PowerPointDocument, PptRecordData, PptRecordSequence},
     xls::{BiffRecordData, BiffStream, BkHimImage, MsoDrawingData, MsoDrawingRecord},
@@ -18,6 +18,9 @@ struct Audit {
     workbook_streams: usize,
     powerpoint_streams: usize,
     pictures_streams: usize,
+    complete_pictures_streams: usize,
+    compatibility_pictures_streams: usize,
+    partial_pictures_streams: usize,
     emf: usize,
     wmf: usize,
     dib: usize,
@@ -73,8 +76,16 @@ fn embedded_office_metafiles_round_trip_through_emfsdk() {
             {
                 audit.pictures_streams += 1;
                 match &pictures {
-                    PicturesStream::Complete(stream) => visit_stream(stream, &path, &mut audit),
+                    PicturesStream::Complete(stream) => {
+                        audit.complete_pictures_streams += 1;
+                        visit_bstore_delay(stream, &path, &mut audit);
+                    }
+                    PicturesStream::Compatibility { stream, .. } => {
+                        audit.compatibility_pictures_streams += 1;
+                        visit_stream(stream, &path, &mut audit);
+                    }
                     PicturesStream::Partial(stream) => {
+                        audit.partial_pictures_streams += 1;
                         visit_partial_stream(stream, &path, &mut audit);
                     }
                 }
@@ -86,6 +97,18 @@ fn embedded_office_metafiles_round_trip_through_emfsdk() {
     assert_eq!(audit.workbook_streams, 723, "BIFF coverage changed");
     assert_eq!(audit.powerpoint_streams, 179, "PPT coverage changed");
     assert_eq!(audit.pictures_streams, 87, "Pictures coverage changed");
+    assert_eq!(
+        audit.complete_pictures_streams, 79,
+        "complete Pictures stream coverage changed"
+    );
+    assert_eq!(
+        audit.compatibility_pictures_streams, 1,
+        "compatibility Pictures stream coverage changed"
+    );
+    assert_eq!(
+        audit.partial_pictures_streams, 7,
+        "partial Pictures stream coverage changed"
+    );
     assert_eq!(audit.emf, 134, "embedded EMF coverage changed");
     assert_eq!(audit.emf_bytes, 6_486_764, "embedded EMF bytes changed");
     assert_eq!(audit.wmf, 156, "embedded WMF coverage changed");
@@ -99,11 +122,14 @@ fn embedded_office_metafiles_round_trip_through_emfsdk() {
         audit.failures.join("\n")
     );
     eprintln!(
-        "Office embedded image corpus: {} CFB files, {} Workbook/{} PowerPoint/{} Pictures streams; {} EMF/{} bytes, {} WMF/{} bytes, {} DIB/{} bytes",
+        "Office embedded image corpus: {} CFB files, {} Workbook/{} PowerPoint/{} Pictures streams ({} complete/{} compatibility/{} partial); {} EMF/{} bytes, {} WMF/{} bytes, {} DIB/{} bytes",
         audit.compound_files,
         audit.workbook_streams,
         audit.powerpoint_streams,
         audit.pictures_streams,
+        audit.complete_pictures_streams,
+        audit.compatibility_pictures_streams,
+        audit.partial_pictures_streams,
         audit.emf,
         audit.emf_bytes,
         audit.wmf,
@@ -156,6 +182,12 @@ fn visit_ppt_sequence(sequence: &PptRecordSequence, path: &Path, audit: &mut Aud
 
 fn visit_stream(stream: &OfficeArtStream, path: &Path, audit: &mut Audit) {
     stream.visit(|record| inspect_record(record, path, audit));
+}
+
+fn visit_bstore_delay(stream: &OfficeArtBStoreDelay, path: &Path, audit: &mut Audit) {
+    for record in &stream.records {
+        visit_record(record, path, audit);
+    }
 }
 
 fn visit_partial_stream(stream: &OfficeArtPartialStream, path: &Path, audit: &mut Audit) {

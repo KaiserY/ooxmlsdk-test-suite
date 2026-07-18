@@ -196,6 +196,14 @@ fn collect_doc_files_recursive(dir: &Path, workspace_dir: &Path, files: &mut Vec
 }
 
 fn is_supported_document_path(path: &Path) -> bool {
+    if path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .is_some_and(|name| name.starts_with("~$"))
+    {
+        return false;
+    }
+
     path.extension()
         .and_then(|ext| ext.to_str())
         .is_some_and(|ext| {

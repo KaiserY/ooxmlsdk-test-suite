@@ -20,6 +20,8 @@ use ooxmlsdk::parts::{
     worksheet_part::WorksheetPart,
 };
 use ooxmlsdk::schemas::opc_relationships::TargetMode;
+#[cfg(feature = "mce")]
+use ooxmlsdk::schemas::schemas_openxmlformats_org_presentationml_2006_main::ShapeTreeChoice;
 use ooxmlsdk::schemas::schemas_openxmlformats_org_presentationml_2006_main::{
     Presentation as PmlPresentation, Slide, SlideId, SlideIdList,
 };
@@ -74,6 +76,18 @@ fn office_2007_process_all_settings() -> OpenSettings {
         markup_compatibility_process_settings: MarkupCompatibilityProcessSettings {
             process_mode: MarkupCompatibilityProcessMode::ProcessAllParts,
             target_file_format_version: FileFormatVersion::Office2007,
+        },
+        ..Default::default()
+    }
+}
+
+#[cfg(feature = "mce")]
+fn office_2010_process_loaded_settings() -> OpenSettings {
+    OpenSettings {
+        open_mode: PackageOpenMode::Lazy,
+        markup_compatibility_process_settings: MarkupCompatibilityProcessSettings {
+            process_mode: MarkupCompatibilityProcessMode::ProcessLoadedPartsOnly,
+            target_file_format_version: FileFormatVersion::Office2010,
         },
         ..Default::default()
     }
@@ -520,6 +534,89 @@ fn process_all_parts_forces_lazy_package_roots_to_load_on_open() {
 
     assert_eq!(package.open_settings(), &settings);
     assert!(main_part.is_root_element_loaded(&package));
+}
+
+#[cfg(feature = "mce")]
+#[test]
+fn process_loaded_parts_only_processes_lazy_root_element() {
+    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml"><w:body><mc:AlternateContent><mc:Choice Requires="w14"><w:p><w:r><w:t>choice</w:t></w:r></w:p></mc:Choice><mc:Fallback><w:p><w:r><w:t>fallback</w:t></w:r></w:p></mc:Fallback></mc:AlternateContent></w:body></w:document>"#;
+    let mut package = WordprocessingDocument::new_with_settings(
+        minimal_wordprocessing_package(xml),
+        office_2010_process_loaded_settings(),
+    )
+    .unwrap();
+    let main_part = package.main_document_part().unwrap();
+
+    assert!(!main_part.is_root_element_loaded(&package));
+    let serialized = main_part
+        .root_element(&mut package)
+        .unwrap()
+        .to_xml()
+        .unwrap();
+
+    assert!(main_part.is_root_element_loaded(&package));
+    assert!(!serialized.contains("AlternateContent"), "{serialized}");
+    assert!(serialized.contains("<w:t>choice</w:t>"), "{serialized}");
+    assert!(!serialized.contains("<w:t>fallback</w:t>"), "{serialized}");
+}
+
+#[cfg(feature = "mce")]
+#[test]
+fn process_loaded_parts_only_processes_lazy_root_element_mut() {
+    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml"><w:body><mc:AlternateContent><mc:Choice Requires="w14"><w:p><w:r><w:t>choice</w:t></w:r></w:p></mc:Choice><mc:Fallback><w:p><w:r><w:t>fallback</w:t></w:r></w:p></mc:Fallback></mc:AlternateContent></w:body></w:document>"#;
+    let mut package = WordprocessingDocument::new_with_settings(
+        minimal_wordprocessing_package(xml),
+        office_2010_process_loaded_settings(),
+    )
+    .unwrap();
+    let main_part = package.main_document_part().unwrap();
+
+    assert!(!main_part.is_root_element_loaded(&package));
+    let serialized = main_part
+        .root_element_mut(&mut package)
+        .unwrap()
+        .to_xml()
+        .unwrap();
+
+    assert!(main_part.is_root_element_loaded(&package));
+    assert!(!serialized.contains("AlternateContent"), "{serialized}");
+    assert!(serialized.contains("<w:t>choice</w:t>"), "{serialized}");
+    assert!(!serialized.contains("<w:t>fallback</w:t>"), "{serialized}");
+}
+
+#[cfg(feature = "mce")]
+#[test]
+fn process_loaded_parts_only_replaces_presentation_shape_tree_choice() {
+    let settings = OpenSettings {
+        open_mode: PackageOpenMode::Lazy,
+        markup_compatibility_process_settings: MarkupCompatibilityProcessSettings {
+            process_mode: MarkupCompatibilityProcessMode::ProcessLoadedPartsOnly,
+            target_file_format_version: FileFormatVersion::Microsoft365,
+        },
+        ..Default::default()
+    };
+    let path = corpus_file("corpus/LibreOffice/sd/qa/unit/data/pptx/tdf131553.pptx");
+    let mut package = PresentationDocument::new_from_file_with_settings(path, settings).unwrap();
+    let presentation_part = package.presentation_part().unwrap();
+    let slide_part = presentation_part.slide_parts(&package).next().unwrap();
+
+    assert!(!slide_part.is_root_element_loaded(&package));
+    let slide = slide_part.root_element(&mut package).unwrap();
+    let choices = &slide.common_slide_data.shape_tree.shape_tree_choice;
+
+    assert!(
+        choices
+            .iter()
+            .any(|choice| matches!(choice, ShapeTreeChoice::GraphicFrame(_)))
+    );
+    assert!(
+        choices
+            .iter()
+            .all(|choice| !matches!(choice, ShapeTreeChoice::AlternateContent(_)))
+    );
+    let serialized = slide.to_xml().unwrap();
+    assert!(serialized.contains(r#"r:dm="rId2""#), "{serialized}");
+    assert!(!serialized.contains(r#"r:dm="rId7""#), "{serialized}");
 }
 
 #[cfg(feature = "mce")]

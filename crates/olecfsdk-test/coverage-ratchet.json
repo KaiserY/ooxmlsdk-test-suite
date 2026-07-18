@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "categories": {
+    "cfb": {
+      "minimum_discovered": 1533,
+      "minimum_strict": 809,
+      "minimum_supported": 1394,
+      "minimum_round_tripped": 1394,
+      "maximum_rejected": 0,
+      "maximum_excluded": 139
+    },
+    "doc": {
+      "minimum_discovered": 533,
+      "minimum_strict": 182,
+      "minimum_supported": 403,
+      "minimum_round_tripped": 403,
+      "maximum_rejected": 91,
+      "maximum_excluded": 39
+    },
+    "xls": {
+      "minimum_discovered": 770,
+      "minimum_strict": 277,
+      "minimum_supported": 725,
+      "minimum_round_tripped": 725,
+      "maximum_rejected": 36,
+      "maximum_excluded": 9
+    },
+    "ppt": {
+      "minimum_discovered": 228,
+      "minimum_strict": 93,
+      "minimum_supported": 176,
+      "minimum_round_tripped": 176,
+      "maximum_rejected": 7,
+      "maximum_excluded": 45
+    },
+    "vba": {
+      "minimum_discovered": 116,
+      "minimum_strict": 113,
+      "minimum_supported": 113,
+      "minimum_round_tripped": 113,
+      "maximum_rejected": 0,
+      "maximum_excluded": 3
+    },
+    "ole_property_set": {
+      "minimum_discovered": 2800,
+      "minimum_strict": 2760,
+      "minimum_supported": 2760,
+      "minimum_round_tripped": 2760,
+      "maximum_rejected": 0,
+      "maximum_excluded": 40
+    },
+    "office_art": {
+      "minimum_discovered": 68930,
+      "minimum_strict": 68892,
+      "minimum_supported": 68930,
+      "minimum_round_tripped": 68930,
+      "maximum_rejected": 0,
+      "maximum_excluded": 0,
+      "minimum_metrics": {
+        "bytes": 40610227,
+        "complete_units": 68893,
+        "records": 111365
+      },
+      "maximum_metrics": {
+        "compatibility_containers": 52,
+        "contextual_tree_differences": 324,
+        "incomplete_property_tables": 2,
+        "incomplete_records": 82,
+        "opaque_atom_bytes": 66,
+        "opaque_atom_records": 1,
+        "partial_units": 37,
+        "unparsed_bytes": 1045118
+      }
+    },
+    "forms": {
+      "minimum_discovered": 6,
+      "minimum_strict": 6,
+      "minimum_supported": 6,
+      "minimum_round_tripped": 6,
+      "maximum_rejected": 0,
+      "maximum_excluded": 0
+    }
+  }
+}

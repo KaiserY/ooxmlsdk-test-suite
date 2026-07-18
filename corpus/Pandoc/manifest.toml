@@ -6,3 +6,9 @@ license = "GPL-2.0-or-later"
 source = "https://github.com/jgm/pandoc"
 source_commit = "db8d64fe6f55f446bc36796d3dc20f823f55bc4e"
 default_roundtrip = false
+
+[[expectation]]
+file = "test/docx/ns0-reference.docx"
+test = "roundtrip"
+mode = "open_only"
+reason = "synthetic reference document uses an arbitrary namespace prefix for all WordprocessingML attributes and a non-schema sectPr type attribute"

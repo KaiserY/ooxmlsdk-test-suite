@@ -1,5 +1,8 @@
 use std::io::{Cursor, Read};
 
+use ooxmlsdk::schemas::schemas_microsoft_com_office_excel::{
+    BooleanEntryWithBlankValues, ClientData, ClientDataChoice,
+};
 use ooxmlsdk::schemas::schemas_microsoft_com_office_spreadsheetml_2022_featurepropertybag::{
     ArrayFeatureProperty, ArrayFeaturePropertyChoice, BoolFeatureProperty, IntFeatureProperty,
 };
@@ -76,6 +79,22 @@ fn assert_cell_value_text_round_trip(value: &str) {
     assert_eq!(cell_value_text(&parsed), Some(value));
     assert_cell_value_xml(&serialized, value);
     assert_eq!(cell_value_text(&reparsed), Some(value));
+}
+
+#[test]
+fn vml_client_data_empty_boolean_entry_round_trips_as_empty() {
+    let xml = r#"<x:ClientData xmlns:x="urn:schemas-microsoft-com:office:excel" ObjectType="Note"><x:Visible/></x:ClientData>"#;
+    let (parsed, serialized, reparsed) = assert_stable_roundtrip::<ClientData>(xml);
+
+    for client_data in [&parsed, &reparsed] {
+        assert!(matches!(
+            client_data.client_data_choice.as_slice(),
+            [ClientDataChoice::Visible(
+                BooleanEntryWithBlankValues::Empty
+            )]
+        ));
+    }
+    assert!(!serialized.contains(">Empty<"), "{serialized}");
 }
 
 fn shared_string_items(

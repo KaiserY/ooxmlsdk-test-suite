@@ -1518,6 +1518,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "olecfsdk-test"
+version = "0.1.0"
+dependencies = [
+ "olecfsdk",
+ "olecfsdk-corpus-test-support",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "once_cell"
 version = "1.21.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1671,7 +1681,6 @@ dependencies = [
  "ooxmlsdk-formula",
  "ooxmlsdk-layout",
  "png 0.18.1",
- "quick-xml 0.41.0",
  "rustc-hash",
  "rustybuzz",
  "smallvec",

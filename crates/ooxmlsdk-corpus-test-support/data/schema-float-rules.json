@@ -631,6 +631,13 @@
       "kind": "single"
     }
   ],
+  "compat_attrs": [
+    {
+      "element": "{http://schemas.microsoft.com/office/drawing/2014/chartex}binSize",
+      "attr": "val",
+      "kind": "double"
+    }
+  ],
   "texts": [
     {
       "element": "{http://schemas.microsoft.com/office/drawing/2012/chartStyle}lineWidthScale",

@@ -32,6 +32,20 @@ use olecfsdk_corpus_test_support::{
     manifest::{ExpectationMode, read_manifest},
 };
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum DocSavePolicy {
+    Strict,
+    PreserveCompatibility,
+}
+
+fn save_doc_with_policy(file: &DocFile, policy: DocSavePolicy) -> Result<Vec<u8>, String> {
+    match policy {
+        DocSavePolicy::Strict => file.to_bytes(),
+        DocSavePolicy::PreserveCompatibility => file.to_bytes_preserving_compatibility(),
+    }
+    .map_err(|error| error.to_string())
+}
+
 #[test]
 #[ignore = "classic Office file-root corpus round-trip runs explicitly"]
 fn doc_files_round_trip_through_typed_root() {
@@ -40,6 +54,9 @@ fn doc_files_round_trip_through_typed_root() {
     let files = corpus_files(&corpus, &["doc"]);
     let mut opened = 0usize;
     let mut reopened = 0usize;
+    let mut strict_saved = 0usize;
+    let mut compatibility_saved = 0usize;
+    let mut strict_save_rejections = BTreeMap::<String, usize>::new();
     let mut rejected = BTreeMap::<String, usize>::new();
     let mut observed_exclusions = BTreeSet::new();
     let mut failures = Vec::new();
@@ -111,9 +128,10 @@ fn doc_files_round_trip_through_typed_root() {
         let mut parsed_root = false;
         let result = (|| {
             let bytes = corpus_bytes(path).map_err(|error| error.to_string())?;
-            let file = DocFile::from_bytes_compatible(&bytes)
-                .map_err(|error| error.to_string())?
-                .value;
+            let outcome =
+                DocFile::from_bytes_compatible(&bytes).map_err(|error| error.to_string())?;
+            let has_compatibility_diagnostics = !outcome.diagnostics.is_empty();
+            let file = outcome.value;
             let content = file
                 .content_tree_compatible()
                 .map_err(|error| error.to_string())?;
@@ -486,7 +504,26 @@ fn doc_files_round_trip_through_typed_root() {
             }
             parsed_root = true;
             opened += 1;
-            let saved = file.to_bytes().map_err(|error| error.to_string())?;
+            let (saved, save_policy) = match file.to_bytes() {
+                Ok(saved) => {
+                    strict_saved += 1;
+                    (saved, DocSavePolicy::Strict)
+                }
+                Err(error) => {
+                    if !has_compatibility_diagnostics {
+                        return Err(format!(
+                            "strict DOC save rejected a compatible parse without diagnostics: {error}"
+                        ));
+                    }
+                    *strict_save_rejections.entry(error.to_string()).or_default() += 1;
+                    compatibility_saved += 1;
+                    (
+                        file.to_bytes_preserving_compatibility()
+                            .map_err(|error| error.to_string())?,
+                        DocSavePolicy::PreserveCompatibility,
+                    )
+                }
+            };
             let round_tripped = DocFile::from_bytes_compatible(&saved)
                 .map_err(|error| error.to_string())?
                 .value;
@@ -518,7 +555,7 @@ fn doc_files_round_trip_through_typed_root() {
                     .value;
                 properties.word97.base.format_flags.facing_pages =
                     !properties.word97.base.format_flags.facing_pages;
-                let edited_bytes = edited.to_bytes().map_err(|error| error.to_string())?;
+                let edited_bytes = save_doc_with_policy(&edited, save_policy)?;
                 let edited_reopened = DocFile::from_bytes_compatible(&edited_bytes)
                     .map_err(|error| error.to_string())?
                     .value;
@@ -547,7 +584,7 @@ fn doc_files_round_trip_through_typed_root() {
                 let old_length = strings.location.lcb;
                 strings.value.title.push(u16::from(b'X'));
                 let expected_title = strings.value.title.clone();
-                let edited_bytes = edited.to_bytes().map_err(|error| error.to_string())?;
+                let edited_bytes = save_doc_with_policy(&edited, save_policy)?;
                 let edited_reopened = DocFile::from_bytes_compatible(&edited_bytes)
                     .map_err(|error| error.to_string())?
                     .value;
@@ -589,7 +626,7 @@ fn doc_files_round_trip_through_typed_root() {
                     .properties
                     .push(value.properties.properties[0].clone());
                 let expected = value.clone();
-                let edited_bytes = edited.to_bytes().map_err(|error| error.to_string())?;
+                let edited_bytes = save_doc_with_policy(&edited, save_policy)?;
                 let edited_reopened = DocFile::from_bytes_compatible(&edited_bytes)
                     .map_err(|error| error.to_string())?
                     .value;
@@ -625,7 +662,7 @@ fn doc_files_round_trip_through_typed_root() {
                 piece.characters =
                     TextPieceCharacters::Utf16(characters.iter().copied().map(u16::from).collect());
                 let expected = piece.characters.clone();
-                let edited_bytes = edited.to_bytes().map_err(|error| error.to_string())?;
+                let edited_bytes = save_doc_with_policy(&edited, save_policy)?;
                 let edited_reopened = DocFile::from_bytes_compatible(&edited_bytes)
                     .map_err(|error| error.to_string())?
                     .value;
@@ -678,7 +715,7 @@ fn doc_files_round_trip_through_typed_root() {
                         {
                             continue;
                         }
-                        let Ok(edited_bytes) = edited.to_bytes() else {
+                        let Ok(edited_bytes) = save_doc_with_policy(&edited, save_policy) else {
                             continue;
                         };
                         let edited_reopened = DocFile::from_bytes_compatible(&edited_bytes)
@@ -718,32 +755,36 @@ fn doc_files_round_trip_through_typed_root() {
                 }
             }
             if file.table.compatibility_tables.is_empty() {
-                if !relocated_multiple_text_edits && try_doc_multiple_text_edits(&file)? {
+                if !relocated_multiple_text_edits
+                    && try_doc_multiple_text_edits(&file, save_policy)?
+                {
                     relocated_multiple_text_edits = true;
                 }
                 if !relocated_character_format_boundary
-                    && try_doc_character_format_boundary_edit(&file)?
+                    && try_doc_character_format_boundary_edit(&file, save_policy)?
                 {
                     relocated_character_format_boundary = true;
                 }
-                if !relocated_text_piece_boundary && try_doc_text_piece_boundary_edit(&file)? {
+                if !relocated_text_piece_boundary
+                    && try_doc_text_piece_boundary_edit(&file, save_policy)?
+                {
                     relocated_text_piece_boundary = true;
                 }
-                if !removed_text_piece && try_doc_text_piece_removal(&file)? {
+                if !removed_text_piece && try_doc_text_piece_removal(&file, save_policy)? {
                     removed_text_piece = true;
                 }
                 if !relocated_paragraph_format_boundary
-                    && try_doc_paragraph_format_boundary_edit(&file)?
+                    && try_doc_paragraph_format_boundary_edit(&file, save_policy)?
                 {
                     relocated_paragraph_format_boundary = true;
                 }
-                if !edited_chpx_tree && try_doc_chpx_tree_edit(&file)? {
+                if !edited_chpx_tree && try_doc_chpx_tree_edit(&file, save_policy)? {
                     edited_chpx_tree = true;
                 }
-                if !edited_papx_tree && try_doc_papx_tree_edit(&file)? {
+                if !edited_papx_tree && try_doc_papx_tree_edit(&file, save_policy)? {
                     edited_papx_tree = true;
                 }
-                if !edited_paragraph_structure && try_doc_paragraph_mark_edit(&file)? {
+                if !edited_paragraph_structure && try_doc_paragraph_mark_edit(&file, save_policy)? {
                     edited_paragraph_structure = true;
                 }
                 for part in [
@@ -768,12 +809,12 @@ fn doc_files_round_trip_through_typed_root() {
                     };
                     if !edited_non_main_paragraph_parts.contains(&part)
                         && structure_valid
-                        && try_doc_part_paragraph_mark_edit(&file, part)?
+                        && try_doc_part_paragraph_mark_edit(&file, part, save_policy)?
                     {
                         edited_non_main_paragraph_parts.insert(part);
                     }
                     if !relocated_non_main_text_parts.contains(&part)
-                        && try_doc_part_text_edit(&file, part)?
+                        && try_doc_part_text_edit(&file, part, save_policy)?
                     {
                         relocated_non_main_text_parts.insert(part);
                     }
@@ -810,7 +851,7 @@ fn doc_files_round_trip_through_typed_root() {
                         .insert(OleObjectPersist1Flags::VIEW_OBJECT);
                 }
                 let expected = edited.object_pool.clone();
-                let edited_bytes = edited.to_bytes().map_err(|error| error.to_string())?;
+                let edited_bytes = save_doc_with_policy(&edited, save_policy)?;
                 let edited_reopened = DocFile::from_bytes_compatible(&edited_bytes)
                     .map_err(|error| error.to_string())?
                     .value;
@@ -848,7 +889,7 @@ fn doc_files_round_trip_through_typed_root() {
                 };
                 let expected = edited_node.value.clone();
                 let offset = edited_node.offset;
-                let edited_bytes = edited.to_bytes().map_err(|error| error.to_string())?;
+                let edited_bytes = save_doc_with_policy(&edited, save_policy)?;
                 let edited_reopened = DocFile::from_bytes_compatible(&edited_bytes)
                     .map_err(|error| error.to_string())?
                     .value;
@@ -894,7 +935,7 @@ fn doc_files_round_trip_through_typed_root() {
                 value.name.characters.push(b'X' as u16);
                 let expected = container.binary_data.clone();
                 let offset = node.offset;
-                let edited_bytes = edited.to_bytes().map_err(|error| error.to_string())?;
+                let edited_bytes = save_doc_with_policy(&edited, save_policy)?;
                 let edited_reopened = DocFile::from_bytes_compatible(&edited_bytes)
                     .map_err(|error| error.to_string())?
                     .value;
@@ -940,7 +981,7 @@ fn doc_files_round_trip_through_typed_root() {
                 value.bits.open_in_new_window = !value.bits.open_in_new_window;
                 let expected = container.binary_data.clone();
                 let offset = node.offset;
-                let edited_bytes = edited.to_bytes().map_err(|error| error.to_string())?;
+                let edited_bytes = save_doc_with_policy(&edited, save_policy)?;
                 let edited_reopened = DocFile::from_bytes_compatible(&edited_bytes)
                     .map_err(|error| error.to_string())?
                     .value;
@@ -983,7 +1024,7 @@ fn doc_files_round_trip_through_typed_root() {
                     .properties
                     .push(properties.properties.properties[0].clone());
                 let expected = data.nodes[node_index].value.clone();
-                let edited_bytes = edited.to_bytes().map_err(|error| error.to_string())?;
+                let edited_bytes = save_doc_with_policy(&edited, save_policy)?;
                 let edited_reopened = DocFile::from_bytes_compatible(&edited_bytes)
                     .map_err(|error| error.to_string())?
                     .value;
@@ -1015,12 +1056,30 @@ fn doc_files_round_trip_through_typed_root() {
     }
 
     eprintln!(
-        "DOC file roots: {} corpus files/{opened} opened/{reopened} reopened/{} manifest exclusions/{} other rejected; content relationships {related_document_parts} document parts/{related_text_pieces} text pieces/{related_paragraphs} paragraphs/{related_character_runs} character runs/{related_fields} fields/{related_bookmarks} bookmarks/{related_footnotes} footnotes/{related_endnotes} endnotes/{related_comments} comments/{related_comment_replies} comment replies/{related_annotation_bookmarks} annotation bookmarks/{related_textbox_stories} textbox stories/{related_textbox_breaks} textbox breaks/{related_shape_anchors} shape anchors/{related_office_art_shapes} OfficeArt shapes/{related_tables} tables/{related_table_rows} table rows/{related_table_cells} table cells/{related_nested_tables} nested-table links/{related_pictures} pictures/{related_binary_payloads} binary payloads/{related_ole_objects} OLE objects/{compatible_ole_objects} compatible OLE storages; content relationship diagnostics {content_relationship_diagnostics:#?}; table relationship diagnostics {table_relationship_diagnostics:#?}; unresolved special content {unresolved_special_contents:#?}; {direct_formatting_queries} direct-formatting queries; direct-formatting errors {direct_formatting_errors:#?}; direct table states {direct_table_states:?}; {comment_cf_spec_markers} effective comment CFSpec markers/{comment_cf_spec_false_markers} false; false-marker files {comment_cf_spec_false:#?}; CFSpec errors {comment_cf_spec_errors:#?}; comment paragraph-mark table states {comment_table_states:?}; edited non-main text parts {relocated_non_main_text_parts:?}; non-main paragraph validation errors {non_main_paragraph_validation_errors:#?}; NilPICF kinds {nil_picf_kinds:?}; rejection shapes {rejected:#?}",
+        "DOC file roots: {} corpus files/{opened} opened/{reopened} reopened/{strict_saved} strict saves/{compatibility_saved} compatibility-preserving saves/{} manifest exclusions/{} other rejected; strict-save rejection shapes {strict_save_rejections:#?}; content relationships {related_document_parts} document parts/{related_text_pieces} text pieces/{related_paragraphs} paragraphs/{related_character_runs} character runs/{related_fields} fields/{related_bookmarks} bookmarks/{related_footnotes} footnotes/{related_endnotes} endnotes/{related_comments} comments/{related_comment_replies} comment replies/{related_annotation_bookmarks} annotation bookmarks/{related_textbox_stories} textbox stories/{related_textbox_breaks} textbox breaks/{related_shape_anchors} shape anchors/{related_office_art_shapes} OfficeArt shapes/{related_tables} tables/{related_table_rows} table rows/{related_table_cells} table cells/{related_nested_tables} nested-table links/{related_pictures} pictures/{related_binary_payloads} binary payloads/{related_ole_objects} OLE objects/{compatible_ole_objects} compatible OLE storages; content relationship diagnostics {content_relationship_diagnostics:#?}; table relationship diagnostics {table_relationship_diagnostics:#?}; unresolved special content {unresolved_special_contents:#?}; {direct_formatting_queries} direct-formatting queries; direct-formatting errors {direct_formatting_errors:#?}; direct table states {direct_table_states:?}; {comment_cf_spec_markers} effective comment CFSpec markers/{comment_cf_spec_false_markers} false; false-marker files {comment_cf_spec_false:#?}; CFSpec errors {comment_cf_spec_errors:#?}; comment paragraph-mark table states {comment_table_states:?}; edited non-main text parts {relocated_non_main_text_parts:?}; non-main paragraph validation errors {non_main_paragraph_validation_errors:#?}; NilPICF kinds {nil_picf_kinds:?}; rejection shapes {rejected:#?}",
         files.len(),
         exclusions.len(),
         rejected.values().sum::<usize>()
     );
     assert_eq!(observed_exclusions, exclusions.keys().cloned().collect());
+    assert_eq!(
+        strict_saved + compatibility_saved,
+        opened,
+        "every opened DOC must select an explicit save policy"
+    );
+    assert_eq!(
+        strict_saved, 265,
+        "strict DOC file-root save coverage changed; investigate before updating the ratchet"
+    );
+    assert_eq!(
+        compatibility_saved, 138,
+        "compatibility-preserving DOC save inventory changed; decreases should move coverage into the strict category"
+    );
+    assert_eq!(
+        strict_save_rejections.values().sum::<usize>(),
+        compatibility_saved,
+        "strict-save rejection report does not account for every compatibility save"
+    );
     assert!(
         missing_chpx_cp_trees.is_empty(),
         "conforming corpus files without a CHPX CP tree: {missing_chpx_cp_trees:#?}"
@@ -3418,7 +3477,7 @@ fn try_xls_sheet_name_growth(file: &mut XlsFile) -> Result<bool, String> {
     Ok(true)
 }
 
-fn try_doc_paragraph_mark_edit(file: &DocFile) -> Result<bool, String> {
+fn try_doc_paragraph_mark_edit(file: &DocFile, save_policy: DocSavePolicy) -> Result<bool, String> {
     let Some(source_runs) = &file.word_document.papx_runs else {
         return Ok(false);
     };
@@ -3496,7 +3555,7 @@ fn try_doc_paragraph_mark_edit(file: &DocFile) -> Result<bool, String> {
         {
             continue;
         }
-        let inserted_bytes = match inserted.to_bytes() {
+        let inserted_bytes = match save_doc_with_policy(&inserted, save_policy) {
             Ok(bytes) => bytes,
             Err(_) => continue,
         };
@@ -3531,7 +3590,7 @@ fn try_doc_paragraph_mark_edit(file: &DocFile) -> Result<bool, String> {
         deleted
             .replace_main_text_range_with_papx_runs(cp + 1..cp + 2, empty, source_runs.clone())
             .map_err(|error| error.to_string())?;
-        let deleted_bytes = deleted.to_bytes().map_err(|error| error.to_string())?;
+        let deleted_bytes = save_doc_with_policy(&deleted, save_policy)?;
         let deleted_reopened =
             DocFile::from_bytes(&deleted_bytes).map_err(|error| error.to_string())?;
         if deleted_reopened.word_document.fib.rg_lw.ccp_text
@@ -3540,9 +3599,7 @@ fn try_doc_paragraph_mark_edit(file: &DocFile) -> Result<bool, String> {
         {
             return Err("DOC paragraph deletion did not restore the explicit PAPX tree".to_owned());
         }
-        let second_save = deleted_reopened
-            .to_bytes()
-            .map_err(|error| error.to_string())?;
+        let second_save = save_doc_with_policy(&deleted_reopened, save_policy)?;
         let second_reopen = DocFile::from_bytes(&second_save).map_err(|error| error.to_string())?;
         if second_reopen.word_document != deleted_reopened.word_document
             || second_reopen.table != deleted_reopened.table
@@ -3559,6 +3616,7 @@ fn try_doc_paragraph_mark_edit(file: &DocFile) -> Result<bool, String> {
 fn try_doc_part_paragraph_mark_edit(
     file: &DocFile,
     part: FieldDocumentPart,
+    save_policy: DocSavePolicy,
 ) -> Result<bool, String> {
     if file.validate_document_part_structure(part).is_err() {
         return Ok(false);
@@ -3636,7 +3694,7 @@ fn try_doc_part_paragraph_mark_edit(
         {
             continue;
         }
-        let inserted_bytes = match inserted.to_bytes() {
+        let inserted_bytes = match save_doc_with_policy(&inserted, save_policy) {
             Ok(bytes) => bytes,
             Err(_) => continue,
         };
@@ -3684,7 +3742,7 @@ fn try_doc_part_paragraph_mark_edit(
                 source_runs.clone(),
             )
             .map_err(|error| error.to_string())?;
-        let deleted_bytes = deleted.to_bytes().map_err(|error| error.to_string())?;
+        let deleted_bytes = save_doc_with_policy(&deleted, save_policy)?;
         let deleted_reopened = DocFile::from_bytes_compatible(&deleted_bytes)
             .map_err(|error| error.to_string())?
             .value;
@@ -3699,9 +3757,7 @@ fn try_doc_part_paragraph_mark_edit(
                 "{part:?} paragraph deletion did not restore the explicit PAPX tree"
             ));
         }
-        let second_save = deleted_reopened
-            .to_bytes()
-            .map_err(|error| error.to_string())?;
+        let second_save = save_doc_with_policy(&deleted_reopened, save_policy)?;
         let second_reopen = DocFile::from_bytes_compatible(&second_save)
             .map_err(|error| error.to_string())?
             .value;
@@ -3783,7 +3839,7 @@ fn doc_part_range(file: &DocFile, target: FieldDocumentPart) -> Result<(u32, u32
     Err("unknown DOC document part".to_owned())
 }
 
-fn try_doc_chpx_tree_edit(file: &DocFile) -> Result<bool, String> {
+fn try_doc_chpx_tree_edit(file: &DocFile, save_policy: DocSavePolicy) -> Result<bool, String> {
     let Some(runs) = &file.word_document.chpx_runs else {
         return Ok(false);
     };
@@ -3801,7 +3857,7 @@ fn try_doc_chpx_tree_edit(file: &DocFile) -> Result<bool, String> {
         .as_mut()
         .expect("CHPX CP tree was checked")[index]
         .properties = None;
-    let bytes = match edited.to_bytes() {
+    let bytes = match save_doc_with_policy(&edited, save_policy) {
         Ok(bytes) => bytes,
         Err(_) => return Ok(false),
     };
@@ -3812,7 +3868,7 @@ fn try_doc_chpx_tree_edit(file: &DocFile) -> Result<bool, String> {
     if reopened.word_document.chpx_runs != edited.word_document.chpx_runs {
         return Err("DOC CHPX CP-tree edit did not rebuild physical FKP pages".to_owned());
     }
-    let second_save = reopened.to_bytes().map_err(|error| error.to_string())?;
+    let second_save = save_doc_with_policy(&reopened, save_policy)?;
     let second_reopen = DocFile::from_bytes(&second_save).map_err(|error| error.to_string())?;
     if second_reopen.word_document != reopened.word_document
         || second_reopen.table != reopened.table
@@ -3822,7 +3878,7 @@ fn try_doc_chpx_tree_edit(file: &DocFile) -> Result<bool, String> {
     Ok(true)
 }
 
-fn try_doc_papx_tree_edit(file: &DocFile) -> Result<bool, String> {
+fn try_doc_papx_tree_edit(file: &DocFile, save_policy: DocSavePolicy) -> Result<bool, String> {
     let Some(runs) = &file.word_document.papx_runs else {
         return Ok(false);
     };
@@ -3843,7 +3899,7 @@ fn try_doc_papx_tree_edit(file: &DocFile) -> Result<bool, String> {
         .as_mut()
         .expect("non-default PAPX was checked")
         .style_index = 0;
-    let bytes = match edited.to_bytes() {
+    let bytes = match save_doc_with_policy(&edited, save_policy) {
         Ok(bytes) => bytes,
         Err(_) => return Ok(false),
     };
@@ -3854,7 +3910,7 @@ fn try_doc_papx_tree_edit(file: &DocFile) -> Result<bool, String> {
     if reopened.word_document.papx_runs != edited.word_document.papx_runs {
         return Err("DOC PAPX CP-tree edit did not rebuild physical FKP pages".to_owned());
     }
-    let second_save = reopened.to_bytes().map_err(|error| error.to_string())?;
+    let second_save = save_doc_with_policy(&reopened, save_policy)?;
     let second_reopen = DocFile::from_bytes(&second_save).map_err(|error| error.to_string())?;
     if second_reopen.word_document != reopened.word_document
         || second_reopen.table != reopened.table
@@ -3864,7 +3920,10 @@ fn try_doc_papx_tree_edit(file: &DocFile) -> Result<bool, String> {
     Ok(true)
 }
 
-fn try_doc_paragraph_format_boundary_edit(file: &DocFile) -> Result<bool, String> {
+fn try_doc_paragraph_format_boundary_edit(
+    file: &DocFile,
+    save_policy: DocSavePolicy,
+) -> Result<bool, String> {
     let main_len = u32::try_from(file.word_document.fib.rg_lw.ccp_text)
         .map_err(|_| "DOC ccpText is negative".to_owned())?;
     for piece in &file.word_document.text_pieces {
@@ -3930,7 +3989,7 @@ fn try_doc_paragraph_format_boundary_edit(file: &DocFile) -> Result<bool, String
             {
                 continue;
             }
-            let bytes = match edited.to_bytes() {
+            let bytes = match save_doc_with_policy(&edited, save_policy) {
                 Ok(bytes) => bytes,
                 Err(_) => continue,
             };
@@ -3952,7 +4011,7 @@ fn try_doc_paragraph_format_boundary_edit(file: &DocFile) -> Result<bool, String
                     "DOC PAPX-boundary edit did not rebuild paragraph formatting layout".to_owned(),
                 );
             }
-            let second_save = reopened.to_bytes().map_err(|error| error.to_string())?;
+            let second_save = save_doc_with_policy(&reopened, save_policy)?;
             let second_reopen = DocFile::from_bytes_compatible(&second_save)
                 .map_err(|error| error.to_string())?
                 .value;
@@ -3967,7 +4026,10 @@ fn try_doc_paragraph_format_boundary_edit(file: &DocFile) -> Result<bool, String
     Ok(false)
 }
 
-fn try_doc_text_piece_boundary_edit(file: &DocFile) -> Result<bool, String> {
+fn try_doc_text_piece_boundary_edit(
+    file: &DocFile,
+    save_policy: DocSavePolicy,
+) -> Result<bool, String> {
     let main_len = u32::try_from(file.word_document.fib.rg_lw.ccp_text)
         .map_err(|_| "DOC ccpText is negative".to_owned())?;
     for pieces in file.word_document.text_pieces.windows(2) {
@@ -4006,7 +4068,7 @@ fn try_doc_text_piece_boundary_edit(file: &DocFile) -> Result<bool, String> {
         {
             continue;
         }
-        let bytes = match edited.to_bytes() {
+        let bytes = match save_doc_with_policy(&edited, save_policy) {
             Ok(bytes) => bytes,
             Err(_) => continue,
         };
@@ -4029,7 +4091,7 @@ fn try_doc_text_piece_boundary_edit(file: &DocFile) -> Result<bool, String> {
         {
             return Err("DOC text-piece boundary edit did not rebuild CLX/FC layout".to_owned());
         }
-        let second_save = reopened.to_bytes().map_err(|error| error.to_string())?;
+        let second_save = save_doc_with_policy(&reopened, save_policy)?;
         let second_reopen = DocFile::from_bytes_compatible(&second_save)
             .map_err(|error| error.to_string())?
             .value;
@@ -4045,7 +4107,7 @@ fn try_doc_text_piece_boundary_edit(file: &DocFile) -> Result<bool, String> {
     Ok(false)
 }
 
-fn try_doc_text_piece_removal(file: &DocFile) -> Result<bool, String> {
+fn try_doc_text_piece_removal(file: &DocFile, save_policy: DocSavePolicy) -> Result<bool, String> {
     let main_len = u32::try_from(file.word_document.fib.rg_lw.ccp_text)
         .map_err(|_| "DOC ccpText is negative".to_owned())?;
     for pieces in file.word_document.text_pieces.windows(2) {
@@ -4109,7 +4171,7 @@ fn try_doc_text_piece_removal(file: &DocFile) -> Result<bool, String> {
         if edited.word_document.text_pieces.len() + 1 != file.word_document.text_pieces.len() {
             continue;
         }
-        let bytes = match edited.to_bytes() {
+        let bytes = match save_doc_with_policy(&edited, save_policy) {
             Ok(bytes) => bytes,
             Err(_) => continue,
         };
@@ -4137,7 +4199,7 @@ fn try_doc_text_piece_removal(file: &DocFile) -> Result<bool, String> {
                 "DOC complete text-piece removal did not rebuild CLX/FKP layout".to_owned(),
             );
         }
-        let second_save = reopened.to_bytes().map_err(|error| error.to_string())?;
+        let second_save = save_doc_with_policy(&reopened, save_policy)?;
         let second_reopen = DocFile::from_bytes_compatible(&second_save)
             .map_err(|error| error.to_string())?
             .value;
@@ -4153,7 +4215,10 @@ fn try_doc_text_piece_removal(file: &DocFile) -> Result<bool, String> {
     Ok(false)
 }
 
-fn try_doc_character_format_boundary_edit(file: &DocFile) -> Result<bool, String> {
+fn try_doc_character_format_boundary_edit(
+    file: &DocFile,
+    save_policy: DocSavePolicy,
+) -> Result<bool, String> {
     let main_len = u32::try_from(file.word_document.fib.rg_lw.ccp_text)
         .map_err(|_| "DOC ccpText is negative".to_owned())?;
     for piece in &file.word_document.text_pieces {
@@ -4213,7 +4278,7 @@ fn try_doc_character_format_boundary_edit(file: &DocFile) -> Result<bool, String
             {
                 continue;
             }
-            let bytes = match edited.to_bytes() {
+            let bytes = match save_doc_with_policy(&edited, save_policy) {
                 Ok(bytes) => bytes,
                 Err(_) => continue,
             };
@@ -4235,7 +4300,7 @@ fn try_doc_character_format_boundary_edit(file: &DocFile) -> Result<bool, String
                     "DOC CHPX-boundary edit did not rebuild text and formatting layout".to_owned(),
                 );
             }
-            let second_save = reopened.to_bytes().map_err(|error| error.to_string())?;
+            let second_save = save_doc_with_policy(&reopened, save_policy)?;
             let second_reopen = DocFile::from_bytes_compatible(&second_save)
                 .map_err(|error| error.to_string())?
                 .value;
@@ -4250,7 +4315,7 @@ fn try_doc_character_format_boundary_edit(file: &DocFile) -> Result<bool, String
     Ok(false)
 }
 
-fn try_doc_multiple_text_edits(file: &DocFile) -> Result<bool, String> {
+fn try_doc_multiple_text_edits(file: &DocFile, save_policy: DocSavePolicy) -> Result<bool, String> {
     let main_len = u32::try_from(file.word_document.fib.rg_lw.ccp_text)
         .map_err(|_| "DOC ccpText is negative".to_owned())?;
     for piece in &file.word_document.text_pieces {
@@ -4317,7 +4382,7 @@ fn try_doc_multiple_text_edits(file: &DocFile) -> Result<bool, String> {
         {
             continue;
         }
-        let bytes = match edited.to_bytes() {
+        let bytes = match save_doc_with_policy(&edited, save_policy) {
             Ok(bytes) => bytes,
             Err(_) => continue,
         };
@@ -4338,7 +4403,7 @@ fn try_doc_multiple_text_edits(file: &DocFile) -> Result<bool, String> {
                 "multiple DOC text edits were not composed through CP/FC layout".to_owned(),
             );
         }
-        let second_save = reopened.to_bytes().map_err(|error| error.to_string())?;
+        let second_save = save_doc_with_policy(&reopened, save_policy)?;
         let second_reopen = DocFile::from_bytes_compatible(&second_save)
             .map_err(|error| error.to_string())?
             .value;
@@ -4365,7 +4430,7 @@ fn try_doc_multiple_text_edits(file: &DocFile) -> Result<bool, String> {
         net_zero
             .replace_main_text_range(second_cp..second_cp + 1, empty_replacement)
             .map_err(|error| error.to_string())?;
-        let net_zero_bytes = net_zero.to_bytes().map_err(|error| error.to_string())?;
+        let net_zero_bytes = save_doc_with_policy(&net_zero, save_policy)?;
         let net_zero_reopened = DocFile::from_bytes_compatible(&net_zero_bytes)
             .map_err(|error| error.to_string())?
             .value;
@@ -4390,9 +4455,7 @@ fn try_doc_multiple_text_edits(file: &DocFile) -> Result<bool, String> {
                     .to_owned(),
             );
         }
-        let net_zero_second_save = net_zero_reopened
-            .to_bytes()
-            .map_err(|error| error.to_string())?;
+        let net_zero_second_save = save_doc_with_policy(&net_zero_reopened, save_policy)?;
         let net_zero_second_reopen = DocFile::from_bytes_compatible(&net_zero_second_save)
             .map_err(|error| error.to_string())?
             .value;
@@ -4406,7 +4469,11 @@ fn try_doc_multiple_text_edits(file: &DocFile) -> Result<bool, String> {
     Ok(false)
 }
 
-fn try_doc_part_text_edit(file: &DocFile, target: FieldDocumentPart) -> Result<bool, String> {
+fn try_doc_part_text_edit(
+    file: &DocFile,
+    target: FieldDocumentPart,
+    save_policy: DocSavePolicy,
+) -> Result<bool, String> {
     let fib = &file.word_document.fib.rg_lw;
     let parts = [
         (FieldDocumentPart::Main, fib.ccp_text),
@@ -4478,7 +4545,7 @@ fn try_doc_part_text_edit(file: &DocFile, target: FieldDocumentPart) -> Result<b
                 {
                     continue;
                 }
-                let Ok(bytes) = edited.to_bytes() else {
+                let Ok(bytes) = save_doc_with_policy(&edited, save_policy) else {
                     continue;
                 };
                 let reopened = DocFile::from_bytes_compatible(&bytes)

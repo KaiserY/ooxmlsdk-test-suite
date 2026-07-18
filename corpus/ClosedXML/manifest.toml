@@ -6,3 +6,15 @@ license = "MIT"
 source = "https://github.com/ClosedXML/ClosedXML"
 source_commit = "4e89dcedd83cad553e84d2d97f77fc3d7deb630f"
 default_roundtrip = false
+
+[[expectation]]
+file = "ClosedXML.Tests/Resource/Other/NoActiveSheet/noactive_negativeId.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "intentional malformed-input fixture uses activeTab=-1 although SpreadsheetML requires an unsigned index in the range 0 through 32766"
+
+[[expectation]]
+file = "ClosedXML.Tests/Resource/TryToLoad/Malformed/AttributesWithInvalidValues.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "intentional malformed-input fixture contains invalid boolean, numeric, and enum attribute lexemes and is only loaded by ClosedXML with strict attribute parsing disabled"

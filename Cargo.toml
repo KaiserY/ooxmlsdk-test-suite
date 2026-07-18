@@ -2,6 +2,7 @@
 resolver = "3"
 members = [
   "crates/emfsdk-test",
+  "crates/olecfsdk-test",
   "crates/olecfsdk-corpus-test-support",
   "crates/olecfsdk-roundtrip-tests",
   "crates/ooxmlsdk-bench",

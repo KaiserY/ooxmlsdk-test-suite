@@ -818,6 +818,8 @@ enum SchemaFloatKind {
 #[derive(Debug, Deserialize)]
 struct SchemaFloatRules {
     attrs: Vec<SchemaFloatAttrRule>,
+    #[serde(default)]
+    compat_attrs: Vec<SchemaFloatAttrRule>,
     texts: Vec<SchemaFloatTextRule>,
 }
 
@@ -865,6 +867,7 @@ struct CanonicalOptions {
     sort_spreadsheet_stylesheet_children: bool,
     sort_package_properties: bool,
     sort_word_settings_children: bool,
+    normalize_word_settings_duplicate_proof_state: bool,
     sort_word_document_paragraph_properties_children: bool,
     sort_word_numbering_paragraph_properties_children: bool,
     sort_word_document_numbering_properties_children: bool,
@@ -882,9 +885,12 @@ struct CanonicalOptions {
     normalize_word_numbering_multilevel_type_attr: bool,
     normalize_word_numbering_level_suffix_attr: bool,
     normalize_word_style_duplicate_font_size: bool,
+    ignore_word_font_table_element_whitespace_text_nodes: bool,
     sort_word_font_table_font_children: bool,
     sort_word_style_children: bool,
+    sort_word_style_table_cell_properties_children: bool,
     sort_word_style_table_cell_margin_children: bool,
+    sort_math_delimiter_properties_children: bool,
     sort_chart_schema_children: bool,
     normalize_chart_show_dlbls_over_max_extlst_order: bool,
     normalize_wordprocessing_drawing_position_offset_text: bool,
@@ -923,6 +929,7 @@ impl CanonicalOptions {
             sort_spreadsheet_stylesheet_children: false,
             sort_package_properties: false,
             sort_word_settings_children: false,
+            normalize_word_settings_duplicate_proof_state: false,
             sort_word_document_paragraph_properties_children: false,
             sort_word_numbering_paragraph_properties_children: false,
             sort_word_document_numbering_properties_children: false,
@@ -940,9 +947,12 @@ impl CanonicalOptions {
             normalize_word_numbering_multilevel_type_attr: false,
             normalize_word_numbering_level_suffix_attr: false,
             normalize_word_style_duplicate_font_size: false,
+            ignore_word_font_table_element_whitespace_text_nodes: false,
             sort_word_font_table_font_children: false,
             sort_word_style_children: false,
+            sort_word_style_table_cell_properties_children: false,
             sort_word_style_table_cell_margin_children: false,
+            sort_math_delimiter_properties_children: false,
             sort_chart_schema_children: false,
             normalize_chart_show_dlbls_over_max_extlst_order: false,
             normalize_wordprocessing_drawing_position_offset_text: false,
@@ -1001,6 +1011,7 @@ impl CanonicalOptions {
             sort_spreadsheet_stylesheet_children: is_spreadsheet_styles_entry(entry_name),
             sort_package_properties: is_package_properties_entry(entry_name),
             sort_word_settings_children: is_word_settings_entry(entry_name),
+            normalize_word_settings_duplicate_proof_state: is_word_settings_entry(entry_name),
             sort_word_document_paragraph_properties_children: is_word_document_entry(entry_name)
                 || is_word_styles_entry(entry_name)
                 || is_word_header_footer_entry(entry_name),
@@ -1031,9 +1042,14 @@ impl CanonicalOptions {
             normalize_word_numbering_multilevel_type_attr: is_word_numbering_entry(entry_name),
             normalize_word_numbering_level_suffix_attr: is_word_numbering_entry(entry_name),
             normalize_word_style_duplicate_font_size: is_word_styles_entry(entry_name),
+            ignore_word_font_table_element_whitespace_text_nodes: is_word_font_table_entry(
+                entry_name,
+            ),
             sort_word_font_table_font_children: is_word_font_table_entry(entry_name),
             sort_word_style_children: is_word_styles_entry(entry_name),
+            sort_word_style_table_cell_properties_children: is_word_styles_entry(entry_name),
             sort_word_style_table_cell_margin_children: is_word_styles_entry(entry_name),
+            sort_math_delimiter_properties_children: is_word_xml_entry(entry_name),
             sort_chart_schema_children: is_chart_entry(entry_name),
             normalize_chart_show_dlbls_over_max_extlst_order: is_chart_entry(entry_name),
             normalize_wordprocessing_drawing_position_offset_text: is_word_document_entry(
@@ -1132,6 +1148,9 @@ impl CanonicalOptions {
         if self.sort_word_settings_children {
             enabled.push("word settings child order");
         }
+        if self.normalize_word_settings_duplicate_proof_state {
+            enabled.push("word settings duplicate proofState");
+        }
         if self.sort_word_document_paragraph_properties_children {
             enabled.push("word document paragraph properties child order");
         }
@@ -1183,14 +1202,23 @@ impl CanonicalOptions {
         if self.normalize_word_style_duplicate_font_size {
             enabled.push("word style duplicate font size");
         }
+        if self.ignore_word_font_table_element_whitespace_text_nodes {
+            enabled.push("word font table element whitespace text nodes");
+        }
         if self.sort_word_font_table_font_children {
             enabled.push("word font table font child order");
         }
         if self.sort_word_style_children {
             enabled.push("word style child order");
         }
+        if self.sort_word_style_table_cell_properties_children {
+            enabled.push("word style table cell properties child order");
+        }
         if self.sort_word_style_table_cell_margin_children {
             enabled.push("word style table cell margin child order");
+        }
+        if self.sort_math_delimiter_properties_children {
+            enabled.push("math delimiter properties child order");
         }
         if self.sort_chart_schema_children {
             enabled.push("chart schema child order");
@@ -1539,6 +1567,13 @@ fn normalize_xml_nodes_for_entry(
                         .children
                         .retain(|child| !matches!(child, XmlNode::Text(_)));
                 }
+                if options.ignore_word_font_table_element_whitespace_text_nodes
+                    && is_word_font_table_element_only_root(&element.name)
+                {
+                    element.children.retain(
+                        |child| !matches!(child, XmlNode::Text(text) if is_xml_whitespace(text)),
+                    );
+                }
                 if options.sort_spreadsheet_stylesheet_children
                     && is_spreadsheet_stylesheet_order_relaxed_root(&element.name)
                 {
@@ -1553,6 +1588,9 @@ fn normalize_xml_nodes_for_entry(
                 if options.sort_word_settings_children
                     && is_word_settings_order_relaxed_root(&element.name)
                 {
+                    if options.normalize_word_settings_duplicate_proof_state {
+                        normalize_word_settings_duplicate_proof_state(&mut element.children);
+                    }
                     element.children.sort_by_key(xml_node_structural_sort_key);
                 }
                 if options.sort_word_document_paragraph_properties_children
@@ -1641,6 +1679,12 @@ fn normalize_xml_nodes_for_entry(
                 {
                     element.children.sort_by_key(xml_node_structural_sort_key);
                 }
+                if options.sort_word_style_table_cell_properties_children {
+                    normalize_word_style_table_cell_properties_children(
+                        &element.name,
+                        &mut element.children,
+                    );
+                }
                 if options.sort_word_style_table_cell_margin_children
                     && is_word_table_cell_margin_order_relaxed_root(&element.name)
                 {
@@ -1650,6 +1694,11 @@ fn normalize_xml_nodes_for_entry(
                     && is_word_table_cell_margin_order_relaxed_root(&element.name)
                 {
                     normalize_word_table_cell_margin_width_lexemes(&mut element.children);
+                }
+                if options.sort_math_delimiter_properties_children
+                    && is_math_delimiter_properties_order_relaxed_root(&element.name)
+                {
+                    normalize_math_delimiter_properties_child_order(&mut element.children);
                 }
                 if options.sort_chart_schema_children {
                     normalize_chart_schema_child_order(&element.name, &mut element.children);
@@ -2038,6 +2087,59 @@ fn normalize_word_table_cell_properties_child_order(children: &mut [XmlNode]) {
     });
 }
 
+fn normalize_word_style_table_cell_properties_children(
+    parent_name: &str,
+    children: &mut [XmlNode],
+) {
+    let rank = match parent_name {
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}style" => {
+            word_style_table_cell_properties_child_rank
+        }
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tblStylePr" => {
+            word_table_style_override_cell_properties_child_rank
+        }
+        _ => return,
+    };
+
+    for child in children {
+        let XmlNode::Element(child) = child else {
+            continue;
+        };
+        if child.name != "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tcPr"
+            || child
+                .children
+                .iter()
+                .any(|item| rank(xml_node_name(item)).is_none())
+        {
+            continue;
+        }
+        child
+            .children
+            .sort_by_key(|item| rank(xml_node_name(item)).unwrap_or(u16::MAX));
+    }
+}
+
+fn word_style_table_cell_properties_child_rank(name: Option<&str>) -> Option<u16> {
+    Some(match name? {
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}shd" => 0,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}noWrap" => 1,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tcMar" => 2,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}vAlign" => 3,
+        _ => return None,
+    })
+}
+
+fn word_table_style_override_cell_properties_child_rank(name: Option<&str>) -> Option<u16> {
+    Some(match name? {
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tcBorders" => 0,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}shd" => 1,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}noWrap" => 2,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tcMar" => 3,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}vAlign" => 4,
+        _ => return None,
+    })
+}
+
 fn word_table_cell_properties_child_rank(name: Option<&str>) -> Option<u16> {
     Some(match name? {
         "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}cnfStyle" => 0,
@@ -2150,6 +2252,31 @@ fn word_table_cell_margin_child_rank(name: Option<&str>) -> Option<u16> {
     })
 }
 
+fn normalize_math_delimiter_properties_child_order(children: &mut [XmlNode]) {
+    if children
+        .iter()
+        .any(|child| math_delimiter_properties_child_rank(xml_node_name(child)).is_none())
+    {
+        return;
+    }
+
+    children.sort_by_key(|child| {
+        math_delimiter_properties_child_rank(xml_node_name(child)).unwrap_or(u16::MAX)
+    });
+}
+
+fn math_delimiter_properties_child_rank(name: Option<&str>) -> Option<u16> {
+    Some(match name? {
+        "{http://schemas.openxmlformats.org/officeDocument/2006/math}begChr" => 0,
+        "{http://schemas.openxmlformats.org/officeDocument/2006/math}sepChr" => 1,
+        "{http://schemas.openxmlformats.org/officeDocument/2006/math}endChr" => 2,
+        "{http://schemas.openxmlformats.org/officeDocument/2006/math}grow" => 3,
+        "{http://schemas.openxmlformats.org/officeDocument/2006/math}shp" => 4,
+        "{http://schemas.openxmlformats.org/officeDocument/2006/math}ctrlPr" => 5,
+        _ => return None,
+    })
+}
+
 fn normalize_word_numbering_abstract_child_order(children: &mut [XmlNode]) {
     children.sort_by_key(|child| {
         word_numbering_abstract_child_rank(xml_node_name(child)).unwrap_or(u16::MAX)
@@ -2204,6 +2331,35 @@ fn normalize_word_style_duplicate_font_size(children: &mut Vec<XmlNode>) {
             }
         }
     }
+}
+
+fn normalize_word_settings_duplicate_proof_state(children: &mut Vec<XmlNode>) {
+    const PROOF_STATE_NAME: &str =
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}proofState";
+
+    let proof_states = children
+        .iter()
+        .filter(|child| xml_node_name(child) == Some(PROOF_STATE_NAME))
+        .collect::<Vec<_>>();
+    let Some(first) = proof_states.first() else {
+        return;
+    };
+    if proof_states.len() < 2 || proof_states.iter().skip(1).any(|child| *child != *first) {
+        return;
+    }
+
+    let mut found = false;
+    children.retain(|child| {
+        if xml_node_name(child) != Some(PROOF_STATE_NAME) {
+            return true;
+        }
+        if found {
+            false
+        } else {
+            found = true;
+            true
+        }
+    });
 }
 
 fn normalize_word_duplicate_run_properties(children: &mut Vec<XmlNode>) {
@@ -2272,6 +2428,14 @@ fn normalize_chart_schema_child_order(parent_name: &str, children: &mut [XmlNode
         return;
     };
 
+    if parent_name == CHART_DATA_LABELS_NAME
+        && children
+            .iter()
+            .any(|child| rank_fn(xml_node_name(child)).is_none())
+    {
+        return;
+    }
+
     children.sort_by_key(|child| rank_fn(xml_node_name(child)).unwrap_or(u16::MAX));
 }
 
@@ -2281,6 +2445,7 @@ fn chart_child_rank_fn(parent_name: &str) -> Option<ChartChildRankFn> {
     match parent_name {
         CHART_ROOT_NAME => Some(chart_root_child_rank),
         CHART_PLOT_AREA_NAME => Some(chart_plot_area_child_rank),
+        CHART_DATA_LABELS_NAME => Some(chart_data_labels_child_rank),
         CHART_CAT_AXIS_NAME | CHART_VAL_AXIS_NAME | CHART_SER_AXIS_NAME | CHART_DATE_AXIS_NAME => {
             Some(chart_axis_child_rank)
         }
@@ -2333,6 +2498,29 @@ fn chart_plot_area_child_rank(name: Option<&str>) -> Option<u16> {
         "{http://schemas.openxmlformats.org/drawingml/2006/chart}dTable" => Some(50),
         "{http://schemas.openxmlformats.org/drawingml/2006/chart}spPr" => Some(51),
         "{http://schemas.openxmlformats.org/drawingml/2006/chart}extLst" => Some(52),
+        _ => None,
+    }
+}
+
+fn chart_data_labels_child_rank(name: Option<&str>) -> Option<u16> {
+    match name? {
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}dLbl" => Some(0),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}delete" => Some(1),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}numFmt" => Some(2),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}spPr" => Some(3),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}txPr" => Some(4),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}dLblPos" => Some(5),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}showLegendKey" => Some(6),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}showVal" => Some(7),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}showCatName" => Some(8),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}showSerName" => Some(9),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}showPercent" => Some(10),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}showBubbleSize" => Some(11),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}separator" => Some(12),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}showLeaderLines" => Some(13),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}leaderLines" => Some(14),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}layout" => Some(15),
+        "{http://schemas.openxmlformats.org/drawingml/2006/chart}extLst" => Some(16),
         _ => None,
     }
 }
@@ -3152,7 +3340,8 @@ fn is_open_xml_sdk_mcexcel_mce_attr(element_name: &str, attr_name: &str) -> bool
 }
 
 fn is_package_properties_entry(entry_name: &str) -> bool {
-    entry_name.starts_with("docProps/") && entry_name.ends_with(".xml")
+    (entry_name.starts_with("docProps/") && entry_name.ends_with(".xml"))
+        || entry_name.ends_with(".psmdcp")
 }
 
 fn is_spreadsheet_styles_entry(entry_name: &str) -> bool {
@@ -3186,6 +3375,10 @@ fn is_spreadsheet_stylesheet_order_relaxed_root(name: &str) -> bool {
 
 fn is_word_settings_entry(entry_name: &str) -> bool {
     entry_name == "word/settings.xml"
+}
+
+fn is_word_xml_entry(entry_name: &str) -> bool {
+    entry_name.starts_with("word/") && entry_name.ends_with(".xml")
 }
 
 fn is_word_document_entry(entry_name: &str) -> bool {
@@ -3230,6 +3423,19 @@ fn is_word_font_table_entry(entry_name: &str) -> bool {
     entry_name
         .strip_prefix("word/fontTable")
         .is_some_and(|suffix| suffix.ends_with(".xml"))
+}
+
+fn is_word_font_table_element_only_root(name: &str) -> bool {
+    matches!(
+        name,
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fonts"
+            | "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}font"
+    )
+}
+
+fn is_xml_whitespace(text: &str) -> bool {
+    text.chars()
+        .all(|character| matches!(character, '\u{20}' | '\u{9}' | '\u{a}' | '\u{d}'))
 }
 
 fn is_word_styles_entry(entry_name: &str) -> bool {
@@ -3290,6 +3496,10 @@ fn is_word_table_cell_margin_order_relaxed_root(name: &str) -> bool {
     name == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tblCellMar"
 }
 
+fn is_math_delimiter_properties_order_relaxed_root(name: &str) -> bool {
+    name == "{http://schemas.openxmlformats.org/officeDocument/2006/math}dPr"
+}
+
 fn is_word_numbering_level_order_relaxed_root(name: &str) -> bool {
     name == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}lvl"
 }
@@ -3313,6 +3523,8 @@ fn is_word_style_order_relaxed_root(name: &str) -> bool {
 const CHART_ROOT_NAME: &str = "{http://schemas.openxmlformats.org/drawingml/2006/chart}chart";
 const CHART_PLOT_AREA_NAME: &str =
     "{http://schemas.openxmlformats.org/drawingml/2006/chart}plotArea";
+const CHART_DATA_LABELS_NAME: &str =
+    "{http://schemas.openxmlformats.org/drawingml/2006/chart}dLbls";
 const CHART_CAT_AXIS_NAME: &str = "{http://schemas.openxmlformats.org/drawingml/2006/chart}catAx";
 const CHART_VAL_AXIS_NAME: &str = "{http://schemas.openxmlformats.org/drawingml/2006/chart}valAx";
 const CHART_SER_AXIS_NAME: &str = "{http://schemas.openxmlformats.org/drawingml/2006/chart}serAx";
@@ -3780,6 +3992,7 @@ fn schema_float_kind_for_attr(element_name: &str, attr_name: &str) -> Option<Sch
     schema_float_rules()
         .attrs
         .iter()
+        .chain(&schema_float_rules().compat_attrs)
         .find(|rule| rule.element == element_name && rule.attr == attr_name)
         .map(|rule| rule.kind)
 }
@@ -3922,5 +4135,138 @@ fn normalize_namespace_uri(value: &str) -> String {
             "http://schemas.openxmlformats.org/wordprocessingml/2006/main".to_string()
         }
         _ => value.to_string(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::xml_equivalence_errors;
+
+    const FILE_NAME: &str = "Apache-POI/test-data/spreadsheet/sample.xlsx";
+    const ENTRY_NAME: &str = "xl/charts/chart1.xml";
+    const WORD_FILE_NAME: &str = "Pandoc/test/docx/sample.docx";
+
+    #[test]
+    fn chart_data_labels_schema_order_is_compatible() {
+        let producer_order = br#"<c:dLbls xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:dLblPos val="ctr"/><c:leaderLines/><c:showVal val="1"/><c:spPr/><c:txPr/></c:dLbls>"#;
+        let schema_order = br#"<c:dLbls xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:spPr/><c:txPr/><c:dLblPos val="ctr"/><c:showVal val="1"/><c:leaderLines/></c:dLbls>"#;
+
+        assert!(
+            xml_equivalence_errors(producer_order, schema_order, FILE_NAME, ENTRY_NAME).is_empty()
+        );
+    }
+
+    #[test]
+    fn chart_data_labels_content_difference_is_not_compatible() {
+        let original = br#"<c:dLbls xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:dLblPos val="ctr"/><c:showVal val="1"/><c:spPr/></c:dLbls>"#;
+        let changed = br#"<c:dLbls xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:spPr/><c:dLblPos val="ctr"/><c:showVal val="0"/></c:dLbls>"#;
+
+        assert!(!xml_equivalence_errors(original, changed, FILE_NAME, ENTRY_NAME).is_empty());
+    }
+
+    #[test]
+    fn chart_data_labels_unknown_child_order_is_not_relaxed() {
+        let original = br#"<c:dLbls xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:unknown/><c:spPr/><c:dLblPos val="ctr"/></c:dLbls>"#;
+        let reordered = br#"<c:dLbls xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:spPr/><c:dLblPos val="ctr"/><c:unknown/></c:dLbls>"#;
+
+        assert!(!xml_equivalence_errors(original, reordered, FILE_NAME, ENTRY_NAME).is_empty());
+    }
+
+    #[test]
+    fn word_font_table_element_whitespace_is_compatible() {
+        let indented = br#"<w:fonts xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">&#9;<w:font w:name="Example">&#9;&#9;<w:panose1 w:val="00000000000000000000"/>&#9;</w:font>&#9;</w:fonts>"#;
+        let compact = br#"<w:fonts xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:font w:name="Example"><w:panose1 w:val="00000000000000000000"/></w:font></w:fonts>"#;
+
+        assert!(
+            xml_equivalence_errors(indented, compact, WORD_FILE_NAME, "word/fontTable.xml")
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn word_font_table_non_xml_whitespace_is_not_compatible() {
+        let with_nbsp = br#"<w:fonts xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">&#160;<w:font w:name="Example"/></w:fonts>"#;
+        let compact = br#"<w:fonts xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:font w:name="Example"/></w:fonts>"#;
+
+        assert!(
+            !xml_equivalence_errors(with_nbsp, compact, WORD_FILE_NAME, "word/fontTable.xml")
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn word_table_style_override_cell_properties_schema_order_is_compatible() {
+        let producer_order = br#"<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:style w:type="table" w:styleId="Example"><w:tblStylePr w:type="firstRow"><w:tcPr><w:vAlign w:val="bottom"/><w:tcBorders><w:bottom w:val="single"/></w:tcBorders></w:tcPr></w:tblStylePr></w:style></w:styles>"#;
+        let schema_order = br#"<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:style w:type="table" w:styleId="Example"><w:tblStylePr w:type="firstRow"><w:tcPr><w:tcBorders><w:bottom w:val="single"/></w:tcBorders><w:vAlign w:val="bottom"/></w:tcPr></w:tblStylePr></w:style></w:styles>"#;
+
+        assert!(
+            xml_equivalence_errors(
+                producer_order,
+                schema_order,
+                WORD_FILE_NAME,
+                "word/styles.xml",
+            )
+            .is_empty()
+        );
+    }
+
+    #[test]
+    fn word_table_style_override_unknown_child_order_is_not_relaxed() {
+        let original = br#"<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:style w:type="table" w:styleId="Example"><w:tblStylePr w:type="firstRow"><w:tcPr><w:unknown/><w:vAlign w:val="bottom"/><w:tcBorders/></w:tcPr></w:tblStylePr></w:style></w:styles>"#;
+        let reordered = br#"<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:style w:type="table" w:styleId="Example"><w:tblStylePr w:type="firstRow"><w:tcPr><w:tcBorders/><w:vAlign w:val="bottom"/><w:unknown/></w:tcPr></w:tblStylePr></w:style></w:styles>"#;
+
+        assert!(
+            !xml_equivalence_errors(original, reordered, WORD_FILE_NAME, "word/styles.xml",)
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn identical_word_settings_proof_state_duplicates_are_compatible() {
+        let duplicated = br#"<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:proofState w:spelling="clean" w:grammar="clean"/><w:rsids/><w:proofState w:spelling="clean" w:grammar="clean"/></w:settings>"#;
+        let singleton = br#"<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:proofState w:spelling="clean" w:grammar="clean"/><w:rsids/></w:settings>"#;
+
+        assert!(
+            xml_equivalence_errors(duplicated, singleton, WORD_FILE_NAME, "word/settings.xml",)
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn different_word_settings_proof_state_duplicates_are_not_compatible() {
+        let duplicated = br#"<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:proofState w:spelling="clean" w:grammar="clean"/><w:rsids/><w:proofState w:spelling="dirty" w:grammar="clean"/></w:settings>"#;
+        let singleton = br#"<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:proofState w:spelling="clean" w:grammar="clean"/><w:rsids/></w:settings>"#;
+
+        assert!(
+            !xml_equivalence_errors(duplicated, singleton, WORD_FILE_NAME, "word/settings.xml",)
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn math_delimiter_properties_schema_order_is_compatible() {
+        let producer_order = br#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"><w:body><m:d><m:dPr><m:begChr m:val="("/><m:endChr m:val=")"/><m:sepChr m:val=""/><m:grow/></m:dPr></m:d></w:body></w:document>"#;
+        let schema_order = br#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"><w:body><m:d><m:dPr><m:begChr m:val="("/><m:sepChr m:val=""/><m:endChr m:val=")"/><m:grow/></m:dPr></m:d></w:body></w:document>"#;
+
+        assert!(
+            xml_equivalence_errors(
+                producer_order,
+                schema_order,
+                WORD_FILE_NAME,
+                "word/document.xml",
+            )
+            .is_empty()
+        );
+    }
+
+    #[test]
+    fn math_delimiter_properties_unknown_child_order_is_not_relaxed() {
+        let original = br#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"><w:body><m:d><m:dPr><m:unknown/><m:endChr/><m:sepChr/></m:dPr></m:d></w:body></w:document>"#;
+        let reordered = br#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"><w:body><m:d><m:dPr><m:sepChr/><m:endChr/><m:unknown/></m:dPr></m:d></w:body></w:document>"#;
+
+        assert!(
+            !xml_equivalence_errors(original, reordered, WORD_FILE_NAME, "word/document.xml",)
+                .is_empty()
+        );
     }
 }
