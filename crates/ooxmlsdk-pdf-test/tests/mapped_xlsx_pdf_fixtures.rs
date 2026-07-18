@@ -455,6 +455,13 @@ fn mapped_xlsx_tdf121715_keeps_first_and_even_page_headers_footers() {
     assert_page_contains(&summary, 0, "First Page Footer");
     assert_page_contains(&summary, 1, "Even Header");
     assert_page_contains(&summary, 1, "Even Footer");
+
+    // ECMA-376 §18.3.1.46 defines these as the printed page header and
+    // footer; Office fixed output exposes them around the sheet body in the
+    // PDF content stream as well.
+    let first_page = normalize_space(&page_text(&summary, 0));
+    assert!(first_page.starts_with("First Page Header"));
+    assert!(first_page.ends_with("First Page Footer"));
 }
 
 #[test]

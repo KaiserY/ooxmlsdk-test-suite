@@ -4533,3 +4533,26 @@ fn mapped_fixture_tdf122878_keeps_body_paragraphs_above_footer_table() {
     assert_text_above_text(&summary, 0, "28", "A1");
     assert_page_path_count_at_least(&summary, 0, 1);
 }
+
+#[test]
+// Source: ../core/sw/qa/extras/ooxmlexport/ooxmlexport4.cxx:testTrackChangesDeletedTableRow
+// Office export profile: scripts/convert_office_corpus.ps1 calls Word's
+// ExportAsFixedFormat without wdExportDocumentWithMarkup.
+fn mapped_fixture_deleted_table_row_is_not_painted_in_final_content_view() {
+    let summary =
+        render_summary("sw/qa/extras/ooxmlexport/data/testTrackChangesDeletedTableRow.docx");
+    assert_page_contains(&summary, 0, "First row");
+    assert_page_contains(&summary, 0, "Last row");
+    assert_page_not_contains(&summary, 0, "Deleted row");
+}
+
+#[test]
+// Source: ../core/sw/qa/extras/ooxmlexport/ooxmlexport16.cxx:testCommentDone
+// Office export profile: scripts/convert_office_corpus.ps1 calls Word's
+// ExportAsFixedFormat without wdExportDocumentWithMarkup.
+fn mapped_fixture_comments_are_not_painted_in_final_content_view() {
+    let summary = render_summary("sw/qa/extras/ooxmlexport/data/CommentDone.docx");
+    assert_document_text_contains(&summary, "Lorem ipsum dolor sit amet");
+    assert_page_not_contains(&summary, 0, "A two-paragraph comment");
+    assert_page_not_contains(&summary, 0, "A three-paragraph comment");
+}

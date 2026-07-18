@@ -8,9 +8,10 @@ use image::ImageFormat;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
+use crate::pdf_extract::{RenderedPagePairError, visit_rendered_page_pairs};
 use crate::{
     CalibrationError, PdfBounds, PdfSummary, RenderedPageImage, Result, parse_pdf_rect,
-    rendered_page_image_from_pdf, workspace_root,
+    workspace_root,
 };
 
 const RASTER_WIDTH: i32 = 1_333;
@@ -218,53 +219,62 @@ pub fn compare_office_golden_detailed(
     let mut visual_passes = true;
     let mut failing_pages = Vec::new();
     let mut artifact_dir = None;
-    for page_index in 0..golden.page_count {
-        let candidate_page = rendered_page_image_from_pdf(&candidate_pdf, page_index, RASTER_WIDTH)
+    visit_rendered_page_pairs(
+        &candidate_pdf,
+        &golden_pdf,
+        RASTER_WIDTH,
+        |page_index, candidate_page, golden_page| -> DetailedResult<()> {
+            let metrics = visual_diff_metrics(
+                &candidate_page,
+                &golden_page,
+                tolerance.significant_channel_delta,
+                text_masks.get(page_index).map(Vec::as_slice).unwrap_or(&[]),
+                parse_pdf_rect(&golden.media_boxes[page_index]).map_err(|error| {
+                    OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::PdfExtraction, error)
+                })?,
+            )
             .map_err(|error| {
-                OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::PdfExtraction, error)
+                OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::VisibleOutput, error)
             })?;
-        let golden_page = rendered_page_image_from_pdf(&golden_pdf, page_index, RASTER_WIDTH)
-            .map_err(|error| {
-                OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::PdfExtraction, error)
-            })?;
-        let metrics = visual_diff_metrics(
-            &candidate_page,
-            &golden_page,
-            tolerance.significant_channel_delta,
-            text_masks.get(page_index).map(Vec::as_slice).unwrap_or(&[]),
-            parse_pdf_rect(&golden.media_boxes[page_index]).map_err(|error| {
-                OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::PdfExtraction, error)
-            })?,
-        )
-        .map_err(|error| {
-            OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::VisibleOutput, error)
-        })?;
-        let page_passes = metrics.significant_pixel_fraction
-            <= tolerance.max_significant_pixel_fraction
-            && metrics.mean_absolute_channel_delta <= tolerance.max_mean_absolute_channel_delta;
-        visual_passes &= page_passes;
-        if !page_passes {
-            if artifact_dir.is_none() {
-                artifact_dir = Some(write_candidate_artifact(case.id, &candidate_pdf).map_err(
-                    |error| {
-                        OfficeGoldenFailure::new(
-                            OfficeGoldenComparisonLayer::ComparisonArtifact,
-                            error,
-                        )
-                    },
-                )?);
-            }
-            let artifact_dir = artifact_dir
-                .as_deref()
-                .expect("failure artifact directory should be initialized");
-            write_failure_page_artifacts(artifact_dir, page_index, &candidate_page, &golden_page)
+            let page_passes = metrics.significant_pixel_fraction
+                <= tolerance.max_significant_pixel_fraction
+                && metrics.mean_absolute_channel_delta <= tolerance.max_mean_absolute_channel_delta;
+            visual_passes &= page_passes;
+            if !page_passes {
+                if artifact_dir.is_none() {
+                    artifact_dir = Some(
+                        write_candidate_artifact(case.id, &candidate_pdf).map_err(|error| {
+                            OfficeGoldenFailure::new(
+                                OfficeGoldenComparisonLayer::ComparisonArtifact,
+                                error,
+                            )
+                        })?,
+                    );
+                }
+                let artifact_dir = artifact_dir
+                    .as_deref()
+                    .expect("failure artifact directory should be initialized");
+                write_failure_page_artifacts(
+                    artifact_dir,
+                    page_index,
+                    &candidate_page,
+                    &golden_page,
+                )
                 .map_err(|error| {
-                OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::ComparisonArtifact, error)
-            })?;
-            failing_pages.push(page_index);
+                    OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::ComparisonArtifact, error)
+                })?;
+                failing_pages.push(page_index);
+            }
+            page_diffs.push(metrics);
+            Ok(())
+        },
+    )
+    .map_err(|error| match error {
+        RenderedPagePairError::Pdf(error) => {
+            OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::PdfExtraction, error)
         }
-        page_diffs.push(metrics);
-    }
+        RenderedPagePairError::Visit(error) => error,
+    })?;
 
     let report = OfficeGoldenReport {
         case_id: case.id.to_string(),

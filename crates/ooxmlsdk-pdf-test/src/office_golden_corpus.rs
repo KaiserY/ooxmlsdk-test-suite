@@ -3,19 +3,23 @@ use std::env;
 use std::fmt::Write as _;
 use std::fs;
 use std::io::{BufWriter, Write as _};
+use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use serde::Deserialize;
 
 use crate::{
-    OfficeGoldenCase, OfficeGoldenComparisonLayer, VisualTolerance, compare_office_golden_detailed,
-    workspace_root,
+    OfficeGoldenCase, OfficeGoldenComparisonLayer, OfficeGoldenFailure, VisualTolerance,
+    compare_office_golden_detailed, workspace_root,
 };
 
 const ERROR_MANIFEST_SCHEMA_VERSION: u32 = 1;
 const FAILURE_SAMPLE_LIMIT: usize = 3;
-const UNEXPECTED_FAILURE_LIMIT: usize = 128;
+// Keep late-corpus pages bounded: large Office packages can take minutes per
+// comparison, so a 32-record page persists useful classification progress
+// without forcing a long tail to restart from the previous checkpoint.
+const UNEXPECTED_FAILURE_LIMIT: usize = 32;
 static CORPUS_RUN_LOCK: Mutex<()> = Mutex::new(());
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -93,6 +97,8 @@ struct ErrorClass {
     layer: String,
     reason: String,
     evidence: Vec<String>,
+    #[serde(default)]
+    skip_batch_audit: bool,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -156,6 +162,7 @@ pub fn run_office_golden_corpus(
     let known_errors = load_known_errors(&root, &candidates)?;
     let exact_case = env::var("OOXMLSDK_GOLDEN_CASE").ok();
     let corpus_filter = env::var("OOXMLSDK_GOLDEN_CORPUS").ok();
+    let source_contains = env::var("OOXMLSDK_GOLDEN_SOURCE_CONTAINS").ok();
     let audit_errors = env::var("OOXMLSDK_GOLDEN_AUDIT_ERRORS").is_ok_and(|value| value == "1");
 
     candidates.retain(|candidate| {
@@ -164,6 +171,9 @@ pub fn run_office_golden_corpus(
             && corpus_filter
                 .as_deref()
                 .is_none_or(|corpus| candidate.corpus == corpus)
+            && source_contains
+                .as_deref()
+                .is_none_or(|needle| candidate.record.file.contains(needle))
             && exact_case.as_deref().is_none_or(|case| {
                 case == format!("{}/{}", candidate.corpus, candidate.record.file)
             })
@@ -191,6 +201,12 @@ pub fn run_office_golden_corpus(
             format.extension()
         ));
     }
+    if source_contains.is_some() && candidates.is_empty() {
+        return Err(format!(
+            "OOXMLSDK_GOLDEN_SOURCE_CONTAINS did not select a converted {} record",
+            format.extension()
+        ));
+    }
 
     let mut attempted = 0usize;
     let mut passed = 0usize;
@@ -198,6 +214,7 @@ pub fn run_office_golden_corpus(
     let mut stale_errors = Vec::new();
     let mut unexpected = BTreeMap::<OfficeGoldenComparisonLayer, FailureGroup>::new();
     let mut unexpected_records = Vec::new();
+    let mut expected_records = Vec::new();
     let mut unexpected_count = 0usize;
 
     for candidate in candidates {
@@ -213,6 +230,17 @@ pub fn run_office_golden_corpus(
             }
         }
         attempted += 1;
+        // Batch audits have no per-case watchdog. Keep explicitly marked
+        // nonterminating failures executable through the exact-case lane,
+        // where callers can provide an external timeout, without skipping
+        // other conversion failures that may have become stale.
+        if audit_errors
+            && exact_case.is_none()
+            && expected_error.is_some_and(|expected| expected.skip_batch_audit)
+        {
+            expected_errors += 1;
+            continue;
+        }
         if expected_error.is_some() && !audit_errors && exact_case.is_none() {
             expected_errors += 1;
             continue;
@@ -231,7 +259,9 @@ pub fn run_office_golden_corpus(
             environment_id: &candidate.record.environment_id,
             ui_language: &environment.environment.locale.ui_culture,
         };
-        match compare_office_golden_detailed(case, VisualTolerance::OFFICE_FIXED_OUTPUT) {
+        match catch_conversion_panic(|| {
+            compare_office_golden_detailed(case, VisualTolerance::OFFICE_FIXED_OUTPUT)
+        }) {
             Ok(_) => {
                 passed += 1;
                 if expected_error.is_some() {
@@ -240,6 +270,14 @@ pub fn run_office_golden_corpus(
             }
             Err(failure) => {
                 if expected_error.is_some_and(|expected| expected.layer == failure.layer) {
+                    if audit_errors {
+                        expected_records.push(UnexpectedFailureRecord {
+                            corpus: candidate.corpus.clone(),
+                            source: candidate.record.file.clone(),
+                            layer: failure.layer,
+                            message: failure.message,
+                        });
+                    }
                     expected_errors += 1;
                     continue;
                 }
@@ -268,7 +306,15 @@ pub fn run_office_golden_corpus(
         }
     }
 
-    let error_report_path = write_error_report(&root, format, &unexpected_records, &stale_errors)?;
+    let error_report_path = write_error_report(
+        &root,
+        format,
+        exact_case.as_deref(),
+        audit_errors,
+        &unexpected_records,
+        &expected_records,
+        &stale_errors,
+    )?;
 
     let pass_requirement_met = if exact_case.is_some() {
         passed + expected_errors == 1
@@ -296,16 +342,35 @@ pub fn run_office_golden_corpus(
     })
 }
 
+fn catch_conversion_panic<T>(
+    operation: impl FnOnce() -> std::result::Result<T, OfficeGoldenFailure>,
+) -> std::result::Result<T, OfficeGoldenFailure> {
+    catch_unwind(AssertUnwindSafe(operation)).unwrap_or_else(|payload| {
+        let message = payload
+            .downcast_ref::<String>()
+            .map(String::as_str)
+            .or_else(|| payload.downcast_ref::<&str>().copied())
+            .unwrap_or("non-string panic payload");
+        Err(OfficeGoldenFailure {
+            layer: OfficeGoldenComparisonLayer::Conversion,
+            message: format!("Office golden candidate conversion panicked: {message}"),
+        })
+    })
+}
+
 fn write_error_report(
     root: &Path,
     format: OfficeGoldenFormat,
+    exact_case: Option<&str>,
+    audit_errors: bool,
     unexpected: &[UnexpectedFailureRecord],
+    expected: &[UnexpectedFailureRecord],
     stale_errors: &[String],
 ) -> std::result::Result<PathBuf, String> {
     let directory = root.join("target/office-golden");
     fs::create_dir_all(&directory)
         .map_err(|error| format!("could not create {}: {error}", directory.display()))?;
-    let path = directory.join(format!("scan-{}-errors.jsonl", format.extension()));
+    let path = directory.join(error_report_file_name(format, exact_case, audit_errors));
     let file = fs::File::create(&path)
         .map_err(|error| format!("could not create {}: {error}", path.display()))?;
     let mut writer = BufWriter::new(file);
@@ -314,6 +379,20 @@ fn write_error_report(
             &mut writer,
             &serde_json::json!({
                 "status": "unexpected-error",
+                "corpus": failure.corpus,
+                "source": failure.source,
+                "layer": failure.layer.as_str(),
+                "message": failure.message,
+            }),
+        )
+        .map_err(|error| format!("could not serialize {}: {error}", path.display()))?;
+        writeln!(writer).map_err(|error| format!("could not write {}: {error}", path.display()))?;
+    }
+    for failure in expected {
+        serde_json::to_writer(
+            &mut writer,
+            &serde_json::json!({
+                "status": "expected-error",
                 "corpus": failure.corpus,
                 "source": failure.source,
                 "layer": failure.layer.as_str(),
@@ -338,6 +417,21 @@ fn write_error_report(
         .flush()
         .map_err(|error| format!("could not flush {}: {error}", path.display()))?;
     Ok(path)
+}
+
+fn error_report_file_name(
+    format: OfficeGoldenFormat,
+    exact_case: Option<&str>,
+    audit_errors: bool,
+) -> String {
+    let report_kind = if exact_case.is_some() {
+        "case"
+    } else if audit_errors {
+        "audit"
+    } else {
+        "scan"
+    };
+    format!("{report_kind}-{}-errors.jsonl", format.extension())
 }
 
 fn load_candidates(root: &Path) -> std::result::Result<Vec<CorpusCandidate>, String> {
@@ -439,9 +533,21 @@ fn load_known_errors(
             ));
         }
         let layer = class.layer.parse::<OfficeGoldenComparisonLayer>()?;
+        if class.skip_batch_audit && layer != OfficeGoldenComparisonLayer::Conversion {
+            return Err(format!(
+                "golden error class {:?} may skip batch audit only for conversion failures",
+                class.id
+            ));
+        }
         let class_id = class.id.clone();
         if classes
-            .insert(class.id, ParsedKnownError { layer })
+            .insert(
+                class.id,
+                ParsedKnownError {
+                    layer,
+                    skip_batch_audit: class.skip_batch_audit,
+                },
+            )
             .is_some()
         {
             return Err(format!("duplicate golden error class {class_id:?}"));
@@ -492,6 +598,7 @@ fn load_known_errors(
 #[derive(Clone, Debug)]
 struct ParsedKnownError {
     layer: OfficeGoldenComparisonLayer,
+    skip_batch_audit: bool,
 }
 
 fn format_failure_summary(
@@ -539,7 +646,10 @@ fn format_failure_summary(
 
 #[cfg(test)]
 mod tests {
-    use super::{OfficeGoldenComparisonLayer, format_failure_summary};
+    use super::{
+        OfficeGoldenComparisonLayer, OfficeGoldenFormat, catch_conversion_panic,
+        error_report_file_name, format_failure_summary,
+    };
     use std::collections::BTreeMap;
     use std::path::Path;
 
@@ -571,5 +681,30 @@ mod tests {
             Path::new("target/office-golden/scan-docx-errors.jsonl"),
         );
         assert!(summary.contains("target=10, attempted=4, passed=4"));
+    }
+
+    #[test]
+    fn candidate_panic_is_recorded_as_a_conversion_failure() {
+        let failure =
+            catch_conversion_panic::<()>(|| panic!("invalid paint document")).unwrap_err();
+
+        assert_eq!(failure.layer, OfficeGoldenComparisonLayer::Conversion);
+        assert!(failure.message.contains("invalid paint document"));
+    }
+
+    #[test]
+    fn exact_case_report_does_not_replace_the_batch_scan_checkpoint() {
+        assert_eq!(
+            error_report_file_name(OfficeGoldenFormat::Xlsx, None, false),
+            "scan-xlsx-errors.jsonl"
+        );
+        assert_eq!(
+            error_report_file_name(OfficeGoldenFormat::Xlsx, Some("Corpus/file.xlsx"), false),
+            "case-xlsx-errors.jsonl"
+        );
+        assert_eq!(
+            error_report_file_name(OfficeGoldenFormat::Xlsx, None, true),
+            "audit-xlsx-errors.jsonl"
+        );
     }
 }

@@ -79,17 +79,19 @@ the package round-trip corpora:
 - the ratchet visits candidates deterministically by source size, output size,
   corpus, and source path until its per-format pass target is reached.
 
-The current ratchet requires 100 distinct full-contract passes: 10 DOCX, 88
-PPTX, and 2 XLSX. The distribution reflects measured pass rates during the
-initial scan rather than an assumed capability split. The earlier 29 explicit
+The current ratchet requires 613 distinct full-contract passes: 412 DOCX, 163
+PPTX, and 38 XLSX. The distribution reflects measured pass rates during the
+corpus scans rather than an assumed capability split. The earlier 29 explicit
 case tests remain as focused historical regressions, but they are not added to
-the 100-case ratchet total.
+the 613-case ratchet total.
 
 Known errors are skipped during the normal breadth ratchet so expanding the
 passing prefix does not repeatedly render hundreds of unchanged failures. Set
 `OOXMLSDK_GOLDEN_AUDIT_ERRORS=1` to execute known errors and detect stale
-exceptions that now pass. Setting `OOXMLSDK_GOLDEN_CASE` always executes that
-exact case, including a known error.
+exceptions that now pass. Error classes explicitly marked as nonterminating are
+skipped by batch audit because the in-process runner has no per-case watchdog;
+setting `OOXMLSDK_GOLDEN_CASE` always executes an exact case, including those
+known errors, so callers can apply an external timeout.
 
 ### Source-Backed Fix Gate
 
@@ -166,18 +168,22 @@ not self-evident from the fixture.
   DOCX, PPTX, or XLSX test name.
 - `OOXMLSDK_GOLDEN_CASE=<corpus>/<source>` selects one exact converted record;
   `OOXMLSDK_GOLDEN_CORPUS=<corpus>` restricts a format ratchet to one corpus.
+- `OOXMLSDK_GOLDEN_SOURCE_CONTAINS=<substring>` selects converted records whose
+  source path contains the substring. `OOXMLSDK_GOLDEN_TARGET=<count>` provides
+  a temporary diagnostic pass target without changing the checked-in ratchet.
 - `OOXMLSDK_GOLDEN_AUDIT_ERRORS=1` reruns exact known failures and reports
   stale entries or comparison-layer drift.
 - Comparison failures are structured as identity, conversion, PDF extraction,
   page geometry, text, visible output, or comparison-artifact layers. Console
   output groups by layer and shows at most three cases per group.
-- The complete per-case failure list is written once to
+- Batch scans stop after 32 unexpected failures and write the complete page to
   `target/office-golden/scan-<format>-errors.jsonl`; one record represents one
-  document, never one page.
-- Page raster comparison is streamed. Candidate and golden RGBA pages are not
-  retained after comparison, and PNG artifacts are written only for failing
-  pages. Consecutive failed page indexes are reported as ranges with aggregate
-  maxima instead of one metric dump per page.
+  document, never one page. Exact-case runs use the separate
+  `case-<format>-errors.jsonl` checkpoint and cannot replace a batch page.
+- Page raster comparison loads each candidate and golden PDF once, then streams
+  page pairs. RGBA pages are not retained after comparison, and PNG artifacts
+  are written only for failing pages. Consecutive failed page indexes are
+  reported as ranges with aggregate maxima instead of one metric dump per page.
 - Conversion manifests are parsed and indexed once per test process rather
   than rescanned for every case.
 - Keep Cargo commands sequential and use the default test-suite `target/`.
@@ -205,8 +211,8 @@ OOXMLSDK_GOLDEN_AUDIT_ERRORS=1 \
 | Golden inventory | complete | 4,400 converted OOXML cases: 2,707 DOCX, 798 PPTX, 895 XLSX. |
 | Comparison contract | defined | Fixed golden policy and layered comparison model recorded in this document. |
 | Streamed corpus harness | complete | Default conversion-manifest scan, structured failure layers, cached identity index, failed-page-only artifacts, compact page ranges, errors-only manifest, and explicit error audit are in place. |
-| Ratchet passes | 100 / 4,400 | DOCX: 10, PPTX: 88, XLSX: 2; all run the unchanged full comparison contract. The earlier 29 explicit tests remain separate. |
-| Known errors | 350 exact sources | DOCX: 55, PPTX: 208, XLSX: 87. They are grouped by evidence-backed class and remain available to exact-case and full-audit execution. |
+| Ratchet passes | 613 / 4,400 | DOCX: 412, PPTX: 163, XLSX: 38; all run the unchanged full comparison contract. The earlier 29 explicit tests remain separate. |
+| Known errors | 2,402 exact sources | DOCX: 1,296, PPTX: 635, XLSX: 471. They are grouped by evidence-backed class and remain available to exact-case and full-audit execution. |
 | Autonomous optimization | active | Select a known error, locate specification/LibreOffice evidence, fix only source-backed layout/PDF behavior, remove the exact exception, and raise the ratchet gradually. |
 
 ### First Completed Case

@@ -30,7 +30,6 @@ pub struct PdfSummary {
     pub outlines: Vec<String>,
     pub raw_pages: Vec<RawPageSummary>,
     pub page_objects: Vec<PageObjectSummary>,
-    pub rendered_pages: Vec<RenderedPageSummary>,
     pub content: ContentSummary,
 }
 
@@ -169,14 +168,6 @@ pub struct PageObjectSummary {
     pub shading_objects: usize,
     pub form_objects: usize,
     pub unsupported_objects: usize,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct RenderedPageSummary {
-    pub page_index: usize,
-    pub width_px: u32,
-    pub height_px: u32,
-    pub rgba_crc32: String,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -328,7 +319,6 @@ impl PdfSummary {
             outlines: raw_summary.outlines,
             raw_pages: raw_summary.pages,
             page_objects: pdfium_summary.page_objects,
-            rendered_pages: pdfium_summary.rendered_pages,
             content: content_summary(&streams),
         })
     }
@@ -406,6 +396,57 @@ pub fn rendered_page_image_from_pdf(
     ))
 }
 
+pub(crate) enum RenderedPagePairError<E> {
+    Pdf(String),
+    Visit(E),
+}
+
+pub(crate) fn visit_rendered_page_pairs<E>(
+    candidate_pdf: &[u8],
+    golden_pdf: &[u8],
+    target_width: i32,
+    mut visit: impl FnMut(usize, RenderedPageImage, RenderedPageImage) -> Result<(), E>,
+) -> Result<(), RenderedPagePairError<E>> {
+    // Load each PDF once for the complete visible-output pass. The previous
+    // per-page helper reopened and copied both PDFs for every page, turning a
+    // multi-page comparison into repeated whole-document work.
+    let _guard = pdfium_lock().lock().unwrap();
+    let pdfium = bind_pdfium().map_err(RenderedPagePairError::Pdf)?;
+    let candidate = pdfium
+        .load_pdf_from_byte_vec(candidate_pdf.to_vec(), None)
+        .map_err(|error| {
+            RenderedPagePairError::Pdf(format!(
+                "PDFium could not load candidate PDF bytes: {error}"
+            ))
+        })?;
+    let golden = pdfium
+        .load_pdf_from_byte_vec(golden_pdf.to_vec(), None)
+        .map_err(|error| {
+            RenderedPagePairError::Pdf(format!("PDFium could not load golden PDF bytes: {error}"))
+        })?;
+    if candidate.pages().len() != golden.pages().len() {
+        return Err(RenderedPagePairError::Pdf(format!(
+            "rendered PDF page counts differ: candidate={}, golden={}",
+            candidate.pages().len(),
+            golden.pages().len()
+        )));
+    }
+
+    for (page_index, (candidate_page, golden_page)) in candidate
+        .pages()
+        .iter()
+        .zip(golden.pages().iter())
+        .enumerate()
+    {
+        let candidate_image = rendered_page_image(page_index, &candidate_page, target_width)
+            .map_err(RenderedPagePairError::Pdf)?;
+        let golden_image = rendered_page_image(page_index, &golden_page, target_width)
+            .map_err(RenderedPagePairError::Pdf)?;
+        visit(page_index, candidate_image, golden_image).map_err(RenderedPagePairError::Visit)?;
+    }
+    Ok(())
+}
+
 pub fn raw_image_pixel_from_pdf(
     pdf: &[u8],
     image_width: u32,
@@ -466,7 +507,6 @@ struct PdfiumSummary {
     links: Vec<LinkSummary>,
     annotations: Vec<AnnotationSummary>,
     page_objects: Vec<PageObjectSummary>,
-    rendered_pages: Vec<RenderedPageSummary>,
 }
 
 struct RawPdfSummary {
@@ -491,7 +531,6 @@ fn pdfium_summary(pdf: &[u8]) -> Result<PdfiumSummary, String> {
     let mut links = Vec::new();
     let mut annotations = Vec::new();
     let mut page_objects = Vec::new();
-    let mut rendered_pages = Vec::new();
 
     for (page_index, page) in document.pages().iter().enumerate() {
         media_boxes.push(format!(
@@ -630,8 +669,6 @@ fn pdfium_summary(pdf: &[u8]) -> Result<PdfiumSummary, String> {
                 action_uri,
             });
         }
-
-        rendered_pages.push(rendered_page_summary(page_index, &page)?);
     }
 
     Ok(PdfiumSummary {
@@ -645,7 +682,6 @@ fn pdfium_summary(pdf: &[u8]) -> Result<PdfiumSummary, String> {
         links,
         annotations,
         page_objects,
-        rendered_pages,
     })
 }
 
@@ -1167,19 +1203,6 @@ fn format_destination(destination: &PdfDestination<'_>) -> Option<String> {
         .map(|value| format!("{value:?}"))
         .unwrap_or_else(|_| "Unknown".to_string());
     Some(format!("page={page} view={view}"))
-}
-
-fn rendered_page_summary(
-    page_index: usize,
-    page: &PdfPage<'_>,
-) -> Result<RenderedPageSummary, String> {
-    let image = rendered_page_image(page_index, page, 1200)?;
-    Ok(RenderedPageSummary {
-        page_index,
-        width_px: image.width_px,
-        height_px: image.height_px,
-        rgba_crc32: image.rgba_crc32,
-    })
 }
 
 fn rendered_page_image(
