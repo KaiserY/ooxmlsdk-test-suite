@@ -8,12 +8,15 @@ license.workspace = true
 
 [dependencies]
 olecfsdk = { workspace = true }
+olecfsdk-ooxml = { workspace = true }
 olecfsdk-corpus-test-support = { workspace = true }
+ooxmlsdk = { workspace = true, features = ["parts"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
 
 [dev-dependencies]
 criterion = { workspace = true }
+zip = { workspace = true }
 
 [[bench]]
 name = "file_roots"

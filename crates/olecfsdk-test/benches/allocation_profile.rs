@@ -14,6 +14,10 @@ use olecfsdk::{
     xls::{BiffRecordData, XlsFile},
 };
 use olecfsdk_corpus_test_support::{corpus_bytes, corpus_file_path};
+use olecfsdk_ooxml::{
+    ConversionOptions, LossPolicy, convert_doc_with_options, convert_ppt_with_options,
+    convert_xls_with_options,
+};
 use serde::Serialize;
 
 const LARGE_DOC: &str = "Apache-POI/test-data/document/Bug61268.doc";
@@ -142,6 +146,32 @@ fn measure<T>(
     (result, sample)
 }
 
+fn assert_conversion_budget(
+    sample: &AllocationSample,
+    max_allocations: u64,
+    max_allocated_bytes: u64,
+    max_peak_live_bytes: u64,
+) {
+    assert!(
+        sample.allocations <= max_allocations,
+        "{} allocation count {} exceeds {max_allocations}",
+        sample.case,
+        sample.allocations
+    );
+    assert!(
+        sample.allocated_bytes <= max_allocated_bytes,
+        "{} allocated bytes {} exceeds {max_allocated_bytes}",
+        sample.case,
+        sample.allocated_bytes
+    );
+    assert!(
+        sample.peak_live_bytes <= max_peak_live_bytes,
+        "{} peak live bytes {} exceeds {max_peak_live_bytes}",
+        sample.case,
+        sample.peak_live_bytes
+    );
+}
+
 fn fixture(relative: &str) -> Vec<u8> {
     let path = corpus_file_path(relative);
     corpus_bytes(&path)
@@ -213,7 +243,10 @@ fn main() {
         .relayout()
         .expect("relayout edited PPT allocation fixture");
 
-    let mut samples = Vec::with_capacity(24);
+    let mut samples = Vec::with_capacity(27);
+    let conversion_options = ConversionOptions {
+        unsupported: LossPolicy::Report,
+    };
 
     let cfb_input = doc_bytes.clone();
     let (_, sample) = measure("cfb.open_owned", doc_bytes.len(), || {
@@ -267,6 +300,11 @@ fn main() {
         doc.to_bytes().expect("profile DOC save")
     });
     samples.push(sample);
+    let (_, sample) = measure("doc.convert_to_ooxml", doc_bytes.len(), || {
+        convert_doc_with_options(&doc, conversion_options).expect("profile DOC OOXML conversion")
+    });
+    assert_conversion_budget(&sample, 100_000, 64 * 1024 * 1024, 32 * 1024 * 1024);
+    samples.push(sample);
 
     let (_, sample) = measure("xls.open_compatible", xls_bytes.len(), || {
         XlsFile::from_bytes_compatible(&xls_bytes)
@@ -299,6 +337,11 @@ fn main() {
             .expect("profile XLS compatible sink write")
     });
     samples.push(sample);
+    let (_, sample) = measure("xls.convert_to_ooxml", xls_bytes.len(), || {
+        convert_xls_with_options(&xls, conversion_options).expect("profile XLS OOXML conversion")
+    });
+    assert_conversion_budget(&sample, 50_000, 16 * 1024 * 1024, 8 * 1024 * 1024);
+    samples.push(sample);
 
     let (_, sample) = measure("ppt.open_from_bytes", ppt_bytes.len(), || {
         PptFile::from_bytes(&ppt_bytes).expect("profile PPT open")
@@ -325,6 +368,11 @@ fn main() {
         ppt.write_to(std::io::sink())
             .expect("profile PPT sink write")
     });
+    samples.push(sample);
+    let (_, sample) = measure("ppt.convert_to_ooxml", ppt_bytes.len(), || {
+        convert_ppt_with_options(&ppt, conversion_options).expect("profile PPT OOXML conversion")
+    });
+    assert_conversion_budget(&sample, 40_000, 16 * 1024 * 1024, 8 * 1024 * 1024);
     samples.push(sample);
 
     println!(

@@ -25,6 +25,7 @@ license = "MIT OR Apache-2.0"
 [workspace.dependencies]
 emfsdk = { path = "../emfsdk/crates/emfsdk" }
 olecfsdk = { path = "../olecfsdk/crates/olecfsdk" }
+olecfsdk-ooxml = { path = "../olecfsdk/crates/olecfsdk-ooxml" }
 ooxmlsdk = { path = "../ooxmlsdk/crates/ooxmlsdk", default-features = false }
 ooxmlsdk-fonts = { path = "../ooxmlsdk/crates/ooxmlsdk-fonts" }
 ooxmlsdk-formula = { path = "../ooxmlsdk/crates/ooxmlsdk-formula" }
@@ -44,6 +45,7 @@ image = { version = "0.25.10", default-features = false, features = [
 lopdf = "0.41.0"
 pdfium-render = "0.9.2"
 quick-xml = "0.40.1"
+rayon = "1.12.0"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.150"
 sha2 = "0.10.9"

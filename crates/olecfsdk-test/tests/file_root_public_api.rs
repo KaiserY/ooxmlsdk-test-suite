@@ -2357,6 +2357,19 @@ fn assert_ppt_table_relationships(file: &PptFile) {
                 .is_some_and(|owner| std::ptr::eq(group, owner))
         })
     }));
+    let projected = table
+        .table()
+        .expect("project native PPT table grid")
+        .expect("table marker projects to a table");
+    assert_eq!(projected.cells.len(), 18);
+    assert_eq!((projected.rows.len(), projected.columns.len()), (6, 3));
+    assert_eq!(projected.borders.len(), 11);
+    assert!(
+        projected
+            .cells
+            .iter()
+            .all(|cell| cell.row_span == 1 && cell.column_span == 1)
+    );
 }
 
 fn assert_simple_doc_table_blocks(file: &DocFile) {
@@ -2452,6 +2465,27 @@ fn assert_nested_doc_table_blocks(file: &DocFile) {
         vec![(true, 0, 33), (false, 33, 34)]
     );
     let tables = main.tables().expect("derive all nested DOC tables");
+    let indexed_blocks = main
+        .blocks_with_tables(&tables)
+        .expect("derive DOC blocks from retained table index");
+    assert_eq!(
+        indexed_blocks
+            .blocks()
+            .iter()
+            .map(|block| (
+                matches!(block, DocBlockRef::Table(_)),
+                block.local_cp_range()
+            ))
+            .collect::<Vec<_>>(),
+        blocks
+            .blocks()
+            .iter()
+            .map(|block| (
+                matches!(block, DocBlockRef::Table(_)),
+                block.local_cp_range()
+            ))
+            .collect::<Vec<_>>()
+    );
     assert_eq!(tables.tables().len(), 2);
     assert_eq!(
         tables
@@ -2494,6 +2528,41 @@ fn assert_nested_doc_table_blocks(file: &DocFile) {
     assert_eq!(nested_owners.len(), 1);
     assert_eq!((nested_owners[0].0, nested_owners[0].1), (1, 1));
     assert_eq!(nested_owners[0].2, tables.tables()[1].global_cp_range());
+    let nested_cell = outer
+        .rows()
+        .iter()
+        .flat_map(|row| {
+            row.cells()
+                .expect("derive outer DOC cells for retained index")
+                .cells()
+                .to_vec()
+        })
+        .find(|cell| tables.tables_in_cell(*cell).next().is_some())
+        .expect("fixture has a cell owning a nested table");
+    let rebuilt = nested_cell
+        .blocks()
+        .expect("derive nested cell blocks by rebuilding its table index");
+    let retained = nested_cell
+        .blocks_with_tables(&tables)
+        .expect("derive nested cell blocks from retained table index");
+    assert_eq!(
+        retained
+            .blocks()
+            .iter()
+            .map(|block| (
+                matches!(block, DocBlockRef::Table(_)),
+                block.local_cp_range()
+            ))
+            .collect::<Vec<_>>(),
+        rebuilt
+            .blocks()
+            .iter()
+            .map(|block| (
+                matches!(block, DocBlockRef::Table(_)),
+                block.local_cp_range()
+            ))
+            .collect::<Vec<_>>()
+    );
 }
 
 fn first_editable_doc_character(file: &DocFile) -> (u32, String, u16) {
