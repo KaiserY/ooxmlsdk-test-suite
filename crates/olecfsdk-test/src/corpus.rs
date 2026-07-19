@@ -18,8 +18,8 @@ use olecfsdk::{
     property_set::{ArrayValue, PropertySetStream, TypedPropertyValue, VectorValue},
     vba::{VbaProject, directory::DirRecord, project::ProjectRecordKind},
     xls::{
-        BiffRecordData, MsoDrawingData, ObjPictureFlags, XlsFile, XlsFileEntryRole,
-        XlsObjectPersistenceRef,
+        BiffRecordData, FormulaTokenStream, MsoDrawingData, ObjPictureFlags, XlsFile,
+        XlsFileEntryRole, XlsObjectPersistenceRef,
     },
 };
 use olecfsdk_corpus_test_support::{
@@ -727,7 +727,7 @@ fn record_xls_activex_metrics(bytes: &[u8], category: &mut CoverageCategoryRepor
         );
     }
 
-    for workbook in &file.workbooks {
+    for workbook in file.workbooks.iter() {
         let Ok(view) = workbook.relationships_compatible() else {
             continue;
         };
@@ -836,7 +836,7 @@ fn audit_office_art(corpus: &Path, report: &mut CoverageReport) {
         let Ok(outcome) = XlsFile::from_bytes_compatible(&bytes) else {
             continue;
         };
-        for workbook in &outcome.value.workbooks {
+        for workbook in outcome.value.workbooks.iter() {
             for record in &workbook.tree.stream.records {
                 match &record.data {
                     BiffRecordData::MsoDrawingGroup(value) | BiffRecordData::MsoDrawing(value) => {
@@ -887,7 +887,7 @@ fn audit_office_art(corpus: &Path, report: &mut CoverageReport) {
             }
         });
         if let Some(pictures) = &outcome.value.pictures {
-            match pictures {
+            match pictures.as_ref() {
                 PicturesStream::Complete(value) => audit_complete_office_art(
                     category,
                     &OfficeArtStream {
@@ -1609,10 +1609,11 @@ fn record_xls_metrics(bytes: &[u8], category: &mut CoverageCategoryReport) {
             .map(|workbook| workbook.tree.stream.records.len() as u64)
             .sum(),
     );
-    for workbook in &outcome.value.workbooks {
+    for workbook in outcome.value.workbooks.iter() {
         let legacy = !workbook.tree.stream.is_biff8();
         for record in &workbook.tree.stream.records {
             record_xls_disposition(category, &record.data, legacy);
+            record_xls_formula_metrics(category, &record.data);
         }
     }
     increment_metric(
@@ -1627,6 +1628,51 @@ fn record_xls_metrics(bytes: &[u8], category: &mut CoverageCategoryReport) {
     );
 }
 
+fn record_xls_formula_metrics(category: &mut CoverageCategoryReport, data: &BiffRecordData) {
+    let mut record_formula = |formula: &FormulaTokenStream| {
+        increment_metric(category, "formula_streams", 1);
+        increment_metric(category, "formula_tokens", formula.tokens.len() as u64);
+        increment_metric(
+            category,
+            "formula_unparsed_tail_bytes",
+            formula.unparsed_tail.len() as u64,
+        );
+        increment_metric(
+            category,
+            "formula_missing_extra_structures",
+            formula.missing_extra_count() as u64,
+        );
+        increment_metric(
+            category,
+            "formula_nonconforming_tokens",
+            formula.nonconforming_token_count() as u64,
+        );
+    };
+    match data {
+        BiffRecordData::Formula(value) | BiffRecordData::Formula4Compatibility(value) => {
+            record_formula(&value.tokens.rgce);
+        }
+        BiffRecordData::SharedFormula(value) => record_formula(&value.tokens.rgce),
+        BiffRecordData::Array(value) => record_formula(&value.tokens.rgce),
+        BiffRecordData::DataValidation(value) => {
+            record_formula(&value.formula1.tokens);
+            record_formula(&value.formula2.tokens);
+        }
+        BiffRecordData::ConditionalFormatting(value) => {
+            record_formula(&value.formula1);
+            record_formula(&value.formula2);
+        }
+        BiffRecordData::ConditionalFormatting12(value) => {
+            record_formula(&value.formula1);
+            record_formula(&value.formula2);
+            record_formula(&value.active_formula);
+        }
+        BiffRecordData::Name(value) => record_formula(&value.formula),
+        BiffRecordData::ChartLinkedData(value) => record_formula(&value.formula),
+        _ => {}
+    }
+}
+
 fn record_ppt_metrics(bytes: &[u8], category: &mut CoverageCategoryReport) {
     increment_metric(category, "audited_input_bytes", bytes.len() as u64);
     let Ok(outcome) = PptFile::from_bytes_compatible(bytes) else {
@@ -1639,7 +1685,7 @@ fn record_ppt_metrics(bytes: &[u8], category: &mut CoverageCategoryReport) {
     });
     increment_metric(category, "records", record_count);
     if let Some(pictures) = &outcome.value.pictures {
-        let picture_records = match pictures {
+        let picture_records = match pictures.as_ref() {
             PicturesStream::Complete(stream) => stream.records.len(),
             PicturesStream::Compatibility { stream, .. } => stream.records.len(),
             PicturesStream::Partial(stream) => stream.complete_record_count(),

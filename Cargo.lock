@@ -1521,6 +1521,7 @@ dependencies = [
 name = "olecfsdk-test"
 version = "0.1.0"
 dependencies = [
+ "criterion",
  "olecfsdk",
  "olecfsdk-corpus-test-support",
  "serde",
@@ -1562,6 +1563,8 @@ dependencies = [
  "criterion",
  "ooxmlsdk",
  "ooxmlsdk-corpus-test-support",
+ "ooxmlsdk-formula",
+ "ooxmlsdk-pdf",
 ]
 
 [[package]]
@@ -1597,6 +1600,7 @@ dependencies = [
  "ttf-parser",
  "unicode-bidi",
  "unicode-script",
+ "yoke",
 ]
 
 [[package]]

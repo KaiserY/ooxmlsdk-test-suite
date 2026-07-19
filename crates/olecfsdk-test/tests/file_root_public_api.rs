@@ -1,7 +1,10 @@
 use std::{
     fs,
     path::{Path, PathBuf},
-    sync::atomic::{AtomicU64, Ordering},
+    sync::{
+        Arc,
+        atomic::{AtomicU64, Ordering},
+    },
 };
 
 use olecfsdk::{
@@ -9,8 +12,8 @@ use olecfsdk::{
     cfb::CompoundFile,
     common::CodePage,
     doc::{
-        DocBlockRef, DocCp, DocFile, DocOutlineLevel, FieldDocumentPart, TextPieceCharacters,
-        TextPieceEncoding,
+        DocBlockRef, DocCp, DocDataNodeValue, DocFile, DocOutlineLevel, FieldDocumentPart,
+        TextPieceCharacters, TextPieceEncoding,
     },
     forms::{FormPropertyMask, LocatedParentControlStorage},
     ppt::{
@@ -22,13 +25,116 @@ use olecfsdk::{
     shared_content::{OfficePropertySetKind, OfficeSharedContent},
     vba::cache::VbaProjectStream,
     xls::{
-        ObjPictureFlags, ShortXlUnicodeString, XlsCellValue, XlsFile, XlsFormulaCachedValue,
-        XlsHyperlinkTarget, XlsNumberFormatRef, XlsObjectPersistenceRef, XlsSheetId, XlsStreamName,
+        FormulaElfExtraLocation, FormulaElfLocation, FormulaNaturalLanguageToken, FormulaTokenData,
+        FormulaTokenStream, ObjPictureFlags, ShortXlUnicodeString, XlsCellValue, XlsFile,
+        XlsFormulaCachedValue, XlsHyperlinkTarget, XlsNumberFormatRef, XlsObjectPersistenceRef,
+        XlsSheetId, XlsStreamName,
     },
 };
 use olecfsdk_corpus_test_support::corpus_file_path;
 
 static TEMP_FILE_SEQUENCE: AtomicU64 = AtomicU64::new(0);
+
+#[test]
+fn xls_natural_language_and_mem_no_mem_formula_tokens_are_public_typed_values() {
+    let rgce = [
+        0x18, 0x03, 5, 0, 7, 0, // PtgElfCol
+        0x18, 0x0d, 0xaa, 0xbb, 0xcc, 0xdd, // PtgElfColS
+        0x68, 1, 2, 3, 4, 9, 0, // PtgMemNoMem
+    ];
+    let rgcb = [2, 0, 0, 0x80, 1, 0, 2, 0, 3, 0, 4, 0];
+    let mut formula = FormulaTokenStream::from_bytes(&rgce).expect("parse typed formula tokens");
+    assert!(formula.unparsed_tail.is_empty());
+    assert_eq!(formula.missing_extra_count(), 1);
+    assert!(
+        formula
+            .parse_extra_data(&rgcb)
+            .expect("parse PtgExtraElf")
+            .is_empty()
+    );
+    assert_eq!(formula.missing_extra_count(), 0);
+    assert_eq!(formula.nonconforming_token_count(), 0);
+    assert_eq!(formula.to_bytes().unwrap(), rgce);
+    assert_eq!(formula.extra_data_to_bytes().unwrap(), rgcb);
+    assert!(matches!(
+        formula.tokens[0].data,
+        FormulaTokenData::NaturalLanguage {
+            extended_opcode: 0x03,
+            value: FormulaNaturalLanguageToken::Location(FormulaElfLocation { row: 5, column: 7 }),
+        }
+    ));
+    let FormulaTokenData::NaturalLanguage {
+        value:
+            FormulaNaturalLanguageToken::MultipleCell {
+                extra: Some(extra), ..
+            },
+        ..
+    } = &formula.tokens[1].data
+    else {
+        panic!("PtgElfColS remains a typed multiple-cell token");
+    };
+    assert!(extra.relative);
+    assert!(!extra.reserved);
+    assert_eq!(
+        extra.locations,
+        [
+            FormulaElfExtraLocation { row: 1, column: 2 },
+            FormulaElfExtraLocation { row: 3, column: 4 },
+        ]
+    );
+}
+
+#[test]
+fn owned_archive_inputs_open_all_file_roots_without_changing_the_typed_result() {
+    let doc_bytes = fs::read(fixture("Apache-POI/test-data/document/simple.doc"))
+        .expect("read owned DOC fixture");
+    let doc_borrowed = DocFile::from_bytes(&doc_bytes).expect("open borrowed DOC fixture");
+    let doc_owned = DocFile::from_vec(doc_bytes).expect("open owned DOC fixture");
+    assert!(
+        doc_borrowed
+            .source_compound_file()
+            .logical_eq(doc_owned.source_compound_file())
+    );
+    let mut doc_output = Vec::new();
+    doc_owned
+        .write_to(&mut doc_output)
+        .expect("write DOC to a caller-owned sink");
+    assert_eq!(doc_output, doc_owned.to_bytes().unwrap());
+
+    let xls_bytes = fs::read(fixture(
+        "Apache-POI/test-data/spreadsheet/SimpleWithFormula.xls",
+    ))
+    .expect("read owned XLS fixture");
+    let xls_borrowed = XlsFile::from_bytes(&xls_bytes).expect("open borrowed XLS fixture");
+    let xls_owned = XlsFile::from_vec(xls_bytes).expect("open owned XLS fixture");
+    assert!(
+        xls_borrowed
+            .source_compound_file()
+            .logical_eq(xls_owned.source_compound_file())
+    );
+    let mut xls_output = Vec::new();
+    xls_owned
+        .write_to(&mut xls_output)
+        .expect("write XLS to a caller-owned sink");
+    assert_eq!(xls_output, xls_owned.to_bytes().unwrap());
+
+    let ppt_bytes = fs::read(fixture(
+        "Apache-POI/test-data/slideshow/basic_test_ppt_file.ppt",
+    ))
+    .expect("read owned PPT fixture");
+    let ppt_borrowed = PptFile::from_bytes(&ppt_bytes).expect("open borrowed PPT fixture");
+    let ppt_owned = PptFile::from_vec(ppt_bytes).expect("open owned PPT fixture");
+    assert!(
+        ppt_borrowed
+            .source_compound_file()
+            .logical_eq(ppt_owned.source_compound_file())
+    );
+    let mut ppt_output = Vec::new();
+    ppt_owned
+        .write_to(&mut ppt_output)
+        .expect("write PPT to a caller-owned sink");
+    assert_eq!(ppt_output, ppt_owned.to_bytes().unwrap());
+}
 
 #[test]
 fn ppt_slide_shape_text_placeholder_and_notes_relationships_are_native() {
@@ -391,10 +497,28 @@ fn doc_public_file_root_opens_edits_saves_and_reopens() {
     let source_snapshot = file.source_compound_file().clone();
     let (cp, replacement, expected) = first_editable_doc_character(&file);
     let before_failed_edit = file.clone();
+    assert!(Arc::ptr_eq(
+        &file.word_document,
+        &before_failed_edit.word_document
+    ));
+    assert!(Arc::ptr_eq(&file.table, &before_failed_edit.table));
     assert!(file.replace_main_text_range(cp..cp + 1, "\r").is_err());
     assert_eq!(file, before_failed_edit);
+    assert!(Arc::ptr_eq(
+        &file.word_document,
+        &before_failed_edit.word_document
+    ));
+    assert!(Arc::ptr_eq(&file.table, &before_failed_edit.table));
     file.replace_main_text_range(cp..cp + 1, replacement)
         .expect("edit DOC text through the file-root API");
+    assert!(!Arc::ptr_eq(
+        &file.word_document,
+        &before_failed_edit.word_document
+    ));
+    assert!(!Arc::ptr_eq(&file.table, &before_failed_edit.table));
+    if let (Some(current), Some(before)) = (&file.data, &before_failed_edit.data) {
+        assert!(Arc::ptr_eq(current, before));
+    }
     assert!(source_snapshot.logical_eq(file.source_compound_file()));
 
     let current = file
@@ -417,6 +541,60 @@ fn doc_public_file_root_opens_edits_saves_and_reopens() {
         saved.source_compound_file(),
         &saved.to_bytes().expect("save DOC a second time"),
     );
+}
+
+#[test]
+fn doc_save_rejects_inconsistent_typed_data_links_without_reparsing_source_bytes() {
+    let original = DocFile::open(fixture("Apache-POI/test-data/document/Bug61268.doc"))
+        .expect("open DOC Data-link fixture strictly");
+    let original_data = original.data.as_deref().expect("fixture has a Data stream");
+    assert!(original_data.nodes.len() > 1);
+
+    let mut out_of_bounds = original.clone();
+    let data = Arc::make_mut(out_of_bounds.data.as_mut().unwrap());
+    data.nodes[0].physical_len = data.physical_bytes.len() + 1;
+    let error = out_of_bounds
+        .to_compound_file_preserving_compatibility()
+        .expect_err("an out-of-bounds typed Data node must fail before save");
+    assert!(error.to_string().contains("physical range exceeds"));
+
+    let mut overlap = original.clone();
+    let data = Arc::make_mut(overlap.data.as_mut().unwrap());
+    data.nodes[1].offset = data.nodes[0].offset;
+    let error = overlap
+        .to_compound_file_preserving_compatibility()
+        .expect_err("overlapping typed Data nodes must fail before save");
+    assert!(error.to_string().contains("overlap"));
+
+    let mut missing = original.clone();
+    Arc::make_mut(missing.data.as_mut().unwrap()).nodes.pop();
+    let error = missing
+        .to_compound_file_preserving_compatibility()
+        .expect_err("removing a referenced typed Data node must fail before save");
+    assert!(error.to_string().contains("missing typed Data node"));
+
+    let mut wrong_kind = original;
+    let data = Arc::make_mut(wrong_kind.data.as_mut().unwrap());
+    let picture = data
+        .nodes
+        .iter()
+        .position(|node| matches!(node.value, DocDataNodeValue::Picture(_)))
+        .expect("fixture has picture Data");
+    let paragraph = data
+        .nodes
+        .iter()
+        .position(|node| matches!(node.value, DocDataNodeValue::ParagraphProperties(_)))
+        .expect("fixture has paragraph-property Data");
+    let (left, right) = data.nodes.split_at_mut(paragraph.max(picture));
+    if picture < paragraph {
+        std::mem::swap(&mut left[picture].value, &mut right[0].value);
+    } else {
+        std::mem::swap(&mut right[0].value, &mut left[paragraph].value);
+    }
+    let error = wrong_kind
+        .to_compound_file_preserving_compatibility()
+        .expect_err("changing the referenced typed Data-node kind must fail before save");
+    assert!(error.to_string().contains("type link changed"));
 }
 
 #[test]
@@ -563,13 +741,24 @@ fn xls_public_file_root_opens_edits_saves_and_reopens() {
     let mut invalid_name = edited_name.clone();
     invalid_name.value.clear();
     let before_failed_edit = file.clone();
+    assert!(Arc::ptr_eq(&file.workbooks, &before_failed_edit.workbooks));
+    assert!(Arc::ptr_eq(
+        &file.pivot_caches,
+        &before_failed_edit.pivot_caches
+    ));
     assert!(
         file.set_sheet_name(workbook_name, sheet_id, invalid_name)
             .is_err()
     );
     assert_eq!(file, before_failed_edit);
+    assert!(Arc::ptr_eq(&file.workbooks, &before_failed_edit.workbooks));
     file.set_sheet_name(workbook_name, sheet_id, edited_name.clone())
         .expect("edit XLS sheet name through the file-root API");
+    assert!(!Arc::ptr_eq(&file.workbooks, &before_failed_edit.workbooks));
+    assert!(Arc::ptr_eq(
+        &file.pivot_caches,
+        &before_failed_edit.pivot_caches
+    ));
     assert!(source_snapshot.logical_eq(file.source_compound_file()));
 
     let current = file
@@ -960,9 +1149,10 @@ fn host_forms_designer_is_owned_transactional_and_cycle_stable() {
         &mut embedded,
         Path::new("/UserForm1"),
     );
-    ppt.document.records.records[record_index].data = PptRecordData::ExternalStorage(
-        ExternalStorageAtom::recompress(embedded).expect("recompress PPT VBA with UserForm"),
-    );
+    std::sync::Arc::make_mut(&mut ppt.document).records.records[record_index].data =
+        PptRecordData::ExternalStorage(
+            ExternalStorageAtom::recompress(embedded).expect("recompress PPT VBA with UserForm"),
+        );
     let ppt_previous_tiling = ppt_form_picture_tiling(&ppt);
     assert_eq!(
         ppt_vba_project(&ppt).designer_storages()[0].identity().path,
@@ -1026,7 +1216,7 @@ fn xls_activex_host_relationship_resolves_exact_ctls_slices_across_save() {
 fn xls_activex_persistence_snapshot(file: &XlsFile) -> Vec<XlsActiveXPersistenceSnapshot> {
     let inventory = file.storages_and_streams_compatible();
     let mut snapshot = Vec::new();
-    for workbook in &file.workbooks {
+    for workbook in file.workbooks.iter() {
         let view = workbook
             .relationships_compatible()
             .expect("traverse XLS ActiveX workbook relationships");
@@ -1127,7 +1317,7 @@ fn copy_cfb_storage_tree(
                 .expect("copy Forms storage modified time");
         } else {
             destination
-                .create_stream(&path, entry.data.clone())
+                .create_stream(&path, entry.data.to_vec())
                 .expect("create copied Forms stream");
         }
         destination
@@ -2309,7 +2499,7 @@ fn xls_sheet_name_edit(
     XlsSheetId,
     olecfsdk::xls::ShortXlUnicodeString,
 ) {
-    for workbook in &file.workbooks {
+    for workbook in file.workbooks.iter() {
         let relationships = workbook
             .relationships()
             .expect("traverse strict XLS workbook relationships");

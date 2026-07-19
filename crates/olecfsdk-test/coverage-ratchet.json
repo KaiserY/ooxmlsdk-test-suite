@@ -139,6 +139,8 @@
         "biff_substreams": 2379,
         "disposition.external_leaf.records": 1,
         "disposition.typed.records": 2073848,
+        "formula_streams": 112266,
+        "formula_tokens": 621540,
         "workbooks": 731
       },
       "maximum_metrics": {
@@ -149,7 +151,10 @@
         "disposition.specification_opaque.records": 8324,
         "disposition.temporary_untyped.records": 0,
         "disposition.unknown_extension.bytes": 0,
-        "disposition.unknown_extension.records": 0
+        "disposition.unknown_extension.records": 0,
+        "formula_missing_extra_structures": 1,
+        "formula_nonconforming_tokens": 2,
+        "formula_unparsed_tail_bytes": 0
       }
     },
     "ppt": {
