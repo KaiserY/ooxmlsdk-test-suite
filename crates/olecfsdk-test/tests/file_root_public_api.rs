@@ -36,6 +36,58 @@ use olecfsdk_corpus_test_support::corpus_file_path;
 static TEMP_FILE_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
 #[test]
+fn well_known_office_cfb_names_are_public_static_sdk_values() {
+    use olecfsdk::{
+        doc::{
+            DATA_STREAM_PATH, DocTableStreamName, OBJECT_INFO_STREAM_NAME,
+            OBJECT_POOL_STORAGE_PATH, TABLE0_STREAM_PATH, TABLE1_STREAM_PATH,
+            WORD_DOCUMENT_STREAM_PATH,
+        },
+        forms::{FORM_STREAM_NAME, MULTIPAGE_STREAM_NAME, OBJECT_STREAM_NAME},
+        ppt::{CURRENT_USER_STREAM_PATH, PICTURES_STREAM_PATH, POWERPOINT_DOCUMENT_STREAM_PATH},
+        vba::{
+            DOC_VBA_PROJECT_STORAGE_NAME, VBA_DIRECTORY_STREAM_NAME, VBA_PROJECT_CACHE_STREAM_NAME,
+            VBA_PROJECT_LK_STREAM_NAME, VBA_PROJECT_STREAM_NAME, VBA_PROJECT_WM_STREAM_NAME,
+            VBA_STORAGE_NAME, XLS_VBA_PROJECT_STORAGE_NAME,
+        },
+        xls::{
+            BOOK_STREAM_PATH, PIVOT_CACHE_STORAGE_NAME, PIVOT_CACHE_STORAGE_PATH,
+            REVISION_LOG_STREAM_PATH, USER_NAMES_STREAM_PATH, WORKBOOK_STREAM_PATH, XlsStreamName,
+        },
+    };
+
+    assert_eq!(WORD_DOCUMENT_STREAM_PATH, "/WordDocument");
+    assert_eq!(DocTableStreamName::Table0.path(), TABLE0_STREAM_PATH);
+    assert_eq!(DocTableStreamName::Table1.path(), TABLE1_STREAM_PATH);
+    assert_eq!(DATA_STREAM_PATH, "/Data");
+    assert_eq!(OBJECT_POOL_STORAGE_PATH, "/ObjectPool");
+    assert_eq!(OBJECT_INFO_STREAM_NAME, "\u{3}ObjInfo");
+
+    assert_eq!(POWERPOINT_DOCUMENT_STREAM_PATH, "/PowerPoint Document");
+    assert_eq!(CURRENT_USER_STREAM_PATH, "/Current User");
+    assert_eq!(PICTURES_STREAM_PATH, "/Pictures");
+
+    assert_eq!(XlsStreamName::Workbook.path(), WORKBOOK_STREAM_PATH);
+    assert_eq!(XlsStreamName::Book.path(), BOOK_STREAM_PATH);
+    assert_eq!(PIVOT_CACHE_STORAGE_NAME, "_SX_DB_CUR");
+    assert_eq!(PIVOT_CACHE_STORAGE_PATH, "/_SX_DB_CUR");
+    assert_eq!(REVISION_LOG_STREAM_PATH, "/Revision Log");
+    assert_eq!(USER_NAMES_STREAM_PATH, "/User Names");
+
+    assert_eq!(FORM_STREAM_NAME, "f");
+    assert_eq!(OBJECT_STREAM_NAME, "o");
+    assert_eq!(MULTIPAGE_STREAM_NAME, "x");
+    assert_eq!(VBA_STORAGE_NAME, "VBA");
+    assert_eq!(VBA_DIRECTORY_STREAM_NAME, "dir");
+    assert_eq!(VBA_PROJECT_CACHE_STREAM_NAME, "_VBA_PROJECT");
+    assert_eq!(VBA_PROJECT_STREAM_NAME, "PROJECT");
+    assert_eq!(VBA_PROJECT_WM_STREAM_NAME, "PROJECTwm");
+    assert_eq!(VBA_PROJECT_LK_STREAM_NAME, "PROJECTlk");
+    assert_eq!(DOC_VBA_PROJECT_STORAGE_NAME, "Macros");
+    assert_eq!(XLS_VBA_PROJECT_STORAGE_NAME, "_VBA_PROJECT_CUR");
+}
+
+#[test]
 fn xls_natural_language_and_mem_no_mem_formula_tokens_are_public_typed_values() {
     let rgce = [
         0x18, 0x03, 5, 0, 7, 0, // PtgElfCol
