@@ -186,6 +186,11 @@ not self-evident from the fixture.
   reported as ranges with aggregate maxima instead of one metric dump per page.
 - Conversion manifests are parsed and indexed once per test process rather
   than rescanned for every case.
+- Run corpus ratchets with `--release`: Cargo's test profile inherits the
+  unoptimized development profile, and its bounds/debug checks materially
+  distort layout, font, raster, and pixel-comparison throughput at this scale.
+  The three format ratchets use the Rust test harness's bounded format-level
+  parallelism; PDFium calls remain serialized inside the extraction layer.
 - Keep Cargo commands sequential and use the default test-suite `target/`.
 - Do not weaken thresholds, exclude a file, or label an environmental
   difference without recording the evidence and decision here.
@@ -195,12 +200,12 @@ not self-evident from the fixture.
 Run the ratchet from the test-suite root:
 
 ```sh
-cargo test -p ooxmlsdk-pdf-test --test office_golden_corpus -- --ignored
+cargo test -p ooxmlsdk-pdf-test --release --test office_golden_corpus -- --ignored
 OOXMLSDK_GOLDEN_CASE='LibreOffice/path/to/case.pptx' \
-  cargo test -p ooxmlsdk-pdf-test --test office_golden_corpus \
+  cargo test -p ooxmlsdk-pdf-test --release --test office_golden_corpus \
   office_golden_pptx_corpus_ratchet -- --ignored --nocapture
 OOXMLSDK_GOLDEN_AUDIT_ERRORS=1 \
-  cargo test -p ooxmlsdk-pdf-test --test office_golden_corpus -- --ignored
+  cargo test -p ooxmlsdk-pdf-test --release --test office_golden_corpus -- --ignored
 ```
 
 ## Progress

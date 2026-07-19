@@ -381,12 +381,12 @@ pub fn rendered_page_image_from_pdf(
     let _guard = pdfium_lock().lock().unwrap();
     let pdfium = bind_pdfium()?;
     let document = pdfium
-        .load_pdf_from_byte_vec(pdf.to_vec(), None)
+        .load_pdf_from_byte_slice(pdf, None)
         .map_err(|error| format!("PDFium could not load PDF bytes: {error}"))?;
 
     for (current_page_index, page) in document.pages().iter().enumerate() {
         if current_page_index == page_index {
-            return rendered_page_image(page_index, &page, target_width);
+            return rendered_page_image(page_index, &page, target_width, true);
         }
     }
 
@@ -413,14 +413,14 @@ pub(crate) fn visit_rendered_page_pairs<E>(
     let _guard = pdfium_lock().lock().unwrap();
     let pdfium = bind_pdfium().map_err(RenderedPagePairError::Pdf)?;
     let candidate = pdfium
-        .load_pdf_from_byte_vec(candidate_pdf.to_vec(), None)
+        .load_pdf_from_byte_slice(candidate_pdf, None)
         .map_err(|error| {
             RenderedPagePairError::Pdf(format!(
                 "PDFium could not load candidate PDF bytes: {error}"
             ))
         })?;
     let golden = pdfium
-        .load_pdf_from_byte_vec(golden_pdf.to_vec(), None)
+        .load_pdf_from_byte_slice(golden_pdf, None)
         .map_err(|error| {
             RenderedPagePairError::Pdf(format!("PDFium could not load golden PDF bytes: {error}"))
         })?;
@@ -438,9 +438,9 @@ pub(crate) fn visit_rendered_page_pairs<E>(
         .zip(golden.pages().iter())
         .enumerate()
     {
-        let candidate_image = rendered_page_image(page_index, &candidate_page, target_width)
+        let candidate_image = rendered_page_image(page_index, &candidate_page, target_width, false)
             .map_err(RenderedPagePairError::Pdf)?;
-        let golden_image = rendered_page_image(page_index, &golden_page, target_width)
+        let golden_image = rendered_page_image(page_index, &golden_page, target_width, false)
             .map_err(RenderedPagePairError::Pdf)?;
         visit(page_index, candidate_image, golden_image).map_err(RenderedPagePairError::Visit)?;
     }
@@ -457,7 +457,7 @@ pub fn raw_image_pixel_from_pdf(
     let _guard = pdfium_lock().lock().unwrap();
     let pdfium = bind_pdfium()?;
     let document = pdfium
-        .load_pdf_from_byte_vec(pdf.to_vec(), None)
+        .load_pdf_from_byte_slice(pdf, None)
         .map_err(|error| format!("PDFium could not load PDF bytes: {error}"))?;
 
     for page in document.pages().iter() {
@@ -519,7 +519,7 @@ fn pdfium_summary(pdf: &[u8]) -> Result<PdfiumSummary, String> {
     let _guard = pdfium_lock().lock().unwrap();
     let pdfium = bind_pdfium()?;
     let document = pdfium
-        .load_pdf_from_byte_vec(pdf.to_vec(), None)
+        .load_pdf_from_byte_slice(pdf, None)
         .map_err(|error| format!("PDFium could not load PDF bytes: {error}"))?;
 
     let mut media_boxes = Vec::new();
@@ -1209,26 +1209,33 @@ fn rendered_page_image(
     page_index: usize,
     page: &PdfPage<'_>,
     target_width: i32,
+    calculate_crc32: bool,
 ) -> Result<RenderedPageImage, String> {
     let bitmap = page
-        .render_with_config(&PdfRenderConfig::new().set_target_width(target_width))
+        .render_with_config(
+            &PdfRenderConfig::new()
+                .set_target_width(target_width)
+                .set_reverse_byte_order(true),
+        )
         .map_err(|error| format!("PDFium could not render page {page_index}: {error}"))?;
     let width_px = bitmap.width() as u32;
     let height_px = bitmap.height() as u32;
-    let image = bitmap
-        .as_image()
-        .map_err(|error| format!("PDFium could not convert rendered page {page_index}: {error}"))?;
-    let rgba = image.to_rgba8();
-    let mut crc = crc32fast::Hasher::new();
-    crc.update(rgba.as_raw());
+    let rgba = bitmap.as_rgba_bytes();
+    let rgba_crc32 = calculate_crc32
+        .then(|| {
+            let mut crc = crc32fast::Hasher::new();
+            crc.update(&rgba);
+            format!("{:08x}", crc.finalize())
+        })
+        .unwrap_or_default();
     Ok(RenderedPageImage {
         page_index,
         width_px,
         height_px,
         page_width_pt: page.width().value,
         page_height_pt: page.height().value,
-        rgba_crc32: format!("{:08x}", crc.finalize()),
-        rgba: rgba.into_raw(),
+        rgba_crc32,
+        rgba,
     })
 }
 

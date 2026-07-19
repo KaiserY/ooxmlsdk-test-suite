@@ -13,6 +13,8 @@ cargo bench -p ooxmlsdk-bench --bench package_word
 cargo bench -p ooxmlsdk-bench --bench package_sheet
 cargo bench -p ooxmlsdk-bench --bench package_slides
 cargo bench -p ooxmlsdk-bench --bench xml
+cargo bench -p ooxmlsdk-bench --bench formula
+cargo bench -p ooxmlsdk-bench --bench pdf_render
 ```
 
 Criterion output is written under `target/criterion/`.
@@ -138,6 +140,12 @@ Typed XML benchmarks run these operations for typed root elements:
 - `read/stream_bufreader`: parse from `BufReader<Cursor<&[u8]>>`.
 - `write/parsed`: serialize an already parsed value.
 - `round_trip/slice`: parse and serialize.
+
+Formula benchmarks parse representative arithmetic, lookup, and dynamic-array
+expressions. PDF render benchmarks measure full OOXML-to-PDF conversion for one
+source-backed DOCX, PPTX, and XLSX fixture; they intentionally include package
+loading, layout, font resolution/shaping, and PDF serialization so caches are
+measured across repeated independent document conversions.
 
 
 Package fixtures come from the checked-in Open XML SDK corpus under

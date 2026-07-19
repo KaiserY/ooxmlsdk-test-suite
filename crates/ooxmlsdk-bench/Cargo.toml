@@ -9,6 +9,8 @@ license.workspace = true
 [dependencies]
 ooxmlsdk = { workspace = true, features = ["parts"] }
 ooxmlsdk-corpus-test-support = { workspace = true }
+ooxmlsdk-formula = { workspace = true }
+ooxmlsdk-pdf = { workspace = true }
 
 [dev-dependencies]
 criterion = { workspace = true }
@@ -27,4 +29,12 @@ harness = false
 
 [[bench]]
 name = "xml"
+harness = false
+
+[[bench]]
+name = "formula"
+harness = false
+
+[[bench]]
+name = "pdf_render"
 harness = false

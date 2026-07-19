@@ -5,7 +5,7 @@ use std::fs;
 use std::io::{BufWriter, Write as _};
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::OnceLock;
 
 use serde::Deserialize;
 
@@ -20,7 +20,6 @@ const FAILURE_SAMPLE_LIMIT: usize = 3;
 // comparison, so a 32-record page persists useful classification progress
 // without forcing a long tail to restart from the previous checkpoint.
 const UNEXPECTED_FAILURE_LIMIT: usize = 32;
-static CORPUS_RUN_LOCK: Mutex<()> = Mutex::new(());
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum OfficeGoldenFormat {
@@ -125,75 +124,50 @@ struct UnexpectedFailureRecord {
     message: String,
 }
 
+type KnownErrors = BTreeMap<String, BTreeMap<String, ParsedKnownError>>;
+
+struct CorpusIndex {
+    environment: EnvironmentRecord,
+    candidates: Vec<CorpusCandidate>,
+    known_errors: KnownErrors,
+}
+
+static CORPUS_INDEX: OnceLock<std::result::Result<CorpusIndex, String>> = OnceLock::new();
+
 pub fn run_office_golden_corpus(
     format: OfficeGoldenFormat,
     pass_target: usize,
 ) -> std::result::Result<OfficeGoldenCorpusReport, String> {
-    let _run_guard = CORPUS_RUN_LOCK
-        .lock()
-        .map_err(|_| "Office golden corpus run lock is poisoned".to_string())?;
     if pass_target == 0 {
         return Err("Office golden pass target must be greater than zero".to_string());
     }
 
     let root = workspace_root();
-    let environment = load_reference_environment(&root)?;
-    let mut candidates = load_candidates(&root)?;
-    for candidate in candidates
-        .iter()
-        .filter(|candidate| candidate.record.status == "converted")
-    {
-        if candidate.record.reference_engine != "Microsoft Office" {
-            return Err(format!(
-                "converted record {}/{} has reference engine {:?}",
-                candidate.corpus, candidate.record.file, candidate.record.reference_engine
-            ));
-        }
-        if candidate.record.environment_id != environment.environment_id {
-            return Err(format!(
-                "converted record {}/{} has environment {}, expected {}",
-                candidate.corpus,
-                candidate.record.file,
-                candidate.record.environment_id,
-                environment.environment_id
-            ));
-        }
-    }
-    let known_errors = load_known_errors(&root, &candidates)?;
+    let index = corpus_index(&root)?;
+    let environment = &index.environment;
+    let known_errors = &index.known_errors;
     let exact_case = env::var("OOXMLSDK_GOLDEN_CASE").ok();
     let corpus_filter = env::var("OOXMLSDK_GOLDEN_CORPUS").ok();
     let source_contains = env::var("OOXMLSDK_GOLDEN_SOURCE_CONTAINS").ok();
     let audit_errors = env::var("OOXMLSDK_GOLDEN_AUDIT_ERRORS").is_ok_and(|value| value == "1");
 
-    candidates.retain(|candidate| {
-        candidate.record.source_extension == format.extension()
-            && candidate.record.status == "converted"
-            && corpus_filter
-                .as_deref()
-                .is_none_or(|corpus| candidate.corpus == corpus)
-            && source_contains
-                .as_deref()
-                .is_none_or(|needle| candidate.record.file.contains(needle))
-            && exact_case.as_deref().is_none_or(|case| {
-                case == format!("{}/{}", candidate.corpus, candidate.record.file)
-            })
-    });
-    // Small source/output records are visited first. This is a scheduling
-    // choice only: every visited case still runs the full Office contract.
-    candidates.sort_by(|left, right| {
-        (
-            left.record.source_bytes,
-            left.record.output_bytes,
-            &left.corpus,
-            &left.record.file,
-        )
-            .cmp(&(
-                right.record.source_bytes,
-                right.record.output_bytes,
-                &right.corpus,
-                &right.record.file,
-            ))
-    });
+    let candidates = index
+        .candidates
+        .iter()
+        .filter(|candidate| {
+            candidate.record.source_extension == format.extension()
+                && candidate.record.status == "converted"
+                && corpus_filter
+                    .as_deref()
+                    .is_none_or(|corpus| candidate.corpus == corpus)
+                && source_contains
+                    .as_deref()
+                    .is_none_or(|needle| candidate.record.file.contains(needle))
+                && exact_case.as_deref().is_none_or(|case| {
+                    case == format!("{}/{}", candidate.corpus, candidate.record.file)
+                })
+        })
+        .collect::<Vec<_>>();
 
     if exact_case.is_some() && candidates.is_empty() {
         return Err(format!(
@@ -218,8 +192,9 @@ pub fn run_office_golden_corpus(
     let mut unexpected_count = 0usize;
 
     for candidate in candidates {
-        let key = (candidate.corpus.clone(), candidate.record.file.clone());
-        let expected_error = known_errors.get(&key);
+        let expected_error = known_errors
+            .get(&candidate.corpus)
+            .and_then(|sources| sources.get(&candidate.record.file));
         if exact_case.is_none() && passed >= pass_target {
             if audit_errors && expected_error.is_some() {
                 // Continue below and audit this exact known error.
@@ -434,6 +409,60 @@ fn error_report_file_name(
     format!("{report_kind}-{}-errors.jsonl", format.extension())
 }
 
+fn corpus_index(root: &Path) -> std::result::Result<&'static CorpusIndex, String> {
+    CORPUS_INDEX
+        .get_or_init(|| load_corpus_index(root))
+        .as_ref()
+        .map_err(Clone::clone)
+}
+
+fn load_corpus_index(root: &Path) -> std::result::Result<CorpusIndex, String> {
+    let environment = load_reference_environment(root)?;
+    let mut candidates = load_candidates(root)?;
+    for candidate in candidates
+        .iter()
+        .filter(|candidate| candidate.record.status == "converted")
+    {
+        if candidate.record.reference_engine != "Microsoft Office" {
+            return Err(format!(
+                "converted record {}/{} has reference engine {:?}",
+                candidate.corpus, candidate.record.file, candidate.record.reference_engine
+            ));
+        }
+        if candidate.record.environment_id != environment.environment_id {
+            return Err(format!(
+                "converted record {}/{} has environment {}, expected {}",
+                candidate.corpus,
+                candidate.record.file,
+                candidate.record.environment_id,
+                environment.environment_id
+            ));
+        }
+    }
+    // Small source/output records are visited first. This is a scheduling
+    // choice only: every visited case still runs the full Office contract.
+    candidates.sort_by(|left, right| {
+        (
+            left.record.source_bytes,
+            left.record.output_bytes,
+            &left.corpus,
+            &left.record.file,
+        )
+            .cmp(&(
+                right.record.source_bytes,
+                right.record.output_bytes,
+                &right.corpus,
+                &right.record.file,
+            ))
+    });
+    let known_errors = load_known_errors(root, &candidates)?;
+    Ok(CorpusIndex {
+        environment,
+        candidates,
+        known_errors,
+    })
+}
+
 fn load_candidates(root: &Path) -> std::result::Result<Vec<CorpusCandidate>, String> {
     let conversion_root = root.join("corpus_pdf_conv");
     let mut manifest_paths = child_manifest_paths(&conversion_root)?;
@@ -504,7 +533,7 @@ fn load_reference_environment(root: &Path) -> std::result::Result<EnvironmentRec
 fn load_known_errors(
     root: &Path,
     candidates: &[CorpusCandidate],
-) -> std::result::Result<BTreeMap<(String, String), ParsedKnownError>, String> {
+) -> std::result::Result<KnownErrors, String> {
     let path = root.join("corpus_pdf_conv/golden-errors.toml");
     let contents = fs::read_to_string(&path)
         .map_err(|error| format!("could not read {}: {error}", path.display()))?;
@@ -553,7 +582,7 @@ fn load_known_errors(
             return Err(format!("duplicate golden error class {class_id:?}"));
         }
     }
-    let mut errors = BTreeMap::new();
+    let mut errors = KnownErrors::new();
     let mut used_classes = BTreeSet::new();
     for error in manifest.error {
         let mut sources = error.sources;
@@ -581,7 +610,12 @@ fn load_known_errors(
                     error.corpus, source
                 ));
             }
-            if errors.insert(key, parsed.clone()).is_some() {
+            if errors
+                .entry(error.corpus.clone())
+                .or_default()
+                .insert(source.clone(), parsed.clone())
+                .is_some()
+            {
                 return Err(format!(
                     "duplicate golden error for {}/{}",
                     error.corpus, source

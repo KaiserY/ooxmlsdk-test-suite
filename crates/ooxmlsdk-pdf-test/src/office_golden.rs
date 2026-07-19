@@ -758,33 +758,49 @@ fn visual_diff_metrics(
     let mut significant_pixels = 0usize;
     let mut absolute_delta_sum = 0u64;
     let mut max_channel_delta = 0u8;
-    for (pixel_index, (candidate_pixel, golden_pixel)) in candidate
+    let text_mask_rows = text_mask_x_spans_by_row(candidate.height_px, page_bounds, text_masks);
+    let row_bytes = candidate.width_px as usize * 4;
+    let page_width = page_bounds.right - page_bounds.left;
+    let pixel_x_points = (0..candidate.width_px)
+        .map(|pixel_x| {
+            page_bounds.left + (pixel_x as f32 + 0.5) / candidate.width_px as f32 * page_width
+        })
+        .collect::<Vec<_>>();
+    for ((candidate_row, golden_row), text_mask_spans) in candidate
         .rgba
-        .chunks_exact(4)
-        .zip(golden.rgba.chunks_exact(4))
-        .enumerate()
+        .chunks_exact(row_bytes)
+        .zip(golden.rgba.chunks_exact(row_bytes))
+        .zip(&text_mask_rows)
     {
-        let pixel_x = pixel_index % candidate.width_px as usize;
-        let pixel_y = pixel_index / candidate.width_px as usize;
-        if pixel_is_in_text_mask(
-            pixel_x,
-            pixel_y,
-            candidate.width_px,
-            candidate.height_px,
-            page_bounds,
-            text_masks,
-        ) {
-            continue;
-        }
-        let mut pixel_max = 0u8;
-        for channel in 0..3 {
-            let delta = candidate_pixel[channel].abs_diff(golden_pixel[channel]);
-            absolute_delta_sum += u64::from(delta);
-            pixel_max = pixel_max.max(delta);
-            max_channel_delta = max_channel_delta.max(delta);
-        }
-        if pixel_max > significant_channel_delta {
-            significant_pixels += 1;
+        let mut text_mask_index = 0usize;
+        for (pixel_x, (candidate_pixel, golden_pixel)) in candidate_row
+            .chunks_exact(4)
+            .zip(golden_row.chunks_exact(4))
+            .enumerate()
+        {
+            let x = pixel_x_points[pixel_x];
+            while text_mask_spans
+                .get(text_mask_index)
+                .is_some_and(|span| span.right < x)
+            {
+                text_mask_index += 1;
+            }
+            if text_mask_spans
+                .get(text_mask_index)
+                .is_some_and(|span| x >= span.left)
+            {
+                continue;
+            }
+            let mut pixel_max = 0u8;
+            for channel in 0..3 {
+                let delta = candidate_pixel[channel].abs_diff(golden_pixel[channel]);
+                absolute_delta_sum += u64::from(delta);
+                pixel_max = pixel_max.max(delta);
+                max_channel_delta = max_channel_delta.max(delta);
+            }
+            if pixel_max > significant_channel_delta {
+                significant_pixels += 1;
+            }
         }
     }
     Ok(VisualDiffMetrics {
@@ -796,27 +812,48 @@ fn visual_diff_metrics(
     })
 }
 
-fn pixel_is_in_text_mask(
-    pixel_x: usize,
-    pixel_y: usize,
-    width_px: u32,
+#[derive(Clone, Copy, Debug)]
+struct TextMaskXSpan {
+    left: f32,
+    right: f32,
+}
+
+fn text_mask_x_spans_by_row(
     height_px: u32,
     page: PdfBounds,
     masks: &[PdfBounds],
-) -> bool {
+) -> Vec<Vec<TextMaskXSpan>> {
+    let mut rows = vec![Vec::new(); height_px as usize];
     let page_width = page.right - page.left;
     let page_height = page.top - page.bottom;
     if page_width <= 0.0 || page_height <= 0.0 {
-        return false;
+        return rows;
     }
-    let x = page.left + (pixel_x as f32 + 0.5) / width_px as f32 * page_width;
-    let y = page.top - (pixel_y as f32 + 0.5) / height_px as f32 * page_height;
-    masks.iter().any(|mask| {
-        x >= mask.left - TEXT_MASK_PADDING_PT
-            && x <= mask.right + TEXT_MASK_PADDING_PT
-            && y >= mask.bottom - TEXT_MASK_PADDING_PT
-            && y <= mask.top + TEXT_MASK_PADDING_PT
-    })
+    for (pixel_y, row) in rows.iter_mut().enumerate() {
+        let y = page.top - (pixel_y as f32 + 0.5) / height_px as f32 * page_height;
+        row.extend(masks.iter().filter_map(|mask| {
+            (y >= mask.bottom - TEXT_MASK_PADDING_PT && y <= mask.top + TEXT_MASK_PADDING_PT)
+                .then_some(TextMaskXSpan {
+                    left: mask.left - TEXT_MASK_PADDING_PT,
+                    right: mask.right + TEXT_MASK_PADDING_PT,
+                })
+        }));
+        row.sort_unstable_by(|left, right| left.left.total_cmp(&right.left));
+        if row.len() < 2 {
+            continue;
+        }
+        let mut merged = 0usize;
+        for index in 1..row.len() {
+            if row[index].left <= row[merged].right {
+                row[merged].right = row[merged].right.max(row[index].right);
+            } else {
+                merged += 1;
+                row[merged] = row[index];
+            }
+        }
+        row.truncate(merged + 1);
+    }
+    rows
 }
 
 fn write_failure_page_artifacts(
@@ -906,7 +943,10 @@ fn write_png(path: &Path, page: &RenderedPageImage, rgba: &[u8]) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::{format_page_ranges, normalize_extracted_text};
+    use super::{
+        PdfBounds, TEXT_MASK_PADDING_PT, format_page_ranges, normalize_extracted_text,
+        text_mask_x_spans_by_row,
+    };
 
     #[test]
     fn extracted_text_normalization_ignores_pdf_object_spacing_around_punctuation() {
@@ -925,5 +965,56 @@ mod tests {
         assert_eq!(format_page_ranges(&[]), "none");
         assert_eq!(format_page_ranges(&[0]), "0");
         assert_eq!(format_page_ranges(&[0, 1, 2, 4, 7, 8]), "0-2,4,7-8");
+    }
+
+    #[test]
+    fn row_text_mask_spans_preserve_pixel_center_membership() {
+        let width = 37u32;
+        let height = 53u32;
+        let page = PdfBounds {
+            left: 0.0,
+            bottom: 0.0,
+            right: 612.0,
+            top: 792.0,
+        };
+        let masks = [
+            PdfBounds {
+                left: 72.25,
+                bottom: 700.5,
+                right: 210.75,
+                top: 724.25,
+            },
+            PdfBounds {
+                left: 180.0,
+                bottom: 699.0,
+                right: 420.0,
+                top: 716.0,
+            },
+            PdfBounds {
+                left: 90.0,
+                bottom: 95.0,
+                right: 540.0,
+                top: 114.0,
+            },
+        ];
+        let rows = text_mask_x_spans_by_row(height, page, &masks);
+
+        for pixel_y in 0..height as usize {
+            let y = page.top - (pixel_y as f32 + 0.5) / height as f32 * (page.top - page.bottom);
+            for pixel_x in 0..width as usize {
+                let x =
+                    page.left + (pixel_x as f32 + 0.5) / width as f32 * (page.right - page.left);
+                let expected = masks.iter().any(|mask| {
+                    x >= mask.left - TEXT_MASK_PADDING_PT
+                        && x <= mask.right + TEXT_MASK_PADDING_PT
+                        && y >= mask.bottom - TEXT_MASK_PADDING_PT
+                        && y <= mask.top + TEXT_MASK_PADDING_PT
+                });
+                let actual = rows[pixel_y]
+                    .iter()
+                    .any(|span| x >= span.left && x <= span.right);
+                assert_eq!(actual, expected, "pixel ({pixel_x}, {pixel_y})");
+            }
+        }
     }
 }
