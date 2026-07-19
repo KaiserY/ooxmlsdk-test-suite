@@ -6,12 +6,16 @@ use std::io::{BufWriter, Write as _};
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
+use std::time::{Duration, Instant};
 
+use rayon::ThreadPoolBuilder;
+use rayon::iter::{IntoParallelIterator, ParallelBridge, ParallelIterator};
 use serde::Deserialize;
 
+use crate::office_golden::compare_office_golden_detailed_with_artifacts;
 use crate::{
     OfficeGoldenCase, OfficeGoldenComparisonLayer, OfficeGoldenFailure, VisualTolerance,
-    compare_office_golden_detailed, workspace_root,
+    workspace_root,
 };
 
 const ERROR_MANIFEST_SCHEMA_VERSION: u32 = 1;
@@ -20,6 +24,7 @@ const FAILURE_SAMPLE_LIMIT: usize = 3;
 // comparison, so a 32-record page persists useful classification progress
 // without forcing a long tail to restart from the previous checkpoint.
 const UNEXPECTED_FAILURE_LIMIT: usize = 32;
+const SLOW_CASE_THRESHOLD: Duration = Duration::from_secs(2);
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum OfficeGoldenFormat {
@@ -150,8 +155,39 @@ pub fn run_office_golden_corpus(
     let corpus_filter = env::var("OOXMLSDK_GOLDEN_CORPUS").ok();
     let source_contains = env::var("OOXMLSDK_GOLDEN_SOURCE_CONTAINS").ok();
     let audit_errors = env::var("OOXMLSDK_GOLDEN_AUDIT_ERRORS").is_ok_and(|value| value == "1");
+    let error_class_filter = env::var("OOXMLSDK_GOLDEN_ERROR_CLASS").ok();
+    let audit_limit = env::var("OOXMLSDK_GOLDEN_AUDIT_LIMIT")
+        .ok()
+        .map(|value| {
+            value
+                .parse::<usize>()
+                .map_err(|error| format!("invalid OOXMLSDK_GOLDEN_AUDIT_LIMIT {value:?}: {error}"))
+                .and_then(|limit| {
+                    (limit > 0)
+                        .then_some(limit)
+                        .ok_or_else(|| "OOXMLSDK_GOLDEN_AUDIT_LIMIT must be positive".to_string())
+                })
+        })
+        .transpose()?;
+    let audit_offset = env::var("OOXMLSDK_GOLDEN_AUDIT_OFFSET")
+        .ok()
+        .map(|value| {
+            value
+                .parse::<usize>()
+                .map_err(|error| format!("invalid OOXMLSDK_GOLDEN_AUDIT_OFFSET {value:?}: {error}"))
+        })
+        .transpose()?
+        .unwrap_or_default();
+    let trace_cases = env::var("OOXMLSDK_GOLDEN_TRACE_CASES").is_ok_and(|value| value == "1");
+    if (error_class_filter.is_some() || audit_limit.is_some() || audit_offset != 0) && !audit_errors
+    {
+        return Err(
+            "OOXMLSDK_GOLDEN_ERROR_CLASS, OOXMLSDK_GOLDEN_AUDIT_LIMIT, and OOXMLSDK_GOLDEN_AUDIT_OFFSET require OOXMLSDK_GOLDEN_AUDIT_ERRORS=1"
+                .to_string(),
+        );
+    }
 
-    let candidates = index
+    let mut candidates = index
         .candidates
         .iter()
         .filter(|candidate| {
@@ -166,8 +202,22 @@ pub fn run_office_golden_corpus(
                 && exact_case.as_deref().is_none_or(|case| {
                     case == format!("{}/{}", candidate.corpus, candidate.record.file)
                 })
+                && error_class_filter.as_deref().is_none_or(|class_id| {
+                    known_errors
+                        .get(&candidate.corpus)
+                        .and_then(|sources| sources.get(&candidate.record.file))
+                        .is_some_and(|error| error.class_id == class_id)
+                })
         })
         .collect::<Vec<_>>();
+    if audit_offset >= candidates.len() {
+        candidates.clear();
+    } else if audit_offset != 0 {
+        candidates.drain(..audit_offset);
+    }
+    if let Some(limit) = audit_limit {
+        candidates.truncate(limit);
+    }
 
     if exact_case.is_some() && candidates.is_empty() {
         return Err(format!(
@@ -180,6 +230,38 @@ pub fn run_office_golden_corpus(
             "OOXMLSDK_GOLDEN_SOURCE_CONTAINS did not select a converted {} record",
             format.extension()
         ));
+    }
+
+    if audit_errors && exact_case.is_none() {
+        let require_pass_target = error_class_filter.is_none()
+            && audit_limit.is_none()
+            && audit_offset == 0
+            && corpus_filter.is_none()
+            && source_contains.is_none();
+        return run_batch_audit(
+            format,
+            pass_target,
+            &root,
+            environment,
+            known_errors,
+            candidates,
+            BatchAuditOptions {
+                trace_cases,
+                require_pass_target,
+            },
+        );
+    }
+
+    if exact_case.is_none() {
+        return run_normal_ratchet(
+            format,
+            pass_target,
+            &root,
+            environment,
+            known_errors,
+            candidates,
+            trace_cases,
+        );
     }
 
     let mut attempted = 0usize;
@@ -234,9 +316,31 @@ pub fn run_office_golden_corpus(
             environment_id: &candidate.record.environment_id,
             ui_language: &environment.environment.locale.ui_culture,
         };
-        match catch_conversion_panic(|| {
-            compare_office_golden_detailed(case, VisualTolerance::OFFICE_FIXED_OUTPUT)
-        }) {
+        let write_failure_artifacts = exact_case.is_some() || expected_error.is_none();
+        let case_key = format!("{}/{}", candidate.corpus, candidate.record.file);
+        if trace_cases {
+            eprintln!("office-golden start {case_key}");
+        }
+        let started = Instant::now();
+        let comparison = catch_conversion_panic(|| {
+            compare_office_golden_detailed_with_artifacts(
+                case,
+                VisualTolerance::OFFICE_FIXED_OUTPUT,
+                write_failure_artifacts,
+            )
+        });
+        let elapsed = started.elapsed();
+        if trace_cases || elapsed >= SLOW_CASE_THRESHOLD {
+            let status = comparison.as_ref().map_or_else(
+                |failure| format!("error:{}", failure.layer.as_str()),
+                |_| "pass".to_string(),
+            );
+            eprintln!(
+                "office-golden finish {case_key} status={status} elapsed_ms={}",
+                elapsed.as_millis()
+            );
+        }
+        match comparison {
             Ok(_) => {
                 passed += 1;
                 if expected_error.is_some() {
@@ -300,9 +404,11 @@ pub fn run_office_golden_corpus(
         return Err(format_failure_summary(
             format,
             pass_target,
-            attempted,
-            passed,
-            expected_errors,
+            ScanCounts {
+                attempted,
+                passed,
+                expected_errors,
+            },
             &stale_errors,
             &unexpected,
             &error_report_path,
@@ -315,6 +421,385 @@ pub fn run_office_golden_corpus(
         passed,
         expected_errors,
     })
+}
+
+#[derive(Default)]
+struct AuditState {
+    attempted: usize,
+    passed: usize,
+    expected_errors: usize,
+    stale_errors: Vec<String>,
+    unexpected: BTreeMap<OfficeGoldenComparisonLayer, FailureGroup>,
+    unexpected_records: Vec<UnexpectedFailureRecord>,
+    expected_records: Vec<UnexpectedFailureRecord>,
+    unexpected_count: usize,
+}
+
+impl AuditState {
+    fn record_unexpected(&mut self, corpus: &str, source: &str, failure: OfficeGoldenFailure) {
+        self.unexpected_count += 1;
+        let layer = failure.layer;
+        let message = failure.message;
+        self.unexpected_records.push(UnexpectedFailureRecord {
+            corpus: corpus.to_string(),
+            source: source.to_string(),
+            layer,
+            message: message.clone(),
+        });
+        let group = self.unexpected.entry(layer).or_insert(FailureGroup {
+            count: 0,
+            samples: Vec::new(),
+        });
+        group.count += 1;
+        if group.samples.len() < FAILURE_SAMPLE_LIMIT {
+            group.samples.push((format!("{corpus}/{source}"), message));
+        }
+    }
+}
+
+enum NormalRatchetItem<'a> {
+    ExpectedError,
+    Candidate(&'a CorpusCandidate),
+}
+
+fn run_normal_ratchet(
+    format: OfficeGoldenFormat,
+    pass_target: usize,
+    root: &Path,
+    environment: &EnvironmentRecord,
+    known_errors: &KnownErrors,
+    candidates: Vec<&CorpusCandidate>,
+    trace_cases: bool,
+) -> std::result::Result<OfficeGoldenCorpusReport, String> {
+    let jobs = batch_audit_jobs()?;
+    let pool = ThreadPoolBuilder::new()
+        .num_threads(jobs)
+        .thread_name(|index| format!("office-golden-{index}"))
+        .build()
+        .map_err(|error| format!("could not create Office golden ratchet pool: {error}"))?;
+    let ui_language = &environment.environment.locale.ui_culture;
+    let mut state = AuditState::default();
+    let mut cursor = 0usize;
+
+    while cursor < candidates.len()
+        && state.passed < pass_target
+        && state.unexpected_count < UNEXPECTED_FAILURE_LIMIT
+    {
+        // Select in the original deterministic scan order, but compare the
+        // next small window concurrently. Processing the results in the same
+        // order preserves the exact pass target and failure cutoff; at most
+        // `jobs - 1` comparisons are speculative.
+        let mut items = Vec::new();
+        let mut executable = Vec::new();
+        while cursor < candidates.len() && executable.len() < jobs {
+            let candidate = candidates[cursor];
+            cursor += 1;
+            let expected_error = known_errors
+                .get(&candidate.corpus)
+                .and_then(|sources| sources.get(&candidate.record.file));
+            if expected_error.is_some() {
+                items.push(NormalRatchetItem::ExpectedError);
+            } else {
+                items.push(NormalRatchetItem::Candidate(candidate));
+                executable.push(candidate);
+            }
+        }
+
+        let results = pool.install(|| {
+            executable
+                .into_par_iter()
+                .map(|candidate| compare_candidate(candidate, ui_language, trace_cases, true))
+                .collect::<Vec<_>>()
+        });
+        let mut results = results.into_iter();
+        for item in items {
+            if state.passed >= pass_target || state.unexpected_count >= UNEXPECTED_FAILURE_LIMIT {
+                break;
+            }
+            state.attempted += 1;
+            match item {
+                NormalRatchetItem::ExpectedError => state.expected_errors += 1,
+                NormalRatchetItem::Candidate(candidate) => {
+                    let comparison = results
+                        .next()
+                        .expect("every normal ratchet candidate has one comparison result");
+                    match comparison {
+                        Ok(()) => state.passed += 1,
+                        Err(failure) => state.record_unexpected(
+                            &candidate.corpus,
+                            &candidate.record.file,
+                            failure,
+                        ),
+                    }
+                }
+            }
+        }
+    }
+
+    let error_report_path = write_error_report(
+        root,
+        format,
+        None,
+        false,
+        &state.unexpected_records,
+        &[],
+        &[],
+    )?;
+    if !state.unexpected.is_empty() || state.passed < pass_target {
+        return Err(format_failure_summary(
+            format,
+            pass_target,
+            ScanCounts {
+                attempted: state.attempted,
+                passed: state.passed,
+                expected_errors: state.expected_errors,
+            },
+            &[],
+            &state.unexpected,
+            &error_report_path,
+        ));
+    }
+
+    Ok(OfficeGoldenCorpusReport {
+        format,
+        attempted: state.attempted,
+        passed: state.passed,
+        expected_errors: state.expected_errors,
+    })
+}
+
+struct KnownAuditCase<'a> {
+    order: usize,
+    candidate: &'a CorpusCandidate,
+    expected: &'a ParsedKnownError,
+}
+
+struct KnownAuditResult {
+    order: usize,
+    corpus: String,
+    source: String,
+    expected_layer: OfficeGoldenComparisonLayer,
+    comparison: std::result::Result<(), OfficeGoldenFailure>,
+}
+
+#[derive(Clone, Copy)]
+struct BatchAuditOptions {
+    trace_cases: bool,
+    require_pass_target: bool,
+}
+
+fn run_batch_audit(
+    format: OfficeGoldenFormat,
+    pass_target: usize,
+    root: &Path,
+    environment: &EnvironmentRecord,
+    known_errors: &KnownErrors,
+    candidates: Vec<&CorpusCandidate>,
+    options: BatchAuditOptions,
+) -> std::result::Result<OfficeGoldenCorpusReport, String> {
+    let mut unclassified = Vec::new();
+    let mut known = Vec::new();
+    for (order, candidate) in candidates.into_iter().enumerate() {
+        match known_errors
+            .get(&candidate.corpus)
+            .and_then(|sources| sources.get(&candidate.record.file))
+        {
+            Some(expected) => known.push(KnownAuditCase {
+                order,
+                candidate,
+                expected,
+            }),
+            None => unclassified.push(candidate),
+        }
+    }
+
+    // Preserve the normal ratchet's deterministic small-file prefix. Known
+    // errors do not contribute to that prefix; they are independently audited
+    // below and can therefore use bounded parallelism without changing which
+    // unclassified cases establish the pass target.
+    let mut state = AuditState::default();
+    for candidate in unclassified {
+        if state.passed >= pass_target || state.unexpected_count >= UNEXPECTED_FAILURE_LIMIT {
+            break;
+        }
+        state.attempted += 1;
+        match compare_candidate(
+            candidate,
+            &environment.environment.locale.ui_culture,
+            options.trace_cases,
+            true,
+        ) {
+            Ok(()) => state.passed += 1,
+            Err(failure) => {
+                state.record_unexpected(&candidate.corpus, &candidate.record.file, failure)
+            }
+        }
+    }
+
+    if state.unexpected_count < UNEXPECTED_FAILURE_LIMIT {
+        let mut executable = Vec::with_capacity(known.len());
+        for case in known {
+            state.attempted += 1;
+            if case.expected.skip_batch_audit {
+                state.expected_errors += 1;
+            } else {
+                executable.push(case);
+            }
+        }
+
+        let jobs = batch_audit_jobs()?;
+        let pool = ThreadPoolBuilder::new()
+            .num_threads(jobs)
+            .thread_name(|index| format!("office-golden-{index}"))
+            .build()
+            .map_err(|error| format!("could not create Office golden audit pool: {error}"))?;
+        let ui_language = &environment.environment.locale.ui_culture;
+        let mut results = pool.install(|| {
+            executable
+                .into_iter()
+                .par_bridge()
+                .map(|case| KnownAuditResult {
+                    order: case.order,
+                    corpus: case.candidate.corpus.clone(),
+                    source: case.candidate.record.file.clone(),
+                    expected_layer: case.expected.layer,
+                    comparison: compare_candidate(
+                        case.candidate,
+                        ui_language,
+                        options.trace_cases,
+                        false,
+                    ),
+                })
+                .collect::<Vec<_>>()
+        });
+        results.sort_by_key(|result| result.order);
+
+        for result in results {
+            match result.comparison {
+                Ok(()) => {
+                    state.passed += 1;
+                    state
+                        .stale_errors
+                        .push(format!("{}/{}", result.corpus, result.source));
+                }
+                Err(failure) if failure.layer == result.expected_layer => {
+                    state.expected_records.push(UnexpectedFailureRecord {
+                        corpus: result.corpus,
+                        source: result.source,
+                        layer: failure.layer,
+                        message: failure.message,
+                    });
+                    state.expected_errors += 1;
+                }
+                Err(failure) if state.unexpected_count < UNEXPECTED_FAILURE_LIMIT => {
+                    state.record_unexpected(&result.corpus, &result.source, failure);
+                }
+                Err(_) => {}
+            }
+        }
+    }
+
+    let error_report_path = write_error_report(
+        root,
+        format,
+        None,
+        true,
+        &state.unexpected_records,
+        &state.expected_records,
+        &state.stale_errors,
+    )?;
+    if !state.stale_errors.is_empty()
+        || !state.unexpected.is_empty()
+        || (options.require_pass_target && state.passed < pass_target)
+    {
+        return Err(format_failure_summary(
+            format,
+            pass_target,
+            ScanCounts {
+                attempted: state.attempted,
+                passed: state.passed,
+                expected_errors: state.expected_errors,
+            },
+            &state.stale_errors,
+            &state.unexpected,
+            &error_report_path,
+        ));
+    }
+
+    Ok(OfficeGoldenCorpusReport {
+        format,
+        attempted: state.attempted,
+        passed: state.passed,
+        expected_errors: state.expected_errors,
+    })
+}
+
+fn batch_audit_jobs() -> std::result::Result<usize, String> {
+    let default = std::thread::available_parallelism()
+        .map(usize::from)
+        .unwrap_or(1)
+        .min(4);
+    env::var("OOXMLSDK_GOLDEN_JOBS")
+        .ok()
+        .map(|value| {
+            value
+                .parse::<usize>()
+                .map_err(|error| format!("invalid OOXMLSDK_GOLDEN_JOBS {value:?}: {error}"))
+                .and_then(|jobs| {
+                    (jobs > 0)
+                        .then_some(jobs)
+                        .ok_or_else(|| "OOXMLSDK_GOLDEN_JOBS must be positive".to_string())
+                })
+        })
+        .transpose()
+        .map(|jobs| jobs.unwrap_or(default))
+}
+
+fn compare_candidate(
+    candidate: &CorpusCandidate,
+    ui_language: &str,
+    trace_cases: bool,
+    write_failure_artifacts: bool,
+) -> std::result::Result<(), OfficeGoldenFailure> {
+    let case_id = format!(
+        "{}_{}",
+        candidate.corpus.to_ascii_lowercase().replace('-', "_"),
+        candidate.record.source_sha256
+    );
+    let case = OfficeGoldenCase {
+        id: &case_id,
+        corpus: &candidate.corpus,
+        source: &candidate.record.file,
+        source_sha256: &candidate.record.source_sha256,
+        golden_sha256: &candidate.record.output_sha256,
+        environment_id: &candidate.record.environment_id,
+        ui_language,
+    };
+    let case_key = format!("{}/{}", candidate.corpus, candidate.record.file);
+    if trace_cases {
+        eprintln!("office-golden start {case_key}");
+    }
+    let started = Instant::now();
+    let comparison = catch_conversion_panic(|| {
+        compare_office_golden_detailed_with_artifacts(
+            case,
+            VisualTolerance::OFFICE_FIXED_OUTPUT,
+            write_failure_artifacts,
+        )
+        .map(|_| ())
+    });
+    let elapsed = started.elapsed();
+    if trace_cases || elapsed >= SLOW_CASE_THRESHOLD {
+        let status = comparison.as_ref().map_or_else(
+            |failure| format!("error:{}", failure.layer.as_str()),
+            |_| "pass".to_string(),
+        );
+        eprintln!(
+            "office-golden finish {case_key} status={status} elapsed_ms={}",
+            elapsed.as_millis()
+        );
+    }
+    comparison
 }
 
 fn catch_conversion_panic<T>(
@@ -573,6 +1058,7 @@ fn load_known_errors(
             .insert(
                 class.id,
                 ParsedKnownError {
+                    class_id: class_id.clone(),
                     layer,
                     skip_batch_audit: class.skip_batch_audit,
                 },
@@ -631,20 +1117,31 @@ fn load_known_errors(
 
 #[derive(Clone, Debug)]
 struct ParsedKnownError {
+    class_id: String,
     layer: OfficeGoldenComparisonLayer,
     skip_batch_audit: bool,
+}
+
+#[derive(Clone, Copy)]
+struct ScanCounts {
+    attempted: usize,
+    passed: usize,
+    expected_errors: usize,
 }
 
 fn format_failure_summary(
     format: OfficeGoldenFormat,
     pass_target: usize,
-    attempted: usize,
-    passed: usize,
-    expected_errors: usize,
+    counts: ScanCounts,
     stale_errors: &[String],
     unexpected: &BTreeMap<OfficeGoldenComparisonLayer, FailureGroup>,
     error_report_path: &Path,
 ) -> String {
+    let ScanCounts {
+        attempted,
+        passed,
+        expected_errors,
+    } = counts;
     let mut output = format!(
         "Office golden {} scan failed: target={pass_target}, attempted={attempted}, passed={passed}, expected_errors={expected_errors}",
         format.extension()
@@ -707,9 +1204,11 @@ mod tests {
         let summary = format_failure_summary(
             super::OfficeGoldenFormat::Docx,
             10,
-            4,
-            4,
-            0,
+            super::ScanCounts {
+                attempted: 4,
+                passed: 4,
+                expected_errors: 0,
+            },
             &[],
             &BTreeMap::new(),
             Path::new("target/office-golden/scan-docx-errors.jsonl"),

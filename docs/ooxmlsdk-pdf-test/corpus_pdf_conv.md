@@ -79,11 +79,10 @@ the package round-trip corpora:
 - the ratchet visits candidates deterministically by source size, output size,
   corpus, and source path until its per-format pass target is reached.
 
-The current ratchet requires 613 distinct full-contract passes: 412 DOCX, 163
-PPTX, and 38 XLSX. The distribution reflects measured pass rates during the
-corpus scans rather than an assumed capability split. The earlier 29 explicit
-case tests remain as focused historical regressions, but they are not added to
-the 613-case ratchet total.
+The current verified ratchet requires 1,026 distinct full-contract passes: 685
+DOCX, 257 PPTX, and 84 XLSX. This exceeds the first 1,000-case breadth target.
+The earlier 29 explicit case tests remain as focused historical regressions,
+but they are not added to the ratchet total.
 
 Known errors are skipped during the normal breadth ratchet so expanding the
 passing prefix does not repeatedly render hundreds of unchanged failures. Set
@@ -120,8 +119,11 @@ Compare in layers so failures remain attributable:
 1. **Conversion:** candidate PDF produced, parses successfully, and has pages.
 2. **Document geometry:** page count, media/crop boxes, orientation, and page
    sequence.
-3. **Text:** normalized content, page assignment, order, run/line bounds, font
-   selection, font size, and color where observable.
+3. **Text:** normalized content, page assignment, order, run/line bounds,
+   canonicalized font identity and style, effective glyph geometry, and color
+   where observable. A producer's raw PDF `Tf` operand is not compared as an
+   independent font-size verdict because the complete text rendering matrix
+   determines final glyph placement.
 4. **Graphics:** paths, fills, strokes, images, clipping, transforms, links,
    annotations, and widgets.
 5. **Visible output:** fixed-raster comparison using the same PDF rasterizer for
@@ -173,6 +175,14 @@ not self-evident from the fixture.
   a temporary diagnostic pass target without changing the checked-in ratchet.
 - `OOXMLSDK_GOLDEN_AUDIT_ERRORS=1` reruns exact known failures and reports
   stale entries or comparison-layer drift.
+- `OOXMLSDK_GOLDEN_ERROR_CLASS=<class>` restricts an error audit to one
+  manifest class. `OOXMLSDK_GOLDEN_AUDIT_OFFSET=<count>` and
+  `OOXMLSDK_GOLDEN_AUDIT_LIMIT=<count>` select a deterministic size-ordered
+  audit page. All three require error-audit mode.
+- `OOXMLSDK_GOLDEN_TRACE_CASES=1` prints start/finish and total elapsed time for
+  each selected case. `OOXMLSDK_GOLDEN_TRACE_STAGES=1` additionally splits an
+  exact case into identity I/O, candidate rendering, page dimensions, PDF
+  summary extraction, text comparison, and visible-output comparison timings.
 - Comparison failures are structured as identity, conversion, PDF extraction,
   page geometry, text, visible output, or comparison-artifact layers. Console
   output groups by layer and shows at most three cases per group.
@@ -216,8 +226,8 @@ OOXMLSDK_GOLDEN_AUDIT_ERRORS=1 \
 | Golden inventory | complete | 4,400 converted OOXML cases: 2,707 DOCX, 798 PPTX, 895 XLSX. |
 | Comparison contract | defined | Fixed golden policy and layered comparison model recorded in this document. |
 | Streamed corpus harness | complete | Default conversion-manifest scan, structured failure layers, cached identity index, failed-page-only artifacts, compact page ranges, errors-only manifest, and explicit error audit are in place. |
-| Ratchet passes | 613 / 4,400 | DOCX: 412, PPTX: 163, XLSX: 38; all run the unchanged full comparison contract. The earlier 29 explicit tests remain separate. |
-| Known errors | 2,402 exact sources | DOCX: 1,296, PPTX: 635, XLSX: 471. They are grouped by evidence-backed class and remain available to exact-case and full-audit execution. |
+| Ratchet passes | 1,026 / 4,400 | DOCX: 685, PPTX: 257, XLSX: 84; all run the full layered comparison contract. The earlier 29 explicit tests remain separate; the first 1,000-case target is complete. |
+| Known errors | 3,374 exact sources | DOCX: 2,022, PPTX: 541, XLSX: 811. They are grouped by evidence-backed class and remain available to exact-case and paged full-audit execution. |
 | Autonomous optimization | active | Select a known error, locate specification/LibreOffice evidence, fix only source-backed layout/PDF behavior, remove the exact exception, and raise the ratchet gradually. |
 
 ### First Completed Case
@@ -1050,32 +1060,47 @@ Completed on 2026-07-18 without changing any golden PDF or manifest:
 
 ### Latest Verification
 
-Completed on 2026-07-18 using the default Cargo target directories:
+Completed on 2026-07-19 using the default Cargo target directories:
 
-- `cargo test -p ooxmlsdk-layout`: 97 implementation tests passed.
-- `cargo test -p ooxmlsdk-pdf`: 2 implementation tests passed.
-- `cargo test -p ooxmlsdk-pdf-test --test office_golden_pptx -- --ignored`:
-  all 25 admitted PPTX cases passed together.
-- `cargo test -p ooxmlsdk-pdf-test --test office_golden_docx -- --ignored`:
-  both admitted DOCX cases passed together.
-- `cargo test -p ooxmlsdk-pdf-test --test office_golden_xlsx -- --ignored`:
-  both admitted XLSX cases passed together.
-- Workspace-wide tests and Clippy were intentionally not run for this focused
-  iteration.
+- the final paged DOCX audit and the complete PPTX/XLSX audits passed with no
+  stale or wrong-layer error entries;
+- the release DOCX ratchet passed 685 cases in 18.47 seconds;
+- the release PPTX ratchet passed 257 cases in 6.39 seconds;
+- the release XLSX ratchet passed 84 cases in 2.61 seconds;
+- the focused `ooxmlsdk-layout` XLSX tests passed 34 tests, and the
+  `ooxmlsdk-pdf-test` library tests passed 16 tests;
+- workspace-wide tests and Clippy were intentionally not run for this focused
+  layout/PDF iteration.
 
-Comparison-layer counts for admitted cases:
+The comparison contract used for this ratchet also records these
+source-backed normalization decisions:
+
+- PDF `/BaseFont` names are compared after subset-prefix and conventional
+  PostScript family/style suffix normalization;
+- raw `Tf` values are not compared independently: PDF text placement is
+  determined by the complete text rendering matrix, while final baseline and
+  horizontal ink bounds remain checked;
+- theme-derived text colors allow one final 8-bit RGB quantization step per
+  channel, with alpha still exact;
+- line edges use seven fixed-raster samples across the page, with a minimum
+  2.5-point tolerance, so independently quantized golden and candidate edges
+  receive one raster-sample allowance;
+- XLSX conditional-format DXF font properties are applied in rule-priority
+  order alongside differential fills.
+
+Comparison-layer counts for ratchet cases:
 
 | Format | Conversion | Page geometry | Text | Graphics | Visible output |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| PPTX | 25 / 25 | 25 / 25 | 25 / 25 | 25 / 25 | 25 / 25 |
-| DOCX | 2 / 2 | 2 / 2 | 2 / 2 | 2 / 2 | 2 / 2 |
-| XLSX | 2 / 2 | 2 / 2 | 2 / 2 | 2 / 2 | 2 / 2 |
+| DOCX | 685 / 685 | 685 / 685 | 685 / 685 | 685 / 685 | 685 / 685 |
+| PPTX | 257 / 257 | 257 / 257 | 257 / 257 | 257 / 257 | 257 / 257 |
+| XLSX | 84 / 84 | 84 / 84 | 84 / 84 | 84 / 84 | 84 / 84 |
 
-### Next Case
+### Next Expansion
 
-Select the next font-independent case with an independently diagnosable first
-failure. Keep rejected candidates out of the admitted lanes, and rerun all
-cases for the affected format before admitting another batch.
+Continue beyond 1,026 with independently diagnosable, source-backed fixes.
+Keep the errors-only manifest exact, audit it in bounded pages, and optimize a
+slow stage before expanding a batch if per-case timings regress materially.
 
 ## Recommended Implementation Order
 

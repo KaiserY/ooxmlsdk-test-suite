@@ -330,6 +330,162 @@ pub fn pdf_page_count(pdf: &[u8]) -> Result<usize, String> {
     Ok(document.get_pages().len())
 }
 
+pub(crate) fn pdf_page_dimensions(pdf: &[u8]) -> Result<Vec<(f32, f32)>, String> {
+    let document = LopdfDocument::load_mem(pdf)
+        .map_err(|error| format!("lopdf could not load PDF bytes: {error}"))?;
+    document
+        .page_iter()
+        .enumerate()
+        .map(|(page_index, page_id)| {
+            let media_box = inherited_page_value(&document, page_id, b"MediaBox")?
+                .ok_or_else(|| format!("PDF page {page_index} has no inherited MediaBox"))?;
+            let media_box = resolve_pdf_object(&document, media_box)?
+                .as_array()
+                .map_err(|error| {
+                    format!("PDF page {page_index} MediaBox is not an array: {error}")
+                })?;
+            if media_box.len() != 4 {
+                return Err(format!(
+                    "PDF page {page_index} MediaBox has {} coordinates",
+                    media_box.len()
+                ));
+            }
+            let coordinates =
+                media_box
+                    .iter()
+                    .map(|value| {
+                        resolve_pdf_object(&document, value)?.as_float().map_err(|error| {
+                    format!("PDF page {page_index} MediaBox coordinate is not numeric: {error}")
+                })
+                    })
+                    .collect::<Result<Vec<_>, _>>()?;
+            let mut width = (coordinates[2] - coordinates[0]).abs();
+            let mut height = (coordinates[3] - coordinates[1]).abs();
+            let rotation = inherited_page_value(&document, page_id, b"Rotate")?
+                .map(|value| resolve_pdf_object(&document, value))
+                .transpose()?
+                .and_then(|value| value.as_i64().ok())
+                .unwrap_or_default()
+                .rem_euclid(360);
+            if rotation == 90 || rotation == 270 {
+                std::mem::swap(&mut width, &mut height);
+            }
+            Ok((width, height))
+        })
+        .collect()
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct PdfPageTextMismatch {
+    pub(crate) page_index: usize,
+    pub(crate) candidate: String,
+    pub(crate) golden: String,
+}
+
+pub(crate) fn first_pdf_page_text_mismatch(
+    candidate_pdf: &[u8],
+    golden_pdf: &[u8],
+    mut normalize: impl FnMut(&str) -> String,
+) -> Result<Option<PdfPageTextMismatch>, String> {
+    // The golden ratchet rejects normalized text before it needs character
+    // geometry, page objects, raw XObjects, or raster output. Compare one page
+    // at a time while both documents are open so a mismatch on an early page
+    // does not build full-document PdfSummary values for large workbooks.
+    let _guard = pdfium_lock().lock().unwrap();
+    let pdfium = bind_pdfium()?;
+    let candidate = pdfium
+        .load_pdf_from_byte_slice(candidate_pdf, None)
+        .map_err(|error| format!("PDFium could not load candidate PDF bytes: {error}"))?;
+    let golden = pdfium
+        .load_pdf_from_byte_slice(golden_pdf, None)
+        .map_err(|error| format!("PDFium could not load golden PDF bytes: {error}"))?;
+    if candidate.pages().len() != golden.pages().len() {
+        return Err(format!(
+            "PDF text page counts differ: candidate={}, golden={}",
+            candidate.pages().len(),
+            golden.pages().len()
+        ));
+    }
+
+    for (page_index, (candidate_page, golden_page)) in candidate
+        .pages()
+        .iter()
+        .zip(golden.pages().iter())
+        .enumerate()
+    {
+        let candidate_text = normalized_pdfium_page_segment_text(page_index, &candidate_page)?;
+        let golden_text = normalized_pdfium_page_segment_text(page_index, &golden_page)?;
+        let candidate_text = normalize(&candidate_text);
+        let golden_text = normalize(&golden_text);
+        if candidate_text != golden_text {
+            return Ok(Some(PdfPageTextMismatch {
+                page_index,
+                candidate: candidate_text,
+                golden: golden_text,
+            }));
+        }
+    }
+    Ok(None)
+}
+
+fn normalized_pdfium_page_segment_text(
+    page_index: usize,
+    page: &PdfPage<'_>,
+) -> Result<String, String> {
+    let text = page
+        .text()
+        .map_err(|error| format!("PDFium could not extract page {page_index} text: {error}"))?;
+    let mut output = String::new();
+    for segment in text.segments().iter() {
+        if !output.is_empty() {
+            output.push(' ');
+        }
+        output.push_str(&normalize_extracted_text(&segment.text()));
+    }
+    Ok(output)
+}
+
+fn inherited_page_value<'a>(
+    document: &'a LopdfDocument,
+    mut object_id: lopdf::ObjectId,
+    key: &[u8],
+) -> Result<Option<&'a LopdfObject>, String> {
+    for _ in 0..64 {
+        let dictionary = document
+            .get_object(object_id)
+            .map_err(|error| format!("could not load PDF page tree object {object_id:?}: {error}"))?
+            .as_dict()
+            .map_err(|error| {
+                format!("PDF page tree object {object_id:?} is not a dictionary: {error}")
+            })?;
+        if let Ok(value) = dictionary.get(key) {
+            return Ok(Some(value));
+        }
+        let Ok(parent) = dictionary.get(b"Parent") else {
+            return Ok(None);
+        };
+        object_id = parent
+            .as_reference()
+            .map_err(|error| format!("PDF page tree Parent is not a reference: {error}"))?;
+    }
+    Err("PDF page tree exceeds 64 inherited levels".to_string())
+}
+
+fn resolve_pdf_object<'a>(
+    document: &'a LopdfDocument,
+    mut object: &'a LopdfObject,
+) -> Result<&'a LopdfObject, String> {
+    for _ in 0..64 {
+        let LopdfObject::Reference(object_id) = object else {
+            return Ok(object);
+        };
+        object = document
+            .get_object(*object_id)
+            .map_err(|error| format!("could not resolve PDF object {object_id:?}: {error}"))?;
+    }
+    Err("PDF object reference chain exceeds 64 levels".to_string())
+}
+
 pub fn parse_pdf_rect(rect: &str) -> Result<PdfBounds, String> {
     let trimmed = rect
         .trim()
@@ -1221,13 +1377,13 @@ fn rendered_page_image(
     let width_px = bitmap.width() as u32;
     let height_px = bitmap.height() as u32;
     let rgba = bitmap.as_rgba_bytes();
-    let rgba_crc32 = calculate_crc32
-        .then(|| {
-            let mut crc = crc32fast::Hasher::new();
-            crc.update(&rgba);
-            format!("{:08x}", crc.finalize())
-        })
-        .unwrap_or_default();
+    let rgba_crc32 = if calculate_crc32 {
+        let mut crc = crc32fast::Hasher::new();
+        crc.update(&rgba);
+        format!("{:08x}", crc.finalize())
+    } else {
+        String::new()
+    };
     Ok(RenderedPageImage {
         page_index,
         width_px,

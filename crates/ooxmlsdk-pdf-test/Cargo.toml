@@ -16,6 +16,7 @@ image = { workspace = true }
 lopdf = { workspace = true }
 ooxmlsdk-pdf = { workspace = true }
 pdfium-render = { workspace = true }
+rayon = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 sha2 = { workspace = true }

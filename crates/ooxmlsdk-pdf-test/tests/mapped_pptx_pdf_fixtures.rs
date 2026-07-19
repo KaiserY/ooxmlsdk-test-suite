@@ -2356,6 +2356,14 @@ fn mapped_pptx_tdf99030_preserves_master_background_color() {
 }
 
 #[test]
+// Source: ../core/sd/qa/unit/export-tests-ooxml4.cxx:testMasterBackgroundColor
+fn mapped_pptx_master_background_color_uses_the_master_color_map_for_layout_shapes() {
+    let summary = render_summary("pptx/master-bg-color.pptx");
+    assert_has_path_fill_color(&summary, "#009df0@ff");
+    assert_has_path_fill_color(&summary, "#00ff00@ff");
+}
+
+#[test]
 // Source: ../core/sd/qa/unit/import-tests2.cxx:testTdf109067
 fn mapped_pptx_tdf109067_preserves_diagonal_gradient_shape() {
     let summary = render_summary("pptx/tdf109067.pptx");
