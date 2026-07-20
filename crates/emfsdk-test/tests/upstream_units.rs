@@ -106,9 +106,14 @@ fn poi_header_description_validates_bounds_and_utf16_shape() {
     assert!(header.description().is_err());
 
     let malformed = header_with_description(2, 88, vec![b'N', 0, b'o', 0]);
+    let compatible_bytes = malformed
+        .to_record_data()
+        .expect("compatible parsing preserves the producer bytes");
+    let reparsed = EmfHeader::from_record_data(&compatible_bytes).expect("compatible header");
+    assert_eq!(reparsed.to_record_data().unwrap(), compatible_bytes);
     assert!(
-        malformed.to_record_data().is_err(),
-        "Apache POI requires header descriptions to be null-terminated UTF-16LE"
+        reparsed.validate_strict().is_err(),
+        "strict validation follows Apache POI and requires null-terminated UTF-16LE"
     );
 }
 

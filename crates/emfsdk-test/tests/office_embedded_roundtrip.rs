@@ -1,6 +1,6 @@
 use std::{fs, path::Path};
 
-use emfsdk::{DeviceIndependentBitmap, DibColorUsage, EmfMetafile, WmfMetafile};
+use emfsdk::{DeviceIndependentBitmap, DibColorUsage};
 use olecfsdk::{
     cfb::CompoundFile,
     office_art::{
@@ -14,6 +14,11 @@ use walkdir::WalkDir;
 
 #[derive(Default)]
 struct Audit {
+    file_read_failures: usize,
+    compound_parse_failures: usize,
+    workbook_parse_failures: usize,
+    powerpoint_parse_failures: usize,
+    pictures_parse_failures: usize,
     compound_files: usize,
     workbook_streams: usize,
     powerpoint_streams: usize,
@@ -27,6 +32,16 @@ struct Audit {
     emf_bytes: usize,
     wmf_bytes: usize,
     dib_bytes: usize,
+    emf_records: usize,
+    wmf_records: usize,
+    emf_plus_records: usize,
+    compatible_emf_records: usize,
+    compatible_wmf_records: usize,
+    compatible_emf_plus_records: usize,
+    unknown_emf_records: usize,
+    unknown_wmf_records: usize,
+    unknown_emf_plus_records: usize,
+    compatibility_diagnostics: usize,
     failures: Vec<String>,
 }
 
@@ -51,48 +66,93 @@ fn embedded_office_metafiles_round_trip_through_emfsdk() {
 
     let mut audit = Audit::default();
     for path in files {
-        let Ok(bytes) = fs::read(&path) else {
-            continue;
+        let bytes = match fs::read(&path) {
+            Ok(bytes) => bytes,
+            Err(_) => {
+                audit.file_read_failures += 1;
+                continue;
+            }
         };
-        let Ok(compound) = CompoundFile::from_bytes(&bytes) else {
-            continue;
+        let compound = match CompoundFile::from_bytes(&bytes) {
+            Ok(compound) => compound,
+            Err(_) => {
+                audit.compound_parse_failures += 1;
+                continue;
+            }
         };
         audit.compound_files += 1;
         for entry in compound.entries().iter().filter(|entry| entry.is_stream()) {
             if entry.name.eq_ignore_ascii_case("Workbook")
                 || entry.name.eq_ignore_ascii_case("Book")
             {
-                if let Ok(workbook) = BiffStream::from_bytes(&entry.data) {
-                    audit.workbook_streams += 1;
-                    visit_workbook(&workbook, &path, &mut audit);
+                match BiffStream::from_bytes(&entry.data) {
+                    Ok(workbook) => {
+                        audit.workbook_streams += 1;
+                        visit_workbook(&workbook, &path, &mut audit);
+                    }
+                    Err(_) => audit.workbook_parse_failures += 1,
                 }
             } else if entry.name.eq_ignore_ascii_case("PowerPoint Document") {
-                if let Ok(powerpoint) = PowerPointDocument::from_bytes(&entry.data) {
-                    audit.powerpoint_streams += 1;
-                    visit_ppt_sequence(&powerpoint.records, &path, &mut audit);
+                match PowerPointDocument::from_bytes(&entry.data) {
+                    Ok(powerpoint) => {
+                        audit.powerpoint_streams += 1;
+                        visit_ppt_sequence(&powerpoint.records, &path, &mut audit);
+                    }
+                    Err(_) => audit.powerpoint_parse_failures += 1,
                 }
-            } else if entry.name.eq_ignore_ascii_case("Pictures")
-                && let Ok(pictures) = PicturesStream::from_bytes(&entry.data)
-            {
-                audit.pictures_streams += 1;
-                match &pictures {
-                    PicturesStream::Complete(stream) => {
-                        audit.complete_pictures_streams += 1;
-                        visit_bstore_delay(stream, &path, &mut audit);
+            } else if entry.name.eq_ignore_ascii_case("Pictures") {
+                match PicturesStream::from_bytes(&entry.data) {
+                    Ok(pictures) => {
+                        audit.pictures_streams += 1;
+                        match &pictures {
+                            PicturesStream::Complete(stream) => {
+                                audit.complete_pictures_streams += 1;
+                                visit_bstore_delay(stream, &path, &mut audit);
+                            }
+                            PicturesStream::Compatibility { stream, .. } => {
+                                audit.compatibility_pictures_streams += 1;
+                                visit_stream(stream, &path, &mut audit);
+                            }
+                            PicturesStream::Partial(stream) => {
+                                audit.partial_pictures_streams += 1;
+                                visit_partial_stream(stream, &path, &mut audit);
+                            }
+                        }
                     }
-                    PicturesStream::Compatibility { stream, .. } => {
-                        audit.compatibility_pictures_streams += 1;
-                        visit_stream(stream, &path, &mut audit);
-                    }
-                    PicturesStream::Partial(stream) => {
-                        audit.partial_pictures_streams += 1;
-                        visit_partial_stream(stream, &path, &mut audit);
-                    }
+                    Err(_) => audit.pictures_parse_failures += 1,
                 }
             }
         }
     }
 
+    eprintln!(
+        "embedded ratchet: EMF {}/{} WMF {}/{} EMF+ {}/{} diagnostics {}",
+        audit.emf_records,
+        audit.compatible_emf_records,
+        audit.wmf_records,
+        audit.compatible_wmf_records,
+        audit.emf_plus_records,
+        audit.compatible_emf_plus_records,
+        audit.compatibility_diagnostics,
+    );
+
+    assert_eq!(audit.file_read_failures, 0, "Office file reads changed");
+    assert_eq!(
+        audit.compound_parse_failures, 100,
+        "Office non-CFB inputs changed"
+    );
+    assert_eq!(
+        audit.workbook_parse_failures, 4,
+        "unsupported Workbook streams changed"
+    );
+    assert_eq!(
+        audit.powerpoint_parse_failures, 0,
+        "unsupported PowerPoint streams changed"
+    );
+    assert_eq!(
+        audit.pictures_parse_failures, 0,
+        "unsupported Pictures streams changed"
+    );
     assert_eq!(audit.compound_files, 898, "Office CFB coverage changed");
     assert_eq!(audit.workbook_streams, 723, "BIFF coverage changed");
     assert_eq!(audit.powerpoint_streams, 179, "PPT coverage changed");
@@ -115,6 +175,37 @@ fn embedded_office_metafiles_round_trip_through_emfsdk() {
     assert_eq!(audit.wmf_bytes, 8_023_392, "embedded WMF bytes changed");
     assert_eq!(audit.dib, 50, "embedded DIB coverage changed");
     assert_eq!(audit.dib_bytes, 80_820, "embedded DIB bytes changed");
+    assert_eq!(audit.emf_records, 40_339, "embedded EMF records changed");
+    assert_eq!(audit.wmf_records, 66_356, "embedded WMF records changed");
+    assert_eq!(audit.emf_plus_records, 889, "embedded EMF+ records changed");
+    assert_eq!(
+        audit.compatible_emf_records, 3,
+        "embedded compatible EMF records changed"
+    );
+    assert_eq!(
+        audit.compatible_wmf_records, 134,
+        "embedded compatible WMF records changed"
+    );
+    assert_eq!(
+        audit.compatible_emf_plus_records, 1,
+        "embedded compatible EMF+ records changed"
+    );
+    assert_eq!(
+        audit.unknown_emf_records, 0,
+        "embedded unknown EMF records changed"
+    );
+    assert_eq!(
+        audit.unknown_wmf_records, 0,
+        "embedded unknown WMF records changed"
+    );
+    assert_eq!(
+        audit.unknown_emf_plus_records, 0,
+        "embedded unknown EMF+ records changed"
+    );
+    assert_eq!(
+        audit.compatibility_diagnostics, 4_099,
+        "embedded compatibility diagnostics changed"
+    );
     assert!(
         audit.failures.is_empty(),
         "{} embedded Office image round-trip failures:\n{}",
@@ -136,6 +227,27 @@ fn embedded_office_metafiles_round_trip_through_emfsdk() {
         audit.wmf_bytes,
         audit.dib,
         audit.dib_bytes,
+    );
+    eprintln!(
+        "Office embedded metafile records: {} EMF ({} compatible/{} unknown), {} WMF ({} compatible/{} unknown), {} EMF+ ({} compatible/{} unknown); {} compatibility diagnostics",
+        audit.emf_records,
+        audit.compatible_emf_records,
+        audit.unknown_emf_records,
+        audit.wmf_records,
+        audit.compatible_wmf_records,
+        audit.unknown_wmf_records,
+        audit.emf_plus_records,
+        audit.compatible_emf_plus_records,
+        audit.unknown_emf_plus_records,
+        audit.compatibility_diagnostics,
+    );
+    eprintln!(
+        "Office scan failures: {} read, {} CFB, {} Workbook, {} PowerPoint, {} Pictures",
+        audit.file_read_failures,
+        audit.compound_parse_failures,
+        audit.workbook_parse_failures,
+        audit.powerpoint_parse_failures,
+        audit.pictures_parse_failures,
     );
 }
 
@@ -215,9 +327,9 @@ fn visit_record(record: &OfficeArtRecord, path: &Path, audit: &mut Audit) {
 fn inspect_record(record: &OfficeArtRecord, path: &Path, audit: &mut Audit) {
     match &record.data {
         OfficeArtRecordData::MetafileBlip(value) => match &value.file_data {
-            OfficeArtMetafileData::Emf { decoded, .. } => check_emf(decoded, path, audit),
-            OfficeArtMetafileData::Wmf { decoded, .. } => check_wmf(decoded, path, audit),
-            OfficeArtMetafileData::Pict { .. } | OfficeArtMetafileData::Opaque { .. } => {}
+            OfficeArtMetafileData::Emf(data) => check_emf(data.decoded(), path, audit),
+            OfficeArtMetafileData::Wmf(data) => check_wmf(data.decoded(), path, audit),
+            OfficeArtMetafileData::Pict(_) | OfficeArtMetafileData::Opaque { .. } => {}
         },
         OfficeArtRecordData::BitmapBlip(value) => {
             if let OfficeArtBitmapData::Dib(bytes) = &value.file_data {
@@ -231,14 +343,8 @@ fn inspect_record(record: &OfficeArtRecord, path: &Path, audit: &mut Audit) {
 fn check_emf(bytes: &[u8], path: &Path, audit: &mut Audit) {
     audit.emf += 1;
     audit.emf_bytes += bytes.len();
-    match EmfMetafile::from_bytes(bytes).and_then(|value| value.to_bytes()) {
-        Ok(rebuilt) if rebuilt == bytes => {}
-        Ok(rebuilt) => audit.failures.push(format!(
-            "{}: EMF bytes changed ({} -> {})",
-            path.display(),
-            bytes.len(),
-            rebuilt.len()
-        )),
+    match emfsdk_test::roundtrip_metafile_bytes(bytes) {
+        Ok(report) => add_roundtrip_report(audit, report),
         Err(error) => audit
             .failures
             .push(format!("{}: EMF round-trip: {error}", path.display())),
@@ -248,18 +354,25 @@ fn check_emf(bytes: &[u8], path: &Path, audit: &mut Audit) {
 fn check_wmf(bytes: &[u8], path: &Path, audit: &mut Audit) {
     audit.wmf += 1;
     audit.wmf_bytes += bytes.len();
-    match WmfMetafile::from_bytes(bytes).and_then(|value| value.to_bytes()) {
-        Ok(rebuilt) if rebuilt == bytes => {}
-        Ok(rebuilt) => audit.failures.push(format!(
-            "{}: WMF bytes changed ({} -> {})",
-            path.display(),
-            bytes.len(),
-            rebuilt.len()
-        )),
+    match emfsdk_test::roundtrip_metafile_bytes(bytes) {
+        Ok(report) => add_roundtrip_report(audit, report),
         Err(error) => audit
             .failures
             .push(format!("{}: WMF round-trip: {error}", path.display())),
     }
+}
+
+fn add_roundtrip_report(audit: &mut Audit, report: emfsdk_test::RoundtripReport) {
+    audit.emf_records += report.emf_records;
+    audit.wmf_records += report.wmf_records;
+    audit.emf_plus_records += report.emf_plus_records;
+    audit.compatible_emf_records += report.compatible_emf_records;
+    audit.compatible_wmf_records += report.compatible_wmf_records;
+    audit.compatible_emf_plus_records += report.compatible_emf_plus_records;
+    audit.unknown_emf_records += report.unknown_emf_records;
+    audit.unknown_wmf_records += report.unknown_wmf_records;
+    audit.unknown_emf_plus_records += report.unknown_emf_plus_records;
+    audit.compatibility_diagnostics += report.compatibility_diagnostics;
 }
 
 fn check_dib(bytes: &[u8], path: &Path, audit: &mut Audit) {

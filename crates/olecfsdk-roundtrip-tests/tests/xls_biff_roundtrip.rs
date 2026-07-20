@@ -1432,13 +1432,13 @@ fn legacy_office_workbook_streams_round_trip() {
                                         }
                                             OfficeArtRecordData::MetafileBlip(blip) => {
                                             match &blip.file_data {
-                                                OfficeArtMetafileData::Emf { .. } => {
+                                                OfficeArtMetafileData::Emf(_) => {
                                                     office_art_emf_typed += 1;
                                                 }
-                                                OfficeArtMetafileData::Wmf { .. } => {
+                                                OfficeArtMetafileData::Wmf(_) => {
                                                     office_art_wmf_typed += 1;
                                                 }
-                                                OfficeArtMetafileData::Pict { .. } => {
+                                                OfficeArtMetafileData::Pict(_) => {
                                                     office_art_pict_typed += 1;
                                                 }
                                                 OfficeArtMetafileData::Opaque {
@@ -1927,13 +1927,13 @@ fn legacy_office_workbook_streams_round_trip() {
                                             }
                                             OfficeArtRecordData::MetafileBlip(blip) => {
                                                 match &blip.file_data {
-                                                    OfficeArtMetafileData::Emf { .. } => {
+                                                    OfficeArtMetafileData::Emf(_) => {
                                                         office_art_emf_typed += 1;
                                                     }
-                                                    OfficeArtMetafileData::Wmf { .. } => {
+                                                    OfficeArtMetafileData::Wmf(_) => {
                                                         office_art_wmf_typed += 1;
                                                     }
-                                                    OfficeArtMetafileData::Pict { .. } => {
+                                                    OfficeArtMetafileData::Pict(_) => {
                                                         office_art_pict_typed += 1;
                                                     }
                                                     OfficeArtMetafileData::Opaque {

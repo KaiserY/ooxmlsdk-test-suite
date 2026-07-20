@@ -1,8 +1,8 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use emfsdk::emfplus::{EmfPlusRecord, EmfPlusRecordFlags};
-use emfsdk::{EmfRecordData, EmrComment, Metafile};
+use emfsdk::emfplus::{EmfPlusRecord, EmfPlusRecordData};
+use emfsdk::{EmfRecord, EmfRecordData, EmrComment, Metafile, WmfRecord, WmfRecordData};
 use walkdir::WalkDir;
 
 pub fn workspace_dir() -> PathBuf {
@@ -36,13 +36,95 @@ pub fn is_metafile(path: &Path) -> bool {
     )
 }
 
-pub fn roundtrip_metafile(path: &Path) -> Result<(), String> {
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct RoundtripReport {
+    pub emf_records: usize,
+    pub wmf_records: usize,
+    pub emf_plus_records: usize,
+    pub compatible_emf_records: usize,
+    pub compatible_wmf_records: usize,
+    pub compatible_emf_plus_records: usize,
+    pub unknown_emf_records: usize,
+    pub unknown_wmf_records: usize,
+    pub unknown_emf_plus_records: usize,
+    pub compatibility_diagnostics: usize,
+}
+
+impl RoundtripReport {
+    pub fn add(&mut self, other: Self) {
+        self.emf_records += other.emf_records;
+        self.wmf_records += other.wmf_records;
+        self.emf_plus_records += other.emf_plus_records;
+        self.compatible_emf_records += other.compatible_emf_records;
+        self.compatible_wmf_records += other.compatible_wmf_records;
+        self.compatible_emf_plus_records += other.compatible_emf_plus_records;
+        self.unknown_emf_records += other.unknown_emf_records;
+        self.unknown_wmf_records += other.unknown_wmf_records;
+        self.unknown_emf_plus_records += other.unknown_emf_plus_records;
+        self.compatibility_diagnostics += other.compatibility_diagnostics;
+    }
+}
+
+pub fn roundtrip_metafile(path: &Path) -> Result<RoundtripReport, String> {
     let bytes = corpus_bytes(path)?;
-    let metafile = Metafile::from_bytes(&bytes).map_err(|err| format!("parse: {err}"))?;
-    validate_typed_record_roundtrips(&metafile)?;
+    roundtrip_metafile_bytes(&bytes)
+}
+
+pub fn roundtrip_metafile_bytes(bytes: &[u8]) -> Result<RoundtripReport, String> {
+    let metafile = Metafile::from_bytes(bytes).map_err(|err| format!("parse: {err}"))?;
+    let mut report = RoundtripReport {
+        compatibility_diagnostics: metafile.compatibility_diagnostics().len(),
+        ..RoundtripReport::default()
+    };
+    match &metafile {
+        Metafile::Emf(value) => {
+            report.emf_records = value.records.len();
+            for record in &value.records {
+                match record.parse_data() {
+                    Ok(EmfRecordData::Unknown(_)) => report.unknown_emf_records += 1,
+                    Ok(data) => {
+                        if let EmfRecordData::Comment(EmrComment::EmfPlus { records, .. }) = &data {
+                            report.emf_plus_records += records.len();
+                            for record in records {
+                                match record.parse_data() {
+                                    Ok(EmfPlusRecordData::Unknown(_)) => {
+                                        report.unknown_emf_plus_records += 1;
+                                    }
+                                    Ok(data) => {
+                                        if !emf_plus_record_roundtrips(record, &data) {
+                                            report.compatible_emf_plus_records += 1;
+                                        }
+                                    }
+                                    Err(_) => report.compatible_emf_plus_records += 1,
+                                }
+                            }
+                        }
+                        if !emf_record_roundtrips(record, &data) {
+                            report.compatible_emf_records += 1;
+                        }
+                    }
+                    Err(_) => report.compatible_emf_records += 1,
+                }
+            }
+        }
+        Metafile::Wmf(value) => {
+            report.wmf_records = value.records.len();
+            for record in &value.records {
+                match record.parse_data() {
+                    Ok(WmfRecordData::Unknown(_)) => report.unknown_wmf_records += 1,
+                    Ok(data) => {
+                        if !wmf_record_roundtrips(record, &data) {
+                            report.compatible_wmf_records += 1;
+                        }
+                    }
+                    Err(_) => report.compatible_wmf_records += 1,
+                }
+            }
+        }
+    }
     let roundtripped = metafile.to_bytes().map_err(|err| format!("write: {err}"))?;
-    if roundtripped == bytes {
-        Ok(())
+    if roundtripped.as_slice() == bytes {
+        Ok(report)
     } else {
         Err(format!(
             "roundtrip bytes differ: original={} roundtripped={}",
@@ -52,100 +134,20 @@ pub fn roundtrip_metafile(path: &Path) -> Result<(), String> {
     }
 }
 
-fn validate_typed_record_roundtrips(metafile: &Metafile) -> Result<(), String> {
-    match metafile {
-        Metafile::Emf(value) => {
-            for (index, record) in value.records.iter().enumerate() {
-                let Ok(data) = record.parse_data() else {
-                    continue;
-                };
-                if let EmfRecordData::Comment(EmrComment::EmfPlus { records, .. }) = &data {
-                    validate_emf_plus_record_roundtrips(index, records)?;
-                }
-                let rebuilt = data.to_record().map_err(|err| {
-                    format!(
-                        "write typed EMF record {index} (type {}): {err}",
-                        record.record_type
-                    )
-                })?;
-                if rebuilt != *record {
-                    return Err(format!(
-                        "typed EMF record {index} differs after parse/write (type {}): {}",
-                        record.record_type,
-                        describe_byte_difference(&record.data, &rebuilt.data)
-                    ));
-                }
-            }
-        }
-        Metafile::Wmf(value) => {
-            for (index, record) in value.records.iter().enumerate() {
-                let Ok(data) = record.parse_data() else {
-                    continue;
-                };
-                let rebuilt = data
-                    .to_record_with_function(record.function)
-                    .map_err(|err| {
-                        format!(
-                            "write typed WMF record {index} (function {}): {err}",
-                            record.function
-                        )
-                    })?;
-                if rebuilt != *record {
-                    return Err(format!(
-                        "typed WMF record {index} differs after parse/write (function {}): {}",
-                        record.function,
-                        describe_byte_difference(&record.data, &rebuilt.data)
-                    ));
-                }
-            }
-        }
-    }
-    Ok(())
+fn emf_record_roundtrips(record: &EmfRecord, data: &EmfRecordData<'_>) -> bool {
+    data.to_record().is_ok_and(|rebuilt| rebuilt == *record)
 }
 
-fn validate_emf_plus_record_roundtrips(
-    emf_record_index: usize,
-    records: &[EmfPlusRecord],
-) -> Result<(), String> {
-    for (index, record) in records.iter().enumerate() {
-        let Ok(data) = record.parse_data() else {
-            continue;
-        };
-        let flags = EmfPlusRecordFlags::from_bits_retain(record.flags);
-        let mut rebuilt = EmfPlusRecord::from_data(&data, flags).map_err(|err| {
-            format!(
-                "write typed EMF+ record {index} in EMF record {emf_record_index} (type {}): {err}",
-                record.record_type
-            )
-        })?;
-        rebuilt.padding = record.padding.clone();
-        if rebuilt != *record {
-            return Err(format!(
-                "typed EMF+ record {index} in EMF record {emf_record_index} differs after parse/write (type {}): flags {:#06x}->{:#06x}, data {}, padding {}",
-                record.record_type,
-                record.flags,
-                rebuilt.flags,
-                describe_byte_difference(&record.data, &rebuilt.data),
-                describe_byte_difference(&record.padding, &rebuilt.padding)
-            ));
-        }
-    }
-    Ok(())
+fn emf_plus_record_roundtrips(record: &EmfPlusRecord, data: &EmfPlusRecordData<'_>) -> bool {
+    EmfPlusRecord::from_data(data, record.flags()).is_ok_and(|mut rebuilt| {
+        rebuilt.padding.clone_from(&record.padding);
+        rebuilt == *record
+    })
 }
 
-fn describe_byte_difference(original: &[u8], rebuilt: &[u8]) -> String {
-    let shared_len = original.len().min(rebuilt.len());
-    if let Some(index) = (0..shared_len).find(|&index| original[index] != rebuilt[index]) {
-        format!(
-            "first byte {index}: {:#04x}->{:#04x}, lengths {}->{}",
-            original[index],
-            rebuilt[index],
-            original.len(),
-            rebuilt.len()
-        )
-    } else {
-        format!("lengths {}->{}", original.len(), rebuilt.len())
-    }
+fn wmf_record_roundtrips(record: &WmfRecord, data: &WmfRecordData<'_>) -> bool {
+    data.to_record_with_function(record.function)
+        .is_ok_and(|rebuilt| rebuilt == *record)
 }
 
 pub fn expect_parse_rejected(path: &Path) -> Result<(), String> {
@@ -160,34 +162,9 @@ pub fn expect_parse_rejected(path: &Path) -> Result<(), String> {
 }
 
 pub fn validate_metafile(metafile: &Metafile) -> Result<(), String> {
-    match metafile {
-        Metafile::Emf(value) => {
-            value
-                .validate_header_metrics()
-                .map_err(|err| format!("validate EMF header: {err}"))?;
-            for record in &value.records {
-                record
-                    .parse_data()
-                    .map_err(|err| format!("parse EMF record {}: {err}", record.record_type))?;
-            }
-        }
-        Metafile::Wmf(value) => {
-            if let Some(placeable_header) = &value.placeable_header {
-                placeable_header
-                    .validate()
-                    .map_err(|err| format!("validate WMF placeable header: {err}"))?;
-            }
-            value
-                .validate_header_metrics()
-                .map_err(|err| format!("validate WMF header: {err}"))?;
-            for record in &value.records {
-                record
-                    .parse_data()
-                    .map_err(|err| format!("parse WMF record {}: {err}", record.function))?;
-            }
-        }
-    }
-    Ok(())
+    metafile
+        .validate_strict()
+        .map_err(|err| format!("strict validation: {err}"))
 }
 
 pub fn corpus_bytes(path: &Path) -> Result<Vec<u8>, String> {
@@ -197,6 +174,26 @@ pub fn corpus_bytes(path: &Path) -> Result<Vec<u8>, String> {
     } else {
         Ok(bytes)
     }
+}
+
+pub fn expects_parse_rejected(path: &Path) -> bool {
+    let relative = path
+        .strip_prefix(corpus_dir(""))
+        .unwrap_or(path)
+        .to_string_lossy();
+    matches!(
+        relative.as_ref(),
+        "Apache-POI/test-data/slideshow/61338.wmf"
+            | "Apache-POI/test-data/slideshow/clusterfuzz-testcase-minimized-6701721724125184.wmf"
+            | "Apache-POI/test-data/slideshow/clusterfuzz-testcase-minimized-POIFileHandlerFuzzer-6060921738035200.wmf"
+            | "Apache-POI/test-data/slideshow/clusterfuzz-testcase-minimized-POIFileHandlerFuzzer-6466833057382400.emf"
+            | "Apache-POI/test-data/slideshow/crash-7b60e9fe792eaaf1bba8be90c2b62f057cfff142.emf"
+            | "Apache-POI/test-data/slideshow/VHZ2NYFUYUUJNGLABL26ORTQZA76FJEW.emf"
+            | "Apache-POI/test-data/spreadsheet/61294.emf"
+            | "LibreOffice/framework/qa/complex/broken_document/test_documents/dbf.dbf.emf"
+    ) || relative.contains("/graphicfilter/data/emf/fail/")
+        || relative.contains("/graphicfilter/data/wmf/fail/")
+        || relative.starts_with("libemf2svg/tests/resources/emf-corrupted/")
 }
 
 fn is_libreoffice_encrypted_regression(path: &Path) -> bool {
