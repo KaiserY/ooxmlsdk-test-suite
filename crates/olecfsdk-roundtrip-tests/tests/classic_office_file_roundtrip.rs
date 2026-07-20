@@ -2,13 +2,14 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     fs,
     path::{Path, PathBuf},
+    sync::Arc,
 };
 
 use olecfsdk::{
     doc::{
         DocDataNodeValue, DocFile, DocPapxRun, DocSpecialContentLink, DocSpecialContentRef,
-        DocTextPieceCharactersRef, FieldDocumentPart, NilPicfBinaryData, OleObjectPersist1Flags,
-        TextPieceCharacters,
+        DocTextPieceValueRef, FieldDocumentPart, NilPicfBinaryData, OleObjectPersist1Flags,
+        TextPieceCharacters, TextPieceEncoding,
     },
     office_art::{
         OfficeArtBitmapData, OfficeArtDrawingGraphIssue, OfficeArtRecord, OfficeArtRecordData,
@@ -20,11 +21,11 @@ use olecfsdk::{
         PptTopLevelLiveRecordStatus, PptTopLevelRecordRole,
     },
     xls::{
-        BiffRecordData, XlStringCharacters, XlsCellMut, XlsCellValueRef,
-        XlsCustomViewActiveSheetLink, XlsCustomViewLink, XlsFile, XlsFileEntryRole,
-        XlsFormulaDefinitionRef, XlsObjectPersistenceRef, XlsPivotCache, XlsPivotTableLink,
-        XlsRevisionCellOrFormatRef, XlsRevisionLog, XlsRevisionRecordRef, XlsRevisionSheetLink,
-        XlsStreamName, XlsUserNames, XlsUserRevisionLogLink,
+        BiffRecordData, XlsCellMut, XlsCellValueRef, XlsCustomViewActiveSheetLink,
+        XlsCustomViewLink, XlsFile, XlsFileEntryRole, XlsFormulaDefinitionRef,
+        XlsObjectPersistenceRef, XlsPivotCache, XlsPivotTableLink, XlsRevisionCellOrFormatRef,
+        XlsRevisionLog, XlsRevisionRecordRef, XlsRevisionSheetLink, XlsStreamName, XlsUserNames,
+        XlsUserRevisionLogLink,
     },
 };
 use olecfsdk_corpus_test_support::{
@@ -282,9 +283,16 @@ fn doc_files_round_trip_through_typed_root() {
                             "DOC document-part text-piece relationship is unresolved".to_owned()
                         );
                     }
-                    let character_count = match piece.characters() {
-                        DocTextPieceCharactersRef::Compressed(value) => value.len(),
-                        DocTextPieceCharactersRef::Utf16(value) => value.len(),
+                    let character_count = match piece.value().map_err(|error| error.to_string())? {
+                        DocTextPieceValueRef::String {
+                            value,
+                            encoding: TextPieceEncoding::Compressed,
+                        } => value.chars().count(),
+                        DocTextPieceValueRef::String {
+                            value,
+                            encoding: TextPieceEncoding::Utf16,
+                        } => value.encode_utf16().count(),
+                        DocTextPieceValueRef::CompatibilityUtf16(value) => value.len(),
                     };
                     if u32::try_from(character_count).ok() != Some(piece.global_cp_range().len()) {
                         return Err(
@@ -547,8 +555,7 @@ fn doc_files_round_trip_through_typed_root() {
                 && file.table.compatibility_tables.is_empty()
             {
                 let mut edited = file.clone();
-                let properties = &mut edited
-                    .table
+                let properties = &mut Arc::make_mut(&mut edited.table)
                     .document_properties
                     .as_mut()
                     .expect("checked above")
@@ -576,8 +583,7 @@ fn doc_files_round_trip_through_typed_root() {
                     .is_some_and(|value| value.value.title.len() < 255)
             {
                 let mut edited = file.clone();
-                let strings = edited
-                    .table
+                let strings = Arc::make_mut(&mut edited.table)
                     .associated_strings
                     .as_mut()
                     .expect("checked above");
@@ -617,9 +623,10 @@ fn doc_files_round_trip_through_typed_root() {
                         })
             {
                 let mut edited = file.clone();
-                let section = &mut edited.word_document.section_properties[section_index];
+                let word_document = Arc::make_mut(&mut edited.word_document);
+                let section = &mut word_document.section_properties[section_index];
                 let old_offset = section.offset;
-                let old_cb_mac = edited.word_document.fib.rg_lw.cb_mac;
+                let old_cb_mac = word_document.fib.rg_lw.cb_mac;
                 let value = section.value.as_mut().expect("checked above");
                 value
                     .properties
@@ -646,21 +653,25 @@ fn doc_files_round_trip_through_typed_root() {
             if !relocated_text_piece
                 && file.table.compatibility_tables.is_empty()
                 && let Some(piece_index) = file.word_document.text_pieces.iter().position(|piece| {
-                    matches!(
-                        &piece.value.characters,
-                        TextPieceCharacters::Compressed(value) if !value.is_empty()
-                    )
+                    piece.value.characters.encoding() == TextPieceEncoding::Compressed
+                        && piece
+                            .value
+                            .characters
+                            .value()
+                            .is_some_and(|value| !value.is_empty())
                 })
             {
                 let mut edited = file.clone();
-                let piece = &mut edited.word_document.text_pieces[piece_index].value;
+                let word_document = Arc::make_mut(&mut edited.word_document);
+                let old_cb_mac = word_document.fib.rg_lw.cb_mac;
+                let piece = &mut word_document.text_pieces[piece_index].value;
                 let old_offset = piece.file_offset;
-                let old_cb_mac = edited.word_document.fib.rg_lw.cb_mac;
-                let TextPieceCharacters::Compressed(characters) = &piece.characters else {
-                    unreachable!("selected a compressed text piece")
-                };
-                piece.characters =
-                    TextPieceCharacters::Utf16(characters.iter().copied().map(u16::from).collect());
+                let characters = piece
+                    .characters
+                    .value()
+                    .expect("selected a conforming compressed text piece")
+                    .to_owned();
+                piece.characters = TextPieceCharacters::utf16(characters);
                 let expected = piece.characters.clone();
                 let edited_bytes = save_doc_with_policy(&edited, save_policy)?;
                 let edited_reopened = DocFile::from_bytes_compatible(&edited_bytes)
@@ -691,11 +702,13 @@ fn doc_files_round_trip_through_typed_root() {
                     {
                         break;
                     }
-                    let TextPieceCharacters::Compressed(characters) = &piece.value.characters
-                    else {
+                    if piece.value.characters.encoding() != TextPieceEncoding::Compressed {
+                        continue;
+                    }
+                    let Some(characters) = piece.value.characters.value() else {
                         continue;
                     };
-                    for (index, character) in characters.iter().copied().enumerate() {
+                    for (index, character) in characters.chars().enumerate() {
                         if !character.is_ascii_alphabetic() {
                             continue;
                         }
@@ -707,10 +720,7 @@ fn doc_files_round_trip_through_typed_root() {
                             .ok_or_else(|| "DOC text edit CP overflow".to_owned())?;
                         let mut edited = file.clone();
                         if edited
-                            .replace_main_text_range(
-                                cp..cp + 1,
-                                TextPieceCharacters::Compressed(vec![character, b'X']),
-                            )
+                            .replace_main_text_range(cp..cp + 1, format!("{character}X"))
                             .is_err()
                         {
                             continue;
@@ -827,14 +837,12 @@ fn doc_files_round_trip_through_typed_root() {
                     .and_then(|pool| pool.objects.first())
             {
                 let mut edited = file.clone();
-                let edited_object = edited
-                    .object_pool
-                    .as_mut()
-                    .expect("checked above")
-                    .objects
-                    .iter_mut()
-                    .find(|candidate| candidate.path == object.path)
-                    .expect("cloned object path is present");
+                let edited_object =
+                    Arc::make_mut(edited.object_pool.as_mut().expect("checked above"))
+                        .objects
+                        .iter_mut()
+                        .find(|candidate| candidate.path == object.path)
+                        .expect("cloned object path is present");
                 if edited_object
                     .descriptor
                     .persist1
@@ -870,10 +878,7 @@ fn doc_files_round_trip_through_typed_root() {
                 })
             {
                 let mut edited = file.clone();
-                let edited_node = edited
-                    .data
-                    .as_mut()
-                    .expect("checked above")
+                let edited_node = Arc::make_mut(edited.data.as_mut().expect("checked above"))
                     .nodes
                     .iter_mut()
                     .find(|node| node.offset == data_node.offset)
@@ -918,10 +923,7 @@ fn doc_files_round_trip_through_typed_root() {
                 })
             {
                 let mut edited = file.clone();
-                let node = edited
-                    .data
-                    .as_mut()
-                    .expect("checked above")
+                let node = Arc::make_mut(edited.data.as_mut().expect("checked above"))
                     .nodes
                     .iter_mut()
                     .find(|node| node.offset == data_node.offset)
@@ -964,10 +966,7 @@ fn doc_files_round_trip_through_typed_root() {
                 })
             {
                 let mut edited = file.clone();
-                let node = edited
-                    .data
-                    .as_mut()
-                    .expect("checked above")
+                let node = Arc::make_mut(edited.data.as_mut().expect("checked above"))
                     .nodes
                     .iter_mut()
                     .find(|node| node.offset == data_node.offset)
@@ -1011,7 +1010,7 @@ fn doc_files_round_trip_through_typed_root() {
                 })
             {
                 let mut edited = file.clone();
-                let data = edited.data.as_mut().expect("checked above");
+                let data = Arc::make_mut(edited.data.as_mut().expect("checked above"));
                 let old_length = data.nodes[node_index].physical_len;
                 let old_following_offset = data.nodes[node_index + 1].offset;
                 let DocDataNodeValue::ParagraphProperties(properties) =
@@ -1068,11 +1067,11 @@ fn doc_files_round_trip_through_typed_root() {
         "every opened DOC must select an explicit save policy"
     );
     assert_eq!(
-        strict_saved, 265,
+        strict_saved, 263,
         "strict DOC file-root save coverage changed; investigate before updating the ratchet"
     );
     assert_eq!(
-        compatibility_saved, 138,
+        compatibility_saved, 140,
         "compatibility-preserving DOC save inventory changed; decreases should move coverage into the strict category"
     );
     assert_eq!(
@@ -1865,7 +1864,7 @@ fn ppt_live_signature(
 
 fn try_ppt_text_body_edit(file: &mut PptFile) -> Result<bool, String> {
     if matches!(
-        file.pictures,
+        file.pictures.as_deref(),
         Some(PicturesStream::Compatibility { .. } | PicturesStream::Partial(_))
     ) {
         return Ok(false);
@@ -1894,7 +1893,7 @@ fn try_ppt_text_body_edit(file: &mut PptFile) -> Result<bool, String> {
                 .find_map(|(body_index, body)| {
                     body.records.iter().find_map(|record| match &record.data {
                         PptRecordData::TextChars(values) if !values.is_empty() => {
-                            let replacement = if values[0] == u16::from(b'X') {
+                            let replacement = if values.starts_with('X') {
                                 u16::from(b'Y')
                             } else {
                                 u16::from(b'X')
@@ -1902,7 +1901,7 @@ fn try_ppt_text_body_edit(file: &mut PptFile) -> Result<bool, String> {
                             Some((slide.id(), body_index, true, replacement))
                         }
                         PptRecordData::TextBytes(values) if !values.is_empty() => {
-                            let replacement = if values[0] == b'X' { b'Y' } else { b'X' };
+                            let replacement = if values.starts_with('X') { b'Y' } else { b'X' };
                             Some((slide.id(), body_index, false, u16::from(replacement)))
                         }
                         _ => None,
@@ -1955,12 +1954,11 @@ fn replace_ppt_text_body_first_unit(
     for record in body.records_mut() {
         match (&mut record.data, unicode) {
             (PptRecordData::TextChars(values), true) if !values.is_empty() => {
-                values[0] = replacement;
+                replace_first_ppt_text_character(values, replacement)?;
                 return Ok(());
             }
             (PptRecordData::TextBytes(values), false) if !values.is_empty() => {
-                values[0] = u8::try_from(replacement)
-                    .map_err(|_| olecfsdk::Error::invalid(0, "PPT byte text exceeds u8"))?;
+                replace_first_ppt_text_character(values, replacement)?;
                 return Ok(());
             }
             _ => {}
@@ -1970,6 +1968,17 @@ fn replace_ppt_text_body_first_unit(
         0,
         "selected PPT text body changed static text variant",
     ))
+}
+
+fn replace_first_ppt_text_character(values: &mut String, replacement: u16) -> olecfsdk::Result<()> {
+    let replacement = char::from_u32(u32::from(replacement))
+        .ok_or_else(|| olecfsdk::Error::invalid(0, "PPT replacement is not a Unicode scalar"))?;
+    let end = values
+        .char_indices()
+        .nth(1)
+        .map_or(values.len(), |(index, _)| index);
+    values.replace_range(..end, &replacement.to_string());
+    Ok(())
 }
 
 fn ppt_text_body_first_unit(
@@ -1993,8 +2002,11 @@ fn ppt_text_body_first_unit(
     body.records
         .iter()
         .find_map(|record| match (&record.data, unicode) {
-            (PptRecordData::TextChars(values), true) => values.first().copied(),
-            (PptRecordData::TextBytes(values), false) => values.first().copied().map(u16::from),
+            (PptRecordData::TextChars(values), true)
+            | (PptRecordData::TextBytes(values), false) => values
+                .chars()
+                .next()
+                .and_then(|value| u16::try_from(value).ok()),
             _ => None,
         })
         .ok_or_else(|| "edited PPT text atom is missing".to_owned())
@@ -2018,7 +2030,7 @@ fn try_ppt_picture_growth(file: &PptFile) -> Result<bool, String> {
         };
         collect_ppt_delay_offsets(record, &mut referenced_offsets);
     }
-    let Some(PicturesStream::Complete(pictures)) = &file.pictures else {
+    let Some(PicturesStream::Complete(pictures)) = file.pictures.as_deref() else {
         return Ok(false);
     };
 
@@ -2047,7 +2059,10 @@ fn try_ppt_picture_growth(file: &PptFile) -> Result<bool, String> {
     };
 
     let mut edited = file.clone();
-    let Some(PicturesStream::Complete(pictures)) = &mut edited.pictures else {
+    let Some(pictures_stream) = &mut edited.pictures else {
+        unreachable!("the cloned PPT has the same Pictures Stream variant")
+    };
+    let PicturesStream::Complete(pictures) = Arc::make_mut(pictures_stream) else {
         unreachable!("the cloned PPT has the same Pictures Stream variant")
     };
     let OfficeArtRecordData::BitmapBlip(blip) = &mut pictures.records[grow_index].data else {
@@ -2060,7 +2075,7 @@ fn try_ppt_picture_growth(file: &PptFile) -> Result<bool, String> {
         return Ok(false);
     }
 
-    let Some(PicturesStream::Complete(pictures)) = &edited.pictures else {
+    let Some(PicturesStream::Complete(pictures)) = edited.pictures.as_deref() else {
         unreachable!("PPT relayout preserves the Pictures Stream variant")
     };
     let new_target_offset = pictures.records[..target_index]
@@ -2132,8 +2147,7 @@ fn try_ppt_append_user_edit(file: &PptFile) -> Result<bool, String> {
         ) {
             continue;
         }
-        let record = edited
-            .document
+        let record = Arc::make_mut(&mut edited.document)
             .records
             .records
             .get_mut(state.record_index)
@@ -2239,7 +2253,7 @@ fn try_ppt_cstring_growth(file: &mut PptFile) -> Result<bool, String> {
     };
     let old_current_edit = current_user.offset_to_current_edit;
     let mut candidate = file.clone();
-    if !grow_first_ppt_cstring(&mut candidate.document.records) {
+    if !grow_first_ppt_cstring(&mut Arc::make_mut(&mut candidate.document).records) {
         return Ok(false);
     }
     if candidate.relayout().is_err() {
@@ -2268,10 +2282,8 @@ fn grow_first_ppt_cstring(records: &mut PptRecordSequence) -> bool {
 #[allow(clippy::collapsible_match)] // Mutable recursion is not legal in match guards.
 fn grow_ppt_record_cstring(record: &mut olecfsdk::ppt::PptRecord) -> bool {
     match &mut record.data {
-        PptRecordData::CString(values)
-            if !String::from_utf16_lossy(values).starts_with("___PPT") =>
-        {
-            values.push(u16::from(b'X'));
+        PptRecordData::CString(values) if !values.starts_with("___PPT") => {
+            values.push('X');
             true
         }
         PptRecordData::Container(children) | PptRecordData::ProgTags(children) => {
@@ -2402,7 +2414,7 @@ fn xls_files_round_trip_through_typed_root() {
                 *file_entry_issues.entry(format!("{issue:?}")).or_default() += 1;
             }
             pivot_cache_streams += file.pivot_caches.len();
-            for cache in &file.pivot_caches {
+            for cache in file.pivot_caches.iter() {
                 match cache {
                     XlsPivotCache::Parsed { stream, .. } => {
                         parsed_pivot_cache_streams += 1;
@@ -2418,7 +2430,7 @@ fn xls_files_round_trip_through_typed_root() {
                     }
                 }
             }
-            if let Some(revision_log) = &file.revision_log {
+            if let Some(revision_log) = file.revision_log.as_deref() {
                 revision_log_streams += 1;
                 match revision_log {
                     XlsRevisionLog::Parsed(stream) => {
@@ -2433,7 +2445,7 @@ fn xls_files_round_trip_through_typed_root() {
                     }
                 }
             }
-            if let Some(user_names) = &file.user_names {
+            if let Some(user_names) = file.user_names.as_deref() {
                 user_names_streams += 1;
                 match user_names {
                     XlsUserNames::Parsed(stream) => {
@@ -2652,7 +2664,7 @@ fn xls_files_round_trip_through_typed_root() {
                         .or_default() += 1;
                 }
             }
-            for workbook in &file.workbooks {
+            for workbook in file.workbooks.iter() {
                 let relationships = workbook.relationships_compatible().map_err(|error| {
                     format!(
                         "{} relationship tree is not closed: {error}",
@@ -2886,9 +2898,38 @@ fn xls_files_round_trip_through_typed_root() {
                     .source_compound_file()
                     .logical_eq(file.source_compound_file())
             {
-                return Err(
-                    "XLS compound-file object tree changed after write and reopen".to_owned(),
-                );
+                let original = file.source_compound_file();
+                let reopened = round_tripped.source_compound_file();
+                let differing_entries = original
+                    .entries()
+                    .iter()
+                    .zip(reopened.entries())
+                    .filter(|(before, after)| before != after)
+                    .map(|(before, after)| {
+                        let byte_differences = before
+                            .data
+                            .iter()
+                            .zip(after.data.iter())
+                            .enumerate()
+                            .filter_map(|(offset, (before, after))| {
+                                (before != after)
+                                    .then_some(format!("0x{offset:x}:{before:02x}->{after:02x}"))
+                            })
+                            .take(16)
+                            .collect::<Vec<_>>();
+                        format!(
+                            "{} ({} -> {} bytes, {byte_differences:?})",
+                            before.path.display(),
+                            before.data.len(),
+                            after.data.len()
+                        )
+                    })
+                    .collect::<Vec<_>>();
+                return Err(format!(
+                    "XLS compound-file object tree changed after write and reopen; entries {} -> {}, differing {differing_entries:?}",
+                    original.entries().len(),
+                    reopened.entries().len()
+                ));
             }
             reopened += 1;
             Ok::<_, String>(())
@@ -3320,7 +3361,7 @@ fn try_xls_sheet_reorder(file: &mut XlsFile) -> Result<bool, String> {
 
 fn try_xls_number_cell_edit(file: &mut XlsFile) -> Result<bool, String> {
     let mut candidate = None;
-    'workbooks: for workbook in &file.workbooks {
+    'workbooks: for workbook in file.workbooks.iter() {
         let Ok(relationships) = workbook.relationships() else {
             continue;
         };
@@ -3405,21 +3446,15 @@ fn try_xls_number_cell_edit(file: &mut XlsFile) -> Result<bool, String> {
 
 fn try_xls_sheet_name_growth(file: &mut XlsFile) -> Result<bool, String> {
     let mut candidate = None;
-    for workbook in &file.workbooks {
+    for workbook in file.workbooks.iter() {
         let Ok(relationships) = workbook.relationships() else {
             continue;
         };
         for sheet in relationships.sheets().iter().copied() {
-            let character_count = match &sheet.metadata().name.characters {
-                XlStringCharacters::Compressed(values) => values.len(),
-                XlStringCharacters::Unicode(values) => values.len(),
-            };
+            let character_count = sheet.metadata().name.value.chars().count();
             if character_count < 31 {
                 let mut name = sheet.metadata().name.clone();
-                match &mut name.characters {
-                    XlStringCharacters::Compressed(values) => values.push(b'X'),
-                    XlStringCharacters::Unicode(values) => values.push(u16::from(b'X')),
-                }
+                name.value.push('X');
                 candidate = Some((
                     workbook.name,
                     sheet.id(),
@@ -3438,10 +3473,7 @@ fn try_xls_sheet_name_growth(file: &mut XlsFile) -> Result<bool, String> {
     };
 
     let mut invalid_name = name.clone();
-    match &mut invalid_name.characters {
-        XlStringCharacters::Compressed(values) => values.clear(),
-        XlStringCharacters::Unicode(values) => values.clear(),
-    }
+    invalid_name.value.clear();
     let before_invalid_edit = file.clone();
     if file
         .set_sheet_name(workbook_name, sheet_id, invalid_name)
@@ -3477,6 +3509,32 @@ fn try_xls_sheet_name_growth(file: &mut XlsFile) -> Result<bool, String> {
     Ok(true)
 }
 
+fn conforming_doc_text_units(
+    characters: &TextPieceCharacters,
+) -> Option<(TextPieceEncoding, Vec<u16>)> {
+    let value = characters.value()?;
+    let encoding = characters.encoding();
+    let units = match encoding {
+        TextPieceEncoding::Compressed => value
+            .chars()
+            .map(|character| u16::try_from(u32::from(character)).ok())
+            .collect::<Option<Vec<_>>>()?,
+        TextPieceEncoding::Utf16 => value.encode_utf16().collect(),
+    };
+    Some((encoding, units))
+}
+
+fn conforming_doc_text_from_units(encoding: TextPieceEncoding, units: &[u16]) -> Option<String> {
+    match encoding {
+        TextPieceEncoding::Compressed => units
+            .iter()
+            .copied()
+            .map(|unit| u8::try_from(unit).ok().map(char::from))
+            .collect::<Option<String>>(),
+        TextPieceEncoding::Utf16 => String::from_utf16(units).ok(),
+    }
+}
+
 fn try_doc_paragraph_mark_edit(file: &DocFile, save_policy: DocSavePolicy) -> Result<bool, String> {
     let Some(source_runs) = &file.word_document.papx_runs else {
         return Ok(false);
@@ -3494,20 +3552,18 @@ fn try_doc_paragraph_mark_edit(file: &DocFile, save_policy: DocSavePolicy) -> Re
         }
         let limit = usize::try_from(candidate_end - piece_start)
             .map_err(|_| "DOC text piece length exceeds usize".to_owned())?;
-        let candidate = match &piece.value.characters {
-            TextPieceCharacters::Compressed(values) => values
-                .iter()
-                .take(limit)
-                .enumerate()
-                .find(|(index, value)| **value >= 0x20 && index + 1 < limit)
-                .map(|(index, value)| (index, TextPieceCharacters::Compressed(vec![*value, 0x0d]))),
-            TextPieceCharacters::Utf16(values) => values
-                .iter()
-                .take(limit)
-                .enumerate()
-                .find(|(index, value)| **value >= 0x20 && index + 1 < limit)
-                .map(|(index, value)| (index, TextPieceCharacters::Utf16(vec![*value, 0x000d]))),
+        let Some((encoding, values)) = conforming_doc_text_units(&piece.value.characters) else {
+            continue;
         };
+        let candidate = values
+            .iter()
+            .take(limit)
+            .enumerate()
+            .find(|(index, value)| **value >= 0x20 && index + 1 < limit)
+            .and_then(|(index, value)| {
+                conforming_doc_text_from_units(encoding, &[*value, 0x000d])
+                    .map(|replacement| (index, replacement))
+            });
         let Some((index, replacement)) = candidate else {
             continue;
         };
@@ -3582,10 +3638,8 @@ fn try_doc_paragraph_mark_edit(file: &DocFile, save_policy: DocSavePolicy) -> Re
         else {
             return Err("inserted DOC paragraph mark has no text piece".to_owned());
         };
-        let empty = match marker_piece.value.characters {
-            TextPieceCharacters::Compressed(_) => TextPieceCharacters::Compressed(Vec::new()),
-            TextPieceCharacters::Utf16(_) => TextPieceCharacters::Utf16(Vec::new()),
-        };
+        let empty = conforming_doc_text_from_units(marker_piece.value.characters.encoding(), &[])
+            .expect("empty DOC text is valid in either physical encoding");
         let mut deleted = inserted_reopened.clone();
         deleted
             .replace_main_text_range_with_papx_runs(cp + 1..cp + 2, empty, source_runs.clone())
@@ -3642,36 +3696,21 @@ fn try_doc_part_paragraph_mark_edit(
             .map_err(|_| "DOC text index exceeds usize".to_owned())?;
         let last = usize::try_from(candidate_end - piece_start)
             .map_err(|_| "DOC text index exceeds usize".to_owned())?;
-        let candidate = match &piece.value.characters {
-            TextPieceCharacters::Compressed(values) => values
-                .get(first..last)
-                .and_then(|range| {
-                    range
-                        .iter()
-                        .enumerate()
-                        .find(|(index, value)| **value >= 0x20 && first + index + 1 < last)
-                })
-                .map(|(offset, value)| {
-                    (
-                        first + offset,
-                        TextPieceCharacters::Compressed(vec![*value, 0x0d]),
-                    )
-                }),
-            TextPieceCharacters::Utf16(values) => values
-                .get(first..last)
-                .and_then(|range| {
-                    range
-                        .iter()
-                        .enumerate()
-                        .find(|(index, value)| **value >= 0x20 && first + index + 1 < last)
-                })
-                .map(|(offset, value)| {
-                    (
-                        first + offset,
-                        TextPieceCharacters::Utf16(vec![*value, 0x000d]),
-                    )
-                }),
+        let Some((encoding, values)) = conforming_doc_text_units(&piece.value.characters) else {
+            continue;
         };
+        let candidate = values
+            .get(first..last)
+            .and_then(|range| {
+                range
+                    .iter()
+                    .enumerate()
+                    .find(|(index, value)| **value >= 0x20 && first + index + 1 < last)
+            })
+            .and_then(|(offset, value)| {
+                conforming_doc_text_from_units(encoding, &[*value, 0x000d])
+                    .map(|replacement| (first + offset, replacement))
+            });
         let Some((index, replacement)) = candidate else {
             continue;
         };
@@ -3729,10 +3768,8 @@ fn try_doc_part_paragraph_mark_edit(
                 "inserted {part:?} paragraph mark has no text piece"
             ));
         };
-        let empty = match marker_piece.value.characters {
-            TextPieceCharacters::Compressed(_) => TextPieceCharacters::Compressed(Vec::new()),
-            TextPieceCharacters::Utf16(_) => TextPieceCharacters::Utf16(Vec::new()),
-        };
+        let empty = conforming_doc_text_from_units(marker_piece.value.characters.encoding(), &[])
+            .expect("empty DOC text is valid in either physical encoding");
         let mut deleted = inserted_reopened.clone();
         deleted
             .replace_text_range_with_papx_runs(
@@ -3851,8 +3888,7 @@ fn try_doc_chpx_tree_edit(file: &DocFile, save_policy: DocSavePolicy) -> Result<
         return Ok(false);
     };
     let mut edited = file.clone();
-    edited
-        .word_document
+    Arc::make_mut(&mut edited.word_document)
         .chpx_runs
         .as_mut()
         .expect("CHPX CP tree was checked")[index]
@@ -3890,15 +3926,14 @@ fn try_doc_papx_tree_edit(file: &DocFile, save_policy: DocSavePolicy) -> Result<
         return Ok(false);
     };
     let mut edited = file.clone();
-    edited
-        .word_document
+    let properties = Arc::make_mut(&mut edited.word_document)
         .papx_runs
         .as_mut()
         .expect("PAPX CP tree was checked")[index]
         .properties
         .as_mut()
-        .expect("non-default PAPX was checked")
-        .style_index = 0;
+        .expect("non-default PAPX was checked");
+    Arc::make_mut(properties).style_index = 0;
     let bytes = match save_doc_with_policy(&edited, save_policy) {
         Ok(bytes) => bytes,
         Err(_) => return Ok(false),
@@ -3932,9 +3967,9 @@ fn try_doc_paragraph_format_boundary_edit(
         let piece_end_cp = u32::try_from(piece.value.cp_end)
             .map_err(|_| "DOC text piece has a negative CP".to_owned())?;
         let piece_start_fc = piece.value.file_offset;
-        let width = match &piece.value.characters {
-            TextPieceCharacters::Compressed(_) => 1u32,
-            TextPieceCharacters::Utf16(_) => 2u32,
+        let width = match piece.value.characters.encoding() {
+            TextPieceEncoding::Compressed => 1u32,
+            TextPieceEncoding::Utf16 => 2u32,
         };
         let piece_end_fc = piece_start_fc
             .checked_add(
@@ -3962,25 +3997,19 @@ fn try_doc_paragraph_format_boundary_edit(
             }
             let first_index = usize::try_from(boundary_cp - 1 - piece_start_cp)
                 .map_err(|_| "DOC text index exceeds usize".to_owned())?;
-            let replacement = match &piece.value.characters {
-                TextPieceCharacters::Compressed(values) => {
-                    let Some(values) = values.get(first_index..first_index + 2) else {
-                        continue;
-                    };
-                    if !matches!(values[0], 0x07 | 0x0c | 0x0d) {
-                        continue;
-                    }
-                    TextPieceCharacters::Compressed(vec![b'X', values[0], values[1]])
-                }
-                TextPieceCharacters::Utf16(values) => {
-                    let Some(values) = values.get(first_index..first_index + 2) else {
-                        continue;
-                    };
-                    if !matches!(values[0], 0x0007 | 0x000c | 0x000d) {
-                        continue;
-                    }
-                    TextPieceCharacters::Utf16(vec![u16::from(b'X'), values[0], values[1]])
-                }
+            let Some((encoding, units)) = conforming_doc_text_units(&piece.value.characters) else {
+                continue;
+            };
+            let Some(values) = units.get(first_index..first_index + 2) else {
+                continue;
+            };
+            if !matches!(values[0], 0x0007 | 0x000c | 0x000d) {
+                continue;
+            };
+            let Some(replacement) =
+                conforming_doc_text_from_units(encoding, &[u16::from(b'X'), values[0], values[1]])
+            else {
+                continue;
             };
             let mut edited = file.clone();
             if edited
@@ -4047,19 +4076,16 @@ fn try_doc_text_piece_boundary_edit(
         {
             continue;
         }
-        let replacement = match &pieces[0].value.characters {
-            TextPieceCharacters::Compressed(values) => {
-                let Some(value) = values.last() else {
-                    continue;
-                };
-                TextPieceCharacters::Compressed(vec![*value, b'X', b'Y'])
-            }
-            TextPieceCharacters::Utf16(values) => {
-                let Some(value) = values.last() else {
-                    continue;
-                };
-                TextPieceCharacters::Utf16(vec![*value, u16::from(b'X'), u16::from(b'Y')])
-            }
+        let Some((encoding, units)) = conforming_doc_text_units(&pieces[0].value.characters) else {
+            continue;
+        };
+        let Some(value) = units.last() else {
+            continue;
+        };
+        let Some(replacement) =
+            conforming_doc_text_from_units(encoding, &[*value, u16::from(b'X'), u16::from(b'Y')])
+        else {
+            continue;
         };
         let mut edited = file.clone();
         if edited
@@ -4125,39 +4151,29 @@ fn try_doc_text_piece_removal(file: &DocFile, save_policy: DocSavePolicy) -> Res
         {
             continue;
         }
-        let mut terminators = Vec::new();
-        let left_last = match &pieces[0].value.characters {
-            TextPieceCharacters::Compressed(values) => values.last().copied().map(u16::from),
-            TextPieceCharacters::Utf16(values) => values.last().copied(),
+        let Some((left_encoding, left_units)) =
+            conforming_doc_text_units(&pieces[0].value.characters)
+        else {
+            continue;
         };
+        let Some((_, right_units)) = conforming_doc_text_units(&pieces[1].value.characters) else {
+            continue;
+        };
+        let mut terminators = Vec::new();
+        let left_last = left_units.last().copied();
         if left_last.is_some_and(|value| matches!(value, 0x0007 | 0x000c | 0x000d)) {
             terminators.push(left_last.expect("left text piece is nonempty"));
         }
-        match &pieces[1].value.characters {
-            TextPieceCharacters::Compressed(values) => terminators.extend(
-                values
-                    .iter()
-                    .copied()
-                    .map(u16::from)
-                    .filter(|value| matches!(value, 0x0007 | 0x000c | 0x000d)),
-            ),
-            TextPieceCharacters::Utf16(values) => terminators.extend(
-                values
-                    .iter()
-                    .copied()
-                    .filter(|value| matches!(value, 0x0007 | 0x000c | 0x000d)),
-            ),
-        }
-        let replacement = match &pieces[0].value.characters {
-            TextPieceCharacters::Compressed(_) => TextPieceCharacters::Compressed(
-                terminators
-                    .iter()
-                    .map(|value| u8::try_from(*value).expect("DOC terminator fits u8"))
-                    .collect(),
-            ),
-            TextPieceCharacters::Utf16(_) => TextPieceCharacters::Utf16(terminators.clone()),
+        terminators.extend(
+            right_units
+                .iter()
+                .copied()
+                .filter(|value| matches!(value, 0x0007 | 0x000c | 0x000d)),
+        );
+        let Some(replacement) = conforming_doc_text_from_units(left_encoding, &terminators) else {
+            continue;
         };
-        let replacement_len = u32::try_from(replacement.character_count())
+        let replacement_len = u32::try_from(replacement.encode_utf16().count())
             .map_err(|_| "DOC replacement length exceeds u32".to_owned())?;
         let removed_len = right_end - (boundary - 1);
         let expected_main_len = main_len - removed_len + replacement_len;
@@ -4227,9 +4243,9 @@ fn try_doc_character_format_boundary_edit(
         let piece_end_cp = u32::try_from(piece.value.cp_end)
             .map_err(|_| "DOC text piece has a negative CP".to_owned())?;
         let piece_start_fc = piece.value.file_offset;
-        let width = match &piece.value.characters {
-            TextPieceCharacters::Compressed(_) => 1u32,
-            TextPieceCharacters::Utf16(_) => 2u32,
+        let width = match piece.value.characters.encoding() {
+            TextPieceEncoding::Compressed => 1u32,
+            TextPieceEncoding::Utf16 => 2u32,
         };
         let piece_end_fc = piece_start_fc
             .checked_add(
@@ -4257,19 +4273,16 @@ fn try_doc_character_format_boundary_edit(
             }
             let first_index = usize::try_from(boundary_cp - 1 - piece_start_cp)
                 .map_err(|_| "DOC text index exceeds usize".to_owned())?;
-            let replacement = match &piece.value.characters {
-                TextPieceCharacters::Compressed(values) => {
-                    let Some(values) = values.get(first_index..first_index + 2) else {
-                        continue;
-                    };
-                    TextPieceCharacters::Compressed(vec![values[0], b'X', values[1]])
-                }
-                TextPieceCharacters::Utf16(values) => {
-                    let Some(values) = values.get(first_index..first_index + 2) else {
-                        continue;
-                    };
-                    TextPieceCharacters::Utf16(vec![values[0], u16::from(b'X'), values[1]])
-                }
+            let Some((encoding, units)) = conforming_doc_text_units(&piece.value.characters) else {
+                continue;
+            };
+            let Some(values) = units.get(first_index..first_index + 2) else {
+                continue;
+            };
+            let Some(replacement) =
+                conforming_doc_text_from_units(encoding, &[values[0], u16::from(b'X'), values[1]])
+            else {
+                continue;
             };
             let mut edited = file.clone();
             if edited
@@ -4329,24 +4342,17 @@ fn try_doc_multiple_text_edits(file: &DocFile, save_policy: DocSavePolicy) -> Re
         }
         let limit = usize::try_from(candidate_end - piece_start)
             .map_err(|_| "DOC text piece length exceeds usize".to_owned())?;
-        let candidates = match &piece.value.characters {
-            TextPieceCharacters::Compressed(values) => values
-                .iter()
-                .take(limit)
-                .enumerate()
-                .filter(|(_, value)| **value >= 0x20)
-                .take(2)
-                .map(|(index, value)| (index, u16::from(*value)))
-                .collect::<Vec<_>>(),
-            TextPieceCharacters::Utf16(values) => values
-                .iter()
-                .take(limit)
-                .enumerate()
-                .filter(|(_, value)| **value >= 0x20)
-                .take(2)
-                .map(|(index, value)| (index, *value))
-                .collect::<Vec<_>>(),
+        let Some((encoding, units)) = conforming_doc_text_units(&piece.value.characters) else {
+            continue;
         };
+        let candidates = units
+            .iter()
+            .take(limit)
+            .enumerate()
+            .filter(|(_, value)| **value >= 0x20)
+            .take(2)
+            .map(|(index, value)| (index, *value))
+            .collect::<Vec<_>>();
         let [(first_index, first), (second_index, second)] = candidates.as_slice() else {
             continue;
         };
@@ -4362,15 +4368,15 @@ fn try_doc_multiple_text_edits(file: &DocFile, save_policy: DocSavePolicy) -> Re
             )
             .and_then(|value| value.checked_add(1))
             .ok_or_else(|| "DOC second text edit CP overflow".to_owned())?;
-        let (first_replacement, second_replacement) = match &piece.value.characters {
-            TextPieceCharacters::Compressed(_) => (
-                TextPieceCharacters::Compressed(vec![*first as u8, b'X']),
-                TextPieceCharacters::Compressed(vec![*second as u8, b'Y', b'Z']),
-            ),
-            TextPieceCharacters::Utf16(_) => (
-                TextPieceCharacters::Utf16(vec![*first, u16::from(b'X')]),
-                TextPieceCharacters::Utf16(vec![*second, u16::from(b'Y'), u16::from(b'Z')]),
-            ),
+        let Some(first_replacement) =
+            conforming_doc_text_from_units(encoding, &[*first, u16::from(b'X')])
+        else {
+            continue;
+        };
+        let Some(second_replacement) =
+            conforming_doc_text_from_units(encoding, &[*second, u16::from(b'Y'), u16::from(b'Z')])
+        else {
+            continue;
         };
         let mut edited = file.clone();
         if edited
@@ -4413,16 +4419,13 @@ fn try_doc_multiple_text_edits(file: &DocFile, save_policy: DocSavePolicy) -> Re
             return Err("multiple DOC text edits were not stable after a second save".to_owned());
         }
 
-        let (first_replacement, empty_replacement) = match &piece.value.characters {
-            TextPieceCharacters::Compressed(_) => (
-                TextPieceCharacters::Compressed(vec![*first as u8, b'Q']),
-                TextPieceCharacters::Compressed(Vec::new()),
-            ),
-            TextPieceCharacters::Utf16(_) => (
-                TextPieceCharacters::Utf16(vec![*first, u16::from(b'Q')]),
-                TextPieceCharacters::Utf16(Vec::new()),
-            ),
+        let Some(first_replacement) =
+            conforming_doc_text_from_units(encoding, &[*first, u16::from(b'Q')])
+        else {
+            continue;
         };
+        let empty_replacement = conforming_doc_text_from_units(encoding, &[])
+            .expect("empty DOC text is valid in either physical encoding");
         let mut net_zero = file.clone();
         net_zero
             .replace_main_text_range(first_cp..first_cp + 1, first_replacement)
@@ -4506,28 +4509,18 @@ fn try_doc_part_text_edit(
                     .map_err(|_| "DOC text index exceeds usize".to_owned())?;
                 let last = usize::try_from(candidate_end - piece_start)
                     .map_err(|_| "DOC text index exceeds usize".to_owned())?;
-                let candidate = match &piece.value.characters {
-                    TextPieceCharacters::Compressed(values) => values
-                        .get(first..last)
-                        .and_then(|range| range.iter().position(|value| *value >= 0x20))
-                        .map(|offset| {
-                            let index = first + offset;
-                            (
-                                index,
-                                TextPieceCharacters::Compressed(vec![values[index], b'X']),
-                            )
-                        }),
-                    TextPieceCharacters::Utf16(values) => values
-                        .get(first..last)
-                        .and_then(|range| range.iter().position(|value| *value >= 0x20))
-                        .map(|offset| {
-                            let index = first + offset;
-                            (
-                                index,
-                                TextPieceCharacters::Utf16(vec![values[index], u16::from(b'X')]),
-                            )
-                        }),
+                let Some((encoding, values)) = conforming_doc_text_units(&piece.value.characters)
+                else {
+                    continue;
                 };
+                let candidate = values
+                    .get(first..last)
+                    .and_then(|range| range.iter().position(|value| *value >= 0x20))
+                    .and_then(|offset| {
+                        let index = first + offset;
+                        conforming_doc_text_from_units(encoding, &[values[index], u16::from(b'X')])
+                            .map(|replacement| (index, replacement))
+                    });
                 let Some((index, replacement)) = candidate else {
                     continue;
                 };

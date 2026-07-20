@@ -14,8 +14,9 @@ use olecfsdk::ppt::{
 };
 use olecfsdk::shared_content::{OfficePropertySetKind, OfficeSharedContent};
 use olecfsdk::xls::{
-    CellErrorCode, ExtFontScheme, ExtPropertyData, XlsCellValue, XlsFile, XlsFormulaCachedValue,
-    XlsHyperlinkTarget, XlsNumberFormatRef, XlsPictureImageLink,
+    CellErrorCode, ExtFontScheme, ExtPropertyData, ExtRstBody, SstExtensionData,
+    XlStringCharacters, XlsCellValue, XlsFile, XlsFormulaCachedValue, XlsHyperlinkTarget,
+    XlsNumberFormatRef, XlsPictureImageLink,
 };
 use olecfsdk_corpus_test_support::corpus_file_path;
 use olecfsdk_ooxml::{
@@ -1665,6 +1666,227 @@ fn xls_conversion_preserves_sheet_order_sparse_coordinates_and_stored_scalars() 
     let mut second = SpreadsheetDocument::new(Cursor::new(second_bytes.into_inner()))
         .expect("reopen XLSX conversion a second time");
     assert_eq!(target_xls_cells(&mut second), expected);
+}
+
+#[test]
+fn xls_conversion_preserves_shared_string_rich_text_runs() {
+    let source = XlsFile::open(fixture("Apache-POI/test-data/spreadsheet/duprich2.xls"))
+        .expect("strictly open XLS rich-text fixture");
+    let workbook = source
+        .workbooks
+        .first()
+        .expect("fixture has a Workbook stream");
+    let view = workbook
+        .relationships()
+        .expect("resolve XLS rich-text relationships");
+    let table = view
+        .shared_string_table()
+        .expect("resolve XLS shared-string table")
+        .expect("fixture has an SST");
+    let expected = table
+        .strings
+        .iter()
+        .enumerate()
+        .filter(|(_, string)| !string.format_runs.is_empty())
+        .map(|(index, string)| (index, source_rich_text_segments(string, &view)))
+        .collect::<Vec<_>>();
+    assert!(
+        !expected.is_empty(),
+        "fixture must contain formatted shared strings"
+    );
+
+    let converted = convert_xls_with_options(
+        &source,
+        ConversionOptions {
+            unsupported: LossPolicy::Report,
+        },
+    )
+    .expect("convert XLS rich text with explicit unrelated loss reporting");
+    for (string_index, _) in &expected {
+        assert!(
+            converted.report.issues().iter().all(|issue| {
+                issue.code != ConversionCode::SharedStringRichTextNotMapped
+                    || issue.source
+                        != (SourceLocation::XlsSharedString {
+                            workbook_index: 0,
+                            string_index: u32::try_from(*string_index).expect("SST index fits u32"),
+                        })
+            }),
+            "formatted SST entry {string_index} was reported as unmapped"
+        );
+    }
+
+    let mut document = converted.document;
+    assert_target_rich_text_segments(&mut document, &expected);
+
+    let mut bytes = Cursor::new(Vec::new());
+    document
+        .save(&mut bytes)
+        .expect("save XLSX rich-text conversion");
+    let mut reopened = SpreadsheetDocument::new(Cursor::new(bytes.into_inner()))
+        .expect("reopen XLSX rich-text conversion");
+    assert_target_rich_text_segments(&mut reopened, &expected);
+}
+
+#[test]
+fn xls_conversion_preserves_shared_string_phonetic_runs() {
+    let source = XlsFile::open(fixture("Apache-POI/test-data/spreadsheet/50779_2.xls"))
+        .expect("strictly open XLS phonetic-text fixture");
+    let workbook = source
+        .workbooks
+        .first()
+        .expect("fixture has a Workbook stream");
+    let view = workbook
+        .relationships()
+        .expect("resolve XLS phonetic-text relationships");
+    let table = view
+        .shared_string_table()
+        .expect("resolve XLS shared-string table")
+        .expect("fixture has an SST");
+    let (string_index, extension) = table
+        .strings
+        .iter()
+        .enumerate()
+        .find_map(|(index, string)| match &string.extension {
+            SstExtensionData::ExtRst(extension)
+                if matches!(
+                    &extension.body,
+                    ExtRstBody::Phonetic { phonetic_text, .. } if !phonetic_text.is_empty()
+                ) =>
+            {
+                Some((index, extension))
+            }
+            _ => None,
+        })
+        .expect("fixture has a non-empty ExtRst phonetic string");
+    let ExtRstBody::Phonetic {
+        font_index,
+        formatting_flags,
+        phonetic_text,
+        runs,
+        ..
+    } = &extension.body
+    else {
+        unreachable!("filtered to a phonetic ExtRst")
+    };
+    assert_eq!(*font_index, 5);
+    assert_eq!(formatting_flags.bits() & 0x000f, 0x0005);
+    assert_eq!(
+        String::from_utf16(phonetic_text).expect("phonetic text is valid UTF-16"),
+        "ホッカイドウアオモリケンイワテケンフクシマケントチギケンサイタマケントウキョウトチバケン"
+    );
+    assert_eq!(runs.len(), 8);
+
+    let converted = convert_xls_with_options(
+        &source,
+        ConversionOptions {
+            unsupported: LossPolicy::Report,
+        },
+    )
+    .expect("convert XLS phonetic text with explicit unrelated loss reporting");
+    let source_location = SourceLocation::XlsSharedString {
+        workbook_index: 0,
+        string_index: u32::try_from(string_index).expect("SST index fits u32"),
+    };
+    assert!(converted.report.issues().iter().all(|issue| {
+        issue.code != ConversionCode::SharedStringPhoneticTextNotMapped
+            || issue.source != source_location
+    }));
+
+    let expected = [
+        (0, 3, "ホッカイドウ"),
+        (3, 6, "アオモリケン"),
+        (6, 9, "イワテケン"),
+        (9, 12, "フクシマケン"),
+        (12, 15, "トチギケン"),
+        (15, 18, "サイタマケン"),
+        (18, 21, "トウキョウト"),
+        (21, 24, "チバケン"),
+    ];
+    let mut document = converted.document;
+    assert_target_phonetic_runs(&mut document, string_index, &expected);
+
+    let mut bytes = Cursor::new(Vec::new());
+    document
+        .save(&mut bytes)
+        .expect("save XLSX phonetic-text conversion");
+    let mut reopened = SpreadsheetDocument::new(Cursor::new(bytes.into_inner()))
+        .expect("reopen XLSX phonetic-text conversion");
+    assert_target_phonetic_runs(&mut reopened, string_index, &expected);
+}
+
+#[test]
+fn xls_conversion_maps_implicit_phonetic_run_to_entire_base_text() {
+    let source = XlsFile::open(fixture("Apache-POI/test-data/spreadsheet/12561-1.xls"))
+        .expect("strictly open XLS implicit-phonetic-run fixture");
+    let workbook = source
+        .workbooks
+        .first()
+        .expect("fixture has a Workbook stream");
+    let view = workbook
+        .relationships()
+        .expect("resolve XLS implicit-phonetic-run relationships");
+    let table = view
+        .shared_string_table()
+        .expect("resolve XLS shared-string table")
+        .expect("fixture has an SST");
+    let (string_index, source_string, phonetic_text) = table
+        .strings
+        .iter()
+        .enumerate()
+        .find_map(|(index, string)| match &string.extension {
+            SstExtensionData::ExtRst(extension) => match &extension.body {
+                ExtRstBody::Phonetic {
+                    declared_run_count: 0,
+                    phonetic_text,
+                    runs,
+                    ..
+                } if !phonetic_text.is_empty() && runs.is_empty() => {
+                    Some((index, string, phonetic_text))
+                }
+                _ => None,
+            },
+            _ => None,
+        })
+        .expect("fixture has a non-empty implicit phonetic run");
+    let base_text_length = source_string
+        .character_chunks
+        .iter()
+        .map(|chunk| match &chunk.characters {
+            XlStringCharacters::Compressed(bytes) => bytes.len(),
+            XlStringCharacters::Unicode(units) => units.len(),
+        })
+        .sum::<usize>();
+    assert!(base_text_length > 0);
+    let phonetic_text = String::from_utf16(phonetic_text).expect("phonetic text is valid UTF-16");
+
+    let converted = convert_xls_with_options(
+        &source,
+        ConversionOptions {
+            unsupported: LossPolicy::Report,
+        },
+    )
+    .expect("convert implicit XLS phonetic run with explicit unrelated loss reporting");
+    let source_location = SourceLocation::XlsSharedString {
+        workbook_index: 0,
+        string_index: u32::try_from(string_index).expect("SST index fits u32"),
+    };
+    assert!(converted.report.issues().iter().all(|issue| {
+        issue.code != ConversionCode::SharedStringPhoneticTextNotMapped
+            || issue.source != source_location
+    }));
+    assert!(converted.report.issues().iter().any(|issue| {
+        issue.code == ConversionCode::SharedStringPhoneticCompatibilityNotMapped
+            && issue.source == source_location
+    }));
+
+    let expected = [(
+        0,
+        u32::try_from(base_text_length).expect("base text length fits u32"),
+        phonetic_text.as_str(),
+    )];
+    let mut document = converted.document;
+    assert_target_phonetic_runs(&mut document, string_index, &expected);
 }
 
 #[test]
@@ -4085,6 +4307,110 @@ struct ExpectedCell {
     reference: String,
     kind: &'static str,
     value: Option<String>,
+}
+
+fn source_rich_text_segments(
+    string: &olecfsdk::xls::SstString,
+    view: &olecfsdk::xls::XlsWorkbookView<'_>,
+) -> Vec<(String, bool)> {
+    let mut code_units = Vec::new();
+    for chunk in &string.character_chunks {
+        match &chunk.characters {
+            XlStringCharacters::Compressed(bytes) => {
+                code_units.extend(bytes.iter().copied().map(u16::from));
+            }
+            XlStringCharacters::Unicode(units) => code_units.extend_from_slice(units),
+        }
+    }
+    let mut segments = Vec::new();
+    let mut start = 0usize;
+    let mut has_properties = false;
+    for run in &string.format_runs {
+        let boundary = usize::from(run.character_index);
+        if boundary > start {
+            segments.push((
+                String::from_utf16(&code_units[start..boundary])
+                    .expect("strict SST text is valid UTF-16"),
+                has_properties,
+            ));
+            start = boundary;
+        }
+        if boundary != code_units.len() {
+            has_properties = view.font(run.font_index).is_some();
+        }
+    }
+    if start < code_units.len() {
+        segments.push((
+            String::from_utf16(&code_units[start..]).expect("strict SST text is valid UTF-16"),
+            has_properties,
+        ));
+    }
+    segments
+}
+
+fn assert_target_rich_text_segments(
+    document: &mut SpreadsheetDocument,
+    expected: &[(usize, Vec<(String, bool)>)],
+) {
+    let workbook_part = document
+        .workbook_part()
+        .expect("converted XLSX has a workbook part");
+    let shared_string_part = workbook_part
+        .shared_string_table_part(document)
+        .expect("converted XLSX has a shared-string part");
+    let table = shared_string_part
+        .root_element(document)
+        .expect("parse converted XLSX shared strings");
+    for (index, expected_segments) in expected {
+        let item = &table.shared_string_item[*index];
+        assert!(item.text.is_none(), "rich SST item {index} must use runs");
+        assert_eq!(item.run.len(), expected_segments.len(), "SST item {index}");
+        for (run, (expected_text, expected_properties)) in item.run.iter().zip(expected_segments) {
+            assert_eq!(
+                run.text.0.xml_content.as_deref(),
+                Some(expected_text.as_str()),
+                "SST item {index} run text"
+            );
+            assert_eq!(
+                run.run_properties.is_some(),
+                *expected_properties,
+                "SST item {index} run properties"
+            );
+        }
+    }
+}
+
+fn assert_target_phonetic_runs(
+    document: &mut SpreadsheetDocument,
+    string_index: usize,
+    expected: &[(u32, u32, &str)],
+) {
+    let workbook_part = document
+        .workbook_part()
+        .expect("converted XLSX has a workbook part");
+    let shared_string_part = workbook_part
+        .shared_string_table_part(document)
+        .expect("converted XLSX has a shared-string part");
+    let table = shared_string_part
+        .root_element(document)
+        .expect("parse converted XLSX shared strings");
+    let item = &table.shared_string_item[string_index];
+    let properties = item
+        .phonetic_properties
+        .as_ref()
+        .expect("phonetic SST item has phonetic properties");
+    assert_eq!(properties.font_id, 4);
+    assert_eq!(
+        properties.r#type,
+        Some(x::PhoneticValues::FullWidthKatakana)
+    );
+    assert_eq!(properties.alignment, Some(x::PhoneticAlignmentValues::Left));
+    assert_eq!(item.phonetic_run.len(), expected.len());
+    for (run, (start, end, text)) in item.phonetic_run.iter().zip(expected) {
+        assert_eq!(run.base_text_start_index, *start);
+        assert_eq!(run.ending_base_index, *end);
+        assert_eq!(run.text.0.xml_content.as_deref(), Some(*text));
+    }
 }
 
 fn source_xls_cells(file: &XlsFile) -> Vec<ExpectedSheet> {

@@ -249,6 +249,8 @@ fn legacy_office_workbook_streams_round_trip() {
     let mut formula_unparsed_rgce_bytes = 0usize;
     let mut formula_rgcb_bytes = 0usize;
     let mut formula_missing_extra = 0usize;
+    let mut formula_nonconforming_records = 0usize;
+    let mut formula_nonconforming_tokens = 0usize;
     let mut formula_tail_locations = Vec::new();
     let mut shared_formula_records = 0usize;
     let mut shared_formula_unparsed_rgce_bytes = 0usize;
@@ -715,6 +717,10 @@ fn legacy_office_workbook_streams_round_trip() {
                         BiffRecordData::Formula(formula) => {
                             formula_unparsed_rgce_bytes += formula.tokens.rgce.unparsed_tail.len();
                             formula_rgcb_bytes += formula.tokens.rgcb_tail.len();
+                            let nonconforming_tokens =
+                                formula.tokens.rgce.nonconforming_token_count();
+                            formula_nonconforming_records += usize::from(nonconforming_tokens != 0);
+                            formula_nonconforming_tokens += nonconforming_tokens;
                             let missing_extra = formula.tokens.rgce.missing_extra_count();
                             formula_missing_extra += missing_extra;
                             if missing_extra != 0 {
@@ -1127,13 +1133,7 @@ fn legacy_office_workbook_streams_round_trip() {
                         }
                         BiffRecordData::BoundSheet8Compatibility { value, .. } => {
                             bound_sheet_id_compatibility_records += 1;
-                            assert_eq!(
-                                match &value.name.characters {
-                                    XlStringCharacters::Compressed(bytes) => bytes.len(),
-                                    XlStringCharacters::Unicode(words) => words.len(),
-                                },
-                                7
-                            );
+                            assert_eq!(value.name.value.chars().count(), 7);
                         }
                         BiffRecordData::ChartSeriesCompatibility { value, .. } => {
                             chart_series_id_compatibility_records += 1;
@@ -2433,11 +2433,12 @@ fn legacy_office_workbook_streams_round_trip() {
                 let mut edited = file.clone();
                 let mut selected = None;
                 'workbooks: for (workbook_index, workbook) in
-                    edited.workbooks.iter_mut().enumerate()
+                    std::sync::Arc::make_mut(&mut edited.workbooks)
+                        .iter_mut()
+                        .enumerate()
                 {
-                    for (record_index, record) in
-                        workbook.tree.stream.records.iter_mut().enumerate()
-                    {
+                    let tree = std::sync::Arc::make_mut(&mut workbook.tree);
+                    for (record_index, record) in tree.stream.records.iter_mut().enumerate() {
                         let BiffRecordData::Pls(pls) = &mut record.data else {
                             continue;
                         };
@@ -2503,11 +2504,12 @@ fn legacy_office_workbook_streams_round_trip() {
                 let mut edited = file.clone();
                 let mut selected = None;
                 'workbooks: for (workbook_index, workbook) in
-                    edited.workbooks.iter_mut().enumerate()
+                    std::sync::Arc::make_mut(&mut edited.workbooks)
+                        .iter_mut()
+                        .enumerate()
                 {
-                    for (record_index, record) in
-                        workbook.tree.stream.records.iter_mut().enumerate()
-                    {
+                    let tree = std::sync::Arc::make_mut(&mut workbook.tree);
+                    for (record_index, record) in tree.stream.records.iter_mut().enumerate() {
                         let BiffRecordData::BkHim(value) = &mut record.data else {
                             continue;
                         };
@@ -2561,11 +2563,12 @@ fn legacy_office_workbook_streams_round_trip() {
                 let mut edited = file.clone();
                 let mut selected = None;
                 'workbooks: for (workbook_index, workbook) in
-                    edited.workbooks.iter_mut().enumerate()
+                    std::sync::Arc::make_mut(&mut edited.workbooks)
+                        .iter_mut()
+                        .enumerate()
                 {
-                    for (record_index, record) in
-                        workbook.tree.stream.records.iter_mut().enumerate()
-                    {
+                    let tree = std::sync::Arc::make_mut(&mut workbook.tree);
+                    for (record_index, record) in tree.stream.records.iter_mut().enumerate() {
                         let BiffRecordData::MsoDrawing(drawing) = &mut record.data else {
                             continue;
                         };
@@ -2655,11 +2658,12 @@ fn legacy_office_workbook_streams_round_trip() {
                 let mut edited = file.clone();
                 let mut selected = None;
                 'workbooks: for (workbook_index, workbook) in
-                    edited.workbooks.iter_mut().enumerate()
+                    std::sync::Arc::make_mut(&mut edited.workbooks)
+                        .iter_mut()
+                        .enumerate()
                 {
-                    for (record_index, record) in
-                        workbook.tree.stream.records.iter_mut().enumerate()
-                    {
+                    let tree = std::sync::Arc::make_mut(&mut workbook.tree);
+                    for (record_index, record) in tree.stream.records.iter_mut().enumerate() {
                         let BiffRecordData::MsoDrawing(drawing) = &mut record.data else {
                             continue;
                         };
@@ -2752,10 +2756,12 @@ fn legacy_office_workbook_streams_round_trip() {
                 let mut edited = file.clone();
                 let mut selected = None;
                 'workbooks: for (workbook_index, workbook) in
-                    edited.workbooks.iter_mut().enumerate()
+                    std::sync::Arc::make_mut(&mut edited.workbooks)
+                        .iter_mut()
+                        .enumerate()
                 {
-                    let ext_sst_index = workbook
-                        .tree
+                    let tree = std::sync::Arc::make_mut(&mut workbook.tree);
+                    let ext_sst_index = tree
                         .stream
                         .records
                         .iter()
@@ -2763,9 +2769,7 @@ fn legacy_office_workbook_streams_round_trip() {
                     let Some(ext_sst_index) = ext_sst_index else {
                         continue;
                     };
-                    for (record_index, record) in
-                        workbook.tree.stream.records.iter_mut().enumerate()
-                    {
+                    for (record_index, record) in tree.stream.records.iter_mut().enumerate() {
                         let BiffRecordData::Sst(sst) = &mut record.data else {
                             continue;
                         };
@@ -2988,6 +2992,7 @@ fn legacy_office_workbook_streams_round_trip() {
         root_nonconforming_diagnostics,
         hyperlink_compatibility_records
             + feature_header_malformed
+            + formula_nonconforming_records
             + root_workbook_structure_diagnostics
             + root_bof_diagnostics
             + root_end_object_diagnostics
@@ -3031,6 +3036,14 @@ fn legacy_office_workbook_streams_round_trip() {
         "Formula records retained unparsed rgce bytes"
     );
     assert_eq!(formula_rgcb_bytes, 0, "Formula records retained rgcb bytes");
+    assert_eq!(
+        formula_nonconforming_records, 1,
+        "Formula nonconforming-token record coverage changed"
+    );
+    assert_eq!(
+        formula_nonconforming_tokens, 2,
+        "Formula nonconforming-token coverage changed"
+    );
     assert_eq!(
         formula_missing_extra, 1,
         "Formula missing-extra compatibility coverage changed"

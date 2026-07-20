@@ -757,6 +757,24 @@ mode = "invalid"
 reason = "SummaryInformation is truncated inside its property table"
 
 [[expectation]]
+file = "test-data/document/56880.doc"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "SummaryInformation property table is not ordered by increasing Offset as required by MS-OLEPS 2.21"
+
+[[expectation]]
+file = "test-data/spreadsheet/27933.xls"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "property tables are not ordered by increasing Offset as required by MS-OLEPS 2.21"
+
+[[expectation]]
+file = "test-data/spreadsheet/54500.xls"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "SummaryInformation property table is not ordered by increasing Offset as required by MS-OLEPS 2.21"
+
+[[expectation]]
 file = "test-data/hpsf/TestBug52372.doc"
 test = "oleps_roundtrip"
 mode = "invalid"

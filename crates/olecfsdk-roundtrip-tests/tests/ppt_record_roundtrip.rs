@@ -195,6 +195,7 @@ fn legacy_powerpoint_document_streams_round_trip() {
     let mut current_user_diagnostic_samples = Vec::new();
     let mut noncanonical_cfb_diagnostics = 0usize;
     let mut invalid_stream_diagnostics = 0usize;
+    let mut property_set_invalid_streams = 0usize;
     let mut invalid_reference_diagnostics = 0usize;
     let mut live_process_invalid_reference_diagnostics = 0usize;
     let mut truncated_diagnostic_files = BTreeSet::<PathBuf>::new();
@@ -266,7 +267,16 @@ fn legacy_powerpoint_document_streams_round_trip() {
                     ParseDiagnosticCode::InvalidStreamPreserved => {
                         invalid_stream_diagnostics += 1;
                         invalid_stream_diagnostic_files.insert(path.clone());
-                        if diagnostic.location.path.as_deref() != Some("/Pictures") {
+                        if diagnostic.structure == "PropertySetStream"
+                            && matches!(
+                                diagnostic.location.path.as_deref(),
+                                Some(
+                                    "/\u{5}SummaryInformation" | "/\u{5}DocumentSummaryInformation"
+                                )
+                            )
+                        {
+                            property_set_invalid_streams += 1;
+                        } else if diagnostic.location.path.as_deref() != Some("/Pictures") {
                             return Err(format!(
                                 "invalid-stream diagnostic has unexpected location: {diagnostic:?}"
                             ));
@@ -991,8 +1001,9 @@ fn legacy_powerpoint_document_streams_round_trip() {
     );
     assert_eq!(
         invalid_stream_diagnostics,
-        picture_partial_streams + picture_compatibility_streams
+        picture_partial_streams + picture_compatibility_streams + property_set_invalid_streams
     );
+    assert_eq!(property_set_invalid_streams, 5);
     assert_eq!(
         invalid_reference_diagnostics,
         current_edit_broken_links
@@ -1323,11 +1334,15 @@ fn audit_sequence(
             PptRecordData::TextHeader(_) => *audit.text_headers += 1,
             PptRecordData::TextChars(values) => {
                 *audit.text_chars_records += 1;
+                *audit.text_chars_units += values.encode_utf16().count();
+            }
+            PptRecordData::CompatibilityTextChars(values) => {
+                *audit.text_chars_records += 1;
                 *audit.text_chars_units += values.len();
             }
             PptRecordData::TextBytes(values) => {
                 *audit.text_bytes_records += 1;
-                *audit.text_bytes_characters += values.len();
+                *audit.text_bytes_characters += values.chars().count();
             }
             PptRecordData::StyleTextProp(value) => {
                 *audit.style_text_prop_atoms += 1;
@@ -1393,6 +1408,10 @@ fn audit_sequence(
             }
             PptRecordData::CString(values) => {
                 *audit.c_string_records += 1;
+                *audit.c_string_units += values.encode_utf16().count();
+            }
+            PptRecordData::CompatibilityCString(values) => {
+                *audit.c_string_records += 1;
                 *audit.c_string_units += values.len();
             }
             PptRecordData::SlidePersist(_) => *audit.slide_persist_atoms += 1,
@@ -1450,7 +1469,7 @@ fn audit_sequence(
                 *audit.external_storage_atoms += 1;
                 match value {
                     ExternalStorageAtom::Parsed(storage) => {
-                        match &storage.encoding {
+                        match storage.encoding() {
                             ExternalStorageEncoding::Uncompressed => {
                                 *audit.external_storage_parsed_uncompressed += 1;
                             }
@@ -1458,18 +1477,19 @@ fn audit_sequence(
                                 *audit.external_storage_parsed_compressed += 1;
                             }
                         }
-                        *audit.external_storage_entries += storage.compound_file.entries().len();
-                        if storage.compound_file.entries().iter().any(|entry| {
+                        *audit.external_storage_entries += storage.compound_file().entries().len();
+                        if storage.compound_file().entries().iter().any(|entry| {
                             entry.name.eq_ignore_ascii_case("VBA")
                                 || entry.name.eq_ignore_ascii_case("PROJECT")
                         }) {
                             *audit.external_storage_vba_shaped += 1;
                         }
-                        match &storage.vba_project {
+                        match storage.vba_project() {
                             ExternalStorageVba::NotPresent => {}
                             ExternalStorageVba::Parsed(project) => {
                                 *audit.external_storage_vba_parsed += 1;
-                                *audit.external_storage_vba_modules += project.modules.len();
+                                *audit.external_storage_vba_modules +=
+                                    project.model().modules.len();
                             }
                             ExternalStorageVba::Invalid(reason) => {
                                 *audit.external_storage_vba_invalid += 1;

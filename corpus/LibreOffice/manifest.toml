@@ -835,6 +835,12 @@ mode = "invalid"
 reason = "DocumentSummaryInformation contains an out-of-bounds property offset"
 
 [[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2010-3200-1.doc"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "DocumentSummaryInformation property table is not ordered by increasing Offset as required by MS-OLEPS 2.21"
+
+[[expectation]]
 file = "sw/qa/core/data/ww8/pass/CVE-2007-1347-1.doc"
 test = "doc_atrd_extra_roundtrip"
 mode = "invalid"

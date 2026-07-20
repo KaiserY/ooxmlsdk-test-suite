@@ -33,10 +33,10 @@ use olecfsdk::{
         SmartTagRecognizerStateTable, SmartTagSource, SpellingStateKind, SpellingStateTable,
         SprmGroup, SprmKind, SprmOperand, StructuredTagBookmarks, StyleFormatting, StyleKind,
         StyleSheet, StyleSortMethod, SubdocumentTable, TableCharacterCacheTable, TextLineEnding,
-        TextPieceCharacters, TextboxBreakTable, TextboxDocumentPart, TextboxStoryChain,
-        TextboxStoryTable, TypographyJustification, UserInputMethods, UserVariableKind,
-        UserVariables, WORD97_FILE_IDENTIFIER, WebTargetScreenSize, XmlSchemaReferences,
-        XmlSchemaStringTable, XmlTransformPath,
+        TextboxBreakTable, TextboxDocumentPart, TextboxStoryChain, TextboxStoryTable,
+        TypographyJustification, UserInputMethods, UserVariableKind, UserVariables,
+        WORD97_FILE_IDENTIFIER, WebTargetScreenSize, XmlSchemaReferences, XmlSchemaStringTable,
+        XmlTransformPath,
     },
     forms::{CommandButtonControl, FmStringLengthMode, MorphDataControl, SingleStreamOleControl},
     office_art::{OfficeArtDrawingGraphIssue, OfficeArtRecordData, OfficeArtShapeFlags},
@@ -1285,7 +1285,7 @@ fn legacy_word_fibs_round_trip() {
                 return Err("typed DOC file root changed the FIB".to_owned());
             }
             let rebuilt = file
-                .to_compound_file()
+                .to_compound_file_preserving_compatibility()
                 .map_err(|error| format!("write typed DOC file root: {error}"))?;
             if rebuilt.stream("/WordDocument") != Some(word_document.data.as_slice())
                 || rebuilt.stream(file.table.name.path()) != Some(table.as_slice())
@@ -4559,18 +4559,22 @@ fn legacy_word_fibs_round_trip() {
                         clx.piece_table.character_positions[index + 1],
                     )
                     .map_err(|error| error.to_string())?;
-                let physical = text_piece.to_bytes();
+                let physical = text_piece.to_bytes().map_err(|error| error.to_string())?;
                 let start = usize::try_from(text_piece.file_offset)
                     .map_err(|_| "text-piece offset exceeds usize".to_owned())?;
-                if word_document.data.get(start..start + physical.len()) != Some(&physical) {
+                if word_document.data.get(start..start + physical.len())
+                    != Some(physical.as_slice())
+                {
                     return Err("text piece write did not reproduce its physical bytes".to_owned());
                 }
                 text_characters += text_piece.character_count();
-                match text_piece.characters {
-                    TextPieceCharacters::Compressed(value) => {
-                        compressed_text_bytes += value.len();
+                match text_piece.characters.encoding() {
+                    olecfsdk::doc::TextPieceEncoding::Compressed => {
+                        compressed_text_bytes += text_piece.character_count();
                     }
-                    TextPieceCharacters::Utf16(value) => utf16_text_units += value.len(),
+                    olecfsdk::doc::TextPieceEncoding::Utf16 => {
+                        utf16_text_units += text_piece.character_count();
+                    }
                 }
             }
             checked += 1;
