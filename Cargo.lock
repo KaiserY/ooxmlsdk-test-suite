@@ -598,7 +598,22 @@ name = "emfsdk"
 version = "0.2.0"
 dependencies = [
  "bitflags 2.13.0",
- "emfsdk-derive",
+ "emfsdk-derive 0.2.0",
+ "encoding_rs",
+ "fontdb",
+ "image",
+ "thiserror",
+ "ttf-parser",
+]
+
+[[package]]
+name = "emfsdk"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "662afd8231566c47cb0ba3b38f5c4131a07ea68521e70917eeaee7d43db45f45"
+dependencies = [
+ "bitflags 2.13.0",
+ "emfsdk-derive 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "encoding_rs",
  "fontdb",
  "image",
@@ -616,10 +631,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "emfsdk-derive"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "16fb1b0b4c879ea8593fda0dae241fa9ad9d042b55b5b05a2e22980c7eb570f0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "emfsdk-test"
 version = "0.1.0"
 dependencies = [
- "emfsdk",
+ "emfsdk 0.2.0",
  "image",
  "olecfsdk",
  "walkdir",
@@ -1554,7 +1580,7 @@ checksum = "d6790f58c7ff633d8771f42965289203411a5e5c68388703c06e14f24770b41e"
 
 [[package]]
 name = "ooxmlsdk"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
  "base64",
  "bytes",
@@ -1593,7 +1619,7 @@ dependencies = [
 
 [[package]]
 name = "ooxmlsdk-derive"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1602,7 +1628,7 @@ dependencies = [
 
 [[package]]
 name = "ooxmlsdk-fonts"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
  "fontdb",
  "icu_segmenter",
@@ -1625,7 +1651,7 @@ dependencies = [
 
 [[package]]
 name = "ooxmlsdk-formula"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
  "bitflags 2.13.0",
  "encoding_rs",
@@ -1658,9 +1684,9 @@ dependencies = [
 
 [[package]]
 name = "ooxmlsdk-layout"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
- "emfsdk",
+ "emfsdk 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "hypher",
  "icu_segmenter",
  "image",
@@ -1683,7 +1709,7 @@ dependencies = [
 
 [[package]]
 name = "ooxmlsdk-pdf"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
  "fontdb",
  "hypher",

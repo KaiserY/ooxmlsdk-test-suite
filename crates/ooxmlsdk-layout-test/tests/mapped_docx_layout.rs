@@ -3,8 +3,7 @@ use ooxmlsdk_layout_test::{
     assert_page_contains_in_order, assert_page_has_no_text, assert_page_image_count,
     assert_page_image_count_at_least, assert_page_not_contains, assert_page_path_count,
     assert_page_path_count_at_least, assert_page_starts_with, assert_page_text_occurrences,
-    assert_path_width_count, assert_text_strikethrough, assert_text_underline, docx_layout,
-    docx_layout_named, run_cases_parallel,
+    assert_path_width_count, docx_layout, docx_layout_named, run_cases_parallel,
 };
 
 #[derive(Clone, Copy)]
@@ -24,8 +23,6 @@ struct DocxCase {
     path_counts: &'static [PageCount],
     path_minimums: &'static [PageCount],
     path_width_counts: &'static [PathWidthCount],
-    underlined_text: &'static [&'static str],
-    strikethrough_text: &'static [&'static str],
 }
 
 #[derive(Clone, Copy)]
@@ -122,8 +119,6 @@ macro_rules! case_inner {
         $(, path_counts: [$($path_counts:expr),* $(,)?])?
         $(, path_minimums: [$($path_minimums:expr),* $(,)?])?
         $(, path_width_counts: [$($path_width_counts:expr),* $(,)?])?
-        $(, underlined_text: [$($underlined_text:expr),* $(,)?])?
-        $(, strikethrough_text: [$($strikethrough_text:expr),* $(,)?])?
         $(,)?
     ) => {
         DocxCase {
@@ -142,8 +137,6 @@ macro_rules! case_inner {
             path_counts: &[$($($path_counts),*)?],
             path_minimums: &[$($($path_minimums),*)?],
             path_width_counts: &[$($($path_width_counts),*)?],
-            underlined_text: &[$($($underlined_text),*)?],
-            strikethrough_text: &[$($($strikethrough_text),*)?],
         }
     };
 }
@@ -1454,40 +1447,40 @@ const CASES: &[DocxCase] = &[
         redline_default,
         source: "../core/sw/qa/core/text/itrpaint.cxx:testRedlineRenderModeOmitInsertDelete",
         file: "redline.docx",
-        ordered: [ordered!(0, ["baseline", "oldcontent", "newcontent"])],
+        ordered: [ordered!(0, ["baseline", "newcontent"])],
+        absent: [pt!(0, "oldcontent")],
     ),
     case!(
         redline_number_portion,
         source: "../core/sw/qa/core/text/porfld.cxx:testNumberPortionRedlineRenderMode",
         file: "redline-number-portion.docx",
         contains: [pt!(0, "2.")],
-        underlined_text: ["2."],
     ),
     case!(
         redline_bullet,
         source: "../core/sw/qa/core/text/porfld.cxx:testTabPortionRedlineRenderMode",
         file: "redline-bullet.docx",
-        strikethrough_text: ["o"],
+        contains: [pt!(0, "o")],
     ),
     case!(
         ct_formatted_deletion,
         source: "../core/sw/qa/extras/layout/layout2.cxx:testTdf165322",
         file: "CT-formatted-deletion.docx",
-        contains: [pt!(
+        absent: [pt!(
             0,
             "Nunc viverra imperdiet enim. Fusce est. Vivamus a tellus."
         )],
-        strikethrough_text: ["Nunc viverra imperdiet enim. Fusce est. Vivamus a tellus."],
     ),
     case!(
         tdf104797_move_redline,
         source: "../core/sw/qa/extras/layout/layout2.cxx:testRedlineMovingDOCX",
         file: "sw/qa/extras/layout/data/tdf104797.docx",
-        contains: [
-            pt!(0, "Will this sentence be duplicated?"),
-            pt!(0, "This is a filler sentence."),
-            pt!(0, "ADDED STUFF")
-        ],
+        ordered: [ordered!(0, [
+            "This is a filler sentence.",
+            "Will this sentence be duplicated",
+            "ADDED STUFF",
+            "?"
+        ])],
     ),
     case!(
         tdf155229_row_height_at_least,
@@ -1955,12 +1948,6 @@ const CASES: &[DocxCase] = &[
         contains: [pt!(0, "Here should be tab before")],
     ),
     case!(
-        first_page_footer_enabled,
-        source: "../core/sw/qa/core/header_footer/HeaderFooterTest.cxx:testFirstPageFooterEnabled",
-        file: "TestFirstFooterDisabled.docx",
-        contains: [pt!(0, "URGENT 1")],
-    ),
-    case!(
         textbox_right_edge,
         source: "../core/sw/qa/extras/ooxmlexport/ooxmlexport.cxx:testTextboxRightEdge",
         file: "textbox-right-edge.docx",
@@ -2086,11 +2073,5 @@ fn run_case(case: &DocxCase) {
     }
     for expected in case.path_width_counts {
         assert_path_width_count(&document, expected.width, expected.count, 0.75);
-    }
-    for expected in case.underlined_text {
-        assert_text_underline(&document, expected);
-    }
-    for expected in case.strikethrough_text {
-        assert_text_strikethrough(&document, expected);
     }
 }

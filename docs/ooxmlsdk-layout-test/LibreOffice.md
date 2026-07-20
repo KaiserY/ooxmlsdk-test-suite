@@ -4,10 +4,17 @@ This document is the migration index for LibreOffice layout coverage.
 Use it as the checklist for translating layout assertions into
 `ooxmlsdk-layout` and this test-suite.
 
-The source of truth is the local LibreOffice checkout at `../core`. Existing
-`ooxmlsdk-pdf-test` coverage is migration evidence, not the authority: when the
-PDF matrix and LibreOffice source disagree, keep the LibreOffice source
-semantics and adjust the layout test plan.
+Visible and fixed-output assertions use this evidence order:
+
+1. Office golden PDFs produced by the documented corpus conversion profile.
+2. ECMA-376 and Microsoft Office implementation notes in `references/`.
+3. The local LibreOffice checkout at `../core` as supplemental implementation
+   evidence.
+
+LibreOffice view-mode assertions do not override Office fixed-output behavior.
+When neither golden output nor the specifications support an assertion, remove
+or rework it instead of treating the LibreOffice test name as sufficient
+evidence.
 
 ## Goal
 
@@ -148,7 +155,7 @@ High-value first-batch groups:
 | table borders | `border-collapse-compat.docx`, `double-border-*.docx`, `inner-border.docx`, `vmerge-cell-border.docx` | path/line count, stroke geometry, table fragments |
 | endnotes/footnotes | `inline-endnote-position.docx`, `endnote-cont-separator.docx` | note frame position and separator path |
 | floating tables | `floattable*.docx` | frame kind, follow/split, row/cell fragments, page/column indexes |
-| redline layout output | `redline*.docx` | visible/deleted/inserted text and decoration path output in default render mode |
+| redline layout output | `redline*.docx` | Office fixed-output final view by default; visible deleted text and review decorations require an explicit all-markup layout mode |
 
 ### Writer Extras Layout
 
@@ -367,7 +374,7 @@ Rules:
 
 Current migrated mapped coverage:
 
-- DOCX: 265 active mapped layout cases plus 5 focused DOCX layout tests.
+- DOCX: 264 active mapped layout cases plus 5 focused DOCX layout tests.
 - PPTX: 135 active mapped layout cases plus 17 focused PPTX debug metadata
   tests.
 - XLSX: 187 active mapped layout cases.

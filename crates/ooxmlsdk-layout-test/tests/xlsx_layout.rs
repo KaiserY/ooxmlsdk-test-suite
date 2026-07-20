@@ -232,7 +232,7 @@ const CASES: &[XlsxCase] = &[
         file: "sc/qa/unit/data/xlsx/seconds-without-truncate-and-decimals.xlsx",
         pages: 1,
         contains: [pt!(0, "271433.61")],
-        page_sizes: [size!(0, 612.0, 792.0)],
+        page_sizes: [size!(0, 595.28, 841.89)],
     ),
     case!(
         embedded_text_in_decimal,
@@ -309,7 +309,7 @@ const CASES: &[XlsxCase] = &[
         file: "sc/qa/unit/data/xlsx/preserve-whitespace.xlsx",
         pages: 1,
         contains: [pt!(0, "abc")],
-        page_sizes: [size!(0, 612.0, 792.0)],
+        page_sizes: [size!(0, 595.28, 841.89)],
     ),
     case!(
         preserve_space,
@@ -317,7 +317,7 @@ const CASES: &[XlsxCase] = &[
         file: "sc/qa/unit/data/xlsx/preserve_space.xlsx",
         pages: 1,
         contains: [pt!(0, "abc 123456 456")],
-        page_sizes: [size!(0, 612.0, 792.0)],
+        page_sizes: [size!(0, 595.28, 841.89)],
     ),
     case!(
         escape_unicode,
@@ -345,7 +345,7 @@ const CASES: &[XlsxCase] = &[
         file: "sc/qa/unit/data/xlsx/check-boolean.xlsx",
         pages: 1,
         occurrences: [count!(0, "TRUE", 2)],
-        page_sizes: [size!(0, 612.0, 792.0)],
+        page_sizes: [size!(0, 595.28, 841.89)],
     ),
     case!(
         cell_value,
@@ -388,7 +388,7 @@ const CASES: &[XlsxCase] = &[
         file: "sc/qa/unit/data/xlsx/strike-through.xlsx",
         pages: 1,
         contains: [pt!(0, "this is strike through this not")],
-        page_sizes: [size!(0, 612.0, 792.0)],
+        page_sizes: [size!(0, 595.28, 841.89)],
     ),
     case!(
         hidden_sheets,
@@ -397,7 +397,7 @@ const CASES: &[XlsxCase] = &[
         pages: 1,
         contains: [pt!(0, "Sheet2")],
         not_contains: [pt!(0, "Sheet1")],
-        page_sizes: [size!(0, 612.0, 792.0)],
+        page_sizes: [size!(0, 595.28, 841.89)],
     ),
     case!(
         tdf121715_header_footer,
@@ -417,7 +417,7 @@ const CASES: &[XlsxCase] = &[
         file: "sc/qa/unit/data/xlsx/tdf134459_HeaderFooterColor.xlsx",
         pages: 1,
         occurrences: [count!(0, "l c r", 2)],
-        page_sizes: [size!(0, 612.0, 792.0)],
+        page_sizes: [size!(0, 595.28, 841.89)],
     ),
     case!(
         tdf134817_header_footer_sections,
@@ -425,7 +425,7 @@ const CASES: &[XlsxCase] = &[
         file: "sc/qa/unit/data/xlsx/tdf134817_HeaderFooterTextWith2Section.xlsx",
         pages: 1,
         contains: [pt!(0, "aaa bbb"), pt!(0, "cambdant")],
-        page_sizes: [size!(0, 612.0, 792.0)],
+        page_sizes: [size!(0, 595.28, 841.89)],
     ),
     case!(
         writing_mode,
@@ -474,7 +474,7 @@ const CASES: &[XlsxCase] = &[
         file: "sc/qa/unit/data/xlsx/totalsRowFunction.xlsx",
         pages: 1,
         contains: [pt!(0, "PRESENT PLANNER"), pt!(0, "Total £350.00")],
-        page_sizes: [size!(0, 792.0, 612.0)],
+        page_sizes: [size!(0, 841.89, 595.28)],
     ),
     case!(
         totals_row_shown,
@@ -591,7 +591,7 @@ const CASES: &[XlsxCase] = &[
         file: "sc/qa/unit/data/xlsx/tdf153767.xlsx",
         pages: 2,
         contains: [pt!(0, "Contact Name Address City Postal Code Country"), pt!(1, "TRUE"), pt!(1, "FALSE")],
-        page_sizes: [size!(0, 612.0, 792.0)],
+        page_sizes: [size!(0, 595.28, 841.89)],
     ),
     case!(
         tdf161301,
@@ -812,7 +812,7 @@ const CASES: &[XlsxCase] = &[
         book1_custom,
         source: "../core/sc/qa/unit/subsequent_export_test6.cxx:testTableStyleCustomRoundtripXLSX",
         file: "sc/qa/unit/data/xlsx/Book1_custom.xlsx",
-        pages: 1,
+        pages: 2,
         contains: [pt!(0, "Names Numbers Dates Age"), pt!(0, "Summary 382")],
     ),
     case!(
