@@ -1,8 +1,10 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use emfsdk::emfplus::{EmfPlusRecord, EmfPlusRecordData};
-use emfsdk::{EmfRecord, EmfRecordData, EmrComment, Metafile, WmfRecord, WmfRecordData};
+use emfsdk::emfplus::{EmfPlusRecord, EmfPlusRecordData, EmfPlusStreamRef};
+use emfsdk::{
+    EmfRecord, EmfRecordData, EmrComment, Metafile, MetafileRef, WmfRecord, WmfRecordData,
+};
 use walkdir::WalkDir;
 
 pub fn workspace_dir() -> PathBuf {
@@ -71,7 +73,14 @@ pub fn roundtrip_metafile(path: &Path) -> Result<RoundtripReport, String> {
 }
 
 pub fn roundtrip_metafile_bytes(bytes: &[u8]) -> Result<RoundtripReport, String> {
+    let borrowed =
+        MetafileRef::from_bytes(bytes).map_err(|err| format!("borrowed parse: {err}"))?;
+    validate_borrowed_records(&borrowed, bytes)?;
+    let borrowed_owned = borrowed.into_owned();
     let metafile = Metafile::from_bytes(bytes).map_err(|err| format!("parse: {err}"))?;
+    if borrowed_owned != metafile {
+        return Err("borrowed and owned parsing differ".to_string());
+    }
     let mut report = RoundtripReport {
         compatibility_diagnostics: metafile.compatibility_diagnostics().len(),
         ..RoundtripReport::default()
@@ -90,8 +99,8 @@ pub fn roundtrip_metafile_bytes(bytes: &[u8]) -> Result<RoundtripReport, String>
                                     Ok(EmfPlusRecordData::Unknown(_)) => {
                                         report.unknown_emf_plus_records += 1;
                                     }
-                                    Ok(data) => {
-                                        if !emf_plus_record_roundtrips(record, &data) {
+                                    Ok(_) => {
+                                        if !emf_plus_record_roundtrips(record) {
                                             report.compatible_emf_plus_records += 1;
                                         }
                                     }
@@ -99,7 +108,7 @@ pub fn roundtrip_metafile_bytes(bytes: &[u8]) -> Result<RoundtripReport, String>
                                 }
                             }
                         }
-                        if !emf_record_roundtrips(record, &data) {
+                        if !emf_record_roundtrips(record) {
                             report.compatible_emf_records += 1;
                         }
                     }
@@ -112,8 +121,8 @@ pub fn roundtrip_metafile_bytes(bytes: &[u8]) -> Result<RoundtripReport, String>
             for record in &value.records {
                 match record.parse_data() {
                     Ok(WmfRecordData::Unknown(_)) => report.unknown_wmf_records += 1,
-                    Ok(data) => {
-                        if !wmf_record_roundtrips(record, &data) {
+                    Ok(_) => {
+                        if !wmf_record_roundtrips(record) {
                             report.compatible_wmf_records += 1;
                         }
                     }
@@ -134,19 +143,74 @@ pub fn roundtrip_metafile_bytes(bytes: &[u8]) -> Result<RoundtripReport, String>
     }
 }
 
-fn emf_record_roundtrips(record: &EmfRecord, data: &EmfRecordData<'_>) -> bool {
-    data.to_record().is_ok_and(|rebuilt| rebuilt == *record)
+fn validate_borrowed_records(view: &MetafileRef<'_>, input: &[u8]) -> Result<(), String> {
+    match view {
+        MetafileRef::Emf(value) => {
+            if value.records().len() != value.record_count() {
+                return Err("borrowed EMF record count differs from iterator length".to_string());
+            }
+            for record in value.records() {
+                ensure_slice_belongs_to_input(record.data, input, "EMF record")?;
+                let Some(payload) = record.emf_plus_payload() else {
+                    continue;
+                };
+                let Ok(stream) = EmfPlusStreamRef::from_bytes(payload) else {
+                    continue;
+                };
+                if stream.records().len() != stream.record_count() {
+                    return Err(
+                        "borrowed EMF+ record count differs from iterator length".to_string()
+                    );
+                }
+                ensure_slice_belongs_to_input(stream.trailing_data(), input, "EMF+ trailing data")?;
+                for nested_record in stream.records() {
+                    ensure_slice_belongs_to_input(nested_record.data, input, "EMF+ record")?;
+                    ensure_slice_belongs_to_input(nested_record.padding, input, "EMF+ padding")?;
+                }
+            }
+        }
+        MetafileRef::Wmf(value) => {
+            if value.records().len() != value.record_count() {
+                return Err("borrowed WMF record count differs from iterator length".to_string());
+            }
+            for record in value.records() {
+                ensure_slice_belongs_to_input(record.data, input, "WMF record")?;
+            }
+        }
+    }
+    Ok(())
 }
 
-fn emf_plus_record_roundtrips(record: &EmfPlusRecord, data: &EmfPlusRecordData<'_>) -> bool {
-    EmfPlusRecord::from_data(data, record.flags()).is_ok_and(|mut rebuilt| {
-        rebuilt.padding.clone_from(&record.padding);
-        rebuilt == *record
-    })
+fn ensure_slice_belongs_to_input(data: &[u8], input: &[u8], name: &str) -> Result<(), String> {
+    let input_start = input.as_ptr() as usize;
+    let input_end = input_start
+        .checked_add(input.len())
+        .ok_or_else(|| format!("{name} input address range overflows"))?;
+    let data_start = data.as_ptr() as usize;
+    let data_end = data_start
+        .checked_add(data.len())
+        .ok_or_else(|| format!("{name} address range overflows"))?;
+    if data_start < input_start || data_end > input_end {
+        return Err(format!("{name} data is not borrowed from the input"));
+    }
+    Ok(())
 }
 
-fn wmf_record_roundtrips(record: &WmfRecord, data: &WmfRecordData<'_>) -> bool {
-    data.to_record_with_function(record.function)
+fn emf_record_roundtrips(record: &EmfRecord) -> bool {
+    record
+        .rebuild_typed()
+        .is_ok_and(|rebuilt| rebuilt == *record)
+}
+
+fn emf_plus_record_roundtrips(record: &EmfPlusRecord) -> bool {
+    record
+        .rebuild_typed()
+        .is_ok_and(|rebuilt| rebuilt == *record)
+}
+
+fn wmf_record_roundtrips(record: &WmfRecord) -> bool {
+    record
+        .rebuild_typed()
         .is_ok_and(|rebuilt| rebuilt == *record)
 }
 

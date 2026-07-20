@@ -60,38 +60,27 @@ fn main() {
                                                 nested_record.record_kind()
                                             ),
                                         ),
-                                        Ok(data) => {
-                                            match emfsdk::emfplus::EmfPlusRecord::from_data(
-                                                &data,
-                                                nested_record.flags(),
-                                            ) {
-                                                Ok(mut rebuilt) => {
-                                                    rebuilt
-                                                        .padding
-                                                        .clone_from(&nested_record.padding);
-                                                    if rebuilt != *nested_record {
-                                                        increment(
-                                                            &mut failures,
-                                                            &record_sample,
-                                                            format!(
-                                                                "EMF+ {:#06X} {:?}: typed rebuild differs",
-                                                                nested_record.record_type,
-                                                                nested_record.record_kind()
-                                                            ),
-                                                        );
-                                                    }
-                                                }
-                                                Err(error) => increment(
-                                                    &mut failures,
-                                                    &record_sample,
-                                                    format!(
-                                                        "EMF+ {:#06X} {:?}: typed write: {error}",
-                                                        nested_record.record_type,
-                                                        nested_record.record_kind()
-                                                    ),
+                                        Ok(_) => match nested_record.rebuild_typed() {
+                                            Ok(rebuilt) if rebuilt == *nested_record => {}
+                                            Ok(_) => increment(
+                                                &mut failures,
+                                                &record_sample,
+                                                format!(
+                                                    "EMF+ {:#06X} {:?}: typed rebuild differs",
+                                                    nested_record.record_type,
+                                                    nested_record.record_kind()
                                                 ),
-                                            }
-                                        }
+                                            ),
+                                            Err(error) => increment(
+                                                &mut failures,
+                                                &record_sample,
+                                                format!(
+                                                    "EMF+ {:#06X} {:?}: typed write: {error}",
+                                                    nested_record.record_type,
+                                                    nested_record.record_kind()
+                                                ),
+                                            ),
+                                        },
                                         Err(error) => increment(
                                             &mut failures,
                                             &record_sample,
@@ -105,7 +94,7 @@ fn main() {
                                     }
                                 }
                             }
-                            match data.to_record() {
+                            match record.rebuild_typed() {
                                 Ok(rebuilt) if rebuilt == record => {}
                                 Ok(_) => increment(
                                     &mut failures,
@@ -156,7 +145,7 @@ fn main() {
                                 record.normalized_function_kind()
                             ),
                         ),
-                        Ok(data) => match data.to_record_with_function(record.function) {
+                        Ok(_) => match record.rebuild_typed() {
                             Ok(rebuilt) if rebuilt == record => {}
                             Ok(_) => increment(
                                 &mut failures,
