@@ -14,7 +14,7 @@ This document tracks migration of Open XML SDK-derived `ooxmlsdk-test` coverage 
 | Former in-repo Open-XML-SDK package fixtures | 67 | `test-data/ooxmlsdk-test/Open-XML-SDK`; all 67 basenames are present in the test-suite corpus. |
 | Migrated `ooxmlsdk-test` crate source/test files | 13 | Former focused test crate source and test files plus `tests/open_xml_sdk_fixtures.rs`; XML samples now live under `fixtures/Open-XML-SDK`. Synthetic fixture generator, smoke round-trip scan, and migrated bench target were intentionally dropped. |
 | Former project-owned misc fixtures retained | 0 | Former `test-data/ooxmlsdk-test/misc` fixtures were not retained: they are not Open-XML-SDK upstream fixtures, six were unused after migration, and `Products.xlsx` only backed a local validator smoke that is superseded by upstream spreadsheet fixtures. Synthetic `specs` fixtures were also not retained. |
-| Last recorded corpus run | 884 passed / 0 failed | See `docs/round-trip/Open-XML-SDK.md`; 874 round-trip candidates, 6 open-only, 4 invalid. |
+| Last recorded corpus run | 886 passed / 0 failed | See `docs/round-trip/Open-XML-SDK.md`; 877 round-trip candidates, 6 open-only, 3 invalid. |
 
 ## Current Migration State
 
@@ -128,7 +128,7 @@ Verified lanes after migration:
 
 | Bucket | Current home | Migration state |
 | --- | --- | --- |
-| Package corpus fixtures from Open XML SDK assets | `../ooxmlsdk-test-suite/corpus/Open-XML-SDK` | Migrated for corpus-scale round-trip coverage; the former 67 in-repo package fixture basenames are present in the 884-file corpus. |
+| Package corpus fixtures from Open XML SDK assets | `../ooxmlsdk-test-suite/corpus/Open-XML-SDK` | Migrated for corpus-scale round-trip coverage; the former 67 in-repo package fixture basenames are present in the 886-file corpus. |
 | XML fixtures from Open XML SDK assets | `../ooxmlsdk-test-suite/fixtures/Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles` | Migrated for focused tests that need raw XML/Flat OPC assets: `DocProperties.xml`, `Document.xml`, `HelloWorldFlatOpc.xml`, plus extracted package-part XML under `extracted-xml/`. |
 | XML snippets from Open XML SDK tests | `../ooxmlsdk-test-suite/fixtures/Open-XML-SDK/test/DocumentFormat.OpenXml.Tests/snippets` | Migrated upstream-authored literal XML snippets used by focused schema/simple-type tests. These are not package assets, but they are upstream test inputs rather than local synthetic fixtures. |
 | Focused Rust public API assertions | `../ooxmlsdk-test-suite/crates/ooxmlsdk-test/tests/*.rs` | Migrated from the former in-repository crate; add new Open XML SDK, LibreOffice, and POI focused assertions here unless the assertion is corpus-scale package round-trip behavior. |

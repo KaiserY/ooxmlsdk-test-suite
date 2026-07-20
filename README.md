@@ -6,9 +6,12 @@ Index of round-trip corpus coverage.
 
 | Corpus | Files | Round-trip candidates | Open-only | Invalid | Result | Details |
 | --- | ---: | ---: | ---: | ---: | --- | --- |
-| Apache POI | 677 | 601 | 12 | 64 | 677 passed / 0 failed | [Apache POI](docs/round-trip/Apache-POI.md) |
-| LibreOffice | 3368 | 3335 | 7 | 26 | 3368 passed / 0 failed | [LibreOffice](docs/round-trip/LibreOffice.md) |
-| Open-XML-SDK | 884 | 875 | 6 | 3 | 884 passed / 0 failed | [Open-XML-SDK](docs/round-trip/Open-XML-SDK.md) |
+| Apache POI | 682 | 606 | 12 | 64 | 682 passed / 0 failed | [Apache POI](docs/round-trip/Apache-POI.md) |
+| LibreOffice | 3388 | 3355 | 7 | 26 | 3388 passed / 0 failed | [LibreOffice](docs/round-trip/LibreOffice.md) |
+| Open-XML-SDK | 886 | 877 | 6 | 3 | 886 passed / 0 failed | [Open-XML-SDK](docs/round-trip/Open-XML-SDK.md) |
+| Pandoc | 235 | 234 | 1 | 0 | 235 passed / 0 failed | [Pandoc](docs/round-trip/Pandoc.md) |
+| ClosedXML | 286 | 284 | 0 | 2 | 286 passed / 0 failed | [ClosedXML](docs/round-trip/ClosedXML.md) |
+| **Total** | **5477** | **5356** | **26** | **95** | **5477 passed / 0 failed** | |
 
 ## CFB Round-Trip
 

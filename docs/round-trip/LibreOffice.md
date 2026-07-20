@@ -12,7 +12,7 @@
 
 | Total files | Round-trip candidates | Open-only | Invalid | Known failures | Last run | Passed | Failed |
 | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: |
-| 3368 | 3335 | 7 | 26 | 0 | 2026-07-16 | 3368 | 0 |
+| 3388 | 3355 | 7 | 26 | 0 | 2026-07-20 | 3388 | 0 |
 
 The imported corpus preserves LibreOffice core-relative paths for supported
 Office package fixtures only.
@@ -21,13 +21,13 @@ Extension distribution:
 
 | Extension | Files |
 | --- | ---: |
-| `docx` | 2239 |
+| `docx` | 2249 |
 | `docm` | 16 |
 | `dotx` | 4 |
 | `dotm` | 1 |
-| `xlsx` | 540 |
+| `xlsx` | 547 |
 | `xlsm` | 14 |
-| `pptx` | 549 |
+| `pptx` | 552 |
 | `pptm` | 1 |
 | `potx` | 4 |
 
@@ -40,7 +40,7 @@ cargo test -p ooxmlsdk-roundtrip-tests --test libreoffice_roundtrip -- --ignored
 ## Last Run
 
 ```text
-test result: ok. 3368 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 27.23s
+test result: ok. 3388 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 33.34s
 ```
 
 Current failures: none.
