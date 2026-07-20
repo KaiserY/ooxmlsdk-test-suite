@@ -243,7 +243,7 @@ fn mapped_xlsx_misc_row_heights_keep_visible_height_labels() {
 fn mapped_xlsx_seconds_without_truncate_keeps_decimal_seconds_display() {
     let summary = render_summary("seconds-without-truncate-and-decimals.xlsx");
     assert_eq!(summary.page_count, 1);
-    assert_media_box(&summary, 0, 612.0, 792.0);
+    assert_media_box(&summary, 0, 595.28, 841.89);
     assert_page_contains(&summary, 0, "271433.61");
 }
 
@@ -343,7 +343,7 @@ fn mapped_xlsx_image_hyperlink_does_not_emit_unrelated_cell_text() {
 fn mapped_xlsx_preserve_whitespace_keeps_visible_text() {
     let summary = render_summary("preserve-whitespace.xlsx");
     assert_eq!(summary.page_count, 1);
-    assert_media_box(&summary, 0, 612.0, 792.0);
+    assert_media_box(&summary, 0, 595.28, 841.89);
     assert_page_contains(&summary, 0, "abc");
 }
 
@@ -352,7 +352,7 @@ fn mapped_xlsx_preserve_whitespace_keeps_visible_text() {
 fn mapped_xlsx_preserve_space_keeps_single_line_with_inner_spaces() {
     let summary = render_summary("preserve_space.xlsx");
     assert_eq!(summary.page_count, 1);
-    assert_media_box(&summary, 0, 612.0, 792.0);
+    assert_media_box(&summary, 0, 595.28, 841.89);
     assert_page_contains(&summary, 0, "abc 123456 456");
 }
 
@@ -382,7 +382,8 @@ fn mapped_xlsx_cell_multi_line_keeps_single_and_multi_paragraph_cells() {
 fn mapped_xlsx_check_boolean_renders_boolean_values() {
     let summary = render_summary("check-boolean.xlsx");
     assert_eq!(summary.page_count, 1);
-    assert_media_box(&summary, 0, 612.0, 792.0);
+    // Office 365 fixed output uses the workbook's A4 page setup.
+    assert_media_box(&summary, 0, 595.28, 841.89);
     assert_page_text_occurrences(&summary, 0, "TRUE", 2);
 }
 
@@ -432,7 +433,7 @@ fn mapped_xlsx_underline_color_keeps_two_textbox_labels_visible() {
 fn mapped_xlsx_strike_through_keeps_rich_text_content_visible() {
     let summary = render_summary("strike-through.xlsx");
     assert_eq!(summary.page_count, 1);
-    assert_media_box(&summary, 0, 612.0, 792.0);
+    assert_media_box(&summary, 0, 595.28, 841.89);
     assert_page_contains(&summary, 0, "this is strike through this not");
 }
 
@@ -441,7 +442,7 @@ fn mapped_xlsx_strike_through_keeps_rich_text_content_visible() {
 fn mapped_xlsx_hidden_sheets_prints_only_visible_sheet() {
     let summary = render_summary("hidden_sheets.xlsx");
     assert_eq!(summary.page_count, 1);
-    assert_media_box(&summary, 0, 612.0, 792.0);
+    assert_media_box(&summary, 0, 595.28, 841.89);
     assert_page_contains(&summary, 0, "Sheet2");
     assert_page_not_contains(&summary, 0, "Sheet1");
 }
@@ -469,7 +470,7 @@ fn mapped_xlsx_tdf121715_keeps_first_and_even_page_headers_footers() {
 fn mapped_xlsx_tdf134459_keeps_colored_header_footer_text() {
     let summary = render_summary("tdf134459_HeaderFooterColor.xlsx");
     assert_eq!(summary.page_count, 1);
-    assert_media_box(&summary, 0, 612.0, 792.0);
+    assert_media_box(&summary, 0, 595.28, 841.89);
     assert_page_text_occurrences(&summary, 0, "l c r", 2);
 }
 
@@ -478,9 +479,11 @@ fn mapped_xlsx_tdf134459_keeps_colored_header_footer_text() {
 fn mapped_xlsx_tdf134817_keeps_multi_section_header_footer_text() {
     let summary = render_summary("tdf134817_HeaderFooterTextWith2Section.xlsx");
     assert_eq!(summary.page_count, 1);
-    assert_media_box(&summary, 0, 612.0, 792.0);
+    assert_media_box(&summary, 0, 595.28, 841.89);
     assert_page_contains(&summary, 0, "aaa bbb");
-    assert_page_contains(&summary, 0, "cambdant");
+    // Office writes the center and right header sections as separate PDF text runs.
+    assert_page_contains(&summary, 0, "camb");
+    assert_page_contains(&summary, 0, "dant");
 }
 
 #[test]
@@ -543,7 +546,7 @@ fn mapped_xlsx_table_style_keeps_visible_table_and_totals_row() {
 fn mapped_xlsx_totals_row_function_keeps_sum_total_visible() {
     let summary = render_summary("totalsRowFunction.xlsx");
     assert_eq!(summary.page_count, 1);
-    assert_media_box(&summary, 0, 792.0, 612.0);
+    assert_media_box(&summary, 0, 841.89, 595.28);
     assert_page_contains(&summary, 0, "PRESENT PLANNER");
     assert_page_contains(&summary, 0, "Total £350.00");
 }
@@ -699,7 +702,7 @@ fn mapped_xlsx_radio_buttons_keep_grouped_button_labels_visible() {
 fn mapped_xlsx_tdf153767_keeps_boolean_strings_visible() {
     let summary = render_summary("tdf153767.xlsx");
     assert_eq!(summary.page_count, 2);
-    assert_media_box(&summary, 0, 612.0, 792.0);
+    assert_media_box(&summary, 0, 595.28, 841.89);
     assert_page_contains(&summary, 0, "Contact Name Address City Postal Code Country");
     assert_page_contains(&summary, 1, "TRUE");
     assert_page_contains(&summary, 1, "FALSE");
@@ -841,7 +844,7 @@ fn mapped_xlsx_tdf126858_keeps_single_calculated_pivot_fixture_visible() {
     assert_eq!(summary.page_count, 2);
     // The source table header wraps before "empty"; PDFium reports that wrap
     // as a separate text segment.
-    assert_page_contains(&summary, 0, "товар ( empty)");
+    assert_page_contains(&summary, 0, "товар (empty)");
     assert_page_contains(&summary, 0, "апельсин банан вишня Total Result");
     // Source test checks the single calculated pivot values.  The source table
     // header remains visible, but its last fields may wrap/extract separately.
@@ -1026,7 +1029,7 @@ fn mapped_xlsx_pivot_cached_definition_without_cache_data_keeps_visible_pivot_va
 // Source: ../core/sc/qa/unit/subsequent_export_test6.cxx:testTableStyleCustomRoundtripXLSX
 fn mapped_xlsx_book1_custom_keeps_custom_table_data_and_summary_visible() {
     let summary = render_summary("Book1_custom.xlsx");
-    assert_eq!(summary.page_count, 1);
+    assert_eq!(summary.page_count, 2);
     assert_page_contains(&summary, 0, "Names Numbers Dates Age");
     assert_page_contains(&summary, 0, "Summary 382");
 }
@@ -1212,7 +1215,8 @@ fn mapped_xlsx_tdf131424_keeps_structured_reference_sums_visible() {
 fn mapped_xlsx_tdf122336_keeps_imported_date_and_job_fields_visible() {
     let summary = render_summary("tdf122336.xlsx");
     assert_eq!(summary.page_count, 9);
-    assert_page_contains(&summary, 0, "UitvoeringsdatumStarttijd");
+    assert_page_contains(&summary, 0, "Uitvoeringsdatum");
+    assert_page_contains(&summary, 0, "Starttijd");
     assert_page_contains(&summary, 0, "12/25/2018 11:30");
     assert_page_contains(&summary, 2, "Van Rompaey Marcus");
 }

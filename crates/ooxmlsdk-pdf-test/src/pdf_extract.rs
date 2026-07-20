@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use std::io::Read;
 use std::process::Command;
 use std::sync::{Mutex, OnceLock};
@@ -7,6 +8,7 @@ use flate2::read::ZlibDecoder;
 use image::GenericImageView;
 use lopdf::{Document as LopdfDocument, Object as LopdfObject};
 use pdfium_render::prelude::*;
+use serde::Serialize;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PdfSummary {
@@ -31,6 +33,42 @@ pub struct PdfSummary {
     pub raw_pages: Vec<RawPageSummary>,
     pub page_objects: Vec<PageObjectSummary>,
     pub content: ContentSummary,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct PdfFontStructureSummary {
+    pub pages: Vec<PdfPageFontStructure>,
+    pub actual_text_span_count: usize,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct PdfPageFontStructure {
+    pub page_index: usize,
+    pub fonts: Vec<PdfFontResourceSummary>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct PdfFontResourceSummary {
+    pub resource_path: String,
+    pub subtype: Option<String>,
+    pub base_font: Option<String>,
+    pub encoding: Option<String>,
+    pub descendant_subtype: Option<String>,
+    pub descendant_base_font: Option<String>,
+    pub first_char: Option<i64>,
+    pub last_char: Option<i64>,
+    pub simple_width_count: Option<usize>,
+    pub cid_width_entry_count: Option<usize>,
+    pub descriptor_flags: Option<i64>,
+    pub font_bounds: Option<String>,
+    pub ascent: Option<String>,
+    pub descent: Option<String>,
+    pub cap_height: Option<String>,
+    pub italic_angle: Option<String>,
+    pub embedded_font_kind: Option<String>,
+    pub has_to_unicode: bool,
+    pub to_unicode_mapping_count: Option<usize>,
+    pub to_unicode_error: Option<String>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -140,6 +178,7 @@ pub struct TextSegmentSummary {
 pub struct TextCharSummary {
     pub page_index: usize,
     pub text: String,
+    pub font_name: String,
     pub bounds: String,
     pub origin_x: String,
     pub origin_y: String,
@@ -292,11 +331,19 @@ impl RenderedPageImage {
 
 impl PdfSummary {
     pub fn from_bytes(pdf: &[u8]) -> Result<Self, String> {
+        Self::from_bytes_inner(pdf, true)
+    }
+
+    pub(crate) fn from_bytes_for_golden(pdf: &[u8]) -> Result<Self, String> {
+        Self::from_bytes_inner(pdf, false)
+    }
+
+    fn from_bytes_inner(pdf: &[u8], run_pdftotext: bool) -> Result<Self, String> {
         let text = String::from_utf8_lossy(pdf);
         let streams = pdf_streams(pdf);
         let pdfium_summary = pdfium_summary(pdf)?;
         let raw_summary = raw_pdf_summary(pdf)?;
-        let pdftotext = pdftotext(pdf);
+        let pdftotext = run_pdftotext.then(|| pdftotext(pdf));
         Ok(Self {
             page_count: pdfium_summary.page_count,
             image_count: pdfium_summary.images.len(),
@@ -307,8 +354,8 @@ impl PdfSummary {
             media_box_count: pdfium_summary.media_boxes.len(),
             contains_eof: pdf.strip_suffix_ascii_whitespace().ends_with(b"%%EOF"),
             media_boxes: pdfium_summary.media_boxes,
-            text: pdftotext.clone().ok(),
-            text_error: pdftotext.err(),
+            text: pdftotext.as_ref().and_then(|result| result.clone().ok()),
+            text_error: pdftotext.and_then(Result::err),
             text_segments: pdfium_summary.text_segments,
             text_chars: pdfium_summary.text_chars,
             text_objects: pdfium_summary.text_objects,
@@ -373,6 +420,284 @@ pub(crate) fn pdf_page_dimensions(pdf: &[u8]) -> Result<Vec<(f32, f32)>, String>
             Ok((width, height))
         })
         .collect()
+}
+
+pub fn pdf_font_structure(pdf: &[u8]) -> Result<PdfFontStructureSummary, String> {
+    // Krilla's text snapshots assert the PDF font dictionary, descendant
+    // font, descriptor, widths, embedding stream, and ToUnicode separately
+    // from raster output. Keep the broad Office harness bounded by recording
+    // the same structural facts as summaries rather than copying font streams.
+    let document = LopdfDocument::load_mem(pdf)
+        .map_err(|error| format!("lopdf could not load PDF bytes: {error}"))?;
+    let mut pages = Vec::new();
+    for (page_number, page_id) in document.get_pages() {
+        let page_index = page_number as usize - 1;
+        let page = document
+            .get_dictionary(page_id)
+            .map_err(|error| format!("lopdf could not read page {page_index}: {error}"))?;
+        let resources = match inherited_page_dictionary_value(&document, page, b"Resources") {
+            Ok(Some(resources)) => {
+                lopdf_dictionary_owned(&document, resources, "page font Resources")?
+            }
+            Ok(None) | Err(lopdf::Error::DictKey(_)) => lopdf::Dictionary::new(),
+            Err(error) => {
+                return Err(format!(
+                    "lopdf could not read page {page_index} font Resources: {error}"
+                ));
+            }
+        };
+        let mut fonts = Vec::new();
+        let mut visited_forms = BTreeSet::new();
+        collect_resource_fonts(
+            &document,
+            "page",
+            &resources,
+            &mut visited_forms,
+            &mut fonts,
+        )?;
+        fonts.sort_by(|left, right| left.resource_path.cmp(&right.resource_path));
+        pages.push(PdfPageFontStructure { page_index, fonts });
+    }
+    pages.sort_by_key(|page| page.page_index);
+    let actual_text_span_count = actual_text_span_count(&document);
+    Ok(PdfFontStructureSummary {
+        pages,
+        actual_text_span_count,
+    })
+}
+
+fn actual_text_span_count(document: &LopdfDocument) -> usize {
+    document
+        .objects
+        .values()
+        .filter_map(|object| object.as_stream().ok())
+        .filter_map(|stream| stream.get_plain_content().ok())
+        .map(|content| {
+            content
+                .windows(b"/ActualText".len())
+                .filter(|window| *window == b"/ActualText")
+                .count()
+        })
+        .sum()
+}
+
+fn collect_resource_fonts(
+    document: &LopdfDocument,
+    prefix: &str,
+    resources: &lopdf::Dictionary,
+    visited_forms: &mut BTreeSet<lopdf::ObjectId>,
+    fonts: &mut Vec<PdfFontResourceSummary>,
+) -> Result<(), String> {
+    if let Ok(fonts_object) = resources.get(b"Font") {
+        let font_resources = lopdf_dictionary(document, fonts_object, "font resources")?;
+        for (name, font) in font_resources.iter() {
+            let resource_path = format!("{prefix}/{}", String::from_utf8_lossy(name));
+            fonts.push(font_resource_summary(document, resource_path, font)?);
+        }
+    }
+
+    let Ok(xobjects_object) = resources.get(b"XObject") else {
+        return Ok(());
+    };
+    let xobjects = lopdf_dictionary(document, xobjects_object, "font resource XObjects")?;
+    for (name, object) in xobjects.iter() {
+        if let Ok(object_id) = object.as_reference()
+            && !visited_forms.insert(object_id)
+        {
+            continue;
+        }
+        let Ok(stream) = lopdf_stream(document, object, "font resource XObject") else {
+            continue;
+        };
+        if stream
+            .dict
+            .get(b"Subtype")
+            .ok()
+            .and_then(|value| lopdf_name(document, value).ok())
+            .as_deref()
+            != Some("Form")
+        {
+            continue;
+        }
+        let Ok(nested_resources_object) = stream.dict.get(b"Resources") else {
+            continue;
+        };
+        let nested_resources =
+            lopdf_dictionary(document, nested_resources_object, "form font Resources")?;
+        let nested_prefix = format!("{prefix}/{}", String::from_utf8_lossy(name));
+        collect_resource_fonts(
+            document,
+            &nested_prefix,
+            nested_resources,
+            visited_forms,
+            fonts,
+        )?;
+    }
+    Ok(())
+}
+
+fn font_resource_summary(
+    document: &LopdfDocument,
+    resource_path: String,
+    object: &LopdfObject,
+) -> Result<PdfFontResourceSummary, String> {
+    let font = lopdf_dictionary(document, object, "font resource")?;
+    let descendant = font
+        .get(b"DescendantFonts")
+        .ok()
+        .and_then(|value| lopdf_array(document, value, "DescendantFonts").ok())
+        .and_then(|fonts| fonts.first())
+        .and_then(|font| lopdf_dictionary(document, font, "descendant font").ok());
+    let descriptor = descendant
+        .and_then(|font| font.get(b"FontDescriptor").ok())
+        .or_else(|| font.get(b"FontDescriptor").ok())
+        .and_then(|descriptor| lopdf_dictionary(document, descriptor, "font descriptor").ok());
+    let encoding = font.get(b"Encoding").ok().and_then(|encoding| {
+        lopdf_name(document, encoding).ok().or_else(|| {
+            lopdf_dictionary(document, encoding, "font Encoding")
+                .ok()
+                .and_then(|encoding| encoding.get(b"BaseEncoding").ok())
+                .and_then(|base| lopdf_name(document, base).ok())
+        })
+    });
+    let embedded_font_kind = descriptor.and_then(|descriptor| {
+        [b"FontFile".as_slice(), b"FontFile2", b"FontFile3"]
+            .into_iter()
+            .find(|key| descriptor.has(key))
+            .map(|key| String::from_utf8_lossy(key).to_string())
+    });
+    let (has_to_unicode, to_unicode_mapping_count, to_unicode_error) = match font.get(b"ToUnicode")
+    {
+        Ok(object) => match to_unicode_mapping_count(document, object) {
+            Ok(count) => (true, Some(count), None),
+            Err(error) => (true, None, Some(error)),
+        },
+        Err(_) => (false, None, None),
+    };
+    Ok(PdfFontResourceSummary {
+        resource_path,
+        subtype: font
+            .get(b"Subtype")
+            .ok()
+            .and_then(|value| lopdf_name(document, value).ok()),
+        base_font: font
+            .get(b"BaseFont")
+            .ok()
+            .and_then(|value| lopdf_name(document, value).ok())
+            .map(|name| normalize_pdf_font_name(&name)),
+        encoding,
+        descendant_subtype: descendant
+            .and_then(|font| font.get(b"Subtype").ok())
+            .and_then(|value| lopdf_name(document, value).ok()),
+        descendant_base_font: descendant
+            .and_then(|font| font.get(b"BaseFont").ok())
+            .and_then(|value| lopdf_name(document, value).ok())
+            .map(|name| normalize_pdf_font_name(&name)),
+        first_char: font
+            .get(b"FirstChar")
+            .ok()
+            .and_then(|value| lopdf_i64(document, value).ok()),
+        last_char: font
+            .get(b"LastChar")
+            .ok()
+            .and_then(|value| lopdf_i64(document, value).ok()),
+        simple_width_count: font
+            .get(b"Widths")
+            .ok()
+            .and_then(|value| lopdf_array(document, value, "font Widths").ok())
+            .map(Vec::len),
+        cid_width_entry_count: descendant
+            .and_then(|font| font.get(b"W").ok())
+            .and_then(|value| lopdf_array(document, value, "CID font W").ok())
+            .map(Vec::len),
+        descriptor_flags: descriptor
+            .and_then(|descriptor| descriptor.get(b"Flags").ok())
+            .and_then(|value| lopdf_i64(document, value).ok()),
+        font_bounds: descriptor
+            .and_then(|descriptor| descriptor.get(b"FontBBox").ok())
+            .and_then(|value| lopdf_numeric_array(document, value).ok()),
+        ascent: descriptor
+            .and_then(|descriptor| descriptor.get(b"Ascent").ok())
+            .and_then(|value| lopdf_number(document, value).ok()),
+        descent: descriptor
+            .and_then(|descriptor| descriptor.get(b"Descent").ok())
+            .and_then(|value| lopdf_number(document, value).ok()),
+        cap_height: descriptor
+            .and_then(|descriptor| descriptor.get(b"CapHeight").ok())
+            .and_then(|value| lopdf_number(document, value).ok()),
+        italic_angle: descriptor
+            .and_then(|descriptor| descriptor.get(b"ItalicAngle").ok())
+            .and_then(|value| lopdf_number(document, value).ok()),
+        embedded_font_kind,
+        has_to_unicode,
+        to_unicode_mapping_count,
+        to_unicode_error,
+    })
+}
+
+fn to_unicode_mapping_count(
+    document: &LopdfDocument,
+    object: &LopdfObject,
+) -> Result<usize, String> {
+    let stream = lopdf_stream(document, object, "font ToUnicode CMap")?;
+    let bytes = stream
+        .get_plain_content()
+        .map_err(|error| format!("could not decode font ToUnicode CMap: {error}"))?;
+    let cmap = String::from_utf8_lossy(&bytes);
+    for marker in [
+        "begincmap",
+        "endcmap",
+        "begincodespacerange",
+        "endcodespacerange",
+    ] {
+        if !cmap.contains(marker) {
+            return Err(format!("font ToUnicode CMap is missing {marker}"));
+        }
+    }
+    let tokens = cmap.split_ascii_whitespace().collect::<Vec<_>>();
+    let mut mappings = 0usize;
+    for pair in tokens.windows(2) {
+        if matches!(pair[1], "beginbfchar" | "beginbfrange") {
+            let count = pair[0].parse::<usize>().map_err(|error| {
+                format!("invalid ToUnicode mapping count {:?}: {error}", pair[0])
+            })?;
+            mappings = mappings
+                .checked_add(count)
+                .ok_or_else(|| "font ToUnicode mapping count overflow".to_string())?;
+        }
+    }
+    if mappings == 0 {
+        return Err("font ToUnicode CMap has no bfchar or bfrange mappings".to_string());
+    }
+    Ok(mappings)
+}
+
+fn lopdf_i64(document: &LopdfDocument, object: &LopdfObject) -> Result<i64, String> {
+    let (_, object) = document
+        .dereference(object)
+        .map_err(|error| format!("lopdf could not dereference integer: {error}"))?;
+    object
+        .as_i64()
+        .map_err(|error| format!("lopdf expected integer: {error}"))
+}
+
+fn lopdf_number(document: &LopdfDocument, object: &LopdfObject) -> Result<String, String> {
+    let (_, object) = document
+        .dereference(object)
+        .map_err(|error| format!("lopdf could not dereference number: {error}"))?;
+    object
+        .as_float()
+        .map(|value| format!("{value:.4}"))
+        .map_err(|error| format!("lopdf expected number: {error}"))
+}
+
+fn lopdf_numeric_array(document: &LopdfDocument, object: &LopdfObject) -> Result<String, String> {
+    let values = lopdf_array(document, object, "numeric array")?;
+    let values = values
+        .iter()
+        .map(|value| lopdf_number(document, value))
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(format!("[{}]", values.join(" ")))
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -716,6 +1041,7 @@ fn pdfium_summary(pdf: &[u8]) -> Result<PdfiumSummary, String> {
                 text_chars.push(TextCharSummary {
                     page_index,
                     text: value,
+                    font_name: normalize_pdf_font_name(&char.font_name()),
                     bounds: format_rect(bounds, 2),
                     origin_x: format_points(origin_x, 2),
                     origin_y: format_points(origin_y, 2),

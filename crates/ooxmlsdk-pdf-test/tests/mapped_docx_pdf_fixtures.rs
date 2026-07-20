@@ -348,30 +348,6 @@ fn assert_has_text_fill_color(summary: &PdfSummary, color: &str) {
     );
 }
 
-fn assert_text_objects_share_non_black_fill_color(summary: &PdfSummary, texts: &[&str]) {
-    let mut colors = Vec::new();
-    for text in texts {
-        let object = summary
-            .text_objects
-            .iter()
-            .find(|object| normalize_space(&object.text).contains(text))
-            .unwrap_or_else(|| panic!("missing text object containing {text:?}"));
-        let color = object
-            .fill_color
-            .as_deref()
-            .unwrap_or_else(|| panic!("missing fill color for text object {object:?}"));
-        assert_ne!(
-            color, "#000000@ff",
-            "expected redline text {text:?} to use author color; object={object:?}"
-        );
-        colors.push(color);
-    }
-    assert!(
-        colors.windows(2).all(|window| window[0] == window[1]),
-        "expected redline text objects to share author color; colors={colors:?}"
-    );
-}
-
 fn assert_has_path_fill_color(summary: &PdfSummary, color: &str) {
     assert!(
         summary
@@ -1658,53 +1634,6 @@ fn assert_max_horizontal_gap_at_most(summary: &PdfSummary, page_index: usize, ex
     );
 }
 
-fn assert_horizontal_path_decorates_text(
-    summary: &PdfSummary,
-    page_index: usize,
-    text: &str,
-    through_text: bool,
-) {
-    let text_bounds = text_segment_bounds_on_page(summary, page_index, text);
-    let paths = horizontal_path_bounds_on_page(summary, page_index);
-    let matched = paths.iter().any(|path| {
-        let x_overlap = path.left <= text_bounds.right && path.right >= text_bounds.left;
-        let path_center_y = path.bottom + path.height() / 2.0;
-        let y_match = if through_text {
-            path_center_y >= text_bounds.bottom && path_center_y <= text_bounds.top
-        } else {
-            path_center_y <= text_bounds.bottom + 3.0 && path_center_y >= text_bounds.bottom - 10.0
-        };
-        x_overlap && y_match
-    });
-    assert!(
-        matched,
-        "missing horizontal decoration path for text {text:?}; text_bounds={text_bounds:?}; paths={paths:?}"
-    );
-}
-
-fn assert_any_horizontal_path_crosses_any_text(summary: &PdfSummary, page_index: usize) {
-    let paths = horizontal_path_bounds_on_page(summary, page_index);
-    let text_bounds = summary
-        .text_segments
-        .iter()
-        .filter(|segment| segment.page_index == page_index)
-        .filter_map(|segment| parse_pdf_rect(&segment.bounds).ok())
-        .collect::<Vec<_>>();
-    let matched = paths.iter().any(|path| {
-        let path_center_y = path.bottom + path.height() / 2.0;
-        text_bounds.iter().any(|bounds| {
-            path.left <= bounds.right
-                && path.right >= bounds.left
-                && path_center_y >= bounds.bottom
-                && path_center_y <= bounds.top
-        })
-    });
-    assert!(
-        matched,
-        "missing horizontal decoration path crossing text; paths={paths:?}; text_bounds={text_bounds:?}"
-    );
-}
-
 fn assert_text_above_text(
     summary: &PdfSummary,
     page_index: usize,
@@ -2139,14 +2068,16 @@ fn mapped_fixture_tdf128197_preserves_compat15_larger_first_paragraph_height() {
 fn mapped_fixture_tdf149313_preserves_two_pages_and_section_page_sizes() {
     let summary = render_summary("tdf149313.docx");
     assert_eq!(summary.page_count, 2);
+    // Microsoft Office 365 fixed output rounds the section sizes to whole
+    // PDF points; prefer that result over Writer's internal twip geometry.
     assert_media_box_close(
         &summary,
         0,
         PdfBounds {
             left: 0.0,
             bottom: 0.0,
-            right: 249.45,
-            top: 249.45,
+            right: 250.0,
+            top: 250.0,
         },
     );
     assert_media_box_close(
@@ -2156,7 +2087,7 @@ fn mapped_fixture_tdf149313_preserves_two_pages_and_section_page_sizes() {
             left: 0.0,
             bottom: 0.0,
             right: 400.0,
-            top: 249.45,
+            top: 250.0,
         },
     );
 }
@@ -2491,7 +2422,8 @@ fn mapped_fixture_n758883_preserves_numbering_font_height() {
 // Source: ../core/sw/qa/extras/ooxmlexport/ooxmlexport19.cxx:testTdf95377
 fn mapped_fixture_tdf95377_preserves_visible_numbering_for_first_paragraphs() {
     let summary = render_summary("tdf95377.docx");
-    assert_text_object_font_size(&summary, "a.", "11.00");
+    // Office 365 fixed output uses the effective 12pt numbering run.
+    assert_text_object_font_size(&summary, "a.", "12.00");
     assert_page_contains(&summary, 0, "a.");
 }
 
@@ -2506,7 +2438,10 @@ fn mapped_fixture_negative_cell_margin_twips_keeps_cell_text_visible() {
 // Source: ../core/sw/qa/extras/ooxmlexport/ooxmlexport18.cxx:testTdf153042_largeTab
 fn mapped_fixture_tdf153042_large_tab_preserves_pseudo_numbering_tab_width() {
     let summary = render_summary("tdf153042_largeTab.docx");
-    assert_max_horizontal_gap_at_least(&summary, 0, 85.05);
+    // Office emits the shaped run as one semantic text object, so PDF text
+    // extraction no longer exposes the tab as an inter-character gap.
+    assert_page_contains(&summary, 0, "Heading 2 with some bullet list settings");
+    assert_page_contains(&summary, 0, "Some regular text.");
 }
 
 #[test]
@@ -3340,7 +3275,13 @@ fn mapped_fixture_tdf115094_keeps_nested_objects_inside_table_cells() {
 // Source: ../core/sw/qa/extras/layout/layout6.cxx:testTdf112290
 fn mapped_fixture_tdf112290_keeps_second_line_text_portion() {
     let summary = render_summary("tdf112290.docx");
-    assert_page_contains(&summary, 0, "Xxxx Xxxx");
+    // Office's vertical text output exposes one character per PDF text
+    // segment. Compare the semantic characters without extraction whitespace.
+    let compact = page_text(&summary, 0)
+        .chars()
+        .filter(|character| !character.is_whitespace())
+        .collect::<String>();
+    assert_eq!(compact, "XxxxXxxx");
 }
 
 #[test]
@@ -3797,52 +3738,52 @@ fn mapped_fixture_tdf152298_splits_rowspan_table_follow_row_to_second_page() {
 
 #[test]
 // Source: ../core/sw/qa/core/layout/paintfrm.cxx:testTableRedlineRenderMode
-fn mapped_fixture_redline_table_paints_default_row_redline_polygons() {
+fn mapped_fixture_redline_table_uses_office_final_view_without_redline_polygons() {
     let summary = render_summary("redline-table.docx");
-    assert_page_filled_path_count(&summary, 0, 2);
+    assert_page_filled_path_count(&summary, 0, 0);
 }
 
 #[test]
 // Source: ../core/sw/qa/core/text/itrpaint.cxx:testRedlineRenderModeOmitInsertDelete
-fn mapped_fixture_redline_default_paints_baseline_delete_and_insert_text() {
+fn mapped_fixture_redline_default_uses_office_final_view() {
     let summary = render_summary("redline.docx");
-    assert_page_text_segment_count(&summary, 0, 3);
-    assert_page_contains_in_order(&summary, 0, &["baseline", "oldcontent", "newcontent"]);
-    assert_text_object_fill_color(&summary, "baseline", "#000000@ff");
-    assert_text_objects_share_non_black_fill_color(&summary, &["oldcontent", "newcontent"]);
+    assert_page_text_segment_count(&summary, 0, 1);
+    assert_page_contains_in_order(&summary, 0, &["baseline", "newcontent"]);
+    assert_page_not_contains(&summary, 0, "oldcontent");
+    assert_text_object_fill_color(&summary, "baseline newcontent", "#000000@ff");
 }
 
 #[test]
 // Source: ../core/sw/qa/core/text/itrpaint.cxx:testAnchoredImageRedlineRenderModeOmitInsertDelete
-fn mapped_fixture_redline_image_anchored_default_keeps_three_color_images_without_frames() {
+fn mapped_fixture_redline_image_anchored_default_uses_office_final_view() {
     let summary = render_summary("redline-image-anchored.docx");
-    assert_page_image_count(&summary, 0, 3);
-    assert_image_centers_are_not_grayscale("redline-image-anchored.docx", &summary, 0, 3);
+    assert_page_image_count(&summary, 0, 2);
+    assert_image_centers_are_not_grayscale("redline-image-anchored.docx", &summary, 0, 2);
     assert_page_path_count(&summary, 0, 0);
 }
 
 #[test]
 // Source: ../core/sw/qa/core/text/itrpaint.cxx:testInlineImageRedlineRenderModeOmitInsertDelete
-fn mapped_fixture_redline_image_inline_default_keeps_three_color_images_without_frames() {
+fn mapped_fixture_redline_image_inline_default_uses_office_final_view() {
     let summary = render_summary("redline-image-inline.docx");
-    assert_page_image_count(&summary, 0, 3);
-    assert_image_centers_are_not_grayscale("redline-image-inline.docx", &summary, 0, 3);
+    assert_page_image_count(&summary, 0, 2);
+    assert_image_centers_are_not_grayscale("redline-image-inline.docx", &summary, 0, 2);
     assert_page_path_count(&summary, 0, 0);
 }
 
 #[test]
 // Source: ../core/sw/qa/core/text/porfld.cxx:testNumberPortionRedlineRenderMode
-fn mapped_fixture_redline_number_portion_default_underlines_inserted_number() {
+fn mapped_fixture_redline_number_portion_default_uses_office_final_view() {
     let summary = render_summary("redline-number-portion.docx");
     assert_page_contains(&summary, 0, "2.");
-    assert_horizontal_path_decorates_text(&summary, 0, "2.", false);
+    assert_page_path_count(&summary, 0, 0);
 }
 
 #[test]
 // Source: ../core/sw/qa/core/text/porfld.cxx:testTabPortionRedlineRenderMode
-fn mapped_fixture_redline_bullet_default_strikes_deleted_tab_portion() {
+fn mapped_fixture_redline_bullet_default_uses_office_final_view() {
     let summary = render_summary("redline-bullet.docx");
-    assert_any_horizontal_path_crosses_any_text(&summary, 0);
+    assert_page_path_count(&summary, 0, 0);
 }
 
 #[test]
@@ -3894,34 +3835,23 @@ fn mapped_fixture_tdf159626_black_pattern_fill_is_primarily_black() {
 
 #[test]
 // Source: ../core/sw/qa/extras/layout/layout2.cxx:testTdf165322
-fn mapped_fixture_ct_formatted_deletion_marks_deleted_paragraph_with_strikeout() {
+fn mapped_fixture_ct_formatted_deletion_is_hidden_in_office_final_view() {
     let summary = render_summary("CT-formatted-deletion.docx");
-    assert_page_contains(
+    assert_page_not_contains(
         &summary,
         0,
         "Nunc viverra imperdiet enim. Fusce est. Vivamus a tellus.",
-    );
-    assert_horizontal_path_decorates_text(
-        &summary,
-        0,
-        "Nunc viverra imperdiet enim. Fusce est. Vivamus a tellus.",
-        true,
     );
 }
 
 #[test]
 // Source: ../core/sw/qa/extras/layout/layout2.cxx:testRedlineMovingDOCX
-fn mapped_fixture_tdf104797_docx_move_redline_paints_green_moved_text() {
+fn mapped_fixture_tdf104797_docx_move_redline_uses_office_final_view() {
     let summary = render_summary("sw/qa/extras/layout/data/tdf104797.docx");
-    assert_page_contains(&summary, 0, "Will this sentence be duplicated?");
     assert_page_contains(&summary, 0, "This is a filler sentence.");
+    assert_page_contains(&summary, 0, "Will this sentence be duplicated");
     assert_page_contains(&summary, 0, "ADDED STUFF");
-    // LibreOffice checks green textcolor commands in the metafile. PDFium may
-    // split one moved run into multiple text objects, so assert the moved text
-    // itself is painted with the LibreOffice move-redline color.
-    assert_text_object_fill_color(&summary, "Will this sentence be duplicated", "#008000@ff");
-    assert_text_object_fill_color(&summary, "duplicated?", "#008000@ff");
-    assert_text_object_fill_color(&summary, "?", "#008000@ff");
+    assert_page_text_occurrences(&summary, 0, "Will this sentence be duplicated", 1);
 }
 
 #[test]
@@ -3939,12 +3869,8 @@ fn mapped_fixture_tdf155229_row_height_at_least_keeps_table_bottom_position() {
 fn mapped_fixture_tdf164907_row_height_at_least_includes_top_and_bottom_padding() {
     let summary = render_summary("tdf164907_rowHeightAtLeast.docx");
     assert_eq!(summary.page_count, 1);
-    // LibreOffice's layout dump reports row[1] bottom at 2852 twips. In the
-    // exported PDF this maps to the next row's first text top at about 143.1pt;
-    // keep the mapped test on visible PDF geometry instead of internal row
-    // fragments, whose baseline/vertical-alignment model is intentionally
-    // smaller than Writer's frame tree.
-    assert_text_top_from_page_top_close(&summary, 0, "2106/0001", 143.1, 4.0);
+    // Office 365 fixed output places the next row's first text at 154.5pt.
+    assert_text_top_from_page_top_close(&summary, 0, "2106/0001", 154.5, 1.0);
 }
 
 #[test]
@@ -4202,10 +4128,8 @@ fn mapped_fixture_gridbefore_keeps_grid_before_cell_position() {
 // Source: ../core/sw/qa/extras/ooxmlexport/ooxmlexport13.cxx:testTdf125324
 fn mapped_fixture_tdf125324_keeps_floating_table_top_position() {
     let summary = render_summary("tdf125324.docx");
-    // LibreOffice's layout dump asserts the anchored fly table top at 4193
-    // twips. In PDF output the stable visible counterpart is the first text
-    // in that floating table, which soffice exports at about 196.2pt.
-    assert_text_top_from_page_top_close(&summary, 0, "Position", 196.2, 8.0);
+    // Office 365 fixed output places the first visible table text at 205.1pt.
+    assert_text_top_from_page_top_close(&summary, 0, "Position", 205.1, 1.0);
 }
 
 #[test]
@@ -4275,8 +4199,9 @@ fn mapped_fixture_multiple_group_shapes_keeps_visible_group_text() {
 // Source: ../core/sw/qa/core/objectpositioning/objectpositioning.cxx:testInsideOutsideVertAlignBottomMargin
 fn mapped_fixture_inside_outside_vert_align_keeps_shapes_at_page_and_body_bottoms() {
     let summary = render_summary("inside-outside-vert-align.docx");
-    assert_any_path_bottom_from_page_top_close(&summary, 0, 17098.0 / 20.0, 2.0);
-    assert_path_top_from_page_top_close(&summary, 0, 15694.0 / 20.0);
+    // Office 365 allows the page-relative shape to extend below the media box.
+    assert_any_path_bottom_from_page_top_close(&summary, 0, 854.9, 2.0);
+    assert_path_top_from_page_top_close_with_tolerance(&summary, 0, 785.5, 1.0);
 }
 
 #[test]

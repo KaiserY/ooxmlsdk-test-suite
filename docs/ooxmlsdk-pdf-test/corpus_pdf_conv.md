@@ -124,9 +124,30 @@ Compare in layers so failures remain attributable:
    where observable. A producer's raw PDF `Tf` operand is not compared as an
    independent font-size verdict because the complete text rendering matrix
    determines final glyph placement.
-4. **Graphics:** paths, fills, strokes, images, clipping, transforms, links,
+4. **Font integrity:** every explicitly shaped candidate face must parse in
+   both the OpenType reader and Krilla, glyph IDs and UTF-8 cluster ranges must
+   stay within their owning face/text, glyph metrics and bounds must be finite,
+   and emitted non-Type3 PDF fonts must be embedded with a decodable, non-empty
+   ToUnicode CMap. Multi-glyph shaping clusters must also retain Krilla's
+   cluster-local ActualText spans, matching LibreOffice's PDFWriter strategy.
+   Non-Type3 descriptors must retain their embedded stream, flags, bounds,
+   ascent, and descent; Type0 and descendant BaseFont identities must agree. All
+   PDF text reuses the layout engine's resolved font chain and shaped glyphs,
+   including reduced-size synthesized small-caps runs. Candidate and Office PDFs
+   are also compared as spatial text lines whose consecutive characters retain
+   their canonicalized font assignment; this detects a correct page-level font
+   set applied to the wrong text without requiring identical PDF text-object
+   segmentation. These are
+   candidate-side invariants, not structural equality with Office's different
+   font subset representation. This follows MS-OI29500 Part 1 §17.8 font
+   resolution behavior, LibreOffice PDFWriter's font descriptor/ToUnicode
+   contracts, Krilla's fallible `Font` construction, and Typst's shaping range
+   assertions. Producer-specific PDF character origins are not treated as an
+   independent verdict because justification, kerning, and font subset metrics
+   can distribute advances differently while preserving the accepted line.
+5. **Graphics:** paths, fills, strokes, images, clipping, transforms, links,
    annotations, and widgets.
-5. **Visible output:** fixed-raster comparison using the same PDF rasterizer for
+6. **Visible output:** fixed-raster comparison using the same PDF rasterizer for
    golden and candidate, with temporary heatmaps/crops for diagnosis.
 
 Do not use one global pixel-equality threshold as the only verdict. Font
@@ -194,6 +215,24 @@ not self-evident from the fixture.
   page pairs. RGBA pages are not retained after comparison, and PNG artifacts
   are written only for failing pages. Consecutive failed page indexes are
   reported as ranges with aggregate maxima instead of one metric dump per page.
+- Failed comparisons that retain artifacts also record three independent font
+  observations under `target/office-golden/<case-id>/`: the candidate's
+  resolved OpenType face identity and metrics in
+  `candidate-font-selection.json`, normalized candidate/Office PDF font
+  dictionaries in `pdf-font-structure.json`, and exact candidate glyph IDs,
+  advances, offsets, bounds, baselines, and requested families under
+  `candidate-glyph-trace/page-<n>.json`. Font faces are document-deduplicated;
+  glyph traces are written only for implicated pages and indexed by
+  `candidate-glyph-trace/index.json`. These files are diagnostic observations,
+  not additional pass/fail rules. A structure-extraction error is recorded in
+  the JSON and does not replace the original comparison failure. Candidate
+  glyph diagnostics are collected lazily only after a comparison has failed;
+  passing cases retain only the bounded face/glyph audit described below and
+  never allocate the full per-page glyph trace.
+- `candidate-font-audit.json` records the bounded font-integrity verdict used
+  by every corpus comparison. The normal path retains only deduplicated face
+  metadata, aggregate counts, and at most 64 issues; full per-glyph traces
+  remain failure-only diagnostics.
 - Conversion manifests are parsed and indexed once per test process rather
   than rescanned for every case.
 - Run corpus ratchets with `--release`: Cargo's test profile inherits the

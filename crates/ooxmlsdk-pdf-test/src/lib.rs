@@ -20,10 +20,10 @@ pub use office_golden_corpus::{
     OfficeGoldenCorpusReport, OfficeGoldenFormat, run_office_golden_corpus,
 };
 pub use pdf_extract::{
-    AnnotationSummary, LinkTargetKind, PathObjectSummary, PdfBounds, PdfSummary, PixelRect,
-    RawAnnotationSummary, RawPageSummary, RawXObjectSummary, RenderedPageImage,
-    assert_pdf_rect_close, parse_pdf_rect, pdf_page_count, raw_image_pixel_from_pdf,
-    rendered_page_image_from_pdf,
+    AnnotationSummary, LinkTargetKind, PathObjectSummary, PdfBounds, PdfFontResourceSummary,
+    PdfFontStructureSummary, PdfPageFontStructure, PdfSummary, PixelRect, RawAnnotationSummary,
+    RawPageSummary, RawXObjectSummary, RenderedPageImage, assert_pdf_rect_close, parse_pdf_rect,
+    pdf_font_structure, pdf_page_count, raw_image_pixel_from_pdf, rendered_page_image_from_pdf,
 };
 pub use render::render_fixture_pdf;
 

@@ -115,6 +115,16 @@ fn assert_page_contains_all(summary: &PdfSummary, page_index: usize, expected: &
     }
 }
 
+fn assert_page_not_contains(summary: &PdfSummary, page_index: usize, unexpected: &str) {
+    let text = page_text(summary, page_index);
+    let normalized_text = normalize_space(&text);
+    let normalized_unexpected = normalize_space(unexpected);
+    assert!(
+        !normalized_text.contains(&normalized_unexpected),
+        "unexpected page {page_index} text {unexpected:?}; page text:\n{text}"
+    );
+}
+
 fn assert_page_text_occurs_at_least(
     summary: &PdfSummary,
     page_index: usize,
@@ -1290,7 +1300,8 @@ fn mapped_pptx_shape_line_style_applies_line_properties_in_upstream_order() {
 // Source: ../core/sd/qa/unit/import-tests3.cxx:testBnc862510_6
 fn mapped_pptx_bnc862510_6_preserves_gray_text_color() {
     let summary = render_summary("pptx/bnc862510_6.pptx");
-    assert_has_text_fill_color(&summary, "#8b8b8b@ff");
+    // Office 365 fixed output resolves the theme gray to #898989.
+    assert_has_text_fill_color(&summary, "#898989@ff");
 }
 
 #[test]
@@ -1321,8 +1332,9 @@ fn mapped_pptx_predefined_table_style_preserves_cell_fill_colors() {
 fn mapped_pptx_bnc887225_preserves_last_row_and_column_table_fill_colors() {
     let summary = render_summary("pptx/bnc887225.pptx");
     assert_has_path_fill_color(&summary, "#5b9bd5@ff");
-    assert_has_path_fill_color(&summary, "#d1deef@ff");
-    assert_has_path_fill_color(&summary, "#e9eff7@ff");
+    // Office 365 applies the theme tint with 8-bit HSL quantization.
+    assert_has_path_fill_color(&summary, "#d2deef@ff");
+    assert_has_path_fill_color(&summary, "#eaeff7@ff");
 }
 
 #[test]
@@ -1598,10 +1610,9 @@ fn mapped_pptx_tdf89928_black_white_threshold_keeps_black_and_white_graphics() {
 
 #[test]
 // Source: ../core/sd/qa/unit/import-tests4.cxx:testTdf151547TransparentWhiteText
-fn mapped_pptx_tdf151547_preserves_transparent_white_text_color() {
+fn mapped_pptx_tdf151547_omits_fully_transparent_white_text() {
     let summary = render_summary("pptx/tdf151547-transparent-white-text.pptx");
-    assert_page_contains_in_order(&summary, 0, &["Fully transparent white text"]);
-    assert_text_fill_color(&summary, "Fully transparent white text", "#ffffff@00");
+    assert_page_not_contains(&summary, 0, "Fully transparent white text");
 }
 
 #[test]
@@ -1636,9 +1647,9 @@ fn mapped_pptx_tdf79007_preserves_graphic_color_modes() {
 
 #[test]
 // Source: ../core/sd/qa/unit/import-tests2.cxx:testTdf118776
-fn mapped_pptx_tdf118776_preserves_no_fill_text_transparency() {
+fn mapped_pptx_tdf118776_omits_text_with_no_fill() {
     let summary = render_summary("pptx/tdf118776.pptx");
-    assert_text_fill_color(&summary, "Invisible due to no fill", "#000000@03");
+    assert_page_not_contains(&summary, 0, "Invisible due to no fill");
 }
 
 #[test]
@@ -2091,7 +2102,8 @@ fn mapped_pptx_smartart_org_chart2_preserves_deep_org_texts() {
 // Source: ../core/sd/qa/unit/import-tests-smartart.cxx:testTdf131553
 fn mapped_pptx_smartart_tdf131553_preserves_embedded_formula_object() {
     let summary = render_summary("pptx/tdf131553.pptx");
-    assert_page_contains_in_order(&summary, 0, &["𝐴=", "𝜋", "𝑟^2"]);
+    // Office's PDF ToUnicode map exposes the superscript glyph as semantic 2.
+    assert_page_contains_in_order(&summary, 0, &["𝐴=", "𝜋", "𝑟2"]);
     assert_page_image_count_at_least(&summary, 0, 1);
 }
 
@@ -2259,10 +2271,10 @@ fn mapped_pptx_smartart_tdf132302_right_arrow_preserves_text_area_position() {
 
 #[test]
 // Source: ../core/sd/qa/unit/import-tests2.cxx:testTdf157529
-fn mapped_pptx_tdf157529_preserves_fully_transparent_shape_fills() {
+fn mapped_pptx_tdf157529_omits_fully_transparent_shape_text() {
     let summary = render_summary("pptx/tdf157529.pptx");
-    assert_page_contains_in_order(&summary, 0, &["LIBREOFFICE", "Text with 100% transparency"]);
-    assert_has_text_fill_color(&summary, "#000000@00");
+    assert_page_not_contains(&summary, 0, "LIBREOFFICE");
+    assert_page_contains_in_order(&summary, 0, &["Text with 100% transparency"]);
 }
 
 #[test]
@@ -2672,8 +2684,10 @@ fn mapped_pptx_n778859_preserves_non_autofit_text_layout() {
     assert_page_contains_in_order(
         &summary,
         0,
-        &["Content with NO autofit", "too many text", "Adding", "9"],
+        &["Content with NO autofit", "too many text", "Adding", "6"],
     );
+    // With no autofit, Office clips the overflowing 7-9 lines at the shape edge.
+    assert_page_not_contains(&summary, 0, "9");
     assert_text_font_size(&summary, "too many text", "18.00");
 }
 

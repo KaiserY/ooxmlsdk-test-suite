@@ -6,11 +6,12 @@ use std::sync::OnceLock;
 use std::time::Instant;
 
 use image::ImageFormat;
-use serde_json::Value;
+use ooxmlsdk_pdf::{PdfConversionDiagnostics, PdfFontAudit};
+use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
 use crate::pdf_extract::{
-    RenderedPagePairError, first_pdf_page_text_mismatch, pdf_page_dimensions,
+    RenderedPagePairError, first_pdf_page_text_mismatch, pdf_font_structure, pdf_page_dimensions,
     visit_rendered_page_pairs,
 };
 use crate::{
@@ -32,6 +33,8 @@ const RASTER_WIDTH: i32 = 1_333;
 const TEXT_EDGE_TOLERANCE_MIN_PT: f32 = 2.5;
 const TEXT_EDGE_TOLERANCE_RASTER_PIXELS: f32 = 7.0;
 const TEXT_WIDTH_TOLERANCE_RATIO: f32 = 0.01;
+const EARLY_TEXT_PREFLIGHT_MIN_PAGES: usize = 8;
+const EARLY_TEXT_PREFLIGHT_MIN_PDF_BYTES: usize = 4 * 1024 * 1024;
 const TEXT_MASK_PADDING_PT: f32 = 1.0;
 // ECMA-376 theme tint/shade uses an HSL round trip before the result is
 // represented as 8-bit RGB. Accept one final quantization step between PDF
@@ -98,6 +101,7 @@ pub enum OfficeGoldenComparisonLayer {
     PdfExtraction,
     PageGeometry,
     Text,
+    Font,
     VisibleOutput,
     ComparisonArtifact,
 }
@@ -110,6 +114,7 @@ impl OfficeGoldenComparisonLayer {
             Self::PdfExtraction => "pdf-extraction",
             Self::PageGeometry => "page-geometry",
             Self::Text => "text",
+            Self::Font => "font",
             Self::VisibleOutput => "visible-output",
             Self::ComparisonArtifact => "comparison-artifact",
         }
@@ -126,6 +131,7 @@ impl std::str::FromStr for OfficeGoldenComparisonLayer {
             "pdf-extraction" => Ok(Self::PdfExtraction),
             "page-geometry" => Ok(Self::PageGeometry),
             "text" => Ok(Self::Text),
+            "font" => Ok(Self::Font),
             "visible-output" => Ok(Self::VisibleOutput),
             "comparison-artifact" => Ok(Self::ComparisonArtifact),
             _ => Err(format!("unknown Office golden comparison layer {value:?}")),
@@ -197,19 +203,54 @@ pub(crate) fn compare_office_golden_detailed_with_artifacts(
     verify_sha256("golden", &golden_path, &golden_pdf, case.golden_sha256)
         .map_err(|error| OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::Identity, error))?;
     stage_trace.mark("identity");
-    let candidate_pdf = crate::render::render_fixture_pdf_with_options(
-        &source_path,
-        ooxmlsdk_pdf::PdfOptions {
-            source_file_name: source_path
-                .file_name()
-                .and_then(|name| name.to_str())
-                .map(ToString::to_string),
-            ui_language: Some(case.ui_language.to_string()),
-            ..Default::default()
-        },
-    )
-    .map_err(|error| OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::Conversion, error))?;
+    let options = ooxmlsdk_pdf::PdfOptions {
+        source_file_name: source_path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .map(ToString::to_string),
+        ui_language: Some(case.ui_language.to_string()),
+        ..Default::default()
+    };
+    let diagnostic_options = options.clone();
+    let candidate_output = crate::render::render_fixture_pdf_with_font_audit(&source_path, options)
+        .map_err(|error| {
+            OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::Conversion, error)
+        })?;
+    let candidate_pdf = candidate_output.pdf;
+    let candidate_font_audit = candidate_output.audit;
+    let mut candidate_diagnostics = CandidateDiagnosticsState::Uncollected;
     stage_trace.mark("candidate-render");
+
+    if let Err(error) = validate_candidate_font_contract(&candidate_pdf, &candidate_font_audit) {
+        let error = OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::Font, error);
+        if !write_failure_artifacts {
+            return Err(error);
+        }
+        collect_candidate_diagnostics(
+            &source_path,
+            &diagnostic_options,
+            &mut candidate_diagnostics,
+        );
+        let artifact_dir = write_candidate_artifact(
+            case.id,
+            &candidate_pdf,
+            &golden_pdf,
+            &candidate_font_audit,
+            &candidate_diagnostics,
+            &[0],
+        )
+        .map_err(|artifact_error| {
+            OfficeGoldenFailure::new(
+                OfficeGoldenComparisonLayer::ComparisonArtifact,
+                artifact_error,
+            )
+        })?;
+        return Err(OfficeGoldenFailure {
+            layer: error.layer,
+            message: format!("{}; artifacts={}", error.message, artifact_dir.display()),
+        });
+    }
+    stage_trace.mark("font-contract");
 
     // Page-count mismatches are common while growing XLSX coverage. Detect
     // them with lopdf's page tree before PDFium walks every text character and
@@ -234,13 +275,28 @@ pub(crate) fn compare_office_golden_detailed_with_artifacts(
         if !write_failure_artifacts {
             return Err(error);
         }
-        let artifact_dir =
-            write_candidate_artifact(case.id, &candidate_pdf).map_err(|artifact_error| {
-                OfficeGoldenFailure::new(
-                    OfficeGoldenComparisonLayer::ComparisonArtifact,
-                    artifact_error,
-                )
-            })?;
+        collect_candidate_diagnostics(
+            &source_path,
+            &diagnostic_options,
+            &mut candidate_diagnostics,
+        );
+        let trace_page = candidate_page_count
+            .saturating_sub(1)
+            .min(golden_page_count);
+        let artifact_dir = write_candidate_artifact(
+            case.id,
+            &candidate_pdf,
+            &golden_pdf,
+            &candidate_font_audit,
+            &candidate_diagnostics,
+            &[trace_page],
+        )
+        .map_err(|artifact_error| {
+            OfficeGoldenFailure::new(
+                OfficeGoldenComparisonLayer::ComparisonArtifact,
+                artifact_error,
+            )
+        })?;
         return Err(OfficeGoldenFailure {
             layer: error.layer,
             message: format!("{}; artifacts={}", error.message, artifact_dir.display()),
@@ -267,26 +323,50 @@ pub(crate) fn compare_office_golden_detailed_with_artifacts(
         if !write_failure_artifacts {
             return Err(error);
         }
-        let artifact_dir =
-            write_candidate_artifact(case.id, &candidate_pdf).map_err(|artifact_error| {
-                OfficeGoldenFailure::new(
-                    OfficeGoldenComparisonLayer::ComparisonArtifact,
-                    artifact_error,
-                )
-            })?;
+        collect_candidate_diagnostics(
+            &source_path,
+            &diagnostic_options,
+            &mut candidate_diagnostics,
+        );
+        let artifact_dir = write_candidate_artifact(
+            case.id,
+            &candidate_pdf,
+            &golden_pdf,
+            &candidate_font_audit,
+            &candidate_diagnostics,
+            &[page_index],
+        )
+        .map_err(|artifact_error| {
+            OfficeGoldenFailure::new(
+                OfficeGoldenComparisonLayer::ComparisonArtifact,
+                artifact_error,
+            )
+        })?;
         return Err(OfficeGoldenFailure {
             layer: error.layer,
             message: format!("{}; artifacts={}", error.message, artifact_dir.display()),
         });
     }
 
-    if let Some(mismatch) = first_pdf_page_text_mismatch(
-        &candidate_pdf,
-        &golden_pdf,
-        unordered_extracted_text_content,
-    )
-    .map_err(|error| OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::PdfExtraction, error))?
-    {
+    // The full summary below performs the same text verdict. Keep the early
+    // PDFium pass only for large documents where failing before object and
+    // character collection saves meaningful work; reopening every small PDF
+    // merely duplicates the hot path for passing corpus cases.
+    let run_early_text_preflight = candidate_page_count >= EARLY_TEXT_PREFLIGHT_MIN_PAGES
+        || candidate_pdf.len().max(golden_pdf.len()) >= EARLY_TEXT_PREFLIGHT_MIN_PDF_BYTES;
+    let early_text_mismatch = if run_early_text_preflight {
+        first_pdf_page_text_mismatch(
+            &candidate_pdf,
+            &golden_pdf,
+            unordered_extracted_text_content,
+        )
+        .map_err(|error| {
+            OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::PdfExtraction, error)
+        })?
+    } else {
+        None
+    };
+    if let Some(mismatch) = early_text_mismatch {
         stage_trace.mark("page-text");
         let error = OfficeGoldenFailure::new(
             OfficeGoldenComparisonLayer::Text,
@@ -298,13 +378,25 @@ pub(crate) fn compare_office_golden_detailed_with_artifacts(
         if !write_failure_artifacts {
             return Err(error);
         }
-        let artifact_dir =
-            write_candidate_artifact(case.id, &candidate_pdf).map_err(|artifact_error| {
-                OfficeGoldenFailure::new(
-                    OfficeGoldenComparisonLayer::ComparisonArtifact,
-                    artifact_error,
-                )
-            })?;
+        collect_candidate_diagnostics(
+            &source_path,
+            &diagnostic_options,
+            &mut candidate_diagnostics,
+        );
+        let artifact_dir = write_candidate_artifact(
+            case.id,
+            &candidate_pdf,
+            &golden_pdf,
+            &candidate_font_audit,
+            &candidate_diagnostics,
+            &[mismatch.page_index],
+        )
+        .map_err(|artifact_error| {
+            OfficeGoldenFailure::new(
+                OfficeGoldenComparisonLayer::ComparisonArtifact,
+                artifact_error,
+            )
+        })?;
         return Err(OfficeGoldenFailure {
             layer: error.layer,
             message: format!("{}; artifacts={}", error.message, artifact_dir.display()),
@@ -312,32 +404,44 @@ pub(crate) fn compare_office_golden_detailed_with_artifacts(
     }
     stage_trace.mark("page-text");
 
-    let candidate = PdfSummary::from_bytes(&candidate_pdf).map_err(|error| {
+    let candidate = PdfSummary::from_bytes_for_golden(&candidate_pdf).map_err(|error| {
         OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::PdfExtraction, error)
     })?;
-    let golden = PdfSummary::from_bytes(&golden_pdf).map_err(|error| {
+    let golden = PdfSummary::from_bytes_for_golden(&golden_pdf).map_err(|error| {
         OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::PdfExtraction, error)
     })?;
     stage_trace.mark("pdf-summary");
 
-    let text_masks = match assert_page_geometry_contract(case.id, &candidate, &golden)
+    let text_contract = match assert_page_geometry_contract(case.id, &candidate, &golden)
         .map_err(|error| OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::PageGeometry, error))
         .and_then(|()| {
             assert_text_contract(case.id, &candidate, &golden)
                 .map_err(|error| OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::Text, error))
         }) {
-        Ok(text_masks) => text_masks,
+        Ok(text_contract) => text_contract,
         Err(error) => {
             if !write_failure_artifacts {
                 return Err(error);
             }
-            let artifact_dir =
-                write_candidate_artifact(case.id, &candidate_pdf).map_err(|artifact_error| {
-                    OfficeGoldenFailure::new(
-                        OfficeGoldenComparisonLayer::ComparisonArtifact,
-                        artifact_error,
-                    )
-                })?;
+            collect_candidate_diagnostics(
+                &source_path,
+                &diagnostic_options,
+                &mut candidate_diagnostics,
+            );
+            let artifact_dir = write_candidate_artifact(
+                case.id,
+                &candidate_pdf,
+                &golden_pdf,
+                &candidate_font_audit,
+                &candidate_diagnostics,
+                &[0],
+            )
+            .map_err(|artifact_error| {
+                OfficeGoldenFailure::new(
+                    OfficeGoldenComparisonLayer::ComparisonArtifact,
+                    artifact_error,
+                )
+            })?;
             return Err(OfficeGoldenFailure {
                 layer: error.layer,
                 message: format!("{}; artifacts={}", error.message, artifact_dir.display()),
@@ -345,6 +449,42 @@ pub(crate) fn compare_office_golden_detailed_with_artifacts(
         }
     };
     stage_trace.mark("text-contract");
+
+    if let Err(error) = assert_text_font_assignment_contract(
+        case.id,
+        &text_contract.candidate_lines,
+        &text_contract.golden_lines,
+    ) {
+        let error = OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::Font, error);
+        if !write_failure_artifacts {
+            return Err(error);
+        }
+        collect_candidate_diagnostics(
+            &source_path,
+            &diagnostic_options,
+            &mut candidate_diagnostics,
+        );
+        let artifact_dir = write_candidate_artifact(
+            case.id,
+            &candidate_pdf,
+            &golden_pdf,
+            &candidate_font_audit,
+            &candidate_diagnostics,
+            &[0],
+        )
+        .map_err(|artifact_error| {
+            OfficeGoldenFailure::new(
+                OfficeGoldenComparisonLayer::ComparisonArtifact,
+                artifact_error,
+            )
+        })?;
+        return Err(OfficeGoldenFailure {
+            layer: error.layer,
+            message: format!("{}; artifacts={}", error.message, artifact_dir.display()),
+        });
+    }
+    stage_trace.mark("text-font-assignment");
+    let text_masks = text_contract.masks;
 
     let mut page_diffs = Vec::with_capacity(golden.page_count);
     let mut visual_passes = true;
@@ -373,9 +513,22 @@ pub(crate) fn compare_office_golden_detailed_with_artifacts(
             visual_passes &= page_passes;
             if !page_passes {
                 if write_failure_artifacts {
+                    collect_candidate_diagnostics(
+                        &source_path,
+                        &diagnostic_options,
+                        &mut candidate_diagnostics,
+                    );
                     if artifact_dir.is_none() {
                         artifact_dir = Some(
-                            write_candidate_artifact(case.id, &candidate_pdf).map_err(|error| {
+                            write_candidate_artifact(
+                                case.id,
+                                &candidate_pdf,
+                                &golden_pdf,
+                                &candidate_font_audit,
+                                &candidate_diagnostics,
+                                &[page_index],
+                            )
+                            .map_err(|error| {
                                 OfficeGoldenFailure::new(
                                     OfficeGoldenComparisonLayer::ComparisonArtifact,
                                     error,
@@ -386,6 +539,15 @@ pub(crate) fn compare_office_golden_detailed_with_artifacts(
                     let artifact_dir = artifact_dir
                         .as_deref()
                         .expect("failure artifact directory should be initialized");
+                    let mut trace_pages = failing_pages.clone();
+                    trace_pages.push(page_index);
+                    write_candidate_glyph_pages(artifact_dir, &candidate_diagnostics, &trace_pages)
+                        .map_err(|error| {
+                            OfficeGoldenFailure::new(
+                                OfficeGoldenComparisonLayer::ComparisonArtifact,
+                                error,
+                            )
+                        })?;
                     write_failure_page_artifacts(
                         artifact_dir,
                         page_index,
@@ -678,7 +840,7 @@ fn assert_text_contract(
     case_id: &str,
     candidate: &PdfSummary,
     golden: &PdfSummary,
-) -> Result<Vec<Vec<PdfBounds>>> {
+) -> Result<TextContract> {
     let candidate_text = normalized_page_text(candidate);
     let golden_text = normalized_page_text(golden);
     if page_text_content_bags(&candidate_text) != page_text_content_bags(&golden_text) {
@@ -687,14 +849,35 @@ fn assert_text_contract(
         )));
     }
     assert_text_style_contract(case_id, candidate, golden)?;
-    assert_text_line_geometry(case_id, candidate, golden)
+    let candidate_lines = text_line_contracts(candidate)?;
+    let golden_lines = text_line_contracts(golden)?;
+    let masks =
+        assert_text_line_geometry(case_id, candidate, golden, &candidate_lines, &golden_lines)?;
+    Ok(TextContract {
+        masks,
+        candidate_lines,
+        golden_lines,
+    })
+}
+
+struct TextContract {
+    masks: Vec<Vec<PdfBounds>>,
+    candidate_lines: Vec<Vec<TextLineContract>>,
+    golden_lines: Vec<Vec<TextLineContract>>,
 }
 
 #[derive(Clone, Debug)]
 struct TextLineContract {
     text: String,
+    font_runs: Vec<TextFontRunContract>,
     bounds: PdfBounds,
     origin_y: f32,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct TextFontRunContract {
+    font_name: String,
+    text: String,
 }
 
 fn assert_text_style_contract(
@@ -814,9 +997,9 @@ fn assert_text_line_geometry(
     case_id: &str,
     candidate: &PdfSummary,
     golden: &PdfSummary,
+    candidate_lines: &[Vec<TextLineContract>],
+    golden_lines: &[Vec<TextLineContract>],
 ) -> Result<Vec<Vec<PdfBounds>>> {
-    let candidate_lines = text_line_contracts(candidate)?;
-    let golden_lines = text_line_contracts(golden)?;
     let mut masks = vec![Vec::new(); candidate.page_count];
     for page_index in 0..candidate.page_count {
         let candidate_page = &candidate_lines[page_index];
@@ -877,6 +1060,31 @@ fn assert_text_line_geometry(
     Ok(masks)
 }
 
+fn assert_text_font_assignment_contract(
+    case_id: &str,
+    candidate_lines: &[Vec<TextLineContract>],
+    golden_lines: &[Vec<TextLineContract>],
+) -> Result<()> {
+    // MS-OI29500 17.3.2.26 assigns fonts by character class, while PDF
+    // producers may split the same run into different text objects. Compare
+    // the character-level font assignment after spatial line reconstruction.
+    for (page_index, (candidate_page, golden_page)) in
+        candidate_lines.iter().zip(golden_lines).enumerate()
+    {
+        for (line_index, (candidate_line, golden_line)) in
+            candidate_page.iter().zip(golden_page).enumerate()
+        {
+            if candidate_line.font_runs != golden_line.font_runs {
+                return Err(CalibrationError::OfficeGolden(format!(
+                    "case {case_id} page {page_index} line {line_index} font assignment mismatch: candidate={:?}, golden={:?}",
+                    candidate_line.font_runs, golden_line.font_runs
+                )));
+            }
+        }
+    }
+    Ok(())
+}
+
 fn text_edge_tolerance_pt(page_bounds: PdfBounds) -> f32 {
     (page_bounds.width().abs() / RASTER_WIDTH as f32 * TEXT_EDGE_TOLERANCE_RASTER_PIXELS)
         .max(TEXT_EDGE_TOLERANCE_MIN_PT)
@@ -886,6 +1094,7 @@ fn text_line_contracts(summary: &PdfSummary) -> Result<Vec<Vec<TextLineContract>
     #[derive(Clone, Debug)]
     struct TextCharacterContract {
         text: String,
+        font_name: String,
         bounds: PdfBounds,
         origin_y: f32,
     }
@@ -911,6 +1120,7 @@ fn text_line_contracts(summary: &PdfSummary) -> Result<Vec<Vec<TextLineContract>
         })?;
         page.push(TextCharacterContract {
             text: character.text.clone(),
+            font_name: canonical_pdf_base_font_name(&character.font_name),
             bounds,
             origin_y,
         });
@@ -949,11 +1159,24 @@ fn text_line_contracts(summary: &PdfSummary) -> Result<Vec<Vec<TextLineContract>
                     .expect("a spatial text line always contains a character");
                 let mut line = TextLineContract {
                     text: String::new(),
+                    font_runs: Vec::new(),
                     bounds: first.bounds,
                     origin_y: first.origin_y,
                 };
                 for character in characters {
                     line.text.push_str(&character.text);
+                    if let Some(run) = line
+                        .font_runs
+                        .last_mut()
+                        .filter(|run| run.font_name == character.font_name)
+                    {
+                        run.text.push_str(&character.text);
+                    } else {
+                        line.font_runs.push(TextFontRunContract {
+                            font_name: character.font_name,
+                            text: character.text.clone(),
+                        });
+                    }
                     line.bounds = union_pdf_bounds(line.bounds, character.bounds);
                 }
                 line
@@ -1229,11 +1452,379 @@ fn format_page_range(start: usize, end: usize) -> String {
     }
 }
 
-fn write_candidate_artifact(case_id: &str, candidate_pdf: &[u8]) -> Result<PathBuf> {
+enum CandidateDiagnosticsState {
+    Uncollected,
+    Collected(PdfConversionDiagnostics),
+    Failed(String),
+}
+
+fn validate_candidate_font_contract(candidate_pdf: &[u8], audit: &PdfFontAudit) -> Result<()> {
+    if !audit.issues.is_empty() {
+        let samples = audit
+            .issues
+            .iter()
+            .take(8)
+            .map(|issue| {
+                format!(
+                    "{}@page:{}/run:{}/portion:{:?}/glyph:{:?}: {}",
+                    issue.kind.as_str(),
+                    issue.page_index,
+                    issue.text_run_index,
+                    issue.portion_index,
+                    issue.glyph_index,
+                    issue.detail
+                )
+            })
+            .collect::<Vec<_>>()
+            .join("; ");
+        return Err(CalibrationError::OfficeGolden(format!(
+            "candidate font audit found {} issue(s): {samples}",
+            audit.issues.len()
+        )));
+    }
+
+    let structure = pdf_font_structure(candidate_pdf).map_err(|error| {
+        CalibrationError::OfficeGolden(format!(
+            "candidate PDF font structure could not be read: {error}"
+        ))
+    })?;
+    if structure.actual_text_span_count < audit.actual_text_cluster_count {
+        return Err(CalibrationError::OfficeGolden(format!(
+            "candidate has {} multi-glyph text cluster(s) but only {} ActualText span(s)",
+            audit.actual_text_cluster_count, structure.actual_text_span_count
+        )));
+    }
+    let fonts = structure
+        .pages
+        .iter()
+        .flat_map(|page| &page.fonts)
+        .collect::<Vec<_>>();
+    let has_visible_text = audit.painted_text_portion_count > 0;
+    if has_visible_text && fonts.is_empty() {
+        return Err(CalibrationError::OfficeGolden(
+            "candidate has visible text but no PDF font resources".to_string(),
+        ));
+    }
+
+    let mut issues = Vec::new();
+    for font in fonts {
+        if font.subtype.as_deref() == Some("Type0") && font.descendant_subtype.is_none() {
+            issues.push(format!(
+                "{} Type0 font has no descendant font",
+                font.resource_path
+            ));
+        }
+        if font.subtype.as_deref() == Some("Type0")
+            && let (Some(base), Some(descendant)) = (&font.base_font, &font.descendant_base_font)
+            && base != descendant
+        {
+            issues.push(format!(
+                "{} Type0 and descendant BaseFont differ: {base:?} != {descendant:?}",
+                font.resource_path
+            ));
+        }
+        // Krilla represents color/bitmap glyphs through Type3 char procedures;
+        // other font resources are expected to carry an embedded font stream.
+        if font.subtype.as_deref() != Some("Type3") && font.embedded_font_kind.is_none() {
+            issues.push(format!(
+                "{} {:?} font has no embedded font stream",
+                font.resource_path, font.subtype
+            ));
+        }
+        if font.subtype.as_deref() != Some("Type3") {
+            for (name, missing) in [
+                ("Flags", font.descriptor_flags.is_none()),
+                ("FontBBox", font.font_bounds.is_none()),
+                ("Ascent", font.ascent.is_none()),
+                ("Descent", font.descent.is_none()),
+            ] {
+                if missing {
+                    issues.push(format!(
+                        "{} {:?} font descriptor has no {name}",
+                        font.resource_path, font.subtype
+                    ));
+                }
+            }
+        }
+        if !font.has_to_unicode {
+            issues.push(format!(
+                "{} {:?} font has no ToUnicode map",
+                font.resource_path, font.subtype
+            ));
+        } else if let Some(error) = &font.to_unicode_error {
+            issues.push(format!(
+                "{} {:?} font has invalid ToUnicode map: {error}",
+                font.resource_path, font.subtype
+            ));
+        } else if font
+            .to_unicode_mapping_count
+            .is_none_or(|mapping_count| mapping_count == 0)
+        {
+            issues.push(format!(
+                "{} {:?} font has an empty ToUnicode map",
+                font.resource_path, font.subtype
+            ));
+        }
+        if issues.len() >= 16 {
+            break;
+        }
+    }
+    if issues.is_empty() {
+        Ok(())
+    } else {
+        Err(CalibrationError::OfficeGolden(format!(
+            "candidate PDF font integrity failed: {}",
+            issues.join("; ")
+        )))
+    }
+}
+
+fn collect_candidate_diagnostics(
+    source_path: &Path,
+    options: &ooxmlsdk_pdf::PdfOptions,
+    state: &mut CandidateDiagnosticsState,
+) {
+    if !matches!(state, CandidateDiagnosticsState::Uncollected) {
+        return;
+    }
+    *state = match crate::render::render_fixture_pdf_with_diagnostics(source_path, options.clone())
+    {
+        Ok(output) => CandidateDiagnosticsState::Collected(output.diagnostics),
+        Err(error) => CandidateDiagnosticsState::Failed(error.to_string()),
+    };
+}
+
+fn write_candidate_artifact(
+    case_id: &str,
+    candidate_pdf: &[u8],
+    golden_pdf: &[u8],
+    font_audit: &PdfFontAudit,
+    diagnostics: &CandidateDiagnosticsState,
+    diagnostic_pages: &[usize],
+) -> Result<PathBuf> {
     let artifact_dir = workspace_root().join("target/office-golden").join(case_id);
     fs::create_dir_all(&artifact_dir)?;
     fs::write(artifact_dir.join("candidate.pdf"), candidate_pdf)?;
+    write_pretty_json(
+        &artifact_dir.join("candidate-font-audit.json"),
+        &font_audit_json(font_audit),
+    )?;
+    let font_structure = json!({
+        "schema_version": 1,
+        "candidate": font_structure_json(candidate_pdf),
+        "golden": font_structure_json(golden_pdf),
+    });
+    write_pretty_json(
+        &artifact_dir.join("pdf-font-structure.json"),
+        &font_structure,
+    )?;
+    if let CandidateDiagnosticsState::Collected(diagnostics) = diagnostics {
+        let fonts = diagnostics
+            .fonts
+            .iter()
+            .enumerate()
+            .map(|(font_index, font)| {
+                json!({
+                    "font_index": font_index,
+                    "font_id": font.font_id,
+                    "face_index": font.face_index,
+                    "data_len": font.data_len,
+                    "parse_error": font.parse_error,
+                    "checksum_adjustment": font.checksum_adjustment,
+                    "postscript_name": font.postscript_name,
+                    "family_names": font.family_names,
+                    "style_name": font.style_name,
+                    "units_per_em": font.units_per_em,
+                    "glyph_count": font.glyph_count,
+                    "ascender_em": font.ascender_em,
+                    "descender_em": font.descender_em,
+                    "cap_height_em": font.cap_height_em,
+                    "global_bounds_em": glyph_bounds_json(font.global_bounds_em),
+                    "monospaced": font.monospaced,
+                })
+            })
+            .collect::<Vec<_>>();
+        write_pretty_json(
+            &artifact_dir.join("candidate-font-selection.json"),
+            &json!({ "schema_version": 1, "status": "ok", "fonts": fonts }),
+        )?;
+    } else if let CandidateDiagnosticsState::Failed(error) = diagnostics {
+        write_pretty_json(
+            &artifact_dir.join("candidate-font-selection.json"),
+            &json!({ "schema_version": 1, "status": "error", "error": error }),
+        )?;
+    }
+    write_candidate_glyph_pages(&artifact_dir, diagnostics, diagnostic_pages)?;
     Ok(artifact_dir)
+}
+
+fn font_audit_json(audit: &PdfFontAudit) -> Value {
+    let issues = audit
+        .issues
+        .iter()
+        .map(|issue| {
+            json!({
+                "kind": issue.kind.as_str(),
+                "page_index": issue.page_index,
+                "text_run_index": issue.text_run_index,
+                "portion_index": issue.portion_index,
+                "glyph_run_index": issue.glyph_run_index,
+                "glyph_index": issue.glyph_index,
+                "detail": issue.detail,
+            })
+        })
+        .collect::<Vec<_>>();
+    json!({
+        "schema_version": 1,
+        "status": if issues.is_empty() { "ok" } else { "error" },
+        "font_count": audit.fonts.len(),
+        "text_portion_count": audit.text_portion_count,
+        "painted_text_portion_count": audit.painted_text_portion_count,
+        "explicit_glyph_portion_count": audit.explicit_glyph_portion_count,
+        "glyph_run_count": audit.glyph_run_count,
+        "glyph_count": audit.glyph_count,
+        "actual_text_cluster_count": audit.actual_text_cluster_count,
+        "issues": issues,
+    })
+}
+
+fn font_structure_json(pdf: &[u8]) -> Value {
+    match pdf_font_structure(pdf) {
+        Ok(summary) => json!({ "status": "ok", "summary": summary }),
+        Err(error) => json!({ "status": "error", "error": error }),
+    }
+}
+
+fn write_candidate_glyph_pages(
+    artifact_dir: &Path,
+    diagnostics: &CandidateDiagnosticsState,
+    diagnostic_pages: &[usize],
+) -> Result<()> {
+    let CandidateDiagnosticsState::Collected(diagnostics) = diagnostics else {
+        return Ok(());
+    };
+    let selected = diagnostic_pages
+        .iter()
+        .copied()
+        .collect::<std::collections::BTreeSet<_>>();
+    let trace_dir = artifact_dir.join("candidate-glyph-trace");
+    fs::create_dir_all(&trace_dir)?;
+    let mut written_pages = Vec::new();
+    for page_index in selected {
+        let Some(page) = diagnostics.pages.get(page_index) else {
+            continue;
+        };
+        written_pages.push(page_index);
+        write_pretty_json(
+            &trace_dir.join(format!("page-{page_index}.json")),
+            &glyph_page_json(page),
+        )?;
+    }
+    write_pretty_json(
+        &trace_dir.join("index.json"),
+        &json!({
+            "schema_version": 1,
+            "page_count": diagnostics.pages.len(),
+            "written_pages": written_pages,
+        }),
+    )
+}
+
+fn glyph_page_json(page: &ooxmlsdk_pdf::PdfPageDiagnostics) -> Value {
+    let text_runs = page
+        .text_runs
+        .iter()
+        .map(|text| {
+            let portions = text
+                .portions
+                .iter()
+                .map(|portion| {
+                    let glyph_runs = portion
+                        .glyph_runs
+                        .iter()
+                        .map(|run| {
+                            let glyphs = run
+                                .glyphs
+                                .iter()
+                                .map(|glyph| {
+                                    json!({
+                                        "glyph_id": glyph.glyph_id,
+                                        "text_range": [glyph.text_range_start, glyph.text_range_end],
+                                        "x_advance_em": glyph.x_advance_em,
+                                        "x_offset_em": glyph.x_offset_em,
+                                        "y_offset_em": glyph.y_offset_em,
+                                        "y_advance_em": glyph.y_advance_em,
+                                        "bounds_em": glyph.bounds_em.map(glyph_bounds_json),
+                                    })
+                                })
+                                .collect::<Vec<_>>();
+                            json!({
+                                "font_index": run.font_index,
+                                "x_offset_pt": run.x_offset_pt,
+                                "synthetic_bold": run.synthetic_bold,
+                                "synthetic_italic": run.synthetic_italic,
+                                "glyphs": glyphs,
+                            })
+                        })
+                        .collect::<Vec<_>>();
+                    json!({
+                        "kind": format!("{:?}", portion.kind).to_ascii_lowercase(),
+                        "text_range": [portion.text_range_start, portion.text_range_end],
+                        "x_pt": portion.x_pt,
+                        "baseline_y_pt": portion.baseline_y_pt,
+                        "width_pt": portion.width_pt,
+                        "has_explicit_glyphs": portion.has_explicit_glyphs,
+                        "glyph_runs": glyph_runs,
+                    })
+                })
+                .collect::<Vec<_>>();
+            json!({
+                "text": text.text,
+                "x_pt": text.x_pt,
+                "y_pt": text.y_pt,
+                "baseline_y_pt": text.baseline_y_pt,
+                "line_height_pt": text.line_height_pt,
+                "width_pt": text.width_pt,
+                "font_size_pt": text.font_size_pt,
+                "character_spacing_pt": text.character_spacing_pt,
+                "baseline_shift_pt": text.baseline_shift_pt,
+                "requested_font_family": text.requested_font_family,
+                "requested_east_asia_font_family": text.requested_east_asia_font_family,
+                "requested_complex_font_family": text.requested_complex_font_family,
+                "bold": text.bold,
+                "italic": text.italic,
+                "small_caps": text.small_caps,
+                "portions": portions,
+            })
+        })
+        .collect::<Vec<_>>();
+    json!({
+        "schema_version": 1,
+        "page_index": page.page_index,
+        "width_pt": page.width_pt,
+        "height_pt": page.height_pt,
+        "text_runs": text_runs,
+    })
+}
+
+fn glyph_bounds_json(bounds: ooxmlsdk_pdf::PdfGlyphBoundsDiagnostics) -> Value {
+    json!({
+        "x_min_em": bounds.x_min_em,
+        "y_min_em": bounds.y_min_em,
+        "x_max_em": bounds.x_max_em,
+        "y_max_em": bounds.y_max_em,
+    })
+}
+
+fn write_pretty_json(path: &Path, value: &Value) -> Result<()> {
+    let data = serde_json::to_vec_pretty(value).map_err(|error| {
+        CalibrationError::OfficeGolden(format!(
+            "could not serialize diagnostic artifact {}: {error}",
+            path.display()
+        ))
+    })?;
+    fs::write(path, data)?;
+    Ok(())
 }
 
 fn write_png(path: &Path, page: &RenderedPageImage, rgba: &[u8]) -> Result<()> {

@@ -261,19 +261,31 @@ fn other_style_family_class_does_not_match_unrelated_monotype_name() {
 
 #[test]
 fn charset_request_prefers_registered_charset_face() {
-    // Source: LibreOffice vcl/qa/cppunit/physicalfontcollection.cxx CJK family matching.
+    // Sources: ECMA-376 Part 1 §18.4.1 and Microsoft LOGFONT lfCharSet font mapping.
     let mut registry = FontRegistry::new();
     registry.register_face(
-        FontSource::System,
+        FontSource::Path {
+            id: Cow::Borrowed("ansi"),
+            path: PathBuf::from("/fonts/ansi.ttf"),
+            data: None,
+        },
         FontFaceInfo::synthetic("ansi", "CJK Candidate"),
     );
+    registry.faces[0].charset = Some(FontCharset::Ansi);
     let mut cjk = FontFaceInfo::synthetic("shift-jis", "CJK Candidate");
     cjk.face_index = 1;
-    registry.register_face(FontSource::System, cjk);
+    registry.register_face(
+        FontSource::Path {
+            id: Cow::Borrowed("shift-jis"),
+            path: PathBuf::from("/fonts/shift-jis.ttc"),
+            data: None,
+        },
+        cjk,
+    );
     registry.faces[1].charset = Some(FontCharset::ShiftJis);
 
     let resolved = registry
-        .resolve(&FontRequest {
+        .resolve_with_diagnostics(&FontRequest {
             family: Some(Cow::Borrowed("CJK Candidate")),
             charset: Some(FontCharset::ShiftJis),
             ..FontRequest::default()
@@ -281,6 +293,16 @@ fn charset_request_prefers_registered_charset_face() {
         .expect("charset-specific request should resolve");
 
     assert_eq!(resolved.font_id, FontId(Arc::from("shift-jis")));
+    assert_eq!(
+        resolved
+            .match_diagnostics
+            .candidates
+            .iter()
+            .find(|candidate| candidate.font_id == FontId(Arc::from("ansi")))
+            .expect("ANSI face candidate")
+            .reason,
+        Some(ooxmlsdk_fonts::FontMatchReason::Charset)
+    );
 }
 
 #[test]
@@ -1591,6 +1613,7 @@ fn font_usage_collector_records_glyphs_and_unicode_ranges() {
     // Source: LibreOffice PDF font subsetting paths in vcl/source/pdf/.
     let run = ShapedRun {
         font_id: FontId(Arc::from("subset-face")),
+        font_size_pt: FontSize(12.0),
         text: "AB",
         text_range: 0..2,
         glyphs: Cow::Owned(vec![
@@ -1647,6 +1670,7 @@ fn approximate_runs_do_not_require_font_embedding() {
     // Source: LibreOffice PDF output distinguishes real embedded face data from fallback metrics.
     let run = ShapedRun {
         font_id: FontId(Arc::from("system-face")),
+        font_size_pt: FontSize(12.0),
         text: "A",
         text_range: 0..1,
         glyphs: Cow::Owned(vec![ShapedGlyph {
@@ -1873,6 +1897,7 @@ fn shaped_usage_run(
 ) -> ShapedRun<'static, 'static> {
     ShapedRun {
         font_id: FontId(Arc::from(font_id)),
+        font_size_pt: FontSize(12.0),
         text,
         text_range: 0..text.len(),
         glyphs: Cow::Owned(vec![ShapedGlyph {

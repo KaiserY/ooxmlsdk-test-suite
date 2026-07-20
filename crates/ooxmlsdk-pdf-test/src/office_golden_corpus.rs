@@ -1192,6 +1192,7 @@ mod tests {
             OfficeGoldenComparisonLayer::PdfExtraction,
             OfficeGoldenComparisonLayer::PageGeometry,
             OfficeGoldenComparisonLayer::Text,
+            OfficeGoldenComparisonLayer::Font,
             OfficeGoldenComparisonLayer::VisibleOutput,
             OfficeGoldenComparisonLayer::ComparisonArtifact,
         ] {
