@@ -1538,7 +1538,7 @@ name = "olecfsdk-ooxml"
 version = "0.1.0"
 dependencies = [
  "olecfsdk",
- "ooxmlsdk",
+ "ooxmlsdk 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror",
 ]
 
@@ -1560,7 +1560,7 @@ dependencies = [
  "olecfsdk",
  "olecfsdk-corpus-test-support",
  "olecfsdk-ooxml",
- "ooxmlsdk",
+ "ooxmlsdk 0.12.0",
  "serde",
  "serde_json",
  "zip",
@@ -1586,9 +1586,25 @@ dependencies = [
  "bytes",
  "itoa",
  "lexical-parse-float",
- "ooxmlsdk-derive",
+ "ooxmlsdk-derive 0.12.0",
  "quick-xml 0.41.0",
  "regex",
+ "thiserror",
+ "zip",
+ "zmij",
+]
+
+[[package]]
+name = "ooxmlsdk"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4694306541ef0b5fa2e67bbbbed3e4ab9626c6780382395f36d0098a560ffc2e"
+dependencies = [
+ "bytes",
+ "itoa",
+ "lexical-parse-float",
+ "ooxmlsdk-derive 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "quick-xml 0.41.0",
  "thiserror",
  "zip",
  "zmij",
@@ -1599,7 +1615,7 @@ name = "ooxmlsdk-bench"
 version = "0.1.0"
 dependencies = [
  "criterion",
- "ooxmlsdk",
+ "ooxmlsdk 0.12.0",
  "ooxmlsdk-corpus-test-support",
  "ooxmlsdk-formula",
  "ooxmlsdk-pdf",
@@ -1609,7 +1625,7 @@ dependencies = [
 name = "ooxmlsdk-corpus-test-support"
 version = "0.1.0"
 dependencies = [
- "ooxmlsdk",
+ "ooxmlsdk 0.12.0",
  "quick-xml 0.40.1",
  "serde",
  "serde_json",
@@ -1620,6 +1636,17 @@ dependencies = [
 [[package]]
 name = "ooxmlsdk-derive"
 version = "0.12.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "ooxmlsdk-derive"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3df9395340d14d0dabbba439f6edce90c2f01908ea7d17c86d666fbfecd516d6"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1662,7 +1689,7 @@ dependencies = [
  "num-complex",
  "num-integer",
  "num-traits",
- "ooxmlsdk",
+ "ooxmlsdk 0.12.0",
  "regex",
  "rustc-hash",
  "rustfft",
@@ -1676,7 +1703,7 @@ dependencies = [
 name = "ooxmlsdk-formula-test"
 version = "0.1.0"
 dependencies = [
- "ooxmlsdk",
+ "ooxmlsdk 0.12.0",
  "ooxmlsdk-corpus-test-support",
  "ooxmlsdk-formula",
  "quick-xml 0.40.1",
@@ -1690,7 +1717,7 @@ dependencies = [
  "hypher",
  "icu_segmenter",
  "image",
- "ooxmlsdk",
+ "ooxmlsdk 0.12.0",
  "ooxmlsdk-fonts",
  "ooxmlsdk-formula",
  "quick-xml 0.41.0",
@@ -1703,7 +1730,7 @@ dependencies = [
 name = "ooxmlsdk-layout-test"
 version = "0.1.0"
 dependencies = [
- "ooxmlsdk",
+ "ooxmlsdk 0.12.0",
  "ooxmlsdk-layout",
 ]
 
@@ -1718,7 +1745,7 @@ dependencies = [
  "krilla",
  "krilla-svg",
  "lopdf 0.43.0",
- "ooxmlsdk",
+ "ooxmlsdk 0.12.0",
  "ooxmlsdk-fonts",
  "ooxmlsdk-formula",
  "ooxmlsdk-layout",
@@ -1764,7 +1791,7 @@ dependencies = [
 name = "ooxmlsdk-test"
 version = "0.1.0"
 dependencies = [
- "ooxmlsdk",
+ "ooxmlsdk 0.12.0",
  "zip",
 ]
 

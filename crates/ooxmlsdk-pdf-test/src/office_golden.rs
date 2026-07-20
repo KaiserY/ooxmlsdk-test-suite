@@ -1516,11 +1516,16 @@ fn validate_candidate_font_contract(candidate_pdf: &[u8], audit: &PdfFontAudit) 
         }
         if font.subtype.as_deref() == Some("Type0")
             && let (Some(base), Some(descendant)) = (&font.base_font, &font.descendant_base_font)
-            && base != descendant
+            && !type0_base_font_matches_descendant(
+                base,
+                descendant,
+                font.descendant_subtype.as_deref(),
+                font.encoding.as_deref(),
+            )
         {
             issues.push(format!(
-                "{} Type0 and descendant BaseFont differ: {base:?} != {descendant:?}",
-                font.resource_path
+                "{} Type0 BaseFont is incompatible with its descendant: {base:?}, descendant={descendant:?}, subtype={:?}, encoding={:?}",
+                font.resource_path, font.descendant_subtype, font.encoding
             ));
         }
         // Krilla represents color/bitmap glyphs through Type3 char procedures;
@@ -1576,6 +1581,25 @@ fn validate_candidate_font_contract(candidate_pdf: &[u8], audit: &PdfFontAudit) 
             "candidate PDF font integrity failed: {}",
             issues.join("; ")
         )))
+    }
+}
+
+fn type0_base_font_matches_descendant(
+    base_font: &str,
+    descendant_base_font: &str,
+    descendant_subtype: Option<&str>,
+    encoding: Option<&str>,
+) -> bool {
+    match descendant_subtype {
+        // ISO 32000-1:2008, 9.7.6.1: a CIDFontType0 root name is the
+        // descendant BaseFont followed by a hyphen and the CMap name.
+        Some("CIDFontType0") => encoding.is_some_and(|encoding| {
+            base_font == format!("{descendant_base_font}-{encoding}")
+        }),
+        // The same clause requires a CIDFontType2 root name to equal the
+        // descendant BaseFont name.
+        Some("CIDFontType2") | None => base_font == descendant_base_font,
+        Some(_) => false,
     }
 }
 
@@ -1846,8 +1870,37 @@ mod tests {
     use super::{
         PdfBounds, TEXT_MASK_PADDING_PT, canonical_pdf_base_font_name, extracted_text_content_key,
         format_page_ranges, normalize_extracted_text, pdf_style_colors_equivalent,
-        text_edge_tolerance_pt, text_mask_x_spans_by_row, unordered_extracted_text_content,
+        text_edge_tolerance_pt, text_mask_x_spans_by_row, type0_base_font_matches_descendant,
+        unordered_extracted_text_content,
     };
+
+    #[test]
+    fn type0_base_font_names_follow_cidfont_subtype_rules() {
+        assert!(type0_base_font_matches_descendant(
+            "NotoSansCJKjp-Regular-Identity-H",
+            "NotoSansCJKjp-Regular",
+            Some("CIDFontType0"),
+            Some("Identity-H")
+        ));
+        assert!(type0_base_font_matches_descendant(
+            "SimSun",
+            "SimSun",
+            Some("CIDFontType2"),
+            Some("Identity-H")
+        ));
+        assert!(!type0_base_font_matches_descendant(
+            "NotoSansCJKjp-Regular",
+            "NotoSansCJKjp-Regular",
+            Some("CIDFontType0"),
+            Some("Identity-H")
+        ));
+        assert!(!type0_base_font_matches_descendant(
+            "SimSun-Identity-H",
+            "SimSun",
+            Some("CIDFontType2"),
+            Some("Identity-H")
+        ));
+    }
 
     #[test]
     fn extracted_text_normalization_ignores_pdf_object_spacing_around_punctuation() {
