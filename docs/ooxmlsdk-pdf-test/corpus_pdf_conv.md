@@ -79,10 +79,10 @@ the package round-trip corpora:
 - the ratchet visits candidates deterministically by source size, output size,
   corpus, and source path until its per-format pass target is reached.
 
-The current verified ratchet requires 1,026 distinct full-contract passes: 685
-DOCX, 257 PPTX, and 84 XLSX. This exceeds the first 1,000-case breadth target.
-The earlier 29 explicit case tests remain as focused historical regressions,
-but they are not added to the ratchet total.
+The current verified ratchet requires 1,097 distinct full-contract passes: 688
+DOCX, 283 PPTX, and 126 XLSX. This exceeds the first 1,000-case breadth target.
+The earlier 29 explicit case tests remain as focused historical regressions;
+all 29 pass when run explicitly, but they are not added to the ratchet total.
 
 Known errors are skipped during the normal breadth ratchet so expanding the
 passing prefix does not repeatedly render hundreds of unchanged failures. Set
@@ -265,8 +265,8 @@ OOXMLSDK_GOLDEN_AUDIT_ERRORS=1 \
 | Golden inventory | complete | 4,400 converted OOXML cases: 2,707 DOCX, 798 PPTX, 895 XLSX. |
 | Comparison contract | defined | Fixed golden policy and layered comparison model recorded in this document. |
 | Streamed corpus harness | complete | Default conversion-manifest scan, structured failure layers, cached identity index, failed-page-only artifacts, compact page ranges, errors-only manifest, and explicit error audit are in place. |
-| Ratchet passes | 1,026 / 4,400 | DOCX: 685, PPTX: 257, XLSX: 84; all run the full layered comparison contract. The earlier 29 explicit tests remain separate; the first 1,000-case target is complete. |
-| Known errors | 3,374 exact sources | DOCX: 2,022, PPTX: 541, XLSX: 811. They are grouped by evidence-backed class and remain available to exact-case and paged full-audit execution. |
+| Ratchet passes | 1,097 / 4,400 | DOCX: 688, PPTX: 283, XLSX: 126; all run the full layered comparison contract. The earlier 29 explicit tests remain separate; the first 1,000-case target is complete. |
+| Known errors | 3,302 exact sources | DOCX: 2,019, PPTX: 515, XLSX: 768. They are grouped by evidence-backed class and remain available to exact-case and paged full-audit execution. |
 | Autonomous optimization | active | Select a known error, locate specification/LibreOffice evidence, fix only source-backed layout/PDF behavior, remove the exact exception, and raise the ratchet gradually. |
 
 ### First Completed Case
@@ -1080,8 +1080,10 @@ Completed on 2026-07-18 without changing any golden PDF or manifest:
 - PPTX admitted `hidden_group_shape.pptx`, `tdf156808.pptx`,
   `tdf157635.pptx`, `tdf157793.pptx`, and
   `tdf169496_hidden_graphic.pptx`.
-- XLSX admitted `tdf135828_Shape_Rect.xlsx` and
-  `tdf169496_hidden_graphic.xlsx`.
+- XLSX admitted `tdf135828_Shape_Rect.xlsx`. The explicit
+  `tdf169496_hidden_graphic.xlsx` entry was added with this batch but remained
+  a page-geometry known error until the hidden drawing-layer print-area fix on
+  2026-07-21.
 - `w:pgSz` dimensions now retain their normative twentieth-of-a-point values
   instead of passing through LibreOffice's mm100 sloppy paper fitting. The
   fixed-output profile's omitted-page-size default is A4, matching the recorded
@@ -1099,17 +1101,18 @@ Completed on 2026-07-18 without changing any golden PDF or manifest:
 
 ### Latest Verification
 
-Completed on 2026-07-19 using the default Cargo target directories:
+Completed on 2026-07-21 using the default Cargo target directories:
 
-- the final paged DOCX audit and the complete PPTX/XLSX audits passed with no
-  stale or wrong-layer error entries;
-- the release DOCX ratchet passed 685 cases in 18.47 seconds;
-- the release PPTX ratchet passed 257 cases in 6.39 seconds;
-- the release XLSX ratchet passed 84 cases in 2.61 seconds;
-- the focused `ooxmlsdk-layout` XLSX tests passed 34 tests, and the
-  `ooxmlsdk-pdf-test` library tests passed 16 tests;
-- workspace-wide tests and Clippy were intentionally not run for this focused
-  layout/PDF iteration.
+- all three release ratchets completed with no unexpected errors;
+- the release DOCX ratchet passed 688 cases in 42.96 seconds;
+- the release PPTX ratchet passed 283 cases in 23.69 seconds;
+- the release XLSX ratchet passed 126 cases in 12.79 seconds;
+- the focused system-font selection regressions passed for Calibri Light,
+  Aptos versus Aptos Display, and Noto Sans versus Noto Sans Condensed;
+- all 29 explicit Office golden regressions passed;
+- the 150 `ooxmlsdk-layout` unit tests, default `ooxmlsdk-pdf-test` suite, and
+  package-scoped PDF test Clippy passed; workspace-wide tests and Clippy were
+  not run for this focused layout/PDF iteration.
 
 The comparison contract used for this ratchet also records these
 source-backed normalization decisions:
@@ -1131,13 +1134,13 @@ Comparison-layer counts for ratchet cases:
 
 | Format | Conversion | Page geometry | Text | Graphics | Visible output |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| DOCX | 685 / 685 | 685 / 685 | 685 / 685 | 685 / 685 | 685 / 685 |
-| PPTX | 257 / 257 | 257 / 257 | 257 / 257 | 257 / 257 | 257 / 257 |
-| XLSX | 84 / 84 | 84 / 84 | 84 / 84 | 84 / 84 | 84 / 84 |
+| DOCX | 688 / 688 | 688 / 688 | 688 / 688 | 688 / 688 | 688 / 688 |
+| PPTX | 283 / 283 | 283 / 283 | 283 / 283 | 283 / 283 | 283 / 283 |
+| XLSX | 126 / 126 | 126 / 126 | 126 / 126 | 126 / 126 | 126 / 126 |
 
 ### Next Expansion
 
-Continue beyond 1,026 with independently diagnosable, source-backed fixes.
+Continue beyond 1,097 with independently diagnosable, source-backed fixes.
 Keep the errors-only manifest exact, audit it in bounded pages, and optimize a
 slow stage before expanding a batch if per-case timings regress materially.
 

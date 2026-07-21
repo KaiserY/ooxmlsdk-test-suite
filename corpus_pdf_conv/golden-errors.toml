@@ -3796,7 +3796,6 @@ sources = [
 corpus = "LibreOffice"
 class = "spreadsheet-page-geometry"
 sources = [
-  "sc/qa/unit/data/xlsx/tdf169496_hidden_graphic.xlsx",
   "chart2/qa/extras/data/xlsx/trendline2007.xlsx",
   "chart2/qa/extras/data/xlsx/strict_chart.xlsx",
   "chart2/qa/extras/data/xlsx/bar_chart_simple.xlsx",
