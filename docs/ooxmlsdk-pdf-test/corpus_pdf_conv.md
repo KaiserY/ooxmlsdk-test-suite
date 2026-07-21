@@ -265,8 +265,8 @@ OOXMLSDK_GOLDEN_AUDIT_ERRORS=1 \
 | Golden inventory | complete | 4,400 converted OOXML cases: 2,707 DOCX, 798 PPTX, 895 XLSX. |
 | Comparison contract | defined | Fixed golden policy and layered comparison model recorded in this document. |
 | Streamed corpus harness | complete | Default conversion-manifest scan, structured failure layers, cached identity index, failed-page-only artifacts, compact page ranges, errors-only manifest, and explicit error audit are in place. |
-| Ratchet passes | 1,097 / 4,400 | DOCX: 688, PPTX: 283, XLSX: 126; all run the full layered comparison contract. The earlier 29 explicit tests remain separate; the first 1,000-case target is complete. |
-| Known errors | 3,302 exact sources | DOCX: 2,019, PPTX: 515, XLSX: 768. They are grouped by evidence-backed class and remain available to exact-case and paged full-audit execution. |
+| Ratchet passes | 1,333 / 4,400 | DOCX: 811, PPTX: 305, XLSX: 217; all run the full layered comparison contract. The earlier 29 explicit tests remain separate; the first 1,000-case target is complete. |
+| Known errors | 3,067 exact sources | DOCX: 1,896, PPTX: 493, XLSX: 678. They are grouped by evidence-backed class and remain available to exact-case and paged full-audit execution. |
 | Autonomous optimization | active | Select a known error, locate specification/LibreOffice evidence, fix only source-backed layout/PDF behavior, remove the exact exception, and raise the ratchet gradually. |
 
 ### First Completed Case

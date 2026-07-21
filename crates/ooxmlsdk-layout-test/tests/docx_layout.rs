@@ -1,6 +1,27 @@
 use ooxmlsdk_layout_test::{
-    assert_page_contains, docx_layout, line_heights, row_heights, table_row_count_for_block,
+    assert_close, assert_page_contains, docx_layout, line_heights, row_heights,
+    table_row_count_for_block, text_origins_for,
 };
+
+#[test]
+// Sources: ECMA-376 Part 1 §§20.4.2.12, 20.4.3.5;
+// ../core/sw/qa/writerfilter/ooxml/ooxml.cxx::testNestedRuns
+fn docx_nested_runs_keeps_paragraph_relative_textbox_offset() {
+    let document = docx_layout("sw/qa/writerfilter/ooxml/data/nested-runs.docx").unwrap();
+    let origins = text_origins_for(&document, 0, "Test text box");
+    let origin = origins
+        .first()
+        .unwrap_or_else(|| panic!("missing nested textbox text; origins={origins:?}"));
+
+    assert_close(
+        document.pages[0].setup.margins.top.0,
+        56.7,
+        0.05,
+        "page top margin",
+    );
+    assert_close(origin.x.0, 88.85, 0.05, "textbox horizontal origin");
+    assert_close(origin.y.0, 72.8, 0.05, "textbox vertical origin");
+}
 
 #[test]
 // Source: ../core/sw/qa/extras/ooxmlexport/ooxmlexport14.cxx::testTdf151704_thinColumnHeight

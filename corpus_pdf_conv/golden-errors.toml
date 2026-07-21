@@ -137,11 +137,6 @@ source = "sw/qa/extras/ooxmlexport/data/lastEmptyLineWithDirectFormatting.docx"
 class = "word-text-line-position"
 
 [[error]]
-corpus = "LibreOffice"
-source = "sw/qa/extras/layout/data/tdf117188.docx"
-class = "word-text-line-position"
-
-[[error]]
 corpus = "Apache-POI"
 source = "test-data/openxml4j/TestOpenPackageOUTPUT.docx"
 class = "word-text-line-position"
@@ -1254,7 +1249,6 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/tdf138345_numberingHighlight.docx",
   "sw/qa/core/layout/data/header-textbox.docx",
   "chart2/qa/extras/data/docx/testTdf114179.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf106132.docx",
   "chart2/qa/extras/data/docx/testMultilevelCategoryAxis.docx",
   "sw/qa/extras/ooxmlexport/data/negative-cell-margin-twips.docx",
   "sw/qa/extras/odfexport/data/arabic-zero3-numbering.docx",
@@ -1271,7 +1265,6 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/endingSectionProps.docx",
   "sw/qa/extras/uiwriter/data/tdf131684.docx",
   "sw/qa/core/data/ooxml/pass/tdf96749.docx",
-  "sw/qa/writerfilter/ooxml/data/nested-runs.docx",
   "sw/qa/extras/ooxmlexport/data/tdf141966_chapterNumbering.docx",
   "sw/qa/extras/ooxmlexport/data/tdf153592_columnBreaks.docx",
   "sw/qa/core/draw/data/as-char-textbox.docx",
@@ -1283,15 +1276,6 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/tdf108350_noFontdefaults.docx",
   "sw/qa/extras/ooxmlexport/data/layout-flow-alt-alone.docx",
   "sw/qa/extras/ooxmlexport/data/tdf120852_readOnlyProtection.docx",
-  "sw/qa/core/header_footer/data/bnc884615-mso-position.docx",
-]
-
-[[error]]
-corpus = "Open-XML-SDK"
-class = "word-text-parity"
-sources = [
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/NoDocProps.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/InvalidDocProps.docx",
 ]
 
 [[error]]
@@ -1299,7 +1283,6 @@ corpus = "LibreOffice"
 class = "word-visible-output"
 sources = [
   "sw/qa/extras/ooxmlexport/data/page-content-bottom.docx",
-  "sw/qa/core/layout/data/rtl-table.docx",
   "sw/qa/extras/ooxmlimport/data/n779627b.docx",
   "sw/qa/extras/ooxmlexport/data/tdf73547-dash.docx",
 ]
@@ -1341,7 +1324,6 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/tdf128245.docx",
   "sw/qa/extras/ooxmlexport/data/text_cardinal_list.docx",
   "sw/qa/extras/ooxmlexport/data/text_ordinal_list.docx",
-  "sw/qa/extras/ooxmlexport/data/text_number_list.docx",
   "sw/qa/extras/uiwriter/data/tdf151548_tabNavigation2.docx",
   "sw/qa/core/header_footer/data/SimpleFirstLeftRight.docx",
   "sw/qa/extras/ooxmlexport/data/tdf126287.docx",
@@ -1388,7 +1370,6 @@ sources = [
   "sw/qa/extras/ooxmlimport/data/tdf158023_import.docx",
   "sw/qa/extras/ooxmlexport/data/tdf123636_newlinePageBreak4.docx",
   "sw/qa/extras/ooxmlexport/data/frame-wrap-auto.docx",
-  "sw/qa/extras/ooxmlexport/data/fdo65090.docx",
   "sw/qa/extras/ooxmlexport/data/tdf116883.docx",
   "sw/qa/extras/ooxmlexport/data/tdf108973_backgroundTextbox.docx",
   "sw/qa/extras/ooxmlexport/data/tdf94628.docx",
@@ -1401,11 +1382,8 @@ sources = [
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/Normalize/sdsd.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/Normalize/sym+sym.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/Normalize/text+sym.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/ParaPr/parashading.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/ParaPr/paraind.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/ParaPr/paraspace.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/protected/ReadOnly.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/unable to normalized/ReadOnly.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/page layout(big file)/Indent_Spacing.Template.docx",
 ]
 
@@ -1747,10 +1725,8 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/tdf148361.docx",
   "sw/qa/extras/ooxmlexport/data/tdf99602_charStyleSubscript.docx",
   "sw/qa/extras/ooxmlexport/data/table-btlr-center.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf120412_400PercentSubscript.docx",
   "sw/qa/extras/ooxmlexport/data/groupshape-smarttag.docx",
   "sw/qa/extras/ooxmlexport/data/table-style-rPr-sz.docx",
-  "sw/qa/extras/ooxmlexport/data/fdo80902.docx",
   "sw/qa/extras/layout/data/tdf127118.docx",
   "sw/qa/filter/ascii/data/tdf162180.docx",
   "sw/qa/extras/ooxmlexport/data/tdf120394.docx",
@@ -1772,7 +1748,6 @@ sources = [
   "sw/qa/core/attr/data/attr-set.docx",
   "sw/qa/extras/ooxmlexport/data/tdf148494.docx",
   "sw/qa/extras/ooxmlexport/data/multi-column-separator-with-line.docx",
-  "sw/qa/extras/ooxmlexport/data/1-table-1-page.docx",
   "sw/qa/extras/layout/data/tdf104797.docx",
 ]
 
@@ -1803,11 +1778,9 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/n780843.docx",
   "sw/qa/extras/layout/data/fld-in-tbl.docx",
   "sw/qa/writerfilter/dmapper/data/textbox-textline-top.docx",
-  "sw/qa/writerfilter/dmapper/data/table-negative-vertical-pos.docx",
   "sw/qa/extras/ooxmlimport/data/tdf125038b.docx",
   "sw/qa/extras/rtfexport/data/tdf107620.docx",
   "sw/qa/extras/ooxmlexport/data/tdf164474.docx",
-  "sw/qa/extras/globalfilter/data/char_background_editing.docx",
   "sw/qa/extras/ooxmlexport/data/fdo74566.docx",
   "sw/qa/extras/ooxmlimport/data/tdf125038.docx",
   "sw/qa/extras/ooxmlexport/data/tdf112287.docx",
@@ -1835,9 +1808,7 @@ sources = [
   "sw/qa/writerfilter/filter/data/draw-obj-rtl-no-mirror.docx",
   "sw/qa/extras/ooxmlexport/data/sdt-alias.docx",
   "sw/qa/writerfilter/dmapper/data/layout-in-cell-wrapnone-column.docx",
-  "sw/qa/extras/ooxmlexport/data/table-auto-column-fixed-size2.docx",
   "sw/qa/writerfilter/dmapper/data/nested-floating-table.docx",
-  "sw/qa/writerfilter/dmapper/data/textbox-textline.docx",
   "sw/qa/extras/ooxmlexport/data/fdo43093b.docx",
   "sw/qa/core/layout/data/floattable-vertoffset.docx",
   "sw/qa/extras/ooxmlexport/data/tdf132802.docx",
@@ -1846,7 +1817,6 @@ sources = [
   "sw/qa/extras/uiwriter/data/TC-table-DnD-move.docx",
   "sw/qa/extras/ooxmlexport/data/tdf128752.docx",
   "sw/qa/extras/ooxmlexport/data/tdf126533_axialAngle.docx",
-  "sw/qa/core/layout/data/floattable-not-wrapped-by-table.docx",
   "sw/qa/extras/ooxmlexport/data/tdf126533_axialAngle2.docx",
   "sw/qa/extras/ooxmlexport/data/sdt-before-field.docx",
   "sw/qa/extras/ooxmlexport/data/tdf155707.docx",
@@ -1862,7 +1832,6 @@ sources = [
   "sw/qa/extras/uiwriter/data/redline-para-join.docx",
   "sw/qa/uitest/data/redline-para-join.docx",
   "sw/qa/extras/layout/data/tdf152298.docx",
-  "sw/qa/extras/ooxmlexport/data/fdo80800.docx",
 ]
 
 [[error]]
@@ -1917,13 +1886,6 @@ sources = [
 ]
 
 [[error]]
-corpus = "Apache-POI"
-class = "word-visible-output"
-sources = [
-  "test-data/document/TestTableColumns.docx",
-]
-
-[[error]]
 corpus = "Open-XML-SDK"
 class = "word-page-geometry"
 sources = [
@@ -1949,32 +1911,17 @@ sources = [
 corpus = "Open-XML-SDK"
 class = "word-text-parity"
 sources = [
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/track change/trackChange.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/table/1.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/field/Field-Create date.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/field/simple-field.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/table/table-complex.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/Normalize/lastRenderedPageBreak+run.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/TextRun/lastRenderedPageBreak.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/run/lastRenderedPageBreak.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/hyperlink/hyperlink-in shapes.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/pagelayout simple/margin-narrow.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/hyperlink/hyperlink-in table.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/paragraph/paragraph-space in ps.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/pagelayout simple/Size-Tabloid.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/table/Table with style.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/pagelayout with break in the end/margin-narrow.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/pagelayout simple/Columns-Right.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/table/complex table.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/text direction/textdirection-1.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/pagelayout with break in the end/Size-Tabloid.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/pagelayout simple/Orientation-landscape.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/pagelayout simple/PageColor-lightgreen.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/pagelayout simple/Line numbers-Continuous.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/pagelayout simple/PageBorder-3D.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/pagelayout with break in the end/PageColor-lightgreen.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/pagelayout with break in the end/Line numbers-Continuous.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/pagelayout with break in the end/Orientation-landscape.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/paragraph/paragraph-alignment.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/run/test.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/TextRun/test.docx",
@@ -1984,8 +1931,6 @@ sources = [
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/format/format-paragrapsimple.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/page layout(big file)/A5.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/format/format-font2.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/Plain.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/table/TableComments/cellWithComment.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/table/TableComments/rowWithComment.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/table/tableCell.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/comment/comments by another person.docx",
@@ -2108,7 +2053,6 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/fdo78284.docx",
   "sw/qa/extras/ooxmlexport/data/fdo79969_xlsm.docx",
   "sw/qa/extras/ooxmlexport/data/shape-in-floattable.docx",
-  "sw/qa/core/layout/data/floattable-compat14-nosplit.docx",
   "sw/qa/core/objectpositioning/data/floattable-overlap-cell.docx",
   "sw/qa/extras/layout/data/tdf138773.docx",
   "sw/qa/extras/layout/data/tdf115630.docx",
@@ -2146,7 +2090,6 @@ sources = [
 corpus = "Apache-POI"
 class = "word-text-parity"
 sources = [
-  "test-data/openxml4j/TestPackageCommon.docx",
   "test-data/openxml4j/OPCCompliance_DerivedPartNameFAIL.docx",
 ]
 
@@ -2204,7 +2147,6 @@ sources = [
   "sw/qa/extras/uiwriter/data/tdf148799.docx",
   "sw/qa/extras/layout/data/tdf116486.docx",
   "sw/qa/extras/ooxmlexport/data/tdf106724.docx",
-  "sw/qa/writerfilter/dmapper/data/floattable-hidden-anchor.docx",
   "sw/qa/extras/ooxmlexport/data/date_field_in_shape.docx",
   "sw/qa/extras/ooxmlexport/data/tdf66496.docx",
   "sw/qa/extras/ooxmlexport/data/tdf121663.docx",
@@ -2271,7 +2213,6 @@ sources = [
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/cover page/covwepage4.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/ForTestCase/header.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/ForTestCase/Bug201775_testfile.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment040.docx",
 ]
 
 [[error]]
@@ -2284,7 +2225,6 @@ sources = [
   "sw/qa/extras/ooxmlimport/data/tdf100830.docx",
   "oox/qa/unit/data/WPC_Glow.docx",
   "sw/qa/extras/ooxmlexport/data/n779834.docx",
-  "sw/qa/extras/ooxmlexport/data/fdo80895.docx",
   "sw/qa/extras/ww8export/data/tdf118133.docx",
 ]
 
@@ -2298,7 +2238,6 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/tdf90810short.docx",
   "sw/qa/extras/ooxmlexport/data/tdf153613_textboxAfterPgBreak3.docx",
   "chart2/qa/extras/data/docx/clustered-bar-chart-labels.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf105035_framePrB.docx",
   "sw/qa/extras/layout/data/tdf134685.docx",
   "sw/qa/extras/ooxmlexport/data/tdf119952_negativeMargins.docx",
   "sw/qa/extras/ooxmlexport/data/tdf159032.docx",
@@ -2346,10 +2285,8 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/tdf129575-directBefore.docx",
   "sw/qa/writerfilter/dmapper/data/floattable-nested-cellstart.docx",
   "sw/qa/extras/ooxmlexport/data/tdf134114_allowOverlap.docx",
-  "sw/qa/extras/ooxmlimport/data/tdf122224.docx",
   "sw/qa/extras/layout/data/tdf138465min.docx",
   "sw/qa/extras/ooxmlexport/data/tdf134063.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf133070_testRelativeAnchorHeightFromBottomMarginHasFooter.docx",
   "sw/qa/extras/ooxmlexport/data/tdf108496.docx",
   "sw/qa/extras/layout/data/tdf109137.docx",
   "sw/qa/extras/ooxmlimport/data/tdf129912.docx",
@@ -2358,7 +2295,6 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/sdt-company-multipara.docx",
   "sw/qa/core/txtnode/data/comment.docx",
   "sw/qa/extras/uiwriter/data/tdf143760_ContourToWrapOff.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf123388.docx",
   "sw/qa/extras/ooxmlimport/data/tdf143219_ContourWrap_rotate.docx",
   "sw/qa/extras/ooxmlexport/data/tdf135187.docx",
   "sw/qa/extras/ooxmlexport/data/tdf158451.docx",
@@ -2394,7 +2330,6 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/tdf106690.docx",
   "chart2/qa/extras/data/docx/tdf170215_nullDate.docx",
   "sw/qa/extras/ooxmlimport/data/tdf119200.docx",
-  "sw/qa/extras/ooxmlexport/data/test76317_2K10.docx",
   "sw/qa/extras/ooxmlexport/data/dkvert.docx",
   "sw/qa/extras/ooxmlexport/data/fdo79915.docx",
   "svx/qa/unit/data/page-view-draw-layer-clip.docx",
@@ -2413,7 +2348,6 @@ sources = [
   "test-data/integration/stress006.docx",
   "test-data/document/55966.docx",
   "test-data/document/checkboxes.docx",
-  "test-data/document/WithGIF.docx",
 ]
 
 [[error]]
@@ -2421,8 +2355,6 @@ corpus = "LibreOffice"
 class = "word-visible-output"
 sources = [
   "sw/qa/extras/ooxmlexport/data/image_through_shape.docx",
-  "sw/qa/extras/ooxmlexport/data/Table_cell_auto_width_fdo69656.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf131258.docx",
   "oox/qa/unit/data/WPC_ThemeColor.docx",
   "sw/qa/extras/uiwriter/data/tdf134227.docx",
   "sw/qa/writerfilter/dmapper/data/tdf141540GroupLinePosSize.docx",
@@ -2468,7 +2400,6 @@ corpus = "Open-XML-SDK"
 class = "word-text-parity"
 sources = [
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/footer & header/40101 2004.Rules and Regulations of the Board of Regents.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/ftr - Footer - bookmarkStart - Bookmark Start.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/cover page/coverpage3.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/ForTestCase/chart.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/footer & header/footer header even.docx",
@@ -2500,14 +2431,12 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/ColorOverwritten.docx",
   "sw/qa/extras/ooxmlexport/data/dml-groupshape-capitalization.docx",
   "sw/qa/extras/ooxmlexport/data/tdf155690.docx",
-  "sw/qa/extras/ooxmlexport/data/test76317.docx",
   "sw/qa/core/layout/data/table-fly-overlap.docx",
   "chart2/qa/extras/data/docx/bubblechart.docx",
   "sw/qa/extras/odfexport/data/tdf151100.docx",
   "sw/qa/extras/ooxmlexport/data/tdf95213.docx",
   "chart2/qa/extras/data/docx/chart.docx",
   "sw/qa/extras/ooxmlexport/data/chart-prop.docx",
-  "sw/qa/extras/ooxmlimport/data/dml-groupshape-paraadjust.docx",
   "chart2/qa/extras/data/docx/line-chart-label-default-placement.docx",
   "sw/qa/extras/ooxmlexport/data/watermark-shapetype.docx",
   "sw/qa/extras/ooxmlexport/data/fdo73215.docx",
@@ -2516,7 +2445,6 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/footer-body-distance.docx",
   "chart2/qa/extras/data/docx/fdo74115_WallGradientFill.docx",
   "sw/qa/extras/ooxmlexport/data/AnchorId.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf123382.docx",
   "sw/qa/core/exportdata/ooxml/pass/sdt-in-shape-with-textbox.docx",
   "sw/qa/uitest/data/TestHiddenHeadersFooters.docx",
   "oox/qa/unit/data/tdf137314_vml_rotation_unit_fd.docx",
@@ -2526,17 +2454,14 @@ sources = [
   "chart2/qa/extras/data/docx/DisplayUnits.docx",
   "sw/qa/extras/ooxmlexport/data/tdf139549.docx",
   "sw/qa/extras/ooxmlexport/data/tdf162070_export.docx",
-  "sw/qa/extras/uiwriter/data/simplefooter.docx",
   "sw/qa/extras/ooxmlexport/data/tdf116084.docx",
   "sw/qa/extras/ooxmlexport/data/fdo69644.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf162527_hidden_image.docx",
   "chart2/qa/extras/data/docx/Bar_horizontal_cone.docx",
   "chart2/qa/extras/data/docx/FDO75975.docx",
   "sw/qa/extras/htmlexport/data/tdf131728.docx",
   "sw/qa/extras/ooxmlexport/data/tdf131728.docx",
   "sw/qa/extras/uiwriter/data/tdf131728.docx",
   "sw/qa/core/header_footer/data/cont-sect-break-header-footer.docx",
-  "sw/qa/extras/ooxmlexport/data/dml-textframe-vertadjust.docx",
   "sw/qa/extras/ooxmlexport/data/fdo78883.docx",
   "sw/qa/extras/ooxmlexport/data/tdf153613_anchoredAfterPgBreak2.docx",
   "sw/qa/extras/ooxmlexport/data/tdf153613_anchoredAfterPgBreak6.docx",
@@ -2545,7 +2470,6 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/preserve_Z_field_TOC.docx",
   "sw/qa/extras/ooxmlimport/data/tdf98882.docx",
   "sw/qa/core/header_footer/data/tdf79639.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf167657_sectPr_bottomSpacing.docx",
   "sw/qa/extras/ooxmlexport/data/fdo74401.docx",
   "sw/qa/core/layout/data/table-missing-join.docx",
   "sw/qa/extras/ooxmlexport/data/tdf138892_noNumbering.docx",
@@ -2652,7 +2576,6 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/tdf160077_layoutInCellC.docx",
   "sw/qa/extras/ooxmlexport/data/FDO75133.docx",
   "sw/qa/extras/layout/data/tdf153136.docx",
-  "sw/qa/extras/ooxmlexport/data/fdo77719.docx",
   "sw/qa/extras/ooxmlexport/data/FDO74775.docx",
   "sw/qa/extras/ooxmlexport/data/tdf171433_equation.docx",
   "sw/qa/extras/ooxmlexport/data/tdf108505.docx",
@@ -2671,7 +2594,6 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/tdf152425.docx",
   "sw/qa/extras/odfexport/data/tdf95806.docx",
   "sw/qa/extras/uiwriter/data/tdf159026.docx",
-  "sw/qa/writerfilter/ooxml/data/recursive_header_rels.docx",
   "sw/qa/extras/ooxmlexport/data/activex_textbox.docx",
   "sw/qa/extras/ooxmlexport/data/indentation.docx",
   "sw/qa/extras/ooxmlexport/data/tdf91122.docx",
@@ -2685,7 +2607,6 @@ sources = [
   "sw/qa/extras/layout/data/tdf128198-1.docx",
   "sw/qa/extras/ooxmlexport/data/dml-solidfill-alpha.docx",
   "sw/qa/extras/ooxmlexport/data/tdf119143.docx",
-  "sw/qa/extras/ooxmlexport/data/2col-header.docx",
   "sw/qa/extras/ooxmlexport/data/tdf134569_nestedTable.docx",
   "sw/qa/extras/ooxmlexport/data/tdf126994_lostPageBreak.docx",
   "sw/qa/extras/ooxmlexport/data/dml-groupshape-paraspacing.docx",
@@ -2705,10 +2626,8 @@ sources = [
   "xmloff/qa/unit/data/tdf150407_PosRelBottomMargin.docx",
   "sw/qa/extras/ooxmlexport/data/tdf130494.docx",
   "chart2/qa/extras/data/docx/doughnutChart.docx",
-  "sw/qa/extras/ooxmlexport/data/lost-footer-style.docx",
   "sw/qa/extras/ooxmlexport/data/tdf156484.docx",
   "sw/qa/extras/ooxmlexport/data/fdo73247.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf150966_regularInset.docx",
 ]
 
 [[error]]
@@ -2764,7 +2683,6 @@ class = "word-text-parity"
 sources = [
   "sw/qa/writerfilter/dmapper/data/page-break-footer-table.docx",
   "sw/qa/extras/ooxmlexport/data/n793262.docx",
-  "sw/qa/core/layout/data/shape-left-padding-off-page.docx",
   "sw/qa/writerfilter/dmapper/data/endnote-at-section-end.docx",
   "sw/qa/extras/layout/data/merge_hidden_redline.docx",
   "sw/qa/extras/ooxmlexport/data/tdf78352.docx",
@@ -2772,6 +2690,7 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/rhbz988516.docx",
   "sw/qa/extras/ooxmlexport/data/tdf165492_atLeastWithBottomSpacing.docx",
   "sw/qa/extras/ooxmlexport/data/tdf165492_exactWithBottomSpacing.docx",
+  "sw/qa/extras/odfexport/data/tdf129520.docx",
   "sw/qa/extras/ooxmlexport/data/Unsupportedtextfields.docx",
   "sw/qa/extras/ooxmlexport/data/tdf99227.docx",
   "sw/qa/core/fields/data/tdf86790.docx",
@@ -2805,7 +2724,6 @@ sources = [
   "sw/qa/extras/ooxmlimport/data/groupshape-child-rotation.docx",
   "sw/qa/extras/ooxmlexport/data/btlr-textbox.docx",
   "sw/qa/extras/ooxmlexport/data/picture-wrap-polygon.docx",
-  "oox/qa/unit/data/line-vertical-rotation.docx",
   "sw/qa/core/layout/data/floattable-in-section.docx",
   "sw/qa/extras/ooxmlexport/data/tdf137335_whitespaceLineHeight.docx",
   "sw/qa/extras/ooxmlexport/data/fdo73596_AlphaSeparator.docx",
@@ -2815,13 +2733,11 @@ sources = [
   "sw/qa/extras/ooxmlimport/data/tdf154695-ToC_no_numbers.docx",
   "sw/qa/extras/ooxmlexport/data/tdf103573.docx",
   "sw/qa/extras/ooxmlexport/data/tdf53856_conflictingStyle.docx",
-  "sw/qa/core/text/data/floattable-wrap-empty-para.docx",
   "sw/qa/extras/ooxmlexport/data/fdo66543.docx",
   "sw/qa/extras/ooxmlexport/data/tdf152636_lostPageBreak2.docx",
   "sw/qa/extras/ooxmlexport/data/tdf132514.docx",
   "sw/qa/extras/ooxmlexport/data/textbox-rounded-corners.docx",
   "sw/qa/extras/ooxmlexport/data/tdf148380_usernameField.docx",
-  "sw/qa/extras/ooxmlexport/data/fdo66773.docx",
   "sw/qa/core/header_footer/data/fdo66145.docx",
   "sw/qa/extras/ooxmlexport/data/tdf133035.docx",
   "sw/qa/extras/ooxmlimport/data/tdf153791-shd_overrides_fontRef.docx",
@@ -2844,7 +2760,6 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/tdf91260.docx",
   "sw/qa/extras/ooxmlexport/data/fdo73541.docx",
   "sw/qa/extras/ooxmlexport/data/tdf73499.docx",
-  "sw/qa/extras/ooxmlexport/data/testTitlePage.docx",
 ]
 
 [[error]]
@@ -2905,7 +2820,6 @@ class = "word-text-parity"
 sources = [
   "sw/qa/core/unocore/data/format-char-style-change.docx",
   "xmloff/qa/unit/data/format-char-style-change.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf103651.docx",
   "xmloff/qa/unit/data/redline-format-char-props.docx",
   "sw/qa/extras/ooxmlexport/data/tdf153042_largeTab.docx",
   "sw/qa/extras/ww8export/data/draw-obj-rtl-no-mirror-vml.docx",
@@ -2918,10 +2832,8 @@ sources = [
   "sw/qa/extras/uiwriter/data/MsWordCompTrailingBlanks.docx",
   "sw/qa/extras/layout/data/tdf170381-split-float-table-in-float-table.docx",
   "sw/qa/extras/ooxmlexport/data/tdf140668.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf133070_testRelativeAnchorHeightFromBottomMarginNoFooter.docx",
   "sw/qa/extras/ooxmlexport/data/cell-grid-span.docx",
   "sw/qa/extras/ooxmlexport/data/tdf90611.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf123610_handle_upright.docx",
   "sw/qa/extras/layout/data/tdf137025.docx",
   "sw/qa/extras/ooxmlexport/data/tdf167843_tblLook_firstRow_tblHeader.docx",
   "sw/qa/extras/ooxmlexport/data/custom-styles-TOC-comma.docx",
@@ -2944,7 +2856,6 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/tdf165047_contextualSpacingTopMargin.docx",
   "sw/qa/extras/ooxmlexport/data/table-floating.docx",
   "sw/qa/extras/uiwriter/data/tdf78727.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf103544.docx",
   "sw/qa/extras/ooxmlexport/data/tdf123636_newlinePageBreak2.docx",
   "sw/qa/writerfilter/dmapper/data/wrap-poly-crop.docx",
   "sw/qa/extras/ooxmlexport/data/tdf165047_consolidatedTopMargin.docx",
@@ -2974,7 +2885,6 @@ corpus = "Apache-POI"
 class = "word-text-parity"
 sources = [
   "test-data/openxml4j/sample.docx",
-  "test-data/document/EmptyDocumentWithHeaderFooter.docx",
   "test-data/document/HeaderFooterUnicode.docx",
   "test-data/document/NumberingWOverrides.docx",
 ]
@@ -2993,19 +2903,13 @@ corpus = "Open-XML-SDK"
 class = "word-text-parity"
 sources = [
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/textDirection-Paragraph Text Flow Direction-val-tbRl.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment024.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/customXmlDelRangeStart-Custom XML Markup Deletion Start-val-author-special-chars.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/page layout(big file)/landScape.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/numFmt-Numbering Format-val-decimalEnclosedFullstop.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/SDT/Sdt/sdtCell.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/SDT/SdtCell/sdtCell.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/mixed languages/Unit1Translation.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/watermark/chinese watermark with font size color specified.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/isLgl-Display All Levels Using Arabic Numerals.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment043.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/runstyle/mixed-run.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment031.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment032.docx",
 ]
 
 [[error]]
@@ -3043,7 +2947,6 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/activex_checkbox.docx",
   "sw/qa/extras/uiwriter/data/tdf66405.docx",
   "sw/qa/extras/ooxmlimport/data/tdf87533_bidi.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf95367_inheritFollowStyle.docx",
   "chart2/qa/extras/data/docx/tdf132174.docx",
   "sw/qa/extras/ooxmlexport/data/margins_from_style.docx",
   "sw/qa/extras/ooxmlexport/data/tdf133052.docx",
@@ -3076,7 +2979,6 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/tdf146851_2.docx",
   "sw/qa/extras/ooxmlexport/data/tdf151704_thinColumnHeight.docx",
   "sw/qa/extras/ooxmlexport/data/tdf166511.docx",
-  "sw/qa/extras/ooxmlexport/data/paragraphWithComments.docx",
   "sw/qa/extras/layout/data/tdf167540.docx",
   "sw/qa/extras/ooxmlexport/data/tdf82173_endnoteStyle.docx",
   "sw/qa/core/text/data/redline-number-portion.docx",
@@ -3104,7 +3006,6 @@ corpus = "Apache-POI"
 class = "word-text-parity"
 sources = [
   "test-data/document/Numbering.docx",
-  "test-data/openxml4j/TestPackageThumbnail.docx",
   "test-data/document/DiffFirstPageHeadFoot.docx",
 ]
 
@@ -3114,12 +3015,9 @@ class = "word-text-parity"
 sources = [
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/eastAsianLayout-East Asian Typography Settings-vert-1.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/footnote & endnote/endnote at end of section and restart for each section.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/summaryLength-Percentage of Document to Use When Generating Summary-val-100.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/instrText-Field Definitions-EQ-Array-AlignLeft.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/footnote & endnote/endnote.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/fldSimple-FormulasAndExpressions-Bookmark-GeneralFormat.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/paperSrc-Paper Source Information.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/footer & header/footer header - plaintext.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/paragraph/sectionBreak.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/section break/sectionBreak.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/table/tableCell2Para.docx",
@@ -3177,14 +3075,12 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/tdf109063.docx",
   "sw/qa/extras/ooxmlexport/data/tdf86374.docx",
   "sw/qa/core/undo/data/textbox-cut-undo.docx",
-  "sw/qa/extras/globalfilter/data/char_highlight.docx",
   "sw/qa/extras/ooxmlexport/data/tdf120344_FontTypes.docx",
   "sw/qa/core/layout/data/floattable-rowsplit.docx",
   "sw/qa/extras/ooxmlexport/data/tdf132754.docx",
   "sw/qa/extras/ooxmlexport/data/dropdown-in-cell.docx",
   "sw/qa/extras/ooxmlexport/data/tdf142387.docx",
   "sw/qa/uitest/data/redlinesuccessordata.docx",
-  "sw/qa/extras/ooxmlexport/data/fdo75431.docx",
   "sw/qa/extras/odfexport/data/tdf137199.docx",
   "sw/qa/core/unocore/data/paragraph-marker.docx",
   "sw/qa/extras/ooxmlimport/data/tdf127825.docx",
@@ -3252,7 +3148,6 @@ sources = [
 corpus = "Open-XML-SDK"
 class = "word-text-parity"
 sources = [
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/Normalize/p in sdt.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/Normalize/normalized.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/footnote & endnote/ftEdNote.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/table/TableFntEdnt/TableFnt.docx",
@@ -3267,7 +3162,6 @@ sources = [
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/SDT/SdtRun/SDT Run.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/table/TableFntEdnt/TableEdn.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/table/TableFntEdnt/TableFntEdnt.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/w-Expanded&Compressed Text-val-33.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/footnote & endnote/footnote.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/footnote & endnote/footnote below text and resart for each section.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/footnote & endnote/footnote at bottom of paget and resart for each page.docx",
@@ -3325,7 +3219,6 @@ sources = [
   "sw/qa/extras/uiwriter/data/rhbz1810732.docx",
   "sw/qa/extras/ooxmlexport/data/tdf124986.docx",
   "sw/qa/extras/ooxmlexport/data/fdo73556.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf133702.docx",
   "sw/qa/extras/ooxmlexport/data/TextEffects_Props3d_Ligatures_NumForm_NumSpacing.docx",
   "sw/qa/writerfilter/ooxml/data/floattable-tables-lost.docx",
   "sw/qa/uibase/uno/data/cond-field-cached-value.docx",
@@ -3333,7 +3226,6 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/tdf124367.docx",
   "sw/qa/extras/layout/data/tdf150438.docx",
   "sw/qa/extras/ooxmlimport/data/tdf109053.docx",
-  "sw/qa/extras/ooxmlexport/data/footer-contain-hyperlink.docx",
   "sw/qa/extras/ooxmlexport/data/tdf130907.docx",
   "sw/qa/writerfilter/dmapper/data/clearing-break-sect-end.docx",
   "sw/qa/writerfilter/dmapper/data/font-family.docx",
@@ -3361,7 +3253,6 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/tdf122342.docx",
   "sw/qa/extras/ooxmlexport/data/tdf133030.docx",
   "sw/qa/core/layout/data/ignore-top-margin-table.docx",
-  "sw/qa/writerfilter/dmapper/data/floating-table-section-break.docx",
 ]
 
 [[error]]
@@ -3369,23 +3260,17 @@ corpus = "Open-XML-SDK"
 class = "word-text-parity"
 sources = [
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/numbering/numbering-simple.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/ParaPr/outlineLvl.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/table/TableComments/crossTableComment.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/textbox/txtBox.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/paragraph/temp.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/table/TableComments/column with comments.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/numbering/numbering-startValue.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/textbox/textBox-2.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/bullet/bullet-symbol.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/MiscNode/WithMiscNodes.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/numbering/numbering-list.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/page layout(big file)/margin.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/bookmark/bookmark-whole text.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/numbering/numbering-newformat.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/bookmark/bookmark-p12.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/pagelayout with break in the end/Columns-Right.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/page layout/pagelayout with break in the end/PageBorder-3D.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/Normalize/header&footer.docx",
 ]
 
 [[error]]
@@ -3434,15 +3319,6 @@ corpus = "Open-XML-SDK"
 class = "word-page-geometry"
 sources = [
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/paragraph/paragraph-line space.docx",
-]
-
-[[error]]
-corpus = "Open-XML-SDK"
-class = "word-text-parity"
-sources = [
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment025.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment054.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment055.docx",
 ]
 
 [[error]]
@@ -3521,7 +3397,6 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/tdf168988_grabbagDatePicker.docx",
   "sw/qa/extras/ooxmlexport/data/tdf95189.docx",
   "sw/qa/extras/ooxmlexport/data/tdf92472.docx",
-  "sw/qa/core/layout/data/floattable-compat14-body.docx",
   "sw/qa/core/doc/data/floating-table-dummy-text.docx",
   "sw/qa/core/layout/data/floattable-wrapped-by-table-nested.docx",
   "sw/qa/writerfilter/dmapper/data/frame-direction.docx",
@@ -3541,13 +3416,11 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/chart-in-footer.docx",
   "sw/qa/extras/ooxmlexport/data/tdf120511_eatenSection.docx",
   "sw/qa/extras/ooxmlimport/data/tdf143475_rotatedWord2007imageInline.docx",
-  "sw/qa/extras/ooxmlexport/data/fdo78432.docx",
   "sw/qa/extras/ooxmlexport/data/tdf123054.docx",
   "sw/qa/extras/ooxmlimport/data/tdf75573_page1frame.docx",
   "oox/qa/unit/data/multiple-group-shapes.docx",
   "sw/qa/extras/ooxmlexport/data/tdf127814.docx",
   "sw/qa/extras/uiwriter/data/tdf149550.docx",
-  "sw/qa/extras/ooxmlexport/data/fdo83048.docx",
   "sw/qa/extras/ooxmlexport/data/tdf81100.docx",
   "sw/qa/extras/ooxmlexport/data/ShapeOverlappingWithSdt.docx",
   "sw/qa/extras/ooxmlexport/data/tdf155736_PageNumbers_footer.docx",
@@ -3557,7 +3430,6 @@ sources = [
   "sw/qa/extras/ooxmlimport/data/tdf134902.docx",
   "sw/qa/extras/ooxmlimport/data/tdf143475_rotatedWord2007image.docx",
   "sw/qa/extras/ooxmlexport/data/para-auto-spacing.docx",
-  "sw/qa/extras/ooxmlexport/data/content-control-grab-bag.docx",
   "sw/qa/core/draw/data/sdt-textbox-header.docx",
   "sw/qa/extras/layout/data/tdf115094.docx",
   "sw/qa/core/layout/data/floattable-widow.docx",
@@ -3594,7 +3466,6 @@ sources = [
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/complexDocx/complexity - part 1.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/Of16-07.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/Of16-04.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/picture/pic-3.docx",
 ]
 
 [[class]]
@@ -4158,7 +4029,6 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/lvlPicBulletId.docx",
   "sw/qa/extras/ooxmlexport/data/fdo74745.docx",
   "sw/qa/extras/ooxmlexport/data/tdf164500_framePrBeforeTable2.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf127622_framePr.docx",
   "sw/qa/core/exportdata/ooxml/pass/textframe-in-shape.docx",
   "sw/qa/core/data/ooxml/pass/fdo79940.docx",
   "sw/qa/extras/ooxmlexport/data/dml-shape-fillbitmapcrop.docx",
@@ -4171,13 +4041,6 @@ class = "word-visible-output"
 sources = [
   "sw/qa/extras/ooxmlexport/data/tdf131098_imageFill.docx",
   "sw/qa/extras/ooxmlexport/data/picture-effects-preservation.docx",
-]
-
-[[error]]
-corpus = "Open-XML-SDK"
-class = "word-text-parity"
-sources = [
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/picture/pic-5.docx",
 ]
 
 [[error]]
@@ -4389,7 +4252,6 @@ class = "word-page-geometry"
 sources = [
   "chart2/qa/extras/data/docx/TableOnPage3.docx",
   "sw/qa/writerfilter/dmapper/data/if-field.docx",
-  "sw/qa/extras/ooxmlexport/data/fdo68607.docx",
   "sw/qa/core/layout/data/floattable-del-empty.docx",
 ]
 
@@ -4402,7 +4264,6 @@ sources = [
   "oox/qa/unit/data/shape-non-autosize-with-text.docx",
   "sw/qa/extras/ooxmlexport/data/tdf135906.docx",
   "chart2/qa/extras/data/docx/fdo83058_dlblPos.docx",
-  "sw/qa/extras/ooxmlexport/data/fdo82123.docx",
   "sw/qa/extras/ooxmlexport/data/tdf138612.docx",
   "sw/qa/core/text/data/floattable-avoid-last-manip-ofst.docx",
   "sw/qa/writerfilter/dmapper/data/floattable-nested-layout.docx",
@@ -4415,7 +4276,6 @@ sources = [
   "sw/qa/uitest/data/tdf145215.docx",
   "sw/qa/extras/ooxmlexport/data/FDO76312.docx",
   "sw/qa/extras/ooxmlexport/data/tdf138093B.docx",
-  "sw/qa/core/data/ooxml/pass/fdo80514.docx",
   "sw/qa/extras/ooxmlexport/data/tdf129575-docDefault.docx",
   "sw/qa/extras/ooxmlexport/data/fdo78907.docx",
 ]
@@ -4566,7 +4426,6 @@ corpus = "Open-XML-SDK"
 class = "word-text-parity"
 sources = [
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Graphics/2D Column-O12-Word-Charts.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment017.docx",
 ]
 
 [[error]]
@@ -4653,7 +4512,6 @@ corpus = "LibreOffice"
 class = "word-text-parity"
 sources = [
   "sw/qa/core/header_footer/data/n750935.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf143384_tableInFoot_negativeMargins.docx",
   "sw/qa/writerfilter/dmapper/data/floattable-hidemark.docx",
   "sw/qa/extras/odfexport/data/tdf163575.docx",
   "sw/qa/extras/uiwriter/data/tdf157131.docx",
@@ -4687,7 +4545,6 @@ sources = [
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/chart/chart.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/chart/chart1.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/chart/chart2.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/chart/chart3.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/chart/chart4.docx",
 ]
 
@@ -4714,7 +4571,6 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/tdf146802.docx",
   "sw/qa/extras/ooxmlimport/data/tdf106606.docx",
   "sw/qa/extras/ooxmlexport/data/tdf135595_HFtableWrap_c12.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf123355.docx",
   "sw/qa/writerfilter/dmapper/data/tdf142305StrokeGlowMargin.docx",
   "sw/qa/extras/ooxmlexport/data/tdf160049_anchorMargin15.docx",
   "sw/qa/extras/ooxmlexport/data/fdo76098.docx",
@@ -4805,7 +4661,6 @@ sources = [
   "sw/qa/extras/ooxmlimport/data/tdf133448.docx",
   "sw/qa/extras/ooxmlexport/data/fdo66474.docx",
   "sw/qa/extras/layout/data/tdf152983-1-min.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf149089.docx",
   "sw/qa/extras/ooxmlexport/data/tdf95495.docx",
   "sw/qa/uitest/data/tdf95495.docx",
   "sw/qa/extras/ooxmlexport/data/tdf104420_lostParagraph.docx",
@@ -5199,44 +5054,6 @@ sources = [
 ]
 
 [[error]]
-corpus = "Open-XML-SDK"
-class = "word-text-parity"
-sources = [
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/Normalize/miss table-row_id.docx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/table/table-One table cell .docx",
-]
-
-[[error]]
-corpus = "Apache-POI"
-source = "test-data/document/Bug60337.docx"
-class = "word-text-parity"
-
-[[error]]
-corpus = "LibreOffice"
-class = "word-text-parity"
-sources = [
-  "sw/qa/extras/ooxmlexport/data/table-style-parprop.docx",
-  "sw/qa/extras/ooxmlexport/data/cell-sdt-redline.docx",
-  "sw/qa/extras/unowriter/data/table-line-spacing.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf115094v3.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf136667.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf132271.docx",
-  "sw/qa/writerfilter/dmapper/data/field-if-inside-if.docx",
-  "sw/qa/writerfilter/dmapper/data/1cell-insidev-rightborder.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf130690.docx",
-  "sw/qa/extras/ooxmlexport/data/table_lineRule.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf99090_pgbrkAfterTable.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf133455.docx",
-  "sw/qa/extras/ooxmlexport/data/testTrackChangesInsertedTableRow.docx",
-  "sw/qa/extras/ooxmlexport/data/testTrackChangesDeletedTableRow.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf129888vml.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf149388_fly.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf149388.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf118691.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf138093.docx",
-]
-
-[[error]]
 corpus = "Apache-POI"
 class = "spreadsheet-text-parity"
 sources = [
@@ -5436,4 +5253,58 @@ corpus = "Open-XML-SDK"
 class = "presentation-visible-output"
 sources = [
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/Presentation.pptx",
+]
+
+[[error]]
+corpus = "Apache-POI"
+class = "word-text-parity"
+sources = [
+  "test-data/document/sample.docx",
+]
+
+[[error]]
+corpus = "LibreOffice"
+class = "word-page-geometry"
+sources = [
+  "sw/qa/extras/ooxmlexport/data/tdf143384_tableInFoot_negativeMargins.docx",
+  "sw/qa/extras/ooxmlexport/data/tdf149089.docx",
+]
+
+[[error]]
+corpus = "LibreOffice"
+class = "word-text-parity"
+sources = [
+  "sw/qa/extras/layout/data/tdf128399.docx",
+  "sw/qa/extras/ooxmlexport/data/fdo68607.docx",
+  "sw/qa/extras/ooxmlexport/data/tdf105035_framePrB.docx",
+  "sw/qa/extras/ooxmlexport/data/tdf106001.docx",
+  "sw/qa/extras/ooxmlexport/data/tdf140137.docx",
+]
+
+[[error]]
+corpus = "Open-XML-SDK"
+class = "word-text-parity"
+sources = [
+  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/chart/chart3.docx",
+  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/picture/pic-4.docx",
+]
+
+[[error]]
+corpus = "LibreOffice"
+class = "word-visible-output"
+sources = [
+  "sw/qa/core/text/data/floattable-wrap-empty-para.docx",
+  "sw/qa/extras/ooxmlimport/data/table_width.docx",
+  "sw/qa/extras/ooxmlexport/data/1-table-1-page.docx",
+  "sw/qa/extras/ooxmlexport/data/fdo75431.docx",
+  "sw/qa/extras/ooxmlexport/data/fdo78432.docx",
+  "sw/qa/extras/ooxmlexport/data/fdo82123.docx",
+]
+
+[[error]]
+corpus = "Open-XML-SDK"
+class = "word-visible-output"
+sources = [
+  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/picture/pic-3.docx",
+  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/picture/pic-5.docx",
 ]
