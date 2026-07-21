@@ -1,6 +1,7 @@
 use std::{
     collections::BTreeMap,
     io::{Cursor, Read},
+    sync::Arc,
 };
 
 use olecfsdk::doc::{
@@ -14,9 +15,9 @@ use olecfsdk::ppt::{
 };
 use olecfsdk::shared_content::{OfficePropertySetKind, OfficeSharedContent};
 use olecfsdk::xls::{
-    CellErrorCode, ExtFontScheme, ExtPropertyData, ExtRstBody, SstExtensionData,
-    XlStringCharacters, XlsCellValue, XlsFile, XlsFormulaCachedValue, XlsHyperlinkTarget,
-    XlsNumberFormatRef, XlsPictureImageLink,
+    BiffRecordData, BiffSubstreamKind, CellErrorCode, CellRange, ExtFontScheme, ExtPropertyData,
+    ExtRstBody, FixedU16RecordKind, SstExtensionData, XlStringCharacters, XlsCellValue, XlsFile,
+    XlsFormulaCachedValue, XlsHyperlinkTarget, XlsNumberFormatRef, XlsPictureImageLink,
 };
 use olecfsdk_corpus_test_support::corpus_file_path;
 use olecfsdk_ooxml::{
@@ -79,6 +80,315 @@ struct BookmarkSnapshot {
     column_first: Option<i32>,
     column_last: Option<i32>,
     content: String,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct ExpectedXlsRowLayout {
+    row_index: u32,
+    style_index: Option<u32>,
+    custom_format: bool,
+    height: Option<f64>,
+    hidden: bool,
+    custom_height: bool,
+    outline_level: Option<u8>,
+    collapsed: bool,
+    thick_top: bool,
+    thick_bottom: bool,
+    show_phonetic: bool,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct ExpectedXlsColumnLayout {
+    min: u32,
+    max: u32,
+    width: f64,
+    style_index: Option<u32>,
+    hidden: bool,
+    custom_width: bool,
+    best_fit: bool,
+    show_phonetic: bool,
+    outline_level: Option<u8>,
+    collapsed: bool,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct ExpectedXlsSheetLayout {
+    rows: Vec<ExpectedXlsRowLayout>,
+    columns: Vec<ExpectedXlsColumnLayout>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct ExpectedXlsWorkbookProperties {
+    date_1904: Option<bool>,
+    show_objects: Option<x::ObjectDisplayValues>,
+    show_border_unselected_tables: Option<bool>,
+    filter_privacy: Option<bool>,
+    prompted_solutions: Option<bool>,
+    show_ink_annotation: Option<bool>,
+    backup_file: Option<bool>,
+    save_external_link_values: Option<bool>,
+    update_links: Option<x::UpdateLinksBehaviorValues>,
+    code_name: Option<String>,
+    hide_pivot_field_list: Option<bool>,
+    show_pivot_chart_filter: Option<bool>,
+    publish_items: Option<bool>,
+    check_compatibility: Option<bool>,
+    auto_compress_pictures: Option<bool>,
+    refresh_all_connections: Option<bool>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct ExpectedXlsCalculationProperties {
+    calculation_id: Option<u32>,
+    calculation_mode: Option<x::CalculateModeValues>,
+    full_calculation_on_load: Option<bool>,
+    reference_mode: Option<x::ReferenceModeValues>,
+    iterate: Option<bool>,
+    iterate_count: Option<u32>,
+    iterate_delta: Option<f64>,
+    full_precision: Option<bool>,
+    calculation_completed: Option<bool>,
+    calculation_on_save: Option<bool>,
+    concurrent_calculation: Option<bool>,
+    concurrent_manual_count: Option<u32>,
+    force_full_calculation: Option<bool>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct ExpectedXlsWorkbookSettings {
+    properties: Option<ExpectedXlsWorkbookProperties>,
+    calculation: Option<ExpectedXlsCalculationProperties>,
+    sheet_full_calculation_on_load: Vec<Option<bool>>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct ExpectedXlsWorkbookProtection {
+    password: Option<String>,
+    revisions_password: Option<String>,
+    lock_structure: Option<bool>,
+    lock_windows: Option<bool>,
+    lock_revision: Option<bool>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct ExpectedXlsSheetProtection {
+    password: Option<String>,
+    sheet: Option<bool>,
+    objects: Option<bool>,
+    scenarios: Option<bool>,
+    format_cells: Option<bool>,
+    format_columns: Option<bool>,
+    format_rows: Option<bool>,
+    insert_columns: Option<bool>,
+    insert_rows: Option<bool>,
+    insert_hyperlinks: Option<bool>,
+    delete_columns: Option<bool>,
+    delete_rows: Option<bool>,
+    select_locked_cells: Option<bool>,
+    sort: Option<bool>,
+    auto_filter: Option<bool>,
+    pivot_tables: Option<bool>,
+    select_unlocked_cells: Option<bool>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct ExpectedXlsProtectedRange {
+    password: Option<String>,
+    references: Vec<String>,
+    name: String,
+    security_descriptor: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct ExpectedXlsProtection {
+    workbook: Option<ExpectedXlsWorkbookProtection>,
+    sheets: Vec<(
+        Option<ExpectedXlsSheetProtection>,
+        Vec<ExpectedXlsProtectedRange>,
+    )>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct ExpectedXlsWorkbookView {
+    visibility: Option<x::VisibilityValues>,
+    minimized: Option<bool>,
+    show_horizontal_scroll: Option<bool>,
+    show_vertical_scroll: Option<bool>,
+    show_sheet_tabs: Option<bool>,
+    x_window: Option<i32>,
+    y_window: Option<i32>,
+    window_width: Option<u32>,
+    window_height: Option<u32>,
+    tab_ratio: Option<u32>,
+    first_sheet: Option<u32>,
+    active_tab: Option<u32>,
+    auto_filter_date_grouping: Option<bool>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct ExpectedXlsSheetFormat {
+    base_column_width: Option<u32>,
+    default_column_width: Option<f64>,
+    default_row_height: f64,
+    custom_height: Option<bool>,
+    zero_height: Option<bool>,
+    thick_top: Option<bool>,
+    thick_bottom: Option<bool>,
+    outline_level_row: Option<u8>,
+    outline_level_column: Option<u8>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct ExpectedXlsPane {
+    horizontal_split: Option<f64>,
+    vertical_split: Option<f64>,
+    top_left_cell: Option<String>,
+    active_pane: Option<x::PaneValues>,
+    state: Option<x::PaneStateValues>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct ExpectedXlsSelection {
+    pane: Option<x::PaneValues>,
+    active_cell: Option<String>,
+    active_cell_id: Option<u32>,
+    references: Option<Vec<String>>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct ExpectedXlsSheetView {
+    show_formulas: Option<bool>,
+    show_grid_lines: Option<bool>,
+    show_row_col_headers: Option<bool>,
+    show_zeros: Option<bool>,
+    right_to_left: Option<bool>,
+    tab_selected: Option<bool>,
+    show_ruler: Option<bool>,
+    show_outline_symbols: Option<bool>,
+    default_grid_color: Option<bool>,
+    show_white_space: Option<bool>,
+    view: Option<x::SheetViewValues>,
+    top_left_cell: Option<String>,
+    color_id: Option<u32>,
+    zoom_scale: Option<u32>,
+    zoom_scale_normal: Option<u32>,
+    zoom_scale_sheet_layout_view: Option<u32>,
+    zoom_scale_page_layout_view: Option<u32>,
+    workbook_view_id: u32,
+    pane: Option<ExpectedXlsPane>,
+    selections: Vec<ExpectedXlsSelection>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct ExpectedXlsSheetPresentation {
+    format: Option<ExpectedXlsSheetFormat>,
+    views: Vec<ExpectedXlsSheetView>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct ExpectedXlsPresentation {
+    workbook_views: Vec<ExpectedXlsWorkbookView>,
+    sheets: Vec<ExpectedXlsSheetPresentation>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct ExpectedXlsPrintOptions {
+    horizontal_centered: Option<bool>,
+    vertical_centered: Option<bool>,
+    headings: Option<bool>,
+    grid_lines: Option<bool>,
+    grid_lines_set: Option<bool>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct ExpectedXlsPageMargins {
+    left: f64,
+    right: f64,
+    top: f64,
+    bottom: f64,
+    header: f64,
+    footer: f64,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct ExpectedXlsPageSetup {
+    paper_size: Option<u32>,
+    scale: Option<u32>,
+    first_page_number: Option<i64>,
+    fit_to_width: Option<u32>,
+    fit_to_height: Option<u32>,
+    page_order: Option<x::PageOrderValues>,
+    orientation: Option<x::OrientationValues>,
+    use_printer_defaults: Option<bool>,
+    black_and_white: Option<bool>,
+    draft: Option<bool>,
+    cell_comments: Option<x::CellCommentsValues>,
+    use_first_page_number: Option<bool>,
+    errors: Option<x::PrintErrorValues>,
+    horizontal_dpi: Option<u32>,
+    vertical_dpi: Option<u32>,
+    copies: Option<u32>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct ExpectedXlsHeaderFooter {
+    different_odd_even: Option<bool>,
+    different_first: Option<bool>,
+    scale_with_doc: Option<bool>,
+    align_with_margins: Option<bool>,
+    odd_header: Option<String>,
+    odd_footer: Option<String>,
+    even_header: Option<String>,
+    even_footer: Option<String>,
+    first_header: Option<String>,
+    first_footer: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct ExpectedXlsPageBreak {
+    id: Option<u32>,
+    min: Option<u32>,
+    max: Option<u32>,
+    manual: Option<bool>,
+    pivot: Option<bool>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct ExpectedXlsSheetPageSettings {
+    print_options: Option<ExpectedXlsPrintOptions>,
+    page_margins: Option<ExpectedXlsPageMargins>,
+    page_setup: Option<ExpectedXlsPageSetup>,
+    header_footer: Option<ExpectedXlsHeaderFooter>,
+    row_breaks: Vec<ExpectedXlsPageBreak>,
+    column_breaks: Vec<ExpectedXlsPageBreak>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct ExpectedXlsSheetProperties {
+    dimension: Option<String>,
+    phonetic_font_id: Option<u32>,
+    phonetic_type: Option<x::PhoneticValues>,
+    phonetic_alignment: Option<x::PhoneticAlignmentValues>,
+    phonetic_cells: Vec<String>,
+    sync_horizontal: Option<bool>,
+    sync_vertical: Option<bool>,
+    sync_reference: Option<String>,
+    transition_evaluation: Option<bool>,
+    transition_entry: Option<bool>,
+    published: Option<bool>,
+    code_name: Option<String>,
+    filter_mode: Option<bool>,
+    enable_format_conditions_calculation: Option<bool>,
+    tab_auto: Option<bool>,
+    tab_indexed: Option<u32>,
+    tab_rgb: Option<String>,
+    tab_theme: Option<u32>,
+    tab_tint: Option<f64>,
+    outline_apply_styles: Option<bool>,
+    outline_summary_below: Option<bool>,
+    outline_summary_right: Option<bool>,
+    page_auto_breaks: Option<bool>,
+    page_fit_to_page: Option<bool>,
 }
 
 #[test]
@@ -1630,10 +1940,10 @@ fn xls_conversion_preserves_sheet_order_sparse_coordinates_and_stored_scalars() 
         .expect("strictly open XLS scalar conversion fixture");
     let expected = source_xls_cells(&source);
     assert!(expected.iter().any(|sheet| !sheet.cells.is_empty()));
-    assert!(matches!(
-        convert_xls(&source).expect_err("strict XLS conversion rejects known feature loss"),
-        Error::Unsupported { .. }
-    ));
+    let mut worksheet_only = source.clone();
+    worksheet_only.shared = Default::default();
+    convert_xls(&worksheet_only)
+        .unwrap_or_else(|error| panic!("strict XLS conversion should be lossless: {error:?}"));
 
     let converted = convert_xls_with_options(
         &source,
@@ -1647,7 +1957,9 @@ fn xls_conversion_preserves_sheet_order_sparse_coordinates_and_stored_scalars() 
             .report
             .issues()
             .iter()
-            .any(|issue| issue.code == ConversionCode::WorksheetFeatureNotMapped)
+            .all(|issue| issue.code != ConversionCode::WorksheetFeatureNotMapped),
+        "fully accounted worksheet reported generic feature loss: {:?}",
+        converted.report.issues()
     );
 
     let mut bytes = Cursor::new(Vec::new());
@@ -1666,6 +1978,1059 @@ fn xls_conversion_preserves_sheet_order_sparse_coordinates_and_stored_scalars() 
     let mut second = SpreadsheetDocument::new(Cursor::new(second_bytes.into_inner()))
         .expect("reopen XLSX conversion a second time");
     assert_eq!(target_xls_cells(&mut second), expected);
+}
+
+#[test]
+fn xls_conversion_rejects_only_genuinely_unaccounted_worksheet_records() {
+    let mut source = XlsFile::open(fixture("Apache-POI/test-data/spreadsheet/Simple.xls"))
+        .expect("strictly open XLS worksheet-audit fixture");
+    source.shared = Default::default();
+    let workbooks = Arc::make_mut(&mut source.workbooks);
+    let tree = Arc::make_mut(&mut workbooks[0].tree);
+    let record = tree
+        .stream
+        .records
+        .iter_mut()
+        .find(|record| matches!(record.data, BiffRecordData::PhoneticInfo(_)))
+        .expect("fixture has an accounted worksheet PhoneticInfo record");
+    record.data = BiffRecordData::Unknown {
+        record_type: 0x7ffe,
+        payload: vec![1, 2, 3],
+    };
+
+    assert!(matches!(
+        convert_xls(&source),
+        Err(Error::Unsupported {
+            code: ConversionCode::WorksheetFeatureNotMapped,
+            ..
+        })
+    ));
+    let converted = convert_xls_with_options(
+        &source,
+        ConversionOptions {
+            unsupported: LossPolicy::Report,
+        },
+    )
+    .expect("report an unaccounted worksheet record");
+    assert!(
+        converted
+            .report
+            .issues()
+            .iter()
+            .any(|issue| issue.code == ConversionCode::WorksheetFeatureNotMapped)
+    );
+}
+
+#[test]
+fn xls_conversion_marks_cells_in_phonetic_info_visible_ranges() {
+    let mut source = XlsFile::open(fixture("Apache-POI/test-data/spreadsheet/Simple.xls"))
+        .expect("strictly open XLS phonetic-visibility fixture");
+    source.shared = Default::default();
+    let workbooks = Arc::make_mut(&mut source.workbooks);
+    let tree = Arc::make_mut(&mut workbooks[0].tree);
+    let phonetic = tree
+        .stream
+        .records
+        .iter_mut()
+        .find_map(|record| match &mut record.data {
+            BiffRecordData::PhoneticInfo(value) => Some(value),
+            _ => None,
+        })
+        .expect("fixture has worksheet PhoneticInfo");
+    phonetic.range_count = 1;
+    phonetic.ranges = vec![CellRange {
+        first_row: 0,
+        last_row: u16::MAX,
+        first_column: 0,
+        last_column: 255,
+    }];
+
+    let mut document = convert_xls(&source)
+        .expect("strictly convert accounted phonetic visibility")
+        .document;
+    let workbook = document
+        .workbook_part()
+        .expect("phonetic XLSX has a workbook part");
+    let worksheet = workbook
+        .worksheet_parts(&document)
+        .next()
+        .expect("phonetic XLSX has a worksheet");
+    let root = worksheet
+        .root_element(&mut document)
+        .expect("parse phonetic XLSX worksheet");
+    let cells = root
+        .sheet_data
+        .row
+        .iter()
+        .flat_map(|row| &row.cell)
+        .collect::<Vec<_>>();
+    assert!(!cells.is_empty(), "fixture must contain cells");
+    assert!(
+        cells
+            .iter()
+            .all(|cell| cell.show_phonetic.is_some_and(|value| value.as_bool()))
+    );
+}
+
+#[test]
+fn xls_conversion_preserves_workbook_properties_and_calculation_settings() {
+    for relative in [
+        "Apache-POI/test-data/spreadsheet/Simple.xls",
+        "Apache-POI/test-data/spreadsheet/mortgage-calculation.xls",
+        "Apache-POI/test-data/spreadsheet/27349-vlookupAcrossSheets.xls",
+        "Apache-POI/test-data/spreadsheet/61287.xls",
+    ] {
+        let source = XlsFile::open(fixture(relative)).unwrap_or_else(|error| {
+            panic!("strictly open XLS workbook-settings fixture {relative}: {error}")
+        });
+        let converted = convert_xls_with_options(
+            &source,
+            ConversionOptions {
+                unsupported: LossPolicy::Report,
+            },
+        )
+        .unwrap_or_else(|error| panic!("convert XLS workbook settings {relative}: {error}"));
+        assert!(
+            converted
+                .report
+                .issues()
+                .iter()
+                .all(|issue| issue.code != ConversionCode::WorkbookCalculationNotMapped),
+            "{relative} unexpectedly reports a calculation loss"
+        );
+        if relative != "Apache-POI/test-data/spreadsheet/61287.xls" {
+            assert!(
+                converted
+                    .report
+                    .issues()
+                    .iter()
+                    .all(|issue| issue.code != ConversionCode::WorkbookPropertiesNotMapped),
+                "{relative} unexpectedly reports a workbook-property loss"
+            );
+        }
+
+        let mut document = converted.document;
+        let expected = target_xls_workbook_settings(&mut document);
+        let properties = expected
+            .properties
+            .as_ref()
+            .expect("fixture maps workbook properties");
+        let calculation = expected
+            .calculation
+            .as_ref()
+            .expect("fixture maps calculation properties");
+        assert_eq!(properties.date_1904, Some(false), "{relative}");
+        assert_eq!(properties.show_objects, Some(x::ObjectDisplayValues::All));
+        assert_eq!(properties.save_external_link_values, Some(true));
+        assert_eq!(calculation.reference_mode, Some(x::ReferenceModeValues::A1));
+        assert_eq!(calculation.full_precision, Some(true));
+        assert_eq!(calculation.calculation_on_save, Some(true));
+
+        match relative {
+            "Apache-POI/test-data/spreadsheet/Simple.xls" => {
+                assert_eq!(calculation.calculation_id, Some(80_000));
+                assert_eq!(
+                    calculation.calculation_mode,
+                    Some(x::CalculateModeValues::Auto)
+                );
+                assert_eq!(calculation.iterate, Some(false));
+                assert_eq!(calculation.iterate_count, Some(100));
+            }
+            "Apache-POI/test-data/spreadsheet/mortgage-calculation.xls" => {
+                assert_eq!(properties.code_name.as_deref(), Some("ThisWorkbook"));
+                assert_eq!(properties.show_ink_annotation, Some(true));
+                assert_eq!(properties.check_compatibility, Some(true));
+                assert_eq!(properties.auto_compress_pictures, Some(true));
+                assert_eq!(calculation.calculation_id, Some(125_725));
+                assert_eq!(calculation.iterate, Some(true));
+                assert_eq!(calculation.concurrent_calculation, Some(false));
+                assert_eq!(calculation.force_full_calculation, Some(false));
+            }
+            "Apache-POI/test-data/spreadsheet/27349-vlookupAcrossSheets.xls" => {
+                assert_eq!(calculation.iterate, Some(true));
+                assert_eq!(calculation.iterate_count, Some(1));
+            }
+            "Apache-POI/test-data/spreadsheet/61287.xls" => {
+                assert_eq!(properties.backup_file, None);
+                assert_eq!(
+                    calculation.calculation_mode,
+                    Some(x::CalculateModeValues::Manual)
+                );
+            }
+            _ => unreachable!(),
+        }
+
+        let mut bytes = Cursor::new(Vec::new());
+        document
+            .save(&mut bytes)
+            .unwrap_or_else(|error| panic!("save XLSX workbook settings {relative}: {error}"));
+        let mut reopened = SpreadsheetDocument::new(Cursor::new(bytes.into_inner()))
+            .unwrap_or_else(|error| panic!("reopen XLSX workbook settings {relative}: {error}"));
+        assert_eq!(
+            target_xls_workbook_settings(&mut reopened),
+            expected,
+            "{relative}"
+        );
+
+        let mut second_bytes = Cursor::new(Vec::new());
+        reopened.save(&mut second_bytes).unwrap_or_else(|error| {
+            panic!("save XLSX workbook settings a second time {relative}: {error}")
+        });
+        let mut second = SpreadsheetDocument::new(Cursor::new(second_bytes.into_inner()))
+            .unwrap_or_else(|error| {
+                panic!("reopen XLSX workbook settings a second time {relative}: {error}")
+            });
+        assert_eq!(
+            target_xls_workbook_settings(&mut second),
+            expected,
+            "{relative}"
+        );
+    }
+}
+
+#[test]
+fn xls_conversion_preserves_workbook_sheet_and_range_protection() {
+    let relative = "LibreOffice/sc/qa/unit/data/xls/enhanced-protection.xls";
+    let source = XlsFile::open(fixture(relative)).expect("strictly open XLS protection fixture");
+    let converted = convert_xls_with_options(
+        &source,
+        ConversionOptions {
+            unsupported: LossPolicy::Report,
+        },
+    )
+    .expect("convert XLS protection fixture");
+    assert!(converted.report.issues().iter().all(|issue| !matches!(
+        issue.code,
+        ConversionCode::WorkbookProtectionNotMapped | ConversionCode::WorksheetProtectionNotMapped
+    )));
+    assert_eq!(
+        converted
+            .report
+            .issues()
+            .iter()
+            .filter(|issue| issue.code == ConversionCode::WorksheetProtectedRangeNotMapped)
+            .count(),
+        2,
+        "the two binary security descriptors remain explicit conversion losses"
+    );
+
+    let mut document = converted.document;
+    let expected = target_xls_protection(&mut document);
+    assert_eq!(expected.workbook, None);
+    assert_eq!(expected.sheets.len(), 1);
+    let sheet = expected.sheets[0]
+        .0
+        .as_ref()
+        .expect("fixture sheet is protected");
+    assert_eq!(sheet.password, None);
+    assert_eq!(sheet.sheet, Some(true));
+    assert_eq!(sheet.objects, Some(true));
+    assert_eq!(sheet.scenarios, Some(true));
+    assert_eq!(sheet.format_cells, Some(true));
+    assert_eq!(sheet.format_columns, Some(true));
+    assert_eq!(sheet.format_rows, Some(true));
+    assert_eq!(sheet.insert_columns, Some(true));
+    assert_eq!(sheet.insert_rows, Some(true));
+    assert_eq!(sheet.insert_hyperlinks, Some(true));
+    assert_eq!(sheet.delete_columns, Some(true));
+    assert_eq!(sheet.delete_rows, Some(true));
+    assert_eq!(sheet.select_locked_cells, Some(false));
+    assert_eq!(sheet.sort, Some(true));
+    assert_eq!(sheet.auto_filter, Some(true));
+    assert_eq!(sheet.pivot_tables, Some(true));
+    assert_eq!(sheet.select_unlocked_cells, Some(false));
+    assert_eq!(
+        expected.sheets[0]
+            .1
+            .iter()
+            .map(|range| (
+                range.name.clone(),
+                range.references.clone(),
+                range.password.clone(),
+            ))
+            .collect::<Vec<_>>(),
+        vec![
+            (
+                "Range5_editable_with_descriptor_and_password_foo".to_owned(),
+                vec!["A6:A6".to_owned()],
+                Some("CC40".to_owned()),
+            ),
+            (
+                "Range4_with_descriptor".to_owned(),
+                vec!["A5:A5".to_owned()],
+                None,
+            ),
+            (
+                "Range1_without_password".to_owned(),
+                vec!["A2:A2".to_owned()],
+                None,
+            ),
+            (
+                "Range2_without_password".to_owned(),
+                vec!["A3:A3".to_owned()],
+                None,
+            ),
+            (
+                "Range3_with_password_foo".to_owned(),
+                vec!["A4:A4".to_owned()],
+                Some("CC40".to_owned()),
+            ),
+        ]
+    );
+    assert!(
+        expected.sheets[0]
+            .1
+            .iter()
+            .all(|range| range.security_descriptor.is_none())
+    );
+
+    let mut bytes = Cursor::new(Vec::new());
+    document.save(&mut bytes).expect("save protected XLSX");
+    let mut reopened =
+        SpreadsheetDocument::new(Cursor::new(bytes.into_inner())).expect("reopen protected XLSX");
+    assert_eq!(target_xls_protection(&mut reopened), expected);
+
+    let mut second_bytes = Cursor::new(Vec::new());
+    reopened
+        .save(&mut second_bytes)
+        .expect("save protected XLSX a second time");
+    let mut second = SpreadsheetDocument::new(Cursor::new(second_bytes.into_inner()))
+        .expect("reopen protected XLSX a second time");
+    assert_eq!(target_xls_protection(&mut second), expected);
+}
+
+#[test]
+fn xls_conversion_preserves_workbook_structure_windows_revision_and_passwords() {
+    let mut source = XlsFile::open(fixture(
+        "LibreOffice/sc/qa/unit/data/xls/enhanced-protection.xls",
+    ))
+    .expect("strictly open XLS workbook-protection base fixture");
+    let workbooks = Arc::make_mut(&mut source.workbooks);
+    let tree = Arc::make_mut(&mut workbooks[0].tree);
+    let mut changed = 0;
+    for record in &mut tree.stream.records {
+        if matches!(record.data, BiffRecordData::Eof) {
+            break;
+        }
+        let BiffRecordData::FixedU16 { kind, value } = &mut record.data else {
+            continue;
+        };
+        let replacement = match kind {
+            FixedU16RecordKind::WindowProtect => 1,
+            FixedU16RecordKind::Protect => 1,
+            FixedU16RecordKind::Password => 0x83AF,
+            FixedU16RecordKind::ProtectionRev4 => 1,
+            FixedU16RecordKind::PasswordRev4 => 0xCC40,
+            _ => continue,
+        };
+        *value = replacement;
+        changed += 1;
+    }
+    assert_eq!(
+        changed, 5,
+        "fixture contains the complete Globals PROTECTION rule"
+    );
+
+    let converted = convert_xls_with_options(
+        &source,
+        ConversionOptions {
+            unsupported: LossPolicy::Report,
+        },
+    )
+    .expect("convert XLS workbook protection");
+    assert!(
+        converted
+            .report
+            .issues()
+            .iter()
+            .all(|issue| issue.code != ConversionCode::WorkbookProtectionNotMapped)
+    );
+    let mut document = converted.document;
+    let expected = target_xls_protection(&mut document);
+    assert_eq!(
+        expected.workbook,
+        Some(ExpectedXlsWorkbookProtection {
+            password: Some("83AF".to_owned()),
+            revisions_password: Some("CC40".to_owned()),
+            lock_structure: Some(true),
+            lock_windows: Some(true),
+            lock_revision: Some(true),
+        })
+    );
+
+    let mut bytes = Cursor::new(Vec::new());
+    document
+        .save(&mut bytes)
+        .expect("save workbook-protected XLSX");
+    let mut reopened = SpreadsheetDocument::new(Cursor::new(bytes.into_inner()))
+        .expect("reopen workbook-protected XLSX");
+    assert_eq!(target_xls_protection(&mut reopened), expected);
+
+    let mut second_bytes = Cursor::new(Vec::new());
+    reopened
+        .save(&mut second_bytes)
+        .expect("save workbook-protected XLSX a second time");
+    let mut second = SpreadsheetDocument::new(Cursor::new(second_bytes.into_inner()))
+        .expect("reopen workbook-protected XLSX a second time");
+    assert_eq!(target_xls_protection(&mut second), expected);
+}
+
+#[test]
+fn xls_conversion_preserves_auto_filter_criteria_and_nested_sort_state() {
+    for relative in [
+        "Apache-POI/test-data/spreadsheet/46250.xls",
+        "Apache-POI/test-data/spreadsheet/maxindextest.xls",
+    ] {
+        let source = XlsFile::open(fixture(relative))
+            .unwrap_or_else(|error| panic!("strictly open XLS filter fixture {relative}: {error}"));
+        let converted = convert_xls_with_options(
+            &source,
+            ConversionOptions {
+                unsupported: LossPolicy::Report,
+            },
+        )
+        .unwrap_or_else(|error| panic!("convert XLS filter fixture {relative}: {error}"));
+        assert!(
+            converted.report.issues().iter().all(|issue| !matches!(
+                issue.code,
+                ConversionCode::WorksheetAutoFilterNotMapped
+                    | ConversionCode::WorksheetSortStateNotMapped
+            )),
+            "{relative} unexpectedly reports a filter/sort loss: {:?}",
+            converted.report.issues()
+        );
+
+        let mut document = converted.document;
+        let expected = target_xls_sort_and_filter(&mut document);
+        match relative {
+            "Apache-POI/test-data/spreadsheet/46250.xls" => {
+                let filter = expected[0]
+                    .0
+                    .as_ref()
+                    .expect("fixture maps a sheet AutoFilter");
+                assert_eq!(filter.reference.as_deref(), Some("A1:I174"));
+                assert_eq!(filter.filter_column.len(), 1);
+                assert_eq!(filter.filter_column[0].column_id, 5);
+                let Some(x::FilterColumnChoice::XCustomFilters(criteria)) =
+                    &filter.filter_column[0].filter_column_choice
+                else {
+                    panic!("classic string criterion maps to customFilters")
+                };
+                assert_eq!(criteria.and, None);
+                assert_eq!(criteria.custom_filter.len(), 1);
+                assert_eq!(
+                    criteria.custom_filter[0].operator,
+                    Some(x::FilterOperatorValues::Equal)
+                );
+                assert_eq!(criteria.custom_filter[0].val.as_deref(), Some("Enchilada"));
+                assert_eq!(filter.sort_state, None);
+            }
+            "Apache-POI/test-data/spreadsheet/maxindextest.xls" => {
+                let filter = expected[2]
+                    .0
+                    .as_ref()
+                    .expect("fixture maps a sheet AutoFilter");
+                assert_eq!(filter.reference.as_deref(), Some("A1:C1"));
+                let sort = filter
+                    .sort_state
+                    .as_ref()
+                    .expect("SortData parent AutoFilter maps to nested sortState");
+                assert_eq!(sort.reference, "A1:C11");
+                assert_eq!(sort.column_sort.map(|value| value.as_bool()), Some(false));
+                assert_eq!(
+                    sort.case_sensitive.map(|value| value.as_bool()),
+                    Some(false)
+                );
+                assert_eq!(sort.sort_state_choice.len(), 1);
+                let x::SortStateChoice::XSortCondition(condition) = &sort.sort_state_choice[0]
+                else {
+                    panic!("BIFF SortCond12 maps to SpreadsheetML sortCondition")
+                };
+                assert_eq!(condition.reference, "B1:B1");
+                assert_eq!(
+                    condition.descending.map(|value| value.as_bool()),
+                    Some(true)
+                );
+                assert_eq!(condition.sort_by, Some(x::SortByValues::Value));
+            }
+            _ => unreachable!(),
+        }
+
+        let mut bytes = Cursor::new(Vec::new());
+        document
+            .save(&mut bytes)
+            .unwrap_or_else(|error| panic!("save XLSX filter fixture {relative}: {error}"));
+        let mut reopened = SpreadsheetDocument::new(Cursor::new(bytes.into_inner()))
+            .unwrap_or_else(|error| panic!("reopen XLSX filter fixture {relative}: {error}"));
+        assert_eq!(
+            target_xls_sort_and_filter(&mut reopened),
+            expected,
+            "{relative}"
+        );
+
+        let mut second_bytes = Cursor::new(Vec::new());
+        reopened.save(&mut second_bytes).unwrap_or_else(|error| {
+            panic!("save XLSX filter fixture a second time {relative}: {error}")
+        });
+        let mut second = SpreadsheetDocument::new(Cursor::new(second_bytes.into_inner()))
+            .unwrap_or_else(|error| {
+                panic!("reopen XLSX filter fixture a second time {relative}: {error}")
+            });
+        assert_eq!(
+            target_xls_sort_and_filter(&mut second),
+            expected,
+            "{relative}"
+        );
+    }
+}
+
+#[test]
+fn xls_conversion_preserves_row_and_column_layout() {
+    let mut saw_hidden_row = false;
+    let mut saw_outline_row = false;
+    let mut saw_custom_height = false;
+    let mut saw_thick_border = false;
+    let mut saw_hidden_column = false;
+    let mut saw_best_fit_column = false;
+    let mut saw_column_style = false;
+
+    for relative in [
+        "Apache-POI/test-data/spreadsheet/12561-2.xls",
+        "Apache-POI/test-data/spreadsheet/31749.xls",
+        "Apache-POI/test-data/spreadsheet/39634.xls",
+        "Apache-POI/test-data/spreadsheet/46250.xls",
+        "Apache-POI/test-data/spreadsheet/colwidth.xls",
+    ] {
+        let path = fixture(relative);
+        let source = XlsFile::open(&path).unwrap_or_else(|_| {
+            XlsFile::open_compatible(&path)
+                .unwrap_or_else(|error| {
+                    panic!("compatibly open XLS layout fixture {relative}: {error}")
+                })
+                .value
+        });
+        let expected = source_xls_sheet_layout(&source);
+        saw_hidden_row |= expected
+            .iter()
+            .flat_map(|sheet| &sheet.rows)
+            .any(|row| row.hidden);
+        saw_outline_row |= expected
+            .iter()
+            .flat_map(|sheet| &sheet.rows)
+            .any(|row| row.outline_level.is_some());
+        saw_custom_height |= expected
+            .iter()
+            .flat_map(|sheet| &sheet.rows)
+            .any(|row| row.custom_height);
+        saw_thick_border |= expected
+            .iter()
+            .flat_map(|sheet| &sheet.rows)
+            .any(|row| row.thick_top || row.thick_bottom);
+        saw_hidden_column |= expected
+            .iter()
+            .flat_map(|sheet| &sheet.columns)
+            .any(|column| column.hidden);
+        saw_best_fit_column |= expected
+            .iter()
+            .flat_map(|sheet| &sheet.columns)
+            .any(|column| column.best_fit);
+        saw_column_style |= expected
+            .iter()
+            .flat_map(|sheet| &sheet.columns)
+            .any(|column| column.style_index.is_some());
+
+        let converted = convert_xls_with_options(
+            &source,
+            ConversionOptions {
+                unsupported: LossPolicy::Report,
+            },
+        )
+        .expect("convert XLS row and column layout with unrelated loss reporting");
+        let mut document = converted.document;
+        assert_eq!(
+            target_xls_sheet_layout(&mut document),
+            expected,
+            "{relative}"
+        );
+
+        let mut bytes = Cursor::new(Vec::new());
+        document
+            .save(&mut bytes)
+            .expect("save XLSX row and column layout");
+        let mut reopened = SpreadsheetDocument::new(Cursor::new(bytes.into_inner()))
+            .expect("reopen XLSX row and column layout");
+        assert_eq!(
+            target_xls_sheet_layout(&mut reopened),
+            expected,
+            "{relative}"
+        );
+
+        let mut second_bytes = Cursor::new(Vec::new());
+        reopened
+            .save(&mut second_bytes)
+            .expect("save XLSX row and column layout a second time");
+        let mut second = SpreadsheetDocument::new(Cursor::new(second_bytes.into_inner()))
+            .expect("reopen XLSX row and column layout a second time");
+        assert_eq!(target_xls_sheet_layout(&mut second), expected, "{relative}");
+    }
+
+    assert!(saw_hidden_row, "fixtures must cover BIFF fDyZero");
+    assert!(saw_outline_row, "fixtures must cover BIFF row iOutLevel");
+    assert!(saw_custom_height, "fixtures must cover BIFF fUnsynced");
+    assert!(saw_thick_border, "fixtures must cover BIFF fExAsc/fExDes");
+    assert!(
+        saw_hidden_column,
+        "fixtures must cover BIFF ColInfo fHidden"
+    );
+    assert!(
+        saw_best_fit_column,
+        "fixtures must cover BIFF ColInfo fBestFit"
+    );
+    assert!(saw_column_style, "fixtures must cover BIFF ColInfo ixfe");
+}
+
+#[test]
+fn xls_conversion_preserves_sheet_format_and_window_state() {
+    for relative in [
+        "Apache-POI/test-data/spreadsheet/12561-1.xls",
+        "Apache-POI/test-data/spreadsheet/59858.xls",
+        "Apache-POI/test-data/spreadsheet/45538_classic_Header.xls",
+        "Apache-POI/test-data/spreadsheet/61287.xls",
+        "Apache-POI/test-data/spreadsheet/12843-1.xls",
+    ] {
+        let source = XlsFile::open(fixture(relative))
+            .unwrap_or_else(|error| panic!("strictly open XLS view fixture {relative}: {error}"));
+        let converted = convert_xls_with_options(
+            &source,
+            ConversionOptions {
+                unsupported: LossPolicy::Report,
+            },
+        )
+        .unwrap_or_else(|error| panic!("convert XLS view fixture {relative}: {error}"));
+        for code in [
+            ConversionCode::WorksheetDefaultFormattingNotMapped,
+            ConversionCode::WorksheetViewNotMapped,
+            ConversionCode::WorksheetPaneNotMapped,
+            ConversionCode::WorksheetSelectionNotMapped,
+        ] {
+            assert!(
+                !converted
+                    .report
+                    .issues()
+                    .iter()
+                    .any(|issue| issue.code == code),
+                "{relative} unexpectedly reports {code:?}"
+            );
+        }
+
+        let mut document = converted.document;
+        let expected = target_xls_presentation(&mut document);
+        assert!(!expected.workbook_views.is_empty(), "{relative}");
+        assert!(!expected.sheets.is_empty(), "{relative}");
+
+        match relative {
+            "Apache-POI/test-data/spreadsheet/12561-1.xls" => {
+                let view = &expected.sheets[0].views[0];
+                let format = expected.sheets[0]
+                    .format
+                    .as_ref()
+                    .expect("12561-1 has sheet format properties");
+                assert_eq!(format.base_column_width, Some(8));
+                assert_eq!(format.default_row_height, 13.5);
+                assert_eq!(view.zoom_scale, Some(75));
+                assert_eq!(
+                    view.pane,
+                    Some(ExpectedXlsPane {
+                        horizontal_split: Some(7.0),
+                        vertical_split: Some(3.0),
+                        top_left_cell: Some("H4".into()),
+                        active_pane: Some(x::PaneValues::BottomRight),
+                        state: Some(x::PaneStateValues::Frozen),
+                    })
+                );
+                assert_eq!(view.selections.len(), 4);
+                assert_eq!(
+                    view.selections
+                        .iter()
+                        .map(|selection| selection.active_cell.as_deref())
+                        .collect::<Vec<_>>(),
+                    [Some("A1"), Some("E1"), Some("A4"), Some("M17")]
+                );
+            }
+            "Apache-POI/test-data/spreadsheet/59858.xls" => {
+                assert_eq!(
+                    expected.sheets[1]
+                        .format
+                        .as_ref()
+                        .and_then(|format| format.default_column_width),
+                    Some(18.0)
+                );
+                assert_eq!(
+                    expected.sheets[2]
+                        .format
+                        .as_ref()
+                        .and_then(|format| format.default_column_width),
+                    Some(2332.0 / 256.0)
+                );
+                assert_eq!(expected.sheets[1].views[0].zoom_scale, Some(80));
+                assert_eq!(
+                    expected.sheets[2].views[0].selections[0].references,
+                    Some(vec!["A251:L251".into()])
+                );
+            }
+            "Apache-POI/test-data/spreadsheet/45538_classic_Header.xls" => {
+                let view = &expected.sheets[0].views[0];
+                assert_eq!(expected.workbook_views[0].active_tab, Some(6));
+                assert_eq!(view.view, Some(x::SheetViewValues::PageLayout));
+                assert_eq!(view.show_ruler, Some(true));
+                assert_eq!(view.show_white_space, Some(true));
+                assert_eq!(view.zoom_scale_normal, Some(100));
+                assert_eq!(view.zoom_scale_page_layout_view, Some(100));
+            }
+            "Apache-POI/test-data/spreadsheet/61287.xls" => {
+                let format = expected.sheets[0]
+                    .format
+                    .as_ref()
+                    .expect("61287 has sheet format properties");
+                assert_eq!(format.default_row_height, 14.25);
+                assert_eq!(format.custom_height, Some(true));
+            }
+            "Apache-POI/test-data/spreadsheet/12843-1.xls" => {
+                assert_eq!(expected.workbook_views.len(), 2);
+                assert_eq!(expected.sheets[0].views.len(), 2);
+                assert_eq!(
+                    expected.sheets[0].views[0]
+                        .pane
+                        .as_ref()
+                        .and_then(|pane| pane.state),
+                    Some(x::PaneStateValues::Frozen)
+                );
+                assert_eq!(expected.sheets[0].views[1].workbook_view_id, 1);
+            }
+            _ => unreachable!(),
+        }
+
+        let mut bytes = Cursor::new(Vec::new());
+        document
+            .save(&mut bytes)
+            .unwrap_or_else(|error| panic!("save XLSX view fixture {relative}: {error}"));
+        let mut reopened = SpreadsheetDocument::new(Cursor::new(bytes.into_inner()))
+            .unwrap_or_else(|error| panic!("reopen XLSX view fixture {relative}: {error}"));
+        assert_eq!(
+            target_xls_presentation(&mut reopened),
+            expected,
+            "{relative}"
+        );
+
+        let mut second_bytes = Cursor::new(Vec::new());
+        reopened.save(&mut second_bytes).unwrap_or_else(|error| {
+            panic!("save XLSX view fixture a second time {relative}: {error}")
+        });
+        let mut second = SpreadsheetDocument::new(Cursor::new(second_bytes.into_inner()))
+            .unwrap_or_else(|error| {
+                panic!("reopen XLSX view fixture a second time {relative}: {error}")
+            });
+        assert_eq!(target_xls_presentation(&mut second), expected, "{relative}");
+    }
+}
+
+#[test]
+fn xls_conversion_preserves_worksheet_properties_and_used_dimensions() {
+    for relative in [
+        "Apache-POI/test-data/spreadsheet/Simple.xls",
+        "Apache-POI/test-data/spreadsheet/mortgage-calculation.xls",
+        "Apache-POI/test-data/spreadsheet/46250.xls",
+        "Apache-POI/test-data/spreadsheet/56450.xls",
+        "Apache-POI/test-data/spreadsheet/styles-3563.xls",
+    ] {
+        let path = fixture(relative);
+        let source = XlsFile::open(&path).unwrap_or_else(|_| {
+            XlsFile::open_compatible(&path)
+                .unwrap_or_else(|error| {
+                    panic!("compatibly open XLS worksheet-properties fixture {relative}: {error}")
+                })
+                .value
+        });
+        let converted = convert_xls_with_options(
+            &source,
+            ConversionOptions {
+                unsupported: LossPolicy::Report,
+            },
+        )
+        .unwrap_or_else(|error| {
+            panic!("convert XLS worksheet properties fixture {relative}: {error}")
+        });
+        assert!(
+            converted.report.issues().iter().all(|issue| !matches!(
+                issue.code,
+                ConversionCode::WorksheetPropertiesNotMapped
+                    | ConversionCode::WorksheetDimensionNotMapped
+            )),
+            "{relative} unexpectedly reports a worksheet property/dimension loss: {:?}",
+            converted.report.issues()
+        );
+
+        let mut document = converted.document;
+        let expected = target_xls_sheet_properties(&mut document);
+        match relative {
+            "Apache-POI/test-data/spreadsheet/Simple.xls" => {
+                assert_eq!(expected.len(), 3);
+                assert!(
+                    expected
+                        .iter()
+                        .all(|sheet| sheet.phonetic_font_id == Some(0))
+                );
+                assert!(
+                    expected
+                        .iter()
+                        .all(|sheet| sheet.phonetic_type == Some(x::PhoneticValues::NoConversion))
+                );
+                assert!(expected.iter().all(|sheet| {
+                    sheet.phonetic_alignment == Some(x::PhoneticAlignmentValues::Left)
+                }));
+                assert!(expected.iter().all(|sheet| sheet.phonetic_cells.is_empty()));
+            }
+            "Apache-POI/test-data/spreadsheet/mortgage-calculation.xls" => {
+                assert_eq!(expected.len(), 3);
+                assert_eq!(expected[0].dimension.as_deref(), Some("A1:B4"));
+                assert_eq!(expected[0].code_name.as_deref(), Some("Sheet1"));
+                assert_eq!(expected[0].page_auto_breaks, Some(true));
+                assert_eq!(expected[0].page_fit_to_page, Some(false));
+                assert_eq!(expected[0].outline_apply_styles, Some(false));
+                assert_eq!(expected[0].outline_summary_below, Some(true));
+                assert_eq!(expected[0].outline_summary_right, Some(false));
+                assert_eq!(expected[1].dimension.as_deref(), Some("A1"));
+                assert_eq!(expected[1].code_name.as_deref(), Some("Sheet2"));
+                assert_eq!(expected[2].dimension.as_deref(), Some("A1"));
+                assert_eq!(expected[2].code_name.as_deref(), Some("Sheet3"));
+            }
+            "Apache-POI/test-data/spreadsheet/46250.xls" => {
+                assert_eq!(expected[0].dimension.as_deref(), Some("A1:I176"));
+                assert_eq!(expected[0].filter_mode, Some(true));
+            }
+            "Apache-POI/test-data/spreadsheet/56450.xls" => {
+                assert_eq!(expected[0].dimension.as_deref(), Some("A1:B2"));
+                assert_eq!(expected[0].page_fit_to_page, Some(true));
+                assert_eq!(expected[0].tab_theme, Some(6));
+                assert_eq!(expected[0].tab_tint, None);
+                assert_eq!(expected[0].published, Some(true));
+                assert_eq!(expected[0].enable_format_conditions_calculation, Some(true));
+            }
+            "Apache-POI/test-data/spreadsheet/styles-3563.xls" => {
+                assert_eq!(expected[0].tab_indexed, Some(11));
+                assert_eq!(expected[0].tab_theme, None);
+            }
+            _ => unreachable!(),
+        }
+
+        let mut bytes = Cursor::new(Vec::new());
+        document
+            .save(&mut bytes)
+            .unwrap_or_else(|error| panic!("save XLSX worksheet properties {relative}: {error}"));
+        let mut reopened = SpreadsheetDocument::new(Cursor::new(bytes.into_inner()))
+            .unwrap_or_else(|error| panic!("reopen XLSX worksheet properties {relative}: {error}"));
+        assert_eq!(
+            target_xls_sheet_properties(&mut reopened),
+            expected,
+            "{relative}"
+        );
+
+        let mut second_bytes = Cursor::new(Vec::new());
+        reopened.save(&mut second_bytes).unwrap_or_else(|error| {
+            panic!("save XLSX worksheet properties a second time {relative}: {error}")
+        });
+        let mut second = SpreadsheetDocument::new(Cursor::new(second_bytes.into_inner()))
+            .unwrap_or_else(|error| {
+                panic!("reopen XLSX worksheet properties a second time {relative}: {error}")
+            });
+        assert_eq!(
+            target_xls_sheet_properties(&mut second),
+            expected,
+            "{relative}"
+        );
+    }
+}
+
+#[test]
+fn xls_conversion_preserves_print_settings_headers_and_page_breaks() {
+    for relative in [
+        "Apache-POI/test-data/spreadsheet/AmpersandHeader.xls",
+        "Apache-POI/test-data/spreadsheet/DBCSHeader.xls",
+        "Apache-POI/test-data/spreadsheet/35564.xls",
+        "Apache-POI/test-data/spreadsheet/15375.xls",
+    ] {
+        let source = XlsFile::open(fixture(relative))
+            .unwrap_or_else(|error| panic!("strictly open XLS print fixture {relative}: {error}"));
+        let converted = convert_xls_with_options(
+            &source,
+            ConversionOptions {
+                unsupported: LossPolicy::Report,
+            },
+        )
+        .unwrap_or_else(|error| panic!("convert XLS print fixture {relative}: {error}"));
+        for code in [
+            ConversionCode::WorksheetPrintOptionsNotMapped,
+            ConversionCode::WorksheetPageMarginsNotMapped,
+            ConversionCode::WorksheetPageSetupNotMapped,
+            ConversionCode::WorksheetHeaderFooterNotMapped,
+            ConversionCode::WorksheetPageBreaksNotMapped,
+        ] {
+            assert!(
+                !converted
+                    .report
+                    .issues()
+                    .iter()
+                    .any(|issue| issue.code == code),
+                "{relative} unexpectedly reports {code:?}"
+            );
+        }
+
+        let mut document = converted.document;
+        let expected = target_xls_page_settings(&mut document);
+        assert!(!expected.is_empty(), "{relative}");
+        match relative {
+            "Apache-POI/test-data/spreadsheet/AmpersandHeader.xls" => {
+                let first = &expected[0];
+                assert_eq!(
+                    first
+                        .header_footer
+                        .as_ref()
+                        .and_then(|value| value.odd_header.clone()),
+                    Some("&Cone && two &&&&".into())
+                );
+                assert_eq!(
+                    first.page_margins,
+                    Some(ExpectedXlsPageMargins {
+                        left: 0.7,
+                        right: 0.7,
+                        top: 0.75,
+                        bottom: 0.75,
+                        header: 0.3,
+                        footer: 0.3,
+                    })
+                );
+                let setup = first.page_setup.as_ref().expect("first sheet has setup");
+                assert_eq!(setup.paper_size, Some(1));
+                assert_eq!(setup.scale, Some(100));
+                assert_eq!(setup.orientation, Some(x::OrientationValues::Portrait));
+                assert_eq!(setup.use_printer_defaults, Some(false));
+                assert_eq!(
+                    expected[1]
+                        .page_setup
+                        .as_ref()
+                        .and_then(|value| value.paper_size),
+                    None
+                );
+                assert_eq!(
+                    expected[1]
+                        .page_setup
+                        .as_ref()
+                        .and_then(|value| value.use_printer_defaults),
+                    Some(true)
+                );
+            }
+            "Apache-POI/test-data/spreadsheet/DBCSHeader.xls" => {
+                let header = expected[0]
+                    .header_footer
+                    .as_ref()
+                    .and_then(|value| value.odd_header.as_deref())
+                    .expect("DBCS fixture has a Unicode header");
+                let footer = expected[0]
+                    .header_footer
+                    .as_ref()
+                    .and_then(|value| value.odd_footer.as_deref())
+                    .expect("DBCS fixture has a Unicode footer");
+                assert_eq!(
+                    header,
+                    "&L\u{090f}\u{0915}&C\u{0939}\u{094b}\u{0917}\u{093e}&R\u{091c}\u{093e}"
+                );
+                assert_eq!(
+                    footer,
+                    "&L\u{091c}\u{093e}&C\u{091c}\u{093e}&R\u{091c}\u{093e}"
+                );
+                assert_eq!(
+                    expected[0].page_margins,
+                    Some(ExpectedXlsPageMargins {
+                        left: 0.75,
+                        right: 0.75,
+                        top: 1.0,
+                        bottom: 1.0,
+                        header: 0.5,
+                        footer: 0.5,
+                    })
+                );
+            }
+            "Apache-POI/test-data/spreadsheet/35564.xls" => {
+                assert_eq!(
+                    expected[0].row_breaks,
+                    vec![ExpectedXlsPageBreak {
+                        id: Some(97),
+                        min: Some(0),
+                        max: Some(23),
+                        manual: Some(true),
+                        pivot: None,
+                    }]
+                );
+                let setup = expected[0]
+                    .page_setup
+                    .as_ref()
+                    .expect("35564 has page setup");
+                assert_eq!(setup.scale, Some(77));
+                assert_eq!(setup.fit_to_height, Some(0));
+            }
+            "Apache-POI/test-data/spreadsheet/15375.xls" => {
+                assert_eq!(
+                    expected[0]
+                        .row_breaks
+                        .iter()
+                        .map(|value| value.id)
+                        .collect::<Vec<_>>(),
+                    [Some(53), Some(104), Some(165)]
+                );
+                assert_eq!(
+                    expected[0]
+                        .header_footer
+                        .as_ref()
+                        .and_then(|value| value.odd_footer.as_deref()),
+                    Some("&L&F&R&D")
+                );
+                assert_eq!(
+                    expected[0]
+                        .page_setup
+                        .as_ref()
+                        .and_then(|value| value.orientation),
+                    Some(x::OrientationValues::Landscape)
+                );
+            }
+            _ => unreachable!(),
+        }
+
+        let mut bytes = Cursor::new(Vec::new());
+        document
+            .save(&mut bytes)
+            .unwrap_or_else(|error| panic!("save XLSX print fixture {relative}: {error}"));
+        let mut reopened = SpreadsheetDocument::new(Cursor::new(bytes.into_inner()))
+            .unwrap_or_else(|error| panic!("reopen XLSX print fixture {relative}: {error}"));
+        assert_eq!(
+            target_xls_page_settings(&mut reopened),
+            expected,
+            "{relative}"
+        );
+
+        let mut second_bytes = Cursor::new(Vec::new());
+        reopened.save(&mut second_bytes).unwrap_or_else(|error| {
+            panic!("save XLSX print fixture a second time {relative}: {error}")
+        });
+        let mut second = SpreadsheetDocument::new(Cursor::new(second_bytes.into_inner()))
+            .unwrap_or_else(|error| {
+                panic!("reopen XLSX print fixture a second time {relative}: {error}")
+            });
+        assert_eq!(
+            target_xls_page_settings(&mut second),
+            expected,
+            "{relative}"
+        );
+    }
 }
 
 #[test]
@@ -4481,6 +5846,24 @@ fn expected_xls_value(reference: String, value: XlsCellValue) -> ExpectedCell {
     }
 }
 
+type TargetXlsSortAndFilter = (Option<Box<x::AutoFilter>>, Option<Box<x::SortState>>);
+
+fn target_xls_sort_and_filter(document: &mut SpreadsheetDocument) -> Vec<TargetXlsSortAndFilter> {
+    let workbook = document
+        .workbook_part()
+        .expect("converted workbook has a WorkbookPart");
+    let parts = workbook.worksheet_parts(document).collect::<Vec<_>>();
+    parts
+        .into_iter()
+        .map(|part| {
+            let worksheet = part
+                .root_element(document)
+                .expect("converted WorksheetPart has a typed root");
+            (worksheet.auto_filter.clone(), worksheet.sort_state.clone())
+        })
+        .collect()
+}
+
 fn target_xls_cells(document: &mut SpreadsheetDocument) -> Vec<ExpectedSheet> {
     let workbook_part = document
         .workbook_part()
@@ -4556,6 +5939,576 @@ fn target_xls_cells(document: &mut SpreadsheetDocument) -> Vec<ExpectedSheet> {
             ExpectedSheet { name, cells }
         })
         .collect()
+}
+
+fn source_xls_sheet_layout(source: &XlsFile) -> Vec<ExpectedXlsSheetLayout> {
+    let workbook = source
+        .workbooks
+        .first()
+        .expect("XLS layout fixture has a workbook");
+    let view = workbook
+        .relationships()
+        .expect("resolve XLS layout relationships");
+    let xf_count = view.xfs().count();
+    view.sheets()
+        .iter()
+        .copied()
+        .filter(|sheet| {
+            sheet.kind() == BiffSubstreamKind::WorksheetOrDialogSheet
+                && sheet.metadata().sheet_type == 0
+        })
+        .map(|sheet| {
+            let index = sheet
+                .sparse_cell_index()
+                .expect("index XLS layout fixture cells and rows");
+            let rows = index
+                .rows()
+                .map(|row| {
+                    let definition = row.definition().expect("XLS layout row is unique");
+                    let Some(definition) = definition else {
+                        return ExpectedXlsRowLayout {
+                            row_index: u32::from(row.row()) + 1,
+                            style_index: None,
+                            custom_format: false,
+                            height: None,
+                            hidden: false,
+                            custom_height: false,
+                            outline_level: None,
+                            collapsed: false,
+                            thick_top: false,
+                            thick_bottom: false,
+                            show_phonetic: false,
+                        };
+                    };
+                    let flags = definition.flags;
+                    let style_index = (flags >> 16) & 0x0fff;
+                    let style_index = (flags & 0x80 != 0
+                        && usize::try_from(style_index).expect("style index fits usize")
+                            < xf_count)
+                        .then_some(style_index);
+                    ExpectedXlsRowLayout {
+                        row_index: u32::from(row.row()) + 1,
+                        style_index,
+                        custom_format: style_index.is_some(),
+                        height: (2..=8192)
+                            .contains(&definition.height)
+                            .then_some(f64::from(definition.height) / 20.0),
+                        hidden: flags & 0x20 != 0,
+                        custom_height: flags & 0x40 != 0,
+                        outline_level: nonzero_level((flags & 0x07) as u8),
+                        collapsed: flags & 0x10 != 0,
+                        thick_top: flags & 0x1000_0000 != 0,
+                        thick_bottom: flags & 0x2000_0000 != 0,
+                        show_phonetic: flags & 0x4000_0000 != 0,
+                    }
+                })
+                .collect();
+            let columns = sheet
+                .column_infos()
+                .filter(|column| {
+                    column.first_column <= column.last_column && column.last_column <= 0x00ff
+                })
+                .map(|column| ExpectedXlsColumnLayout {
+                    min: u32::from(column.first_column) + 1,
+                    max: u32::from(column.last_column) + 1,
+                    width: f64::from(column.width) / 256.0,
+                    style_index: (usize::from(column.format_index) < xf_count)
+                        .then_some(u32::from(column.format_index)),
+                    hidden: column.flags & 0x0001 != 0,
+                    custom_width: column.flags & 0x0002 != 0,
+                    best_fit: column.flags & 0x0004 != 0,
+                    show_phonetic: column.flags & 0x0008 != 0,
+                    outline_level: nonzero_level(((column.flags >> 8) & 0x07) as u8),
+                    collapsed: column.flags & 0x1000 != 0,
+                })
+                .collect();
+            ExpectedXlsSheetLayout { rows, columns }
+        })
+        .collect()
+}
+
+fn target_xls_sheet_layout(document: &mut SpreadsheetDocument) -> Vec<ExpectedXlsSheetLayout> {
+    let workbook = document
+        .workbook_part()
+        .expect("converted XLSX has a workbook part");
+    let worksheets = workbook.worksheet_parts(document).collect::<Vec<_>>();
+    worksheets
+        .into_iter()
+        .map(|worksheet| {
+            let root = worksheet
+                .root_element(document)
+                .expect("parse converted XLSX layout");
+            let rows = root
+                .sheet_data
+                .row
+                .iter()
+                .map(|row| ExpectedXlsRowLayout {
+                    row_index: row.row_index.expect("target layout row has an index"),
+                    style_index: row.style_index,
+                    custom_format: row.custom_format.is_some_and(|value| value.as_bool()),
+                    height: row.height,
+                    hidden: row.hidden.is_some_and(|value| value.as_bool()),
+                    custom_height: row.custom_height.is_some_and(|value| value.as_bool()),
+                    outline_level: row.outline_level,
+                    collapsed: row.collapsed.is_some_and(|value| value.as_bool()),
+                    thick_top: row.thick_top.is_some_and(|value| value.as_bool()),
+                    thick_bottom: row.thick_bot.is_some_and(|value| value.as_bool()),
+                    show_phonetic: row.show_phonetic.is_some_and(|value| value.as_bool()),
+                })
+                .collect();
+            let columns = root
+                .columns
+                .iter()
+                .flat_map(|columns| &columns.column)
+                .map(|column| ExpectedXlsColumnLayout {
+                    min: column.min,
+                    max: column.max,
+                    width: column.width.expect("target layout column has a width"),
+                    style_index: column.style,
+                    hidden: column.hidden.is_some_and(|value| value.as_bool()),
+                    custom_width: column.custom_width.is_some_and(|value| value.as_bool()),
+                    best_fit: column.best_fit.is_some_and(|value| value.as_bool()),
+                    show_phonetic: column.phonetic.is_some_and(|value| value.as_bool()),
+                    outline_level: column.outline_level,
+                    collapsed: column.collapsed.is_some_and(|value| value.as_bool()),
+                })
+                .collect();
+            ExpectedXlsSheetLayout { rows, columns }
+        })
+        .collect()
+}
+
+fn target_xls_sheet_properties(
+    document: &mut SpreadsheetDocument,
+) -> Vec<ExpectedXlsSheetProperties> {
+    let workbook = document
+        .workbook_part()
+        .expect("converted XLSX has a workbook part");
+    let worksheets = workbook.worksheet_parts(document).collect::<Vec<_>>();
+    worksheets
+        .into_iter()
+        .map(|worksheet| {
+            let root = worksheet
+                .root_element(document)
+                .expect("parse converted XLSX worksheet properties");
+            let properties = root.sheet_properties.as_deref();
+            let tab = properties.and_then(|properties| properties.tab_color.as_ref());
+            let outline = properties.and_then(|properties| properties.outline_properties.as_ref());
+            let page = properties.and_then(|properties| properties.page_setup_properties.as_ref());
+            let phonetic = root.phonetic_properties.as_ref();
+            ExpectedXlsSheetProperties {
+                dimension: root
+                    .sheet_dimension
+                    .as_ref()
+                    .map(|dimension| dimension.reference.clone()),
+                phonetic_font_id: phonetic.map(|value| value.font_id),
+                phonetic_type: phonetic.and_then(|value| value.r#type),
+                phonetic_alignment: phonetic.and_then(|value| value.alignment),
+                phonetic_cells: root
+                    .sheet_data
+                    .row
+                    .iter()
+                    .flat_map(|row| &row.cell)
+                    .filter(|cell| cell.show_phonetic.is_some_and(|value| value.as_bool()))
+                    .map(|cell| {
+                        cell.cell_reference
+                            .clone()
+                            .expect("phonetic cell has a reference")
+                    })
+                    .collect(),
+                sync_horizontal: properties.and_then(|value| optional_bool(value.sync_horizontal)),
+                sync_vertical: properties.and_then(|value| optional_bool(value.sync_vertical)),
+                sync_reference: properties.and_then(|value| value.sync_reference.clone()),
+                transition_evaluation: properties
+                    .and_then(|value| optional_bool(value.transition_evaluation)),
+                transition_entry: properties
+                    .and_then(|value| optional_bool(value.transition_entry)),
+                published: properties.and_then(|value| optional_bool(value.published)),
+                code_name: properties.and_then(|value| value.code_name.clone()),
+                filter_mode: properties.and_then(|value| optional_bool(value.filter_mode)),
+                enable_format_conditions_calculation: properties
+                    .and_then(|value| optional_bool(value.enable_format_conditions_calculation)),
+                tab_auto: tab.and_then(|value| optional_bool(value.auto)),
+                tab_indexed: tab.and_then(|value| value.indexed),
+                tab_rgb: tab.and_then(|value| value.rgb.clone()),
+                tab_theme: tab.and_then(|value| value.theme),
+                tab_tint: tab.and_then(|value| value.tint),
+                outline_apply_styles: outline.and_then(|value| optional_bool(value.apply_styles)),
+                outline_summary_below: outline.and_then(|value| optional_bool(value.summary_below)),
+                outline_summary_right: outline.and_then(|value| optional_bool(value.summary_right)),
+                page_auto_breaks: page.and_then(|value| optional_bool(value.auto_page_breaks)),
+                page_fit_to_page: page.and_then(|value| optional_bool(value.fit_to_page)),
+            }
+        })
+        .collect()
+}
+
+fn target_xls_presentation(document: &mut SpreadsheetDocument) -> ExpectedXlsPresentation {
+    let workbook = document
+        .workbook_part()
+        .expect("converted XLSX has a workbook part");
+    let root = workbook
+        .root_element(document)
+        .expect("parse converted XLSX workbook views");
+    let workbook_views = root
+        .book_views
+        .as_ref()
+        .map(|views| {
+            views
+                .workbook_view
+                .iter()
+                .map(|view| ExpectedXlsWorkbookView {
+                    visibility: view.visibility,
+                    minimized: optional_bool(view.minimized),
+                    show_horizontal_scroll: optional_bool(view.show_horizontal_scroll),
+                    show_vertical_scroll: optional_bool(view.show_vertical_scroll),
+                    show_sheet_tabs: optional_bool(view.show_sheet_tabs),
+                    x_window: view.x_window,
+                    y_window: view.y_window,
+                    window_width: view.window_width,
+                    window_height: view.window_height,
+                    tab_ratio: view.tab_ratio,
+                    first_sheet: view.first_sheet,
+                    active_tab: view.active_tab,
+                    auto_filter_date_grouping: optional_bool(view.auto_filter_date_grouping),
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    let worksheets = workbook.worksheet_parts(document).collect::<Vec<_>>();
+    let sheets = worksheets
+        .into_iter()
+        .map(|worksheet| {
+            let root = worksheet
+                .root_element(document)
+                .expect("parse converted XLSX sheet presentation");
+            let format =
+                root.sheet_format_properties
+                    .as_ref()
+                    .map(|format| ExpectedXlsSheetFormat {
+                        base_column_width: format.base_column_width,
+                        default_column_width: format.default_column_width,
+                        default_row_height: format.default_row_height,
+                        custom_height: optional_bool(format.custom_height),
+                        zero_height: optional_bool(format.zero_height),
+                        thick_top: optional_bool(format.thick_top),
+                        thick_bottom: optional_bool(format.thick_bottom),
+                        outline_level_row: format.outline_level_row,
+                        outline_level_column: format.outline_level_column,
+                    });
+            let views = root
+                .sheet_views
+                .as_deref()
+                .map(|views| {
+                    views
+                        .sheet_view
+                        .iter()
+                        .map(|view| ExpectedXlsSheetView {
+                            show_formulas: optional_bool(view.show_formulas),
+                            show_grid_lines: optional_bool(view.show_grid_lines),
+                            show_row_col_headers: optional_bool(view.show_row_col_headers),
+                            show_zeros: optional_bool(view.show_zeros),
+                            right_to_left: optional_bool(view.right_to_left),
+                            tab_selected: optional_bool(view.tab_selected),
+                            show_ruler: optional_bool(view.show_ruler),
+                            show_outline_symbols: optional_bool(view.show_outline_symbols),
+                            default_grid_color: optional_bool(view.default_grid_color),
+                            show_white_space: optional_bool(view.show_white_space),
+                            view: view.view,
+                            top_left_cell: view.top_left_cell.clone(),
+                            color_id: view.color_id,
+                            zoom_scale: view.zoom_scale,
+                            zoom_scale_normal: view.zoom_scale_normal,
+                            zoom_scale_sheet_layout_view: view.zoom_scale_sheet_layout_view,
+                            zoom_scale_page_layout_view: view.zoom_scale_page_layout_view,
+                            workbook_view_id: view.workbook_view_id,
+                            pane: view.pane.as_ref().map(|pane| ExpectedXlsPane {
+                                horizontal_split: pane.horizontal_split,
+                                vertical_split: pane.vertical_split,
+                                top_left_cell: pane.top_left_cell.clone(),
+                                active_pane: pane.active_pane,
+                                state: pane.state,
+                            }),
+                            selections: view
+                                .selection
+                                .iter()
+                                .map(|selection| ExpectedXlsSelection {
+                                    pane: selection.pane,
+                                    active_cell: selection.active_cell.clone(),
+                                    active_cell_id: selection.active_cell_id,
+                                    references: selection.sequence_of_references.clone(),
+                                })
+                                .collect(),
+                        })
+                        .collect()
+                })
+                .unwrap_or_default();
+            ExpectedXlsSheetPresentation { format, views }
+        })
+        .collect();
+    ExpectedXlsPresentation {
+        workbook_views,
+        sheets,
+    }
+}
+
+fn target_xls_workbook_settings(document: &mut SpreadsheetDocument) -> ExpectedXlsWorkbookSettings {
+    let workbook = document
+        .workbook_part()
+        .expect("converted XLSX has a workbook part");
+    let root = workbook
+        .root_element(document)
+        .expect("parse converted XLSX workbook settings");
+    let properties = root
+        .workbook_properties
+        .as_ref()
+        .map(|value| ExpectedXlsWorkbookProperties {
+            date_1904: optional_bool(value.date1904),
+            show_objects: value.show_objects,
+            show_border_unselected_tables: optional_bool(value.show_border_unselected_tables),
+            filter_privacy: optional_bool(value.filter_privacy),
+            prompted_solutions: optional_bool(value.prompted_solutions),
+            show_ink_annotation: optional_bool(value.show_ink_annotation),
+            backup_file: optional_bool(value.backup_file),
+            save_external_link_values: optional_bool(value.save_external_link_values),
+            update_links: value.update_links,
+            code_name: value.code_name.clone(),
+            hide_pivot_field_list: optional_bool(value.hide_pivot_field_list),
+            show_pivot_chart_filter: optional_bool(value.show_pivot_chart_filter),
+            publish_items: optional_bool(value.publish_items),
+            check_compatibility: optional_bool(value.check_compatibility),
+            auto_compress_pictures: optional_bool(value.auto_compress_pictures),
+            refresh_all_connections: optional_bool(value.refresh_all_connections),
+        });
+    let calculation =
+        root.calculation_properties
+            .as_ref()
+            .map(|value| ExpectedXlsCalculationProperties {
+                calculation_id: value.calculation_id,
+                calculation_mode: value.calculation_mode,
+                full_calculation_on_load: optional_bool(value.full_calculation_on_load),
+                reference_mode: value.reference_mode,
+                iterate: optional_bool(value.iterate),
+                iterate_count: value.iterate_count,
+                iterate_delta: value.iterate_delta,
+                full_precision: optional_bool(value.full_precision),
+                calculation_completed: optional_bool(value.calculation_completed),
+                calculation_on_save: optional_bool(value.calculation_on_save),
+                concurrent_calculation: optional_bool(value.concurrent_calculation),
+                concurrent_manual_count: value.concurrent_manual_count,
+                force_full_calculation: optional_bool(value.force_full_calculation),
+            });
+    let worksheets = workbook.worksheet_parts(document).collect::<Vec<_>>();
+    let sheet_full_calculation_on_load = worksheets
+        .into_iter()
+        .map(|worksheet| {
+            let root = worksheet
+                .root_element(document)
+                .expect("parse converted XLSX sheet calculation settings");
+            root.sheet_calculation_properties
+                .as_ref()
+                .and_then(|value| optional_bool(value.full_calculation_on_load))
+        })
+        .collect();
+    ExpectedXlsWorkbookSettings {
+        properties,
+        calculation,
+        sheet_full_calculation_on_load,
+    }
+}
+
+fn target_xls_protection(document: &mut SpreadsheetDocument) -> ExpectedXlsProtection {
+    let workbook = document
+        .workbook_part()
+        .expect("converted XLSX has a workbook part");
+    let root = workbook
+        .root_element(document)
+        .expect("parse converted XLSX workbook protection");
+    let workbook_protection =
+        root.workbook_protection
+            .as_ref()
+            .map(|value| ExpectedXlsWorkbookProtection {
+                password: value.workbook_password.clone(),
+                revisions_password: value.revisions_password.clone(),
+                lock_structure: optional_bool(value.lock_structure),
+                lock_windows: optional_bool(value.lock_windows),
+                lock_revision: optional_bool(value.lock_revision),
+            });
+    let sheets = workbook
+        .worksheet_parts(document)
+        .collect::<Vec<_>>()
+        .into_iter()
+        .map(|worksheet| {
+            let root = worksheet
+                .root_element(document)
+                .expect("parse converted XLSX sheet protection");
+            let protection =
+                root.sheet_protection
+                    .as_ref()
+                    .map(|value| ExpectedXlsSheetProtection {
+                        password: value.password.clone(),
+                        sheet: optional_bool(value.sheet),
+                        objects: optional_bool(value.objects),
+                        scenarios: optional_bool(value.scenarios),
+                        format_cells: optional_bool(value.format_cells),
+                        format_columns: optional_bool(value.format_columns),
+                        format_rows: optional_bool(value.format_rows),
+                        insert_columns: optional_bool(value.insert_columns),
+                        insert_rows: optional_bool(value.insert_rows),
+                        insert_hyperlinks: optional_bool(value.insert_hyperlinks),
+                        delete_columns: optional_bool(value.delete_columns),
+                        delete_rows: optional_bool(value.delete_rows),
+                        select_locked_cells: optional_bool(value.select_locked_cells),
+                        sort: optional_bool(value.sort),
+                        auto_filter: optional_bool(value.auto_filter),
+                        pivot_tables: optional_bool(value.pivot_tables),
+                        select_unlocked_cells: optional_bool(value.select_unlocked_cells),
+                    });
+            let protected_ranges = root
+                .protected_ranges
+                .as_ref()
+                .map(|ranges| {
+                    ranges
+                        .protected_range
+                        .iter()
+                        .map(|range| ExpectedXlsProtectedRange {
+                            password: range.password.clone(),
+                            references: range.sequence_of_references.clone(),
+                            name: range.name.clone(),
+                            security_descriptor: range.security_descriptor.clone(),
+                        })
+                        .collect()
+                })
+                .unwrap_or_default();
+            (protection, protected_ranges)
+        })
+        .collect();
+    ExpectedXlsProtection {
+        workbook: workbook_protection,
+        sheets,
+    }
+}
+
+fn target_xls_page_settings(
+    document: &mut SpreadsheetDocument,
+) -> Vec<ExpectedXlsSheetPageSettings> {
+    let workbook = document
+        .workbook_part()
+        .expect("converted XLSX has a workbook part");
+    let worksheets = workbook.worksheet_parts(document).collect::<Vec<_>>();
+    worksheets
+        .into_iter()
+        .map(|worksheet| {
+            let root = worksheet
+                .root_element(document)
+                .expect("parse converted XLSX page settings");
+            let print_options = root
+                .print_options
+                .as_ref()
+                .map(|value| ExpectedXlsPrintOptions {
+                    horizontal_centered: optional_bool(value.horizontal_centered),
+                    vertical_centered: optional_bool(value.vertical_centered),
+                    headings: optional_bool(value.headings),
+                    grid_lines: optional_bool(value.grid_lines),
+                    grid_lines_set: optional_bool(value.grid_lines_set),
+                });
+            let page_margins = root
+                .page_margins
+                .as_ref()
+                .map(|value| ExpectedXlsPageMargins {
+                    left: value.left,
+                    right: value.right,
+                    top: value.top,
+                    bottom: value.bottom,
+                    header: value.header,
+                    footer: value.footer,
+                });
+            let page_setup = root.page_setup.as_ref().map(|value| ExpectedXlsPageSetup {
+                paper_size: value.paper_size,
+                scale: value.scale,
+                first_page_number: value.first_page_number,
+                fit_to_width: value.fit_to_width,
+                fit_to_height: value.fit_to_height,
+                page_order: value.page_order,
+                orientation: value.orientation,
+                use_printer_defaults: optional_bool(value.use_printer_defaults),
+                black_and_white: optional_bool(value.black_and_white),
+                draft: optional_bool(value.draft),
+                cell_comments: value.cell_comments,
+                use_first_page_number: optional_bool(value.use_first_page_number),
+                errors: value.errors,
+                horizontal_dpi: value.horizontal_dpi,
+                vertical_dpi: value.vertical_dpi,
+                copies: value.copies,
+            });
+            let header_footer =
+                root.header_footer
+                    .as_deref()
+                    .map(|value| ExpectedXlsHeaderFooter {
+                        different_odd_even: optional_bool(value.different_odd_even),
+                        different_first: optional_bool(value.different_first),
+                        scale_with_doc: optional_bool(value.scale_with_doc),
+                        align_with_margins: optional_bool(value.align_with_margins),
+                        odd_header: value
+                            .odd_header
+                            .as_ref()
+                            .and_then(|value| value.0.xml_content.clone()),
+                        odd_footer: value
+                            .odd_footer
+                            .as_ref()
+                            .and_then(|value| value.0.xml_content.clone()),
+                        even_header: value
+                            .even_header
+                            .as_ref()
+                            .and_then(|value| value.0.xml_content.clone()),
+                        even_footer: value
+                            .even_footer
+                            .as_ref()
+                            .and_then(|value| value.0.xml_content.clone()),
+                        first_header: value
+                            .first_header
+                            .as_ref()
+                            .and_then(|value| value.0.xml_content.clone()),
+                        first_footer: value
+                            .first_footer
+                            .as_ref()
+                            .and_then(|value| value.0.xml_content.clone()),
+                    });
+            let page_break = |value: &x::Break| ExpectedXlsPageBreak {
+                id: value.id,
+                min: value.min,
+                max: value.max,
+                manual: optional_bool(value.manual_page_break),
+                pivot: optional_bool(value.pivot_table_page_break),
+            };
+            let row_breaks = root
+                .row_breaks
+                .as_ref()
+                .map(|value| value.r#break.iter().map(page_break).collect())
+                .unwrap_or_default();
+            let column_breaks = root
+                .column_breaks
+                .as_ref()
+                .map(|value| value.r#break.iter().map(page_break).collect())
+                .unwrap_or_default();
+            ExpectedXlsSheetPageSettings {
+                print_options,
+                page_margins,
+                page_setup,
+                header_footer,
+                row_breaks,
+                column_breaks,
+            }
+        })
+        .collect()
+}
+
+fn optional_bool(value: Option<ooxmlsdk::simple_type::BooleanValue>) -> Option<bool> {
+    value.map(ooxmlsdk::simple_type::BooleanValue::as_bool)
+}
+
+fn nonzero_level(value: u8) -> Option<u8> {
+    (value != 0).then_some(value)
 }
 
 fn xls_cell_reference(row: u16, column: u16) -> String {
