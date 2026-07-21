@@ -1,7 +1,8 @@
-use ooxmlsdk_layout::common::{DebugShape, LayoutDocument};
+use ooxmlsdk_layout::common::{Color, DebugShape, DisplayItem, LayoutDocument};
 use ooxmlsdk_layout_test::{
-    debug_bool_property, debug_integer_property, debug_shape_has_text_property,
-    debug_shape_integer_close, debug_shapes, debug_text_property, normalize_space, pptx_layout,
+    all_page_text, assert_text_color, assert_text_font_size, debug_bool_property,
+    debug_integer_property, debug_shape_has_text_property, debug_shape_integer_close, debug_shapes,
+    debug_text_property, normalize_space, pptx_layout,
 };
 
 fn pptx_debug(path: &str) -> LayoutDocument<'static> {
@@ -107,6 +108,87 @@ fn pptx_bnc584721_preserves_single_master_title_text_shape() {
     let document = pptx_debug("sd/qa/unit/data/pptx/bnc584721_1_2.pptx");
     assert_master_text_contains(&document, "Click to edit Master title style");
     assert_eq!(shapes(&document, "pptx_master_text_shape").len(), 1);
+}
+
+#[test]
+// Sources:
+// - ECMA-376 Part 1 §19.3.1.25 (omitted p:hf@sldNum defaults to true)
+// - ../core/sd/qa/unit/data/pptx/tdf119187.pptx
+fn pptx_tdf119187_preserves_master_slide_number_field() {
+    let document = pptx_debug("sd/qa/unit/data/pptx/tdf119187.pptx");
+    assert_master_text_contains(&document, "‹#›");
+    let page_title = draw_shapes(&document)
+        .into_iter()
+        .find(|shape| {
+            shape.page_index == 0
+                && debug_text_property(shape, "text")
+                    .map(normalize_space)
+                    .as_deref()
+                    == Some("Page 1")
+        })
+        .expect("missing Page 1 title shape");
+    assert_eq!(
+        debug_text_property(page_title, "service_name"),
+        Some("TitleText")
+    );
+    assert_text_font_size(&document, "Page 1", 27.96);
+    assert_text_color(
+        &document,
+        "Page 1",
+        Color {
+            r: 0x02,
+            g: 0x1b,
+            b: 0x45,
+            a: 0xff,
+        },
+    );
+    let paragraph_run = document
+        .pages
+        .iter()
+        .flat_map(|page| &page.items)
+        .filter_map(|item| match item {
+            DisplayItem::Text(text) if text.text.contains("Paragraph") => Some(text),
+            _ => None,
+        })
+        .next()
+        .expect("missing paragraph text run");
+    assert_eq!(
+        paragraph_run.style.fallback_font_family.as_deref(),
+        Some("Calibri")
+    );
+    let slide_number_run = document.pages[0]
+        .items
+        .iter()
+        .filter_map(|item| match item {
+            DisplayItem::Text(text) if text.text == "1" && text.origin.x.0 > 900.0 => Some(text),
+            _ => None,
+        })
+        .next()
+        .expect("missing right-aligned master slide-number run");
+    assert!(
+        (slide_number_run.origin.y.0 - 518.59).abs() < 0.1,
+        "10pt slide-number line should be bottom-anchored using its own line height: {slide_number_run:?}"
+    );
+    for (page_index, expected) in ["1", "2", "3"].into_iter().enumerate() {
+        let text = all_page_text(&document, page_index);
+        assert_eq!(
+            text.split_whitespace()
+                .filter(|token| *token == expected)
+                .count(),
+            3,
+            "slide number {expected} was not lowered separately on page {page_index}; text={text:?}"
+        );
+    }
+}
+
+#[test]
+// Sources:
+// - ECMA-376 Part 1 §19.3.1.25 (header/footer visibility defaults to true)
+// - Microsoft Office golden for ../core/sd/qa/unit/data/pptx/tdf130058.pptx
+fn pptx_tdf130058_keeps_slide_number_without_header_footer_element() {
+    let document = pptx_debug("sd/qa/unit/data/pptx/tdf130058.pptx");
+
+    assert_eq!(normalize_space(&all_page_text(&document, 0)), "1");
 }
 
 #[test]

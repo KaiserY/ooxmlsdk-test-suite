@@ -390,12 +390,9 @@ evidence = ["Office golden PDF addressed by each exact error source"]
 corpus = "LibreOffice"
 class = "presentation-text-parity"
 sources = [
-  "oox/qa/unit/data/Scene3d_legacyObliqueBottomRight.pptx",
-  "oox/qa/unit/data/Scene3d_isometricRightUp.pptx",
   "sd/qa/unit/data/pptx/trailing-paragraphs.pptx",
   "sd/qa/unit/data/pptx/tdf148665.pptx",
   "sd/qa/unit/data/pptx/tdf165261.pptx",
-  "sd/qa/unit/data/pptx/tdf160487.pptx",
   "svx/qa/unit/data/3d_rotated_text.pptx",
   "sd/qa/unit/data/pptx/tdf169524.pptx",
   "sd/qa/unit/data/pptx/tdf168835.pptx",
@@ -416,13 +413,10 @@ sources = [
   "sd/qa/unit/data/pptx/tdf128212.pptx",
   "sd/qa/unit/data/pptx/tdf128213-shaperot.pptx",
   "sd/qa/unit/data/pptx/tdf128213.pptx",
-  "sd/qa/unit/data/pptx/tdf157740.pptx",
   "sd/qa/unit/data/pptx/tdf140865Wordart3D.pptx",
   "sd/qa/unit/data/pptx/tdf160490.pptx",
   "sd/qa/unit/data/pptx/tdf144918.pptx",
   "sd/qa/unit/data/pptx/tdf149865.pptx",
-  "sd/qa/unit/data/pptx/tdf144616.pptx",
-  "sd/qa/unit/data/pptx/tdf119187.pptx",
   "sd/qa/unit/data/pptx/tdf148965.pptx",
   "svx/qa/unit/data/tdf165521_fixedCellHeight.pptx",
   "oox/qa/unit/data/tdf155327_WordArtDefaultColor.pptx",
@@ -430,8 +424,6 @@ sources = [
   "oox/qa/unit/data/testTdf132557_footerCustomShapes.pptx",
   "sd/qa/unit/data/pptx/tdf165732.pptx",
   "sd/qa/unit/data/pptx/tdf96061.pptx",
-  "sd/qa/unit/data/pptx/tdf131554.pptx",
-  "sd/qa/unit/data/pptx/tdf148810_PARA_OUTLLEVEL.pptx",
   "sd/qa/unit/data/pptx/tdf92222.pptx",
   "sd/qa/unit/data/pptx/tdf157529.pptx",
   "chart2/qa/extras/data/pptx/tdf128345_ChartArea_CG_TS.pptx",
@@ -443,12 +435,8 @@ sources = [
   "sd/qa/unit/data/pptx/bnc480256-2.pptx",
   "sd/qa/unit/data/pptx/tdf148685.pptx",
   "chart2/qa/extras/data/pptx/tdf48041.pptx",
-  "sd/qa/unit/data/pptx/tdf90626.pptx",
-  "sd/qa/unit/data/pptx/tdf79082.pptx",
   "sd/qa/unit/data/pptx/tdf149551_SmartArt_Pyramid.pptx",
-  "sd/qa/unit/data/pptx/bnc904423.pptx",
   "oox/qa/unit/data/tdf149551_vert_and_padding.pptx",
-  "sd/qa/unit/data/pptx/ShapeLineProperties.pptx",
   "sd/qa/unit/data/pptx/tdf149551_SmartArt_Gear.pptx",
   "sd/qa/unit/data/pptx/bnc887230.pptx",
   "oox/qa/unit/data/tdf149538_upright.pptx",
@@ -548,7 +536,6 @@ sources = [
 corpus = "Apache-POI"
 class = "presentation-text-parity"
 sources = [
-  "test-data/slideshow/prProps.pptx",
   "test-data/slideshow/table_test2.pptx",
 ]
 
@@ -563,7 +550,6 @@ sources = [
   "sd/qa/unit/data/pptx/tdf128550.pptx",
   "sd/qa/unit/data/pptx/tdf120028.pptx",
   "sd/qa/unit/data/theme.pptx",
-  "sd/qa/unit/data/pptx/tdf143129.pptx",
   "sd/qa/unit/data/pptx/tdf115394.pptx",
   "sd/qa/unit/data/pptx/tdf169825_vertical_layouts.pptx",
   "oox/qa/unit/data/camera-rotation-revolution-nonwps.pptx",
@@ -590,15 +576,7 @@ sources = [
   "chart2/qa/extras/data/pptx/chart.pptx",
   "sd/qa/unit/data/pptx/n83889.pptx",
   "sd/qa/unit/data/pptx/tdf132472.pptx",
-  "sd/qa/unit/data/pptx/tdf113818-swivel.pptx",
   "oox/qa/unit/data/import-characters.pptx",
-]
-
-[[error]]
-corpus = "Open-XML-SDK"
-class = "presentation-text-parity"
-sources = [
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/marL51206400_mainPpr_LeftMarginMaximum.pptx",
 ]
 
 [[error]]
@@ -695,7 +673,6 @@ sources = [
   "sc/qa/unit/uicalc/data/tdf136113.xlsx",
   "libreofficekit/qa/data/join/calc-100-textjitter.xlsx",
   "sc/qa/unit/data/xlsx/tdf137091.xlsx",
-  "sc/qa/unit/data/xlsx/universal-content.xlsx",
   "sc/qa/unit/data/xlsx/cell-value.xlsx",
 ]
 
@@ -706,8 +683,6 @@ sources = [
   "test-data/spreadsheet/59746_NoRowNums.xlsx",
   "test-data/spreadsheet/ShrinkToFit.xlsx",
   "test-data/spreadsheet/60384.xlsx",
-  "test-data/spreadsheet/49325.xlsx",
-  "test-data/spreadsheet/50786-indexed_colours.xlsx",
 ]
 
 [[error]]
@@ -732,7 +707,6 @@ sources = [
   "chart2/qa/extras/data/xlsx/tdf128732.xlsx",
   "chart2/qa/extras/data/xlsx/testChartTitlePropertiesGradientFill.xlsx",
   "sc/qa/unit/data/xlsx/tdf73063.xlsx",
-  "sc/qa/unit/data/xlsx/ProtecteSheet1234Pass.xlsx",
   "sc/qa/unit/data/xlsx/database.xlsx",
 ]
 [[error]]
@@ -740,9 +714,7 @@ corpus = "Apache-POI"
 class = "presentation-text-parity"
 sources = [
   "test-data/slideshow/table-with-no-theme.pptx",
-  "test-data/slideshow/highlight-test-case.pptx",
   "test-data/slideshow/testPPT.pptx",
-  "test-data/slideshow/SampleShow.pptx",
 ]
 
 [[error]]
@@ -760,7 +732,6 @@ sources = [
   "sd/qa/unit/data/pptx/bnc870233_1.pptx",
   "sd/qa/unit/data/pptx/tdf149961-autofitIndentation.pptx",
   "sd/qa/unit/data/pptx/tdf113822underline.pptx",
-  "sd/qa/unit/data/pptx/tdf123090.pptx",
   "sd/qa/unit/data/pptx/bnc584721_4.pptx",
   "chart2/qa/extras/data/pptx/bnc889755.pptx",
   "chart2/qa/extras/xshape/data/pptx/tdf88154_LabelRotatedLayout.pptx",
@@ -776,7 +747,6 @@ sources = [
   "sd/qa/unit/data/pptx/tdf142648.pptx",
   "oox/qa/unit/data/chart-theme-override.pptx",
   "chart2/qa/extras/data/pptx/tdf105517.pptx",
-  "sd/qa/unit/data/pptx/tdf146223.pptx",
   "oox/qa/unit/data/tdf139618_WordArtBitmapFill.pptx",
   "sd/qa/unit/data/pptx/tdf116350-texteffects.pptx",
   "sd/qa/unit/data/pptx/smartart-text.pptx",
@@ -788,17 +758,13 @@ sources = [
   "sd/qa/unit/data/pptx/activex_label.pptx",
   "sd/qa/unit/data/pptx/activex_togglebutton.pptx",
   "sd/qa/unit/data/pptx/activex_checkbox.pptx",
-  "sd/qa/unit/data/pptx/tdf168755_anim_on_SmartArt.pptx",
   "sd/qa/unit/data/pptx/activex_commandbutton.pptx",
   "sd/qa/unit/data/pptx/3columns.pptx",
   "sd/qa/unit/data/pptx/tdf148921.pptx",
   "sd/qa/unit/data/pptx/smartart-pyramid-1child.pptx",
   "sd/qa/unit/data/pptx/font-scale.pptx",
-  "svx/qa/unit/data/tdf132368.pptx",
   "sd/qa/unit/data/pptx/tdf150789.pptx",
   "sd/qa/unit/data/pptx/smartart-bullet-list.pptx",
-  "sd/qa/unit/data/pptx/smartart-background-drawingml-fallback.pptx",
-  "oox/qa/unit/data/smartart-groupshape.pptx",
   "chart2/qa/extras/data/pptx/bnc864396.pptx",
 ]
 
@@ -815,8 +781,6 @@ sources = [
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/Algn_tab_TabAlignment.pptx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/main_ppr_algn_dist.pptx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/marR51206400_mainLvl2ppr_MarginRightLevel2Maximum.pptx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/kern0_mainEndParaRpr_KerningMinimum.pptx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/altLang_mainEndParaRpr_AlternateLanguage.pptx",
 ]
 
 [[error]]
@@ -861,7 +825,6 @@ sources = [
   "test-data/slideshow/51187.pptx",
   "test-data/slideshow/sample.pptx",
   "test-data/slideshow/WithMaster.pptx",
-  "test-data/slideshow/with_japanese.pptx",
   "test-data/slideshow/bug54570.pptx",
 ]
 
@@ -877,7 +840,6 @@ sources = [
   "chart2/qa/extras/chart2dump/data/date-categories.pptx",
   "sd/qa/unit/data/pptx/vertical-bracket-list.pptx",
   "chart2/qa/extras/data/pptx/tdf121205.pptx",
-  "sd/qa/unit/data/pptx/fill-color-list.pptx",
   "sd/qa/unit/data/pptx/smartart-vertical-box-list.pptx",
   "sd/qa/unit/data/pptx/smartart-maxdepth.pptx",
   "sd/qa/unit/data/pptx/smartart1.pptx",
@@ -888,16 +850,13 @@ sources = [
   "sd/qa/unit/data/pptx/smartart-linear-rule.pptx",
   "sd/qa/unit/data/pptx/smartart-rotation.pptx",
   "chart2/qa/extras/data/pptx/bnc882383.pptx",
-  "sd/qa/unit/data/pptx/customxml.pptx",
   "sd/qa/unit/data/pptx/numfmt.pptx",
   "sd/qa/unit/data/pptx/smartart-center-cycle.pptx",
-  "sd/qa/unit/data/pptx/tdf84205.pptx",
   "sd/qa/unit/data/pptx/bnc880763.pptx",
   "sd/qa/unit/data/pptx/tdf169088.pptx",
   "sd/qa/unit/data/pptx/smartart-continuous-block-process.pptx",
   "sd/qa/unit/data/pptx/smartart-accent-process.pptx",
   "sd/qa/unit/data/pptx/tdf98603.pptx",
-  "sd/qa/unit/data/pptx/smartart-tdf134221.pptx",
   "sd/qa/unit/data/pptx/smartart-cnt.pptx",
   "chart2/qa/extras/data/pptx/testChartTitlePropertiesColorFill.pptx",
   "chart2/qa/extras/data/pptx/testChartTitlePropertiesGradientFill.pptx",
@@ -949,11 +908,7 @@ sources = [
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Graphics/algnJust_mainLvl4ppr_AlignmentLevel4Justified.pptx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/algnJustLow_mainLvl1ppr_AlignmentLevel1JustifiedLow.pptx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Graphics/algnThaiDist_mainLvl5ppr_AlignmentLevel5ThaiDistributed.pptx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/lvl0_mainLvl3prr_Level0.pptx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/lvl8_mainLvl4prr_Level8.pptx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Graphics/algnJustLow_mainLvl4ppr_AlignmentLevel4JustifiedLow.pptx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/indent51206400_mainLvl1ppr_IndentLevel1Maximum.pptx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/indent-51206400_mainLvl2ppr_IndentLevel2Minimum.pptx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Text_withExtrusion_100chars.pptx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/AutoShapes_2D (Default Styles).pptx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/AutoShapes_2D_Soft Edges (5 Point).pptx",
@@ -990,7 +945,6 @@ class = "presentation-text-parity"
 sources = [
   "poi-examples/src/main/java/org/apache/poi/examples/xslf/pie-chart-template.pptx",
   "test-data/slideshow/pie-chart.pptx",
-  "test-data/slideshow/bug68703.pptx",
   "test-data/slideshow/layouts.pptx",
   "test-data/slideshow/smartart-simple.pptx",
 ]
@@ -1012,21 +966,16 @@ sources = [
   "sd/qa/unit/data/TextDistancesInsets3.pptx",
   "sd/qa/unit/data/TextDistancesInsets1.pptx",
   "sd/qa/unit/data/pptx/tdf141058-1.pptx",
-  "sd/qa/unit/data/pptx/bnc862510_5.pptx",
-  "sd/qa/unit/data/pptx/tdf44223.pptx",
   "sd/qa/unit/data/pptx/smartart-font-size.pptx",
-  "sd/qa/unit/data/pptx/tdf103477.pptx",
   "sd/qa/unit/data/pptx/tdf93830.pptx",
   "sd/qa/unit/data/pptx/smartart-org-chart2.pptx",
   "chart2/qa/extras/data/pptx/tdf127393.pptx",
   "chart2/qa/extras/data/pptx/tdf146756_bestFit.pptx",
   "sd/qa/unit/data/pptx/tdf149588_transparentSolidFill.pptx",
-  "sd/qa/unit/data/pptx/tdf95932.pptx",
   "sd/qa/unit/data/BoldonseFontEmbedded.pptx",
   "sd/qa/unit/data/pptx/tdf131553.pptx",
   "sd/qa/unit/data/pptx/smartart-linear-rule-vert.pptx",
   "sd/qa/unit/data/pptx/tdf104788.pptx",
-  "sd/qa/unit/data/pptx/n80340.pptx",
   "sd/qa/unit/data/pptx/control_background_color.pptx",
   "chart2/qa/extras/data/pptx/stacked-non-stacked-mix-y-axis.pptx",
   "sd/qa/unit/data/pptx/multiplelayoutfooter.pptx",
@@ -1053,7 +1002,6 @@ sources = [
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/Of16-01.pptx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Image_Small+3D Rotation+Animatioin (Fly In).pptx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Chart_2D.pptx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/[HC]gridSpacing-GidSpacing-cy-0.pptx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/browse-BrowseSlideShowMode-showScrollBar-0.pptx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/bldlst-Build Graphics-bldgraphic-uiexpand.pptx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/asSources/presentation/Text_withExtrusion_200chars.pptx",
@@ -1176,11 +1124,9 @@ sources = [
 corpus = "Open-XML-SDK"
 class = "presentation-text-parity"
 sources = [
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/webPr-WebProperties-ImageTargetResolution-imgsz-1024x786.pptx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/ForTestCase/typical.pptx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/ForTestCase/Bug571679_Brownbag.pptx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/bvt/O12Typical.pptx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/Presentation.pptx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/o09_Performance_typical.pptx",
 ]
 
@@ -1494,8 +1440,6 @@ corpus = "LibreOffice"
 class = "spreadsheet-page-geometry"
 sources = [
   "sc/qa/unit/data/xlsx/value-in-column-2000.xlsx",
-  "sc/qa/unit/data/xlsx/tdf106197_import_upright.xlsx",
-  "sc/qa/unit/data/xlsx/tdf137000_export_upright.xlsx",
   "sc/qa/unit/data/xlsx/hyperlinks.xlsx",
 ]
 
@@ -1510,39 +1454,19 @@ sources = [
 corpus = "Apache-POI"
 class = "spreadsheet-text-parity"
 sources = [
-  "test-data/spreadsheet/50755_workday_formula_example.xlsx",
-  "test-data/spreadsheet/TwoSheetsNoneHidden.xlsx",
-  "test-data/spreadsheet/TwoSheetsOneHidden.xlsx",
   "test-data/spreadsheet/1_NoIden.xlsx",
   "test-data/spreadsheet/SimpleMultiCell.xlsx",
   "test-data/spreadsheet/61060-conditional-number-formatting.xlsx",
   "test-data/spreadsheet/64667.xlsx",
-  "test-data/spreadsheet/49966.xlsx",
-  "test-data/spreadsheet/49872.xlsx",
-  "test-data/spreadsheet/formula-eval.xlsx",
   "test-data/spreadsheet/InlineString.xlsx",
-  "test-data/spreadsheet/TestShiftRowSharedFormula.xlsx",
   "test-data/spreadsheet/58747.xlsx",
-  "test-data/spreadsheet/60289.xlsx",
   "test-data/spreadsheet/github-321.xlsx",
   "test-data/spreadsheet/WidthsAndHeights.xlsx",
-  "test-data/spreadsheet/Booleans.xlsx",
-  "test-data/spreadsheet/46536.xlsx",
-  "test-data/spreadsheet/61869.xlsx",
-  "test-data/spreadsheet/54034.xlsx",
-  "test-data/spreadsheet/56688_1.xlsx",
   "test-data/spreadsheet/Formatting.xlsx",
-  "test-data/spreadsheet/SimpleNormal.xlsx",
   "test-data/spreadsheet/56688_4.xlsx",
-  "test-data/spreadsheet/NewlineInFormulas.xlsx",
   "test-data/spreadsheet/56737.xlsx",
   "test-data/spreadsheet/49783.xlsx",
   "test-data/spreadsheet/58315.xlsx",
-  "test-data/spreadsheet/ValueFunctionOfBlank.xlsx",
-  "test-data/spreadsheet/58731.xlsx",
-  "test-data/spreadsheet/59132.xlsx",
-  "test-data/spreadsheet/57826.xlsx",
-  "test-data/spreadsheet/58106.xlsx",
   "test-data/spreadsheet/SampleSS.xlsx",
 ]
 
@@ -1550,45 +1474,25 @@ sources = [
 corpus = "LibreOffice"
 class = "spreadsheet-text-parity"
 sources = [
-  "sc/qa/unit/data/xlsx/colorscale_num_with_ref.xlsx",
   "sc/qa/unit/data/xlsx/tdf70455.xlsx",
   "sc/qa/unit/data/xlsx/tdf124525.xlsx",
-  "sc/qa/unit/data/xlsx/ref_string.xlsx",
   "chart2/qa/extras/data/xlsx/ChartDataTable.xlsx",
   "sc/qa/unit/data/xlsx/testDrawCircleInMergeCells.xlsx",
-  "sc/qa/unit/data/xlsx/cond_parent.xlsx",
-  "sc/qa/unit/data/xlsx/tdf155321.xlsx",
-  "sc/qa/unit/data/xlsx/autofilterShowButton.xlsx",
   "sc/qa/unit/data/xlsx/tdf165180_date1904.xlsx",
   "chart2/qa/extras/data/xlsx/tdf119138-missing-autotitledeleted.xlsx",
-  "sc/qa/unit/data/xlsx/dateAutofilter.xlsx",
   "sc/qa/unit/data/xlsx/cond_format_theme_color2.xlsx",
   "sc/qa/unit/data/xlsx/miscrowheights.xlsx",
-  "sc/qa/unit/data/xlsx/shared-formula/text-results.xlsx",
-  "sc/qa/unit/data/xlsx/tdf83779.xlsx",
   "sc/qa/unit/data/xlsx/tdf163554.xlsx",
   "sc/qa/unit/data/xlsx/shared-formula/refupdate.xlsx",
   "sc/qa/uitest/data/tdf118206.xlsx",
   "sc/qa/unit/uicalc/data/tdf118189.xlsx",
   "chart2/qa/extras/data/xlsx/bartest-stroke.xlsx",
-  "sc/qa/unit/data/xlsx/matrix-multiplication.xlsx",
-  "sc/qa/unit/data/xlsx/tdf165886.xlsx",
-  "sc/qa/unit/data/xlsx/tdf166413.xlsx",
   "sc/qa/unit/data/xlsx/tdf166724_cellAnchor.xlsx",
   "sc/qa/unit/data/xlsx/shared-formula/basic.xlsx",
-  "sc/qa/unit/data/xlsx/tdf109061.xlsx",
   "sc/qa/unit/data/xlsx/Test_ThemeColor_Text_Background_Border.xlsx",
   "sc/qa/unit/data/xlsx/tdf81939.xlsx",
   "sc/qa/unit/data/xlsx/cell-multi-line.xlsx",
   "sc/qa/unit/data/xlsx/writingMode.xlsx",
-]
-
-[[error]]
-corpus = "Open-XML-SDK"
-class = "spreadsheet-text-parity"
-sources = [
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/Robustness/OFCAT/00a5835d-d770-438a-aa36-c7cdcd4e61d1.xlsx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/VolTypes.xlsx",
 ]
 
 [[error]]
@@ -1602,8 +1506,6 @@ sources = [
 corpus = "Apache-POI"
 class = "spreadsheet-page-geometry"
 sources = [
-  "test-data/spreadsheet/53798.xlsx",
-  "test-data/spreadsheet/53798_shiftNegative_TMPL.xlsx",
   "test-data/spreadsheet/53101.xlsx",
   "test-data/spreadsheet/style-alternate-content.xlsx",
   "test-data/spreadsheet/craftonhills.edu_programreview_report.aspx_goalpriorityreport_0011d159-1eeb-4b63-8833-867b0926e5f3.xlsx",
@@ -1614,7 +1516,6 @@ corpus = "LibreOffice"
 class = "spreadsheet-page-geometry"
 sources = [
   "sc/qa/unit/data/xlsx/tdf91251_missingOverflowRoundtrip.xlsx",
-  "sc/qa/unit/data/xlsx/underlineColor.xlsx",
 ]
 
 [[error]]
@@ -1622,26 +1523,15 @@ corpus = "Apache-POI"
 class = "spreadsheet-text-parity"
 sources = [
   "test-data/spreadsheet/54071.xlsx",
-  "test-data/spreadsheet/56688_2.xlsx",
-  "test-data/spreadsheet/56688_3.xlsx",
   "test-data/spreadsheet/SimpleStrict.xlsx",
   "test-data/spreadsheet/styles.xlsx",
-  "test-data/spreadsheet/48703.xlsx",
-  "test-data/spreadsheet/WithTable.xlsx",
   "test-data/spreadsheet/53734.xlsx",
   "test-data/spreadsheet/ExcelTables.xlsx",
-  "test-data/spreadsheet/50867_with_table.xlsx",
   "test-data/spreadsheet/conditional_formatting_multiple_ranges.xlsx",
-  "test-data/spreadsheet/55906-MultiSheetRefs.xlsx",
-  "test-data/spreadsheet/bug65306.xlsx",
   "test-data/spreadsheet/57914.xlsx",
   "test-data/spreadsheet/WithTextBox.xlsx",
-  "test-data/spreadsheet/57838.xlsx",
   "test-data/spreadsheet/decimal-format.xlsx",
   "test-data/spreadsheet/56511.xlsx",
-  "test-data/spreadsheet/57828.xlsx",
-  "test-data/xmldsign/hello-world-unsigned.xlsx",
-  "test-data/spreadsheet/simple-table-named-range.xlsx",
   "test-data/spreadsheet/xxe_in_schema.xlsx",
   "test-data/spreadsheet/Intersection-52111-xssf.xlsx",
   "test-data/spreadsheet/64450.xlsx",
@@ -1651,12 +1541,9 @@ sources = [
   "test-data/spreadsheet/CustomXmlMappings-inverse-order.xlsx",
   "test-data/spreadsheet/56574.xlsx",
   "test-data/spreadsheet/SampleSS.strict.xlsx",
-  "test-data/spreadsheet/comments.xlsx",
   "test-data/spreadsheet/SimpleWithComments.xlsx",
-  "test-data/spreadsheet/48923.xlsx",
   "test-data/spreadsheet/shared_formulas.xlsx",
   "test-data/spreadsheet/WithChart.xlsx",
-  "test-data/spreadsheet/57535.xlsx",
   "test-data/spreadsheet/51519.xlsx",
 ]
 
@@ -1664,35 +1551,26 @@ sources = [
 corpus = "LibreOffice"
 class = "spreadsheet-text-parity"
 sources = [
-  "sc/qa/unit/data/xlsx/complex_icon_set.xlsx",
   "sc/qa/unit/data/xlsx/tdf123139_applyAlignment.xlsx",
   "sc/qa/unit/data/xlsx/testShapeAutofit.xlsx",
   "sc/qa/unit/data/xlsx/tdf141644.xlsx",
-  "sc/qa/unit/data/xlsx/tdf156814.xlsx",
   "sc/qa/unit/data/xlsx/tdf137543.xlsx",
   "sc/qa/unit/data/xlsx/129969-min.xlsx",
-  "sc/qa/unit/data/xlsx/NamedSheetViews.xlsx",
   "sc/qa/unit/data/xlsx/TextColor.xlsx",
   "sc/qa/unit/data/xlsx/tdf131424.xlsx",
   "sc/qa/unit/data/xlsx/textbox-CondensedCharacterSpace.xlsx",
   "sc/qa/unit/data/xlsx/textbox-CharKerningSpace.xlsx",
   "sc/qa/unit/data/xlsx/tdf119565.xlsx",
   "sc/qa/unit/data/xlsx/tdf138601.xlsx",
-  "sc/qa/unit/data/xlsx/conditional_fmt_origin.xlsx",
   "sc/qa/unit/data/xlsx/tdf119190.xlsx",
-  "sc/qa/unit/data/xlsx/tdf139394.xlsx",
   "sc/qa/unit/data/xlsx/tdf130104_indent.xlsx",
-  "sc/qa/unit/data/xlsx/hyperlink.xlsx",
-  "sc/qa/unit/data/xlsx/tdf121715.xlsx",
   "sc/qa/unit/data/xlsx/fontSize.xlsx",
   "sc/qa/unit/data/xlsx/Book1_custom.xlsx",
   "sc/qa/unit/data/xlsx/textbox-hyperlink.xlsx",
   "sc/qa/unit/data/xlsx/Spill.xlsx",
-  "sc/qa/unit/data/xlsx/tdf113013.xlsx",
   "sc/qa/unit/data/xlsx/tdf152581_bordercolorNotExportedToXLSX.xlsx",
   "sc/qa/unit/data/xlsx/tdf66668.xlsx",
   "chart2/qa/extras/data/xlsx/tdf100084.xlsx",
-  "sc/qa/unit/data/xlsx/tdf157689.xlsx",
   "sc/qa/unit/data/xlsx/tdf144642_RowHeight_28.35pt_SavedByExcel.xlsx",
   "sc/qa/unit/data/xlsx/subtotal-above.xlsx",
   "sc/qa/unit/data/xlsx/tdf142881.xlsx",
@@ -1704,7 +1582,6 @@ corpus = "Open-XML-SDK"
 class = "spreadsheet-text-parity"
 sources = [
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/Dialogsheet.xlsx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFilesValidation/smtClean.xlsx",
 ]
 
 [[error]]
@@ -1725,11 +1602,9 @@ sources = [
 corpus = "Apache-POI"
 class = "spreadsheet-page-geometry"
 sources = [
-  "test-data/spreadsheet/61605.xlsx",
   "test-data/openxml4j/53282.xlsx",
   "test-data/spreadsheet/53282.xlsx",
   "test-data/spreadsheet/47737.xlsx",
-  "test-data/spreadsheet/51850.xlsx",
 ]
 
 [[error]]
@@ -1753,25 +1628,18 @@ sources = [
 corpus = "Apache-POI"
 class = "spreadsheet-text-parity"
 sources = [
-  "test-data/spreadsheet/55923.xlsx",
   "test-data/spreadsheet/59026.xlsx",
   "test-data/spreadsheet/57798.xlsx",
-  "test-data/spreadsheet/ref-56737.xlsx",
   "test-data/spreadsheet/StructuredReferences.xlsx",
-  "test-data/spreadsheet/57482-OnlyNumeric.xlsx",
   "test-data/spreadsheet/56557.xlsx",
   "test-data/spreadsheet/56514.xlsx",
   "test-data/spreadsheet/table-sample.xlsx",
-  "test-data/spreadsheet/WithVariousData.xlsx",
   "test-data/spreadsheet/55864.xlsx",
   "test-data/spreadsheet/57890.xlsx",
   "test-data/spreadsheet/chart_sheet.xlsx",
   "test-data/spreadsheet/bug66215.xlsx",
   "test-data/spreadsheet/49273.xlsx",
-  "test-data/spreadsheet/51998.xlsx",
-  "test-data/spreadsheet/TablesWithDifferentHeaders.xlsx",
   "test-data/spreadsheet/60255_extra_drawingparts.xlsx",
-  "test-data/spreadsheet/ref2-56737.xlsx",
   "test-data/spreadsheet/FormatKM.xlsx",
   "test-data/spreadsheet/56502.xlsx",
   "test-data/spreadsheet/xlookup.xlsx",
@@ -1792,16 +1660,11 @@ sources = [
   "sc/qa/unit/data/xlsx/tdf145057.xlsx",
   "chart2/qa/extras/data/xlsx/autotitledel_2007.xlsx",
   "chart2/qa/extras/data/xlsx/dispBlanksAs_2007.xlsx",
-  "sc/qa/unit/data/xlsx/tdf122102.xlsx",
-  "sc/qa/unit/data/xlsx/tdf120749.xlsx",
   "sc/qa/unit/data/xlsx/tdf167019.xlsx",
-  "sc/qa/unit/data/xlsx/tdf139167.xlsx",
   "sc/qa/unit/data/xlsx/tdf119292.xlsx",
   "sc/qa/unit/data/xlsx/pivot_dark1.xlsx",
   "sc/qa/unit/data/xlsx/tdf144397.xlsx",
   "sc/qa/unit/data/xlsx/tdf145129_DefaultRowHeight_28.35pt_SavedByExcel.xlsx",
-  "sc/qa/unit/data/xlsx/tdf139021.xlsx",
-  "sc/qa/unit/data/xlsx/tdf139928.xlsx",
   "chart2/qa/extras/data/xlsx/testDataseriesOverlapStackedChart.xlsx",
   "sc/qa/unit/data/xlsx/XlStartupExternal.xlsx",
   "chart2/qa/extras/data/xlsx/sunburst.xlsx",
@@ -1844,7 +1707,6 @@ sources = [
 corpus = "Open-XML-SDK"
 class = "spreadsheet-text-parity"
 sources = [
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/XMLMap.xlsx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/NativePivotSourceWorkbook.xlsx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Graphics/3DRotation-O12-XL-OartTextEffects.xlsx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/Pivot.xlsx",
@@ -1880,7 +1742,6 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/tdf117988.docx",
   "sw/qa/extras/ooxmlexport/data/tdf77219_foregroundShape.docx",
   "sw/qa/extras/ooxmlexport/data/tdf143399.docx",
-  "sw/qa/extras/ooxmlexport/data/vml-text-vertical-adjust.docx",
   "sw/qa/extras/ooxmlexport/data/tdf99602_subscript_charStyleSize.docx",
   "sw/qa/extras/uiwriter/data/tdf164620.docx",
   "sw/qa/extras/ooxmlexport/data/tdf148361.docx",
@@ -1888,7 +1749,6 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/table-btlr-center.docx",
   "sw/qa/extras/ooxmlexport/data/tdf120412_400PercentSubscript.docx",
   "sw/qa/extras/ooxmlexport/data/groupshape-smarttag.docx",
-  "sw/qa/extras/ooxmlimport/data/groupshape-sdt.docx",
   "sw/qa/extras/ooxmlexport/data/table-style-rPr-sz.docx",
   "sw/qa/extras/ooxmlexport/data/fdo80902.docx",
   "sw/qa/extras/layout/data/tdf127118.docx",
@@ -1905,7 +1765,6 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/para-adjust-distribute.docx",
   "sw/qa/extras/uiwriter/data/tdf146248.docx",
   "sw/qa/core/data/ooxml/pass/liststyle-gridbefore.docx",
-  "sw/qa/extras/ooxmlimport/data/tdf103664.docx",
   "sw/qa/extras/ooxmlexport/data/tdf120852_readOnlyUnProtected.docx",
   "sw/qa/extras/ooxmlexport/data/tdf57589_hashColor.docx",
   "sw/qa/extras/ooxmlexport/data/conditionalstyles-tbllook.docx",
@@ -2004,7 +1863,6 @@ sources = [
   "sw/qa/uitest/data/redline-para-join.docx",
   "sw/qa/extras/layout/data/tdf152298.docx",
   "sw/qa/extras/ooxmlexport/data/fdo80800.docx",
-  "sw/qa/extras/ooxmlexport/data/fdo78384.docx",
 ]
 
 [[error]]
@@ -2914,7 +2772,6 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/rhbz988516.docx",
   "sw/qa/extras/ooxmlexport/data/tdf165492_atLeastWithBottomSpacing.docx",
   "sw/qa/extras/ooxmlexport/data/tdf165492_exactWithBottomSpacing.docx",
-  "sw/qa/extras/odfexport/data/tdf129520.docx",
   "sw/qa/extras/ooxmlexport/data/Unsupportedtextfields.docx",
   "sw/qa/extras/ooxmlexport/data/tdf99227.docx",
   "sw/qa/core/fields/data/tdf86790.docx",
@@ -3444,7 +3301,6 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/tdf146171.docx",
   "sw/qa/extras/ooxmlexport/data/tdf64372_continuousBreaks.docx",
   "sw/qa/extras/ooxmlexport/data/tdf99616_hidemarkb.docx",
-  "sw/qa/extras/ooxmlexport/data/n775906.docx",
   "sw/qa/extras/uiwriter/data/tdf136778.docx",
   "sw/qa/writerfilter/dmapper/data/para-style-lost-numbering.docx",
   "sw/qa/core/layout/data/table-print-area-left.docx",
@@ -3616,7 +3472,6 @@ sources = [
   "sw/qa/extras/layout/data/tdf164499.docx",
   "sw/qa/core/data/ooxml/pass/tdf161139_orrick-org-min3.docx",
   "sw/qa/core/doc/data/header-footer-delete.docx",
-  "sw/qa/extras/ooxmlexport/data/FDO73546.docx",
   "sw/qa/uitest/data/tdf150443.docx",
   "sw/qa/extras/ooxmlexport/data/tdf97090.docx",
   "sw/qa/core/layout/data/floattable-header.docx",
@@ -3765,9 +3620,6 @@ sources = [
 corpus = "Apache-POI"
 class = "spreadsheet-page-geometry"
 sources = [
-  "test-data/spreadsheet/55406_Conditional_formatting_sample.xlsx",
-  "test-data/spreadsheet/48539.xlsx",
-  "test-data/spreadsheet/57362.xlsx",
   "test-data/openxml4j/50154.xlsx",
   "test-data/spreadsheet/bug65464.xlsx",
   "test-data/spreadsheet/DataValidationEvaluations.xlsx",
@@ -3777,41 +3629,15 @@ sources = [
 corpus = "Apache-POI"
 class = "spreadsheet-text-parity"
 sources = [
-  "test-data/xmldsign/ms-office-2010-signed.xlsx",
   "test-data/spreadsheet/50784-font_theme_colours.xlsx",
   "test-data/spreadsheet/testSharedFormulasRangeSetBlankBug.xlsx",
-  "test-data/spreadsheet/55850.xlsx",
   "test-data/spreadsheet/chartTitle_noTitle.xlsx",
   "test-data/spreadsheet/chartTitle_withTitle.xlsx",
   "test-data/spreadsheet/56274.xlsx",
   "test-data/spreadsheet/WithTwoCharts.xlsx",
-  "test-data/xmldsign/hello-world-signed.xlsx",
   "test-data/spreadsheet/NewStyleConditionalFormattings.xlsx",
   "test-data/spreadsheet/chartTitle_withTitleFormula.xlsx",
-  "test-data/spreadsheet/63934.xlsx",
   "test-data/spreadsheet/54524.xlsx",
-]
-
-[[error]]
-corpus = "LibreOffice"
-class = "spreadsheet-page-geometry"
-sources = [
-  "chart2/qa/extras/data/xlsx/trendline2007.xlsx",
-  "chart2/qa/extras/data/xlsx/strict_chart.xlsx",
-  "chart2/qa/extras/data/xlsx/bar_chart_simple.xlsx",
-  "chart2/qa/extras/data/xlsx/markerColor.xlsx",
-  "chart2/qa/extras/data/xlsx/no_marker.xlsx",
-  "chart2/qa/extras/data/xlsx/bubble_chart_simple.xlsx",
-  "chart2/qa/extras/data/xlsx/invertIfNeg_bar.xlsx",
-  "chart2/qa/extras/data/xlsx/chart_title.xlsx",
-  "chart2/qa/extras/data/xlsx/plot_area_manual_layout.xlsx",
-  "chart2/qa/extras/data/xlsx/legend_manual_layout.xlsx",
-  "chart2/qa/extras/data/xlsx/title_manual_layout.xlsx",
-  "chart2/qa/extras/data/xlsx/trendline.xlsx",
-  "chart2/qa/extras/data/xlsx/fdo70609.xlsx",
-  "chart2/qa/extras/data/xlsx/axis-label-rotation.xlsx",
-  "chart2/qa/extras/data/xlsx/tdf134978.xlsx",
-  "chart2/qa/extras/data/xlsx/chart-area-style-background.xlsx",
 ]
 
 [[error]]
@@ -3819,8 +3645,6 @@ corpus = "LibreOffice"
 class = "spreadsheet-text-parity"
 sources = [
   "chart2/qa/extras/data/xlsx/tdf133190_tdf133191.xlsx",
-  "sc/qa/unit/data/xlsx/tdf118990.xlsx",
-  "sc/qa/unit/data/xlsx/tdf161365.xlsx",
   "sc/qa/unit/data/xlsx/pivot-table/PivotTableCellFormatsTest_8_DataFieldInRow_DataColor.xlsx",
   "sc/qa/unit/data/xlsx/pivottable_outline_mode.xlsx",
   "sc/qa/unit/data/xlsx/pivot-table/PivotTableCellFormatsTest_4_DataFieldInColumn_DataColor.xlsx",
@@ -3865,7 +3689,6 @@ sources = [
   "chart2/qa/extras/data/xlsx/autotitledel_2013.xlsx",
   "chart2/qa/extras/data/xlsx/tdf122031.xlsx",
   "sc/qa/unit/data/xlsx/PivotTable_CachedDefinitionAndDataInSync.xlsx",
-  "sc/qa/unit/data/xlsx/tdf60673.xlsx",
   "sc/qa/unit/tiledrendering/data/page-view.xlsx",
   "sc/qa/unit/data/xlsx/Sparklines.xlsx",
   "chart2/qa/extras/data/xlsx/empty_chart.xlsx",
@@ -3921,14 +3744,6 @@ sources = [
 ]
 
 [[error]]
-corpus = "Apache-POI"
-class = "spreadsheet-visible-output"
-sources = [
-  "test-data/spreadsheet/57176.xlsx",
-  "test-data/spreadsheet/bug63189.xlsx",
-]
-
-[[error]]
 corpus = "LibreOffice"
 class = "spreadsheet-text-parity"
 sources = [
@@ -3957,7 +3772,6 @@ sources = [
   "sc/qa/unit/data/xlsx/pivot/Pivot1_Row_Grand.xlsx",
   "sc/qa/unit/data/xlsx/pivot/Pivot3_Column_Grand_Subtotals.xlsx",
   "sc/qa/unit/data/xlsx/pivot/Pivot4_Column_Grand_Subtotals_SortDescending.xlsx",
-  "sc/qa/unit/data/xlsx/tdf105272.xlsx",
   "sc/qa/unit/data/xlsx/pivot/Pivot1_Row_Grand_Subtotals.xlsx",
   "sc/qa/unit/data/xlsx/pivot/Pivot2_Row_Compact.xlsx",
   "sc/qa/unit/data/xlsx/forum-mso-en4-145327.xlsx",
@@ -4010,7 +3824,6 @@ sources = [
   "test-data/spreadsheet/54206.xlsx",
   "test-data/spreadsheet/HsGetVal.xlsx",
   "test-data/integration/stress020.xlsx",
-  "test-data/spreadsheet/54399.xlsx",
   "test-data/spreadsheet/SimpleScatterChart.xlsx",
   "test-data/spreadsheet/simple-monthly-budget.xlsx",
   "test-data/spreadsheet/ExcelPivotTableSample.xlsx",
@@ -4021,13 +3834,7 @@ sources = [
 corpus = "LibreOffice"
 class = "spreadsheet-page-geometry"
 sources = [
-  "chart2/qa/extras/data/xlsx/tdf108107.xlsx",
-  "sc/qa/unit/data/xlsx/universal-content-strict.xlsx",
-  "chart2/qa/extras/data/xlsx/tdf128627.xlsx",
-  "chart2/qa/extras/data/xlsx/testTdf90749.xlsx",
   "chart2/qa/extras/data/xlsx/testDataPointLabelCustomPos.xlsx",
-  "sc/qa/unit/data/xlsx/pivot-table/test_diff_aggregation.xlsx",
-  "chart2/qa/extras/data/xlsx/piechart_outside.xlsx",
   "sc/qa/unit/data/xlsx/tdf136721_letter_sized_paper.xlsx",
   "sc/qa/unit/data/xlsx/invalid_ext_data_validation.xlsx",
   "sc/qa/unit/data/xlsx/pivot-table/pivot_calcfield_nameerror.xlsx",
@@ -4045,7 +3852,6 @@ sources = [
   "sc/qa/unit/data/xlsx/pivot-table/Pivot_Table_with_Cell_Protection.xlsx",
   "chart2/qa/extras/data/xlsx/tdfPieNumFormat.xlsx",
   "chart2/qa/extras/data/xlsx/vary_color.xlsx",
-  "chart2/qa/extras/data/xlsx/tdf137917.xlsx",
   "chart2/qa/extras/data/xlsx/chart_label_text_break.xlsx",
   "chart2/qa/extras/data/xlsx/custom_data_label.xlsx",
   "chart2/qa/extras/data/xlsx/tdf134225.xlsx",
@@ -4084,7 +3890,6 @@ sources = [
   "sc/qa/unit/data/xlsx/pivottable_string_field_filter.xlsx",
   "sc/qa/unit/data/xlsx/pivot-table/PivotTableWithNoSourceData.xlsx",
   "chart2/qa/extras/data/xlsx/tdf130986.xlsx",
-  "sc/qa/unit/data/xlsx/track-changes/simple-cell-changes.xlsx",
   "sc/qa/unit/data/xlsx/pivot-table/PivotTableFormatsSubTotals.xlsx",
   "sc/qa/unit/data/xlsx/tdf89139_pivot_table.xlsx",
   "chart2/qa/extras/data/xlsx/test3DAreaChartZAxis.xlsx",
@@ -4102,7 +3907,6 @@ sources = [
   "sc/qa/unit/data/xlsx/tdf134769.xlsx",
   "sc/qa/unit/data/xlsx/pivottable_duplicated_member_filter.xlsx",
   "sc/qa/unit/data/xlsx/tdf115159.xlsx",
-  "sc/qa/uitest/data/autofilter/tdf116818.xlsx",
   "sc/qa/unit/data/xlsx/pivot-table/shared-dategroup.xlsx",
   "sc/qa/unit/data/xlsx/pivot-table/shared-numgroup.xlsx",
   "sc/qa/unit/data/xlsx/pivottable_double_field_filter.xlsx",
@@ -4131,15 +3935,6 @@ sources = [
 
 [[error]]
 corpus = "Open-XML-SDK"
-class = "spreadsheet-page-geometry"
-sources = [
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/asSources/spreadsheet/Styles.xlsx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/Styles.xlsx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/smallset/Styles.xlsx",
-]
-
-[[error]]
-corpus = "Open-XML-SDK"
 class = "spreadsheet-text-parity"
 sources = [
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/Pivot4.xlsx",
@@ -4160,13 +3955,6 @@ sources = [
 ]
 
 [[error]]
-corpus = "Apache-POI"
-class = "spreadsheet-page-geometry"
-sources = [
-  "test-data/spreadsheet/53105.xlsx",
-]
-
-[[error]]
 corpus = "Open-XML-SDK"
 class = "spreadsheet-page-geometry"
 sources = [
@@ -4179,11 +3967,8 @@ sources = [
   "test-data/spreadsheet/NumberFormatTests.xlsx",
   "test-data/spreadsheet/62629_toMerge.xlsx",
   "test-data/spreadsheet/AverageTaxRates.xlsx",
-  "test-data/spreadsheet/56702.xlsx",
   "test-data/spreadsheet/WithChartSheet.xlsx",
-  "test-data/spreadsheet/57171_57163_57165.xlsx",
   "test-data/spreadsheet/61034.xlsx",
-  "test-data/spreadsheet/50299.xlsx",
   "test-data/spreadsheet/ElapsedFormatTests.xlsx",
   "test-data/spreadsheet/GeneralFormatTests.xlsx",
   "test-data/spreadsheet/45540_classic_Footer.xlsx",
@@ -4293,7 +4078,6 @@ sources = [
 corpus = "Apache-POI"
 class = "spreadsheet-text-parity"
 sources = [
-  "test-data/spreadsheet/CustomXMLMapping-singleattributenamespace.xlsx",
   "test-data/spreadsheet/TextFormatTests.xlsx",
   "test-data/spreadsheet/bug64512_embed.xlsx",
   "test-data/spreadsheet/48962.xlsx",
@@ -4324,12 +4108,10 @@ corpus = "Open-XML-SDK"
 class = "spreadsheet-page-geometry"
 sources = [
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/pivot5.xlsx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/Pivot3.xlsx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/Basic12RTM.xlsx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/Spreadsheet.xlsx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/missingcalcchainpart.xlsx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/RelationalPivotA3.xlsx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/Connection.xlsx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/RelationalPivotA2.xlsx",
 ]
 
@@ -4402,7 +4184,6 @@ sources = [
 corpus = "Apache-POI"
 class = "spreadsheet-page-geometry"
 sources = [
-  "test-data/spreadsheet/51710.xlsx",
   "test-data/spreadsheet/dataValidationTableRange.xlsx",
   "test-data/spreadsheet/CVLKRA-KYC_Download_File_Structure_V3.1.xlsx",
   "test-data/spreadsheet/51585.xlsx",
@@ -4427,7 +4208,6 @@ sources = [
 corpus = "LibreOffice"
 class = "spreadsheet-page-geometry"
 sources = [
-  "sc/qa/unit/data/xlsx/MissingPathExternal.xlsx",
   "sc/qa/unit/data/xlsx/forum-mso-en4-134670.xlsx",
   "sc/qa/unit/data/xlsx/forum-mso-de-104083.xlsx",
 ]
@@ -4584,7 +4364,6 @@ corpus = "Open-XML-SDK"
 class = "spreadsheet-page-geometry"
 sources = [
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/RelationalPivotB1.xlsx",
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/OlapPivotC3.xlsx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/RelationalPivotB5.xlsx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/NoExtDataF1.xlsx",
 ]
@@ -4709,7 +4488,6 @@ sources = [
   "sw/qa/extras/ooxmlimport/data/tdf120547.docx",
   "sw/qa/extras/ooxmlexport/data/fdo77727.docx",
   "sw/qa/extras/ooxmlimport/data/tdf96218.docx",
-  "xmloff/qa/unit/data/textbox-loss.docx",
 ]
 
 [[error]]
@@ -4917,7 +4695,6 @@ sources = [
 corpus = "Open-XML-SDK"
 class = "word-text-parity"
 sources = [
-  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/columns/columns1.docx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/Of16-03.docx",
 ]
 
@@ -5033,7 +4810,6 @@ sources = [
   "sw/qa/uitest/data/tdf95495.docx",
   "sw/qa/extras/ooxmlexport/data/tdf104420_lostParagraph.docx",
   "sw/qa/extras/ooxmlexport/data/fdo76591.docx",
-  "sw/qa/extras/ooxmlexport/data/tdf83309.docx",
   "sw/qa/extras/ooxmlexport/data/fdo61343.docx",
   "sw/qa/extras/ooxmlexport/data/fdo78474.docx",
   "sw/qa/extras/ooxmlexport/data/tdf167721_chUnits4.docx",
@@ -5065,7 +4841,6 @@ sources = [
 corpus = "Apache-POI"
 class = "word-page-geometry"
 sources = [
-  "test-data/integration/stress011.docx",
   "test-data/document/chartex.docx",
   "test-data/document/bug59058.docx",
 ]
@@ -5307,7 +5082,6 @@ sources = [
   "sc/qa/unit/tiledrendering/data/numlocale.xlsx",
   "chart2/qa/extras/data/xlsx/tdf39052.xlsx",
   "chart2/qa/extras/data/xlsx/invertIfNeg_bubble.xlsx",
-  "chart2/qa/extras/data/xlsx/DataTable-MultipleLegendEntriesForOneDataSeries.xlsx",
 ]
 
 [[error]]
@@ -5460,4 +5234,206 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/tdf149388.docx",
   "sw/qa/extras/ooxmlexport/data/tdf118691.docx",
   "sw/qa/extras/ooxmlexport/data/tdf138093.docx",
+]
+
+[[error]]
+corpus = "Apache-POI"
+class = "spreadsheet-text-parity"
+sources = [
+  "test-data/spreadsheet/48539.xlsx",
+  "test-data/spreadsheet/57362.xlsx",
+]
+
+[[error]]
+corpus = "Apache-POI"
+class = "spreadsheet-visible-output"
+sources = [
+  "test-data/spreadsheet/53798.xlsx",
+  "test-data/spreadsheet/53798_shiftNegative_TMPL.xlsx",
+  "test-data/spreadsheet/55406_Conditional_formatting_sample.xlsx",
+]
+
+[[error]]
+corpus = "LibreOffice"
+class = "spreadsheet-text-parity"
+sources = [
+  "chart2/qa/extras/data/xlsx/axis-label-rotation.xlsx",
+  "chart2/qa/extras/data/xlsx/bar_chart_simple.xlsx",
+  "chart2/qa/extras/data/xlsx/bubble_chart_simple.xlsx",
+  "chart2/qa/extras/data/xlsx/chart-area-style-background.xlsx",
+  "chart2/qa/extras/data/xlsx/chart_title.xlsx",
+  "chart2/qa/extras/data/xlsx/fdo70609.xlsx",
+  "chart2/qa/extras/data/xlsx/invertIfNeg_bar.xlsx",
+  "chart2/qa/extras/data/xlsx/legend_manual_layout.xlsx",
+  "chart2/qa/extras/data/xlsx/markerColor.xlsx",
+  "chart2/qa/extras/data/xlsx/no_marker.xlsx",
+  "chart2/qa/extras/data/xlsx/piechart_outside.xlsx",
+  "chart2/qa/extras/data/xlsx/plot_area_manual_layout.xlsx",
+  "chart2/qa/extras/data/xlsx/strict_chart.xlsx",
+  "chart2/qa/extras/data/xlsx/tdf108107.xlsx",
+  "chart2/qa/extras/data/xlsx/tdf128627.xlsx",
+  "chart2/qa/extras/data/xlsx/tdf134978.xlsx",
+  "chart2/qa/extras/data/xlsx/testTdf90749.xlsx",
+  "chart2/qa/extras/data/xlsx/title_manual_layout.xlsx",
+  "chart2/qa/extras/data/xlsx/trendline.xlsx",
+  "chart2/qa/extras/data/xlsx/trendline2007.xlsx",
+  "sc/qa/unit/data/xlsx/pivot-table/test_diff_aggregation.xlsx",
+  "sc/qa/unit/data/xlsx/tdf106197_import_upright.xlsx",
+  "sc/qa/unit/data/xlsx/tdf137000_export_upright.xlsx",
+  "sc/qa/unit/data/xlsx/underlineColor.xlsx",
+  "sc/qa/unit/data/xlsx/universal-content.xlsx",
+]
+
+[[error]]
+corpus = "Open-XML-SDK"
+class = "spreadsheet-text-parity"
+sources = [
+  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/asSources/spreadsheet/Styles.xlsx",
+  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/Styles.xlsx",
+]
+
+[[error]]
+corpus = "Apache-POI"
+class = "spreadsheet-text-parity"
+sources = [
+  "test-data/spreadsheet/50299.xlsx",
+  "test-data/spreadsheet/51710.xlsx",
+  "test-data/spreadsheet/53105.xlsx",
+  "test-data/spreadsheet/56702.xlsx",
+  "test-data/spreadsheet/57171_57163_57165.xlsx",
+]
+
+[[error]]
+corpus = "LibreOffice"
+class = "spreadsheet-text-parity"
+sources = [
+  "sc/qa/unit/data/xlsx/MissingPathExternal.xlsx",
+]
+
+[[error]]
+corpus = "Open-XML-SDK"
+class = "spreadsheet-text-parity"
+sources = [
+  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/Connection.xlsx",
+  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/OlapPivotC3.xlsx",
+  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/Pivot3.xlsx",
+  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/smallset/Styles.xlsx",
+]
+
+[[error]]
+corpus = "LibreOffice"
+class = "spreadsheet-page-geometry"
+sources = [
+  "chart2/qa/extras/data/xlsx/DataTable-MultipleLegendEntriesForOneDataSeries.xlsx",
+  "chart2/qa/extras/data/xlsx/tdf137917.xlsx",
+]
+
+[[error]]
+corpus = "LibreOffice"
+class = "spreadsheet-visible-output"
+sources = [
+  "sc/qa/unit/data/xlsx/tdf105272.xlsx",
+]
+
+[[class]]
+id = "word-pdf-font-integrity"
+layer = "font"
+reason = "The candidate has visible text without a usable PDF font resource or emits a Type 0 font whose ToUnicode CMap has no mappings; this fails the font-integrity layer before text parity can be evaluated."
+evidence = ["Office golden PDF and candidate PDF addressed by each exact error source"]
+
+[[error]]
+corpus = "LibreOffice"
+class = "word-pdf-font-integrity"
+sources = [
+  "sw/qa/extras/ooxmlexport/data/fdo78384.docx",
+  "sw/qa/extras/ooxmlexport/data/tdf83309.docx",
+  "sw/qa/extras/ooxmlexport/data/vml-text-vertical-adjust.docx",
+  "sw/qa/extras/ooxmlimport/data/groupshape-sdt.docx",
+  "sw/qa/extras/ooxmlimport/data/tdf103664.docx",
+  "xmloff/qa/unit/data/textbox-loss.docx",
+]
+
+[[error]]
+corpus = "Open-XML-SDK"
+class = "word-pdf-font-integrity"
+sources = [
+  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/columns/columns1.docx",
+]
+
+[[error]]
+corpus = "LibreOffice"
+class = "word-text-parity"
+sources = [
+  "sw/qa/extras/ooxmlexport/data/FDO73546.docx",
+]
+
+[[error]]
+corpus = "Apache-POI"
+class = "word-pdf-font-integrity"
+sources = [
+  "test-data/integration/stress011.docx",
+]
+
+[[class]]
+id = "presentation-pdf-font-integrity"
+layer = "font"
+reason = "The candidate has visible text without a usable PDF font resource or emits a Type 0 font whose ToUnicode CMap has no mappings; this fails the font-integrity layer before presentation text parity can be evaluated."
+evidence = ["Office golden PDF and candidate PDF addressed by each exact error source"]
+
+[[error]]
+corpus = "Apache-POI"
+class = "presentation-pdf-font-integrity"
+sources = [
+  "test-data/slideshow/with_japanese.pptx",
+]
+
+[[error]]
+corpus = "LibreOffice"
+class = "presentation-pdf-font-integrity"
+sources = [
+  "sd/qa/unit/data/pptx/tdf113818-swivel.pptx",
+]
+
+[[error]]
+corpus = "Open-XML-SDK"
+class = "presentation-pdf-font-integrity"
+sources = [
+  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/indent-51206400_mainLvl2ppr_IndentLevel2Minimum.pptx",
+  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/indent51206400_mainLvl1ppr_IndentLevel1Maximum.pptx",
+  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/marL51206400_mainPpr_LeftMarginMaximum.pptx",
+]
+
+[[error]]
+corpus = "Apache-POI"
+class = "presentation-visible-output"
+sources = [
+  "test-data/slideshow/bug68703.pptx",
+]
+
+[[error]]
+corpus = "LibreOffice"
+class = "presentation-visible-output"
+sources = [
+  "oox/qa/unit/data/Scene3d_isometricRightUp.pptx",
+  "oox/qa/unit/data/Scene3d_legacyObliqueBottomRight.pptx",
+  "oox/qa/unit/data/smartart-groupshape.pptx",
+  "sd/qa/unit/data/pptx/ShapeLineProperties.pptx",
+  "sd/qa/unit/data/pptx/bnc862510_5.pptx",
+  "sd/qa/unit/data/pptx/fill-color-list.pptx",
+  "sd/qa/unit/data/pptx/smartart-background-drawingml-fallback.pptx",
+  "sd/qa/unit/data/pptx/smartart-tdf134221.pptx",
+  "sd/qa/unit/data/pptx/tdf144616.pptx",
+  "sd/qa/unit/data/pptx/tdf146223.pptx",
+  "sd/qa/unit/data/pptx/tdf157740.pptx",
+  "sd/qa/unit/data/pptx/tdf168755_anim_on_SmartArt.pptx",
+  "sd/qa/unit/data/pptx/tdf44223.pptx",
+  "sd/qa/unit/data/pptx/tdf84205.pptx",
+  "svx/qa/unit/data/tdf132368.pptx",
+]
+
+[[error]]
+corpus = "Open-XML-SDK"
+class = "presentation-visible-output"
+sources = [
+  "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/Presentation.pptx",
 ]

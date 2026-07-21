@@ -1593,9 +1593,8 @@ fn type0_base_font_matches_descendant(
     match descendant_subtype {
         // ISO 32000-1:2008, 9.7.6.1: a CIDFontType0 root name is the
         // descendant BaseFont followed by a hyphen and the CMap name.
-        Some("CIDFontType0") => encoding.is_some_and(|encoding| {
-            base_font == format!("{descendant_base_font}-{encoding}")
-        }),
+        Some("CIDFontType0") => encoding
+            .is_some_and(|encoding| base_font == format!("{descendant_base_font}-{encoding}")),
         // The same clause requires a CIDFontType2 root name to equal the
         // descendant BaseFont name.
         Some("CIDFontType2") | None => base_font == descendant_base_font,

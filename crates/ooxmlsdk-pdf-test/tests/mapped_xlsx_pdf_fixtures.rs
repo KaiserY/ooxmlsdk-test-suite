@@ -1989,6 +1989,7 @@ fn mapped_xlsx_tdf81939_keeps_escaped_number_formats_visible() {
 // Source: ../core/sc/qa/unit/subsequent_filters_test.cxx:testContentXLSXStrict
 fn mapped_xlsx_universal_content_strict_keeps_core_values_visible() {
     let summary = render_summary("universal-content-strict.xlsx");
+    assert_eq!(summary.page_count, 1);
     assert_page_contains(&summary, 0, "1 String1 6");
     assert_page_contains(&summary, 0, "2 String2 5");
     assert_page_contains(&summary, 0, "-1 11");

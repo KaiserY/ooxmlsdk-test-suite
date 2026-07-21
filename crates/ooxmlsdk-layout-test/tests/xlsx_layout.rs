@@ -1496,7 +1496,7 @@ const CASES: &[XlsxCase] = &[
         universal_content_strict,
         source: "../core/sc/qa/unit/subsequent_filters_test.cxx:testContentXLSXStrict",
         file: "sc/qa/unit/data/xlsx/universal-content-strict.xlsx",
-        pages: 4,
+        pages: 1,
         contains: [pt!(0, "1 String1 6"), pt!(0, "2 String2 5"), pt!(0, "-1 11")],
     ),
     case!(
