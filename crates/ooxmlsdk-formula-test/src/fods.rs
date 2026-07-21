@@ -732,15 +732,15 @@ pub fn read_fods_workbook_from_reader(reader: impl BufRead) -> std::io::Result<F
 
     loop {
         match reader.read_event_into(&mut buf) {
-            Ok(Event::Start(event)) if skipped_table_depth > 0 => {
-                if local_name(event.name().as_ref()) == b"table" {
-                    skipped_table_depth += 1;
-                }
+            Ok(Event::Start(event))
+                if skipped_table_depth > 0 && local_name(event.name().as_ref()) == b"table" =>
+            {
+                skipped_table_depth += 1;
             }
-            Ok(Event::End(event)) if skipped_table_depth > 0 => {
-                if local_name(event.name().as_ref()) == b"table" {
-                    skipped_table_depth = skipped_table_depth.saturating_sub(1);
-                }
+            Ok(Event::End(event))
+                if skipped_table_depth > 0 && local_name(event.name().as_ref()) == b"table" =>
+            {
+                skipped_table_depth = skipped_table_depth.saturating_sub(1);
             }
             Ok(_) if skipped_table_depth > 0 => {}
             Ok(Event::Start(event)) if local_name(event.name().as_ref()) == b"table" => {
