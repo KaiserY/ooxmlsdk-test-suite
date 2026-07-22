@@ -79,7 +79,7 @@ the package round-trip corpora:
 - the ratchet visits candidates deterministically by source size, output size,
   corpus, and source path until its per-format pass target is reached.
 
-The current verified ratchet requires 1,368 distinct full-contract passes: 838
+The current verified ratchet requires 1,484 distinct full-contract passes: 954
 DOCX, 312 PPTX, and 218 XLSX. This exceeds the first 1,000-case breadth target.
 The earlier 29 explicit case tests remain as focused historical regressions;
 all 29 pass when run explicitly, but they are not added to the ratchet total.
@@ -265,8 +265,8 @@ OOXMLSDK_GOLDEN_AUDIT_ERRORS=1 \
 | Golden inventory | complete | 4,400 converted OOXML cases: 2,707 DOCX, 798 PPTX, 895 XLSX. |
 | Comparison contract | defined | Fixed golden policy and layered comparison model recorded in this document. |
 | Streamed corpus harness | complete | Default conversion-manifest scan, structured failure layers, cached identity index, failed-page-only artifacts, compact page ranges, errors-only manifest, and explicit error audit are in place. |
-| Ratchet passes | 1,368 / 4,400 | DOCX: 838, PPTX: 312, XLSX: 218; all run the full layered comparison contract. The earlier 29 explicit tests remain separate; the first 1,000-case target is complete. |
-| Known errors | 3,032 exact sources | DOCX: 1,869, PPTX: 486, XLSX: 677. They are grouped by evidence-backed class and remain available to exact-case and paged full-audit execution. |
+| Ratchet passes | 1,484 / 4,400 | DOCX: 954, PPTX: 312, XLSX: 218; all run the full layered comparison contract. The earlier 29 explicit tests remain separate; the first 1,000-case target is complete. |
+| Known errors | 2,916 exact sources | DOCX: 1,753, PPTX: 486, XLSX: 677. They are grouped by evidence-backed class and remain available to exact-case and paged full-audit execution. |
 | Autonomous optimization | active | Select a known error, locate specification/LibreOffice evidence, fix only source-backed layout/PDF behavior, remove the exact exception, and raise the ratchet gradually. |
 
 ### First Completed Case
@@ -1316,20 +1316,69 @@ tolerance:
 The ratchets are now DOCX 838, PPTX 312, and XLSX 218, for 1,368 distinct
 full-contract passes.
 
+### Font Query Cache And Section-Break Target Pages
+
+Completed on 2026-07-22 without changing any golden PDF or comparison
+tolerance:
+
+- the immutable system `fontdb` is shared already, and its family/weight/style
+  query results now use a bounded 4,096-entry process cache; this follows the
+  long-lived font-database ownership used by Parley and LibreOffice while
+  retaining the existing Office-specific legacy-family selection;
+- a five-case warm DOCX sample fell from 10.10 seconds to 2.23 seconds, and the
+  complete 2,707-case debug DOCX scan fell from 389.13 seconds to 181.90
+  seconds on the same host;
+- ECMA-376 Part 1 sections 17.18.4 and 17.6.22 require a page break to restart
+  on the next page and a `nextPage` section to begin on the following page;
+- the section transition now preserves an explicit page-break target only
+  when content has already progressed on that target page. The opposing Office
+  goldens `tdf168980.docx` and `tdf149313.docx` verify both sides of the rule;
+- `tdf168980.docx` now passes the unchanged full contract and its exact
+  `word-page-count` exception was removed. `tdf131203.docx`, whose page count
+  now agrees but text still differs, was conservatively reclassified as
+  `word-text-parity` rather than counted as a pass.
+
+The ratchets are now DOCX 951, PPTX 312, and XLSX 218, for 1,481 distinct
+full-contract passes.
+
+### Character-Unit Numbering Indents And Justified Lists
+
+Completed on 2026-07-22 without changing any golden PDF, conversion manifest,
+or comparison tolerance:
+
+- ECMA-376 Part 1 section 17.3.1.12 defines `firstLineChars` and
+  `hangingChars`; Microsoft's [MS-OI29500] implementation note specifies that
+  Word ignores a zero character-unit indent together with the related value
+  inherited earlier in the style hierarchy;
+- direct numbering-indent protection is now tracked independently for the
+  left, right, and first-line attributes. A direct `firstLineChars="0"` no
+  longer prevents the numbering level's `left` and `hanging` values from
+  applying;
+- numbered paragraphs retain `w:jc="both"` block adjustment. The numbering
+  portion remains fixed while wrapped body lines expand to the right paragraph
+  margin, matching Writer's block-adjustment model and the Office output;
+- the complete `word-text-parity` known-error audit found
+  `numbering-simple.docx`, `numbering-startValue.docx`, and `tdf78352.docx`
+  passing the unchanged full contract. Their exact exceptions were removed;
+- the complete release DOCX ratchet passed 954 cases across all 2,707 records
+  in 19.03 seconds with no unexpected failure.
+
+The ratchets are now DOCX 954, PPTX 312, and XLSX 218, for 1,484 distinct
+full-contract passes.
+
 ### Latest Verification
 
-Completed on 2026-07-21 using the default Cargo target directories:
+Completed on 2026-07-22 using the default Cargo target directories:
 
-- all three release ratchets completed with no unexpected errors;
-- the release DOCX ratchet passed 688 cases in 42.96 seconds;
-- the release PPTX ratchet passed 283 cases in 23.69 seconds;
-- the release XLSX ratchet passed 126 cases in 12.79 seconds;
-- the focused system-font selection regressions passed for Calibri Light,
-  Aptos versus Aptos Display, and Noto Sans versus Noto Sans Condensed;
-- all 29 explicit Office golden regressions passed;
-- the 150 `ooxmlsdk-layout` unit tests, default `ooxmlsdk-pdf-test` suite, and
-  package-scoped PDF test Clippy passed; workspace-wide tests and Clippy were
-  not run for this focused layout/PDF iteration.
+- the complete release DOCX ratchet passed 954 cases across all 2,707 records
+  with 1,753 exact known errors and no unexpected failures;
+- both `tdf168980.docx` and the opposing `tdf149313.docx` passed exact-case
+  validation;
+- the final 217-test layout suite, 24-test fonts suite, 90 fonts integration
+  tests, and fonts package Clippy passed;
+- combined fonts/layout Clippy passes with `-D warnings`; three Rust 1.97 lints
+  in PPTX display, metafile rendering, and math variant lookup were fixed
+  directly without warning suppression.
 
 The comparison contract used for this ratchet also records these
 source-backed normalization decisions:
@@ -1351,13 +1400,13 @@ Comparison-layer counts for ratchet cases:
 
 | Format | Conversion | Page geometry | Text | Graphics | Visible output |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| DOCX | 688 / 688 | 688 / 688 | 688 / 688 | 688 / 688 | 688 / 688 |
-| PPTX | 283 / 283 | 283 / 283 | 283 / 283 | 283 / 283 | 283 / 283 |
-| XLSX | 126 / 126 | 126 / 126 | 126 / 126 | 126 / 126 | 126 / 126 |
+| DOCX | 954 / 954 | 954 / 954 | 954 / 954 | 954 / 954 | 954 / 954 |
+| PPTX | 312 / 312 | 312 / 312 | 312 / 312 | 312 / 312 | 312 / 312 |
+| XLSX | 218 / 218 | 218 / 218 | 218 / 218 | 218 / 218 | 218 / 218 |
 
 ### Next Expansion
 
-Continue beyond 1,097 with independently diagnosable, source-backed fixes.
+Continue beyond 1,484 with independently diagnosable, source-backed fixes.
 Keep the errors-only manifest exact, audit it in bounded pages, and optimize a
 slow stage before expanding a batch if per-case timings regress materially.
 

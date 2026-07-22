@@ -1361,6 +1361,7 @@ fn script_direction_runs_with_app_script(text: &str, app_script: TextScript) -> 
         ScriptScanOptions {
             app_script,
             small_caps: false,
+            wordprocessingml_font_slots: false,
         },
     )
 }

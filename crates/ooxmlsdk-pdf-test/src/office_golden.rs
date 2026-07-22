@@ -204,6 +204,11 @@ pub(crate) fn compare_office_golden_detailed_with_artifacts(
         .map_err(|error| OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::Identity, error))?;
     stage_trace.mark("identity");
     let options = ooxmlsdk_pdf::PdfOptions {
+        // Word's print-optimized ExportAsFixedFormat path recompresses JPEG
+        // image XObjects at quality 75. The four independently converted
+        // sdtContent.docx records preserve the source dimensions and 220-DPI
+        // density while changing the embedded stream from quality 95 to 75.
+        jpeg_quality: Some(75),
         source_file_name: source_path
             .file_name()
             .and_then(|name| name.to_str())
