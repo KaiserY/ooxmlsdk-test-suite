@@ -1,4 +1,5 @@
 use ooxmlsdk::parts::wordprocessing_document::WordprocessingDocument;
+use ooxmlsdk::schemas::schemas_openxmlformats_org_wordprocessingml_2006_main as w;
 use ooxmlsdk_layout::common::DisplayItem;
 use ooxmlsdk_layout::{LayoutOptions, docx};
 use ooxmlsdk_layout_test::{
@@ -6,6 +7,72 @@ use ooxmlsdk_layout_test::{
     table_row_count_for_block, text_origins_for,
 };
 use std::path::Path;
+
+#[test]
+// Sources: immutable Microsoft Office fixed-format output for tdf108714.docx.
+// The source is intentionally non-conformant: Word recovers w:br children
+// placed directly in w:body and w:tc instead of discarding them.
+fn docx_tdf108714_recovers_out_of_place_breaks_and_minimal_table() {
+    let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../corpus/LibreOffice/sw/qa/extras/ooxmlimport/data/tdf108714.docx");
+    let mut package = WordprocessingDocument::new_from_file(fixture).unwrap();
+    let options = LayoutOptions {
+        ui_language: Some("zh-CN".to_string()),
+        ..LayoutOptions::default()
+    };
+    let main = package.main_document_part().unwrap();
+    let root = main.root_element(&mut package).unwrap();
+    let table = root
+        .body
+        .as_ref()
+        .unwrap()
+        .body_choice
+        .iter()
+        .find_map(|choice| match choice {
+            w::BodyChoice::Table(table) => Some(table.as_ref()),
+            _ => None,
+        })
+        .expect("minimal table must survive typed import");
+    let row = table
+        .table_choice2
+        .iter()
+        .find_map(|choice| match choice {
+            w::TableChoice2::TableRow(row) => Some(row.as_ref()),
+            _ => None,
+        })
+        .expect("minimal table row must survive typed import");
+    assert_eq!(
+        row.table_row_choice
+            .iter()
+            .filter(|choice| matches!(choice, w::TableRowChoice::TableCell(_)))
+            .count(),
+        1,
+        "minimal table cell must survive typed import"
+    );
+    let summary = docx::inspect_layout(&mut package, &options).unwrap();
+    let document = docx::layout_document(&mut package, &options).unwrap();
+
+    assert_eq!(document.pages.len(), 4);
+    assert_eq!(
+        summary.rows.len(),
+        1,
+        "minimal table row must be laid out; frames={:?}; follows={:?}; backward_moves={:?}; reruns={:?}",
+        document
+            .frames
+            .iter()
+            .map(|frame| (
+                frame.page_index,
+                frame.block_index,
+                frame.kind.as_ref(),
+                frame.fragments.len()
+            ))
+            .collect::<Vec<_>>(),
+        document.follows,
+        document.reflow.backward_moves,
+        document.reflow.layout_reruns,
+    );
+    assert_page_contains(&document, 2, "Paragraph 5 in table");
+}
 
 #[test]
 // Sources: ECMA-376 Part 1 §21.2.2 (DrawingML charts);
