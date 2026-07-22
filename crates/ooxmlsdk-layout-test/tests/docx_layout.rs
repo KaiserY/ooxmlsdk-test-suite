@@ -159,7 +159,9 @@ fn docx_cell_level_sdt_keeps_the_wrapped_cell_on_its_row_baseline() {
     let item_index_for = |expected: &str| {
         page.items
             .iter()
-            .rposition(|item| matches!(item, DisplayItem::Text(text) if text.text.contains(expected)))
+            .rposition(
+                |item| matches!(item, DisplayItem::Text(text) if text.text.contains(expected)),
+            )
             .unwrap_or_else(|| panic!("missing text item {expected:?}"))
     };
     for item_index in [
@@ -177,7 +179,11 @@ fn docx_cell_level_sdt_keeps_the_wrapped_cell_on_its_row_baseline() {
             })
             .map(|frame| frame.kind.as_ref())
             .collect::<Vec<_>>();
-        assert_eq!(owners, ["table"], "table-cell text owner for item {item_index}");
+        assert_eq!(
+            owners,
+            ["table"],
+            "table-cell text owner for item {item_index}"
+        );
         let cell_fragments = document
             .frames
             .iter()
@@ -194,7 +200,9 @@ fn docx_cell_level_sdt_keeps_the_wrapped_cell_on_its_row_baseline() {
             1,
             "table-cell fragment for item {item_index}: {cell_fragments:?}"
         );
-        let bounds = cell_fragments[0].bounds.expect("table-cell fragment bounds");
+        let bounds = cell_fragments[0]
+            .bounds
+            .expect("table-cell fragment bounds");
         let text_y = match &page.items[item_index] {
             DisplayItem::Text(text) => text.origin.y.0,
             _ => unreachable!(),
