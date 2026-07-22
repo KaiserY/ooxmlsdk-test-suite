@@ -79,8 +79,8 @@ the package round-trip corpora:
 - the ratchet visits candidates deterministically by source size, output size,
   corpus, and source path until its per-format pass target is reached.
 
-The current verified ratchet requires 1,097 distinct full-contract passes: 688
-DOCX, 283 PPTX, and 126 XLSX. This exceeds the first 1,000-case breadth target.
+The current verified ratchet requires 1,368 distinct full-contract passes: 838
+DOCX, 312 PPTX, and 218 XLSX. This exceeds the first 1,000-case breadth target.
 The earlier 29 explicit case tests remain as focused historical regressions;
 all 29 pass when run explicitly, but they are not added to the ratchet total.
 
@@ -265,8 +265,8 @@ OOXMLSDK_GOLDEN_AUDIT_ERRORS=1 \
 | Golden inventory | complete | 4,400 converted OOXML cases: 2,707 DOCX, 798 PPTX, 895 XLSX. |
 | Comparison contract | defined | Fixed golden policy and layered comparison model recorded in this document. |
 | Streamed corpus harness | complete | Default conversion-manifest scan, structured failure layers, cached identity index, failed-page-only artifacts, compact page ranges, errors-only manifest, and explicit error audit are in place. |
-| Ratchet passes | 1,333 / 4,400 | DOCX: 811, PPTX: 305, XLSX: 217; all run the full layered comparison contract. The earlier 29 explicit tests remain separate; the first 1,000-case target is complete. |
-| Known errors | 3,067 exact sources | DOCX: 1,896, PPTX: 493, XLSX: 678. They are grouped by evidence-backed class and remain available to exact-case and paged full-audit execution. |
+| Ratchet passes | 1,368 / 4,400 | DOCX: 838, PPTX: 312, XLSX: 218; all run the full layered comparison contract. The earlier 29 explicit tests remain separate; the first 1,000-case target is complete. |
+| Known errors | 3,032 exact sources | DOCX: 1,869, PPTX: 486, XLSX: 677. They are grouped by evidence-backed class and remain available to exact-case and paged full-audit execution. |
 | Autonomous optimization | active | Select a known error, locate specification/LibreOffice evidence, fix only source-backed layout/PDF behavior, remove the exact exception, and raise the ratchet gradually. |
 
 ### First Completed Case
@@ -1098,6 +1098,223 @@ Completed on 2026-07-18 without changing any golden PDF or manifest:
 - Other screened candidates were not admitted: DOCX `cloud.docx` exceeded the
   unchanged raster threshold; XLSX `empty_chart.xlsx` emitted an extra
   candidate chart title, and `image_hyperlink.xlsx` had a page-count mismatch.
+
+### PPTX Graphic-Frame Chart Batch
+
+Completed on 2026-07-22 without changing any golden PDF, conversion manifest,
+or comparison tolerance:
+
+- admitted the Open XML SDK sources `Chart_2D.pptx`,
+  `Chart_2D+Animation (Box In, as one object).pptx`, and
+  `Chart_2D+Animation (Fly In, as one object).pptx`, with their corresponding
+  immutable Microsoft Office PDFs under `corpus_pdf_conv/Open-XML-SDK/`;
+- a slide `p:graphicFrame` occupying the layout's default `obj` placeholder
+  now keeps the chart service selected from `a:graphicData`. The placeholder
+  continues to supply inherited bounds, but no longer converts the instantiated
+  chart back to an empty outliner shape. This follows ECMA-376 Part 1
+  §19.3.1.21 and LibreOffice `GraphicalObjectFrameContext`,
+  `Shape::setChartType`, and `PPTShape::addShape`;
+- chart-space `c:txPr` defaults are applied before title/axis `txPr` overlays,
+  and default Latin chart text resolves through the theme. The admitted files
+  therefore use their authored 18pt Calibri chart labels;
+- all `ST_LegendPos` positions are now lowered. The right-side automatic
+  layout used by these files reserves a separate plot band and vertically
+  lays out the three legend entries, as required by ECMA-376 Part 1
+  §21.2.2.95 and §21.2.3.24;
+- the source has no explicit gridline shape properties. The Office
+  fixed-format content stream establishes the automatic 0.525 neutral-gray,
+  0.75pt stroke, independently of raster antialiasing;
+- the focused Open XML SDK layout regression checks the chart frame plus axis,
+  category, and legend text. The exact `Chart_2D.pptx` full-contract run passes;
+  the five-case `Chart_2D` audit reports three stale known errors and retains
+  the two `by element in category` variants, whose Office titles wrap to two
+  lines while the candidate title remains on one line;
+- the complete 363-case `presentation-text-parity` audit reports exactly these
+  three newly passing cases, 357 retained expected errors, and three chart-title
+  property cases that now reach the visible-output layer but still exceed its
+  unchanged raster tolerance.
+
+The PPTX ratchet is therefore 308 and the cross-format total at that checkpoint
+was 1,339.
+
+### DOCX Numbering And Style-Separator Batch
+
+Completed on 2026-07-22 without changing any golden PDF, conversion manifest,
+or comparison tolerance:
+
+- admitted eight DOCX cases: the three `tdf131728.docx` copies,
+  `tdf164903.docx`, `num-override-start.docx`, `numbering1.docx`,
+  `listformat.docx`, and `edit-list-autofmt.docx`;
+- numbering text whose label exceeds the reserved hanging-indent band now
+  advances to the next document tab, so long labels such as `Article 1.` do
+  not overlap the paragraph text. This follows ECMA-376 Part 1 §17.9.29 and
+  remains compatible with ordinary short labels that fit before the paragraph
+  indent;
+- ordinary numbering starts from the current paragraph font and applies
+  `w:lvl/w:rPr` as an overlay. Character bullets retain Writer's documented
+  bold/italic reset before explicit numbering properties. This follows
+  ECMA-376 Part 1 §17.9.24 and LibreOffice
+  `SwTextFormatter::NewNumberPortion`;
+- `w:vanish` plus `w:specVanish` continues to merge the paragraph mark for
+  display according to ECMA-376 Part 1 §17.3.2.36 and the Word-specific note
+  in MS-OI29500, while retaining each paragraph style for its text segment;
+- the focused `tdf131728` regression verifies the Office numbering and heading
+  origins, all four style-separator golden variants pass exactly, and targeted
+  `numbering`, `num`, and `list` audits identified the other four stale errors.
+
+The ratchets at that checkpoint were DOCX 822, PPTX 308, and XLSX 217, for 1,347 distinct
+full-contract passes.
+
+### XLSX Clustered-Column Chart Batch
+
+Completed on 2026-07-22 without changing any golden PDF, conversion manifest,
+or comparison tolerance:
+
+- ordinary two-dimensional clustered-column charts now retain their typed
+  `c:chartSpace` model and use the shared semantic chart renderer instead of
+  emitting cached chart data as stacked text;
+- value-axis ticks, implicit numeric categories, series bars, and legends are
+  laid out with an Excel-specific profile. Missing category sequences follow
+  LibreOffice `VCartesianAxis::getTextLabelString`, where the first category
+  maps to numeric tick value 1;
+- charts without `theme1.xml` use the Office application chart font rather
+  than the worksheet Normal font; the Microsoft 365 golden resolves this to
+  Aptos Narrow;
+- chart rectangles and axis/grid lines are clipped to the current Calc print
+  page area, including horizontal page breaks, instead of merely retaining
+  every object that intersects the page;
+- the 148-case LibreOffice XLSX chart-directory audit found exactly one stale
+  known error, `chart.xlsx`; the other 147 cases remain explicit known errors
+  for unsupported chart kinds or separate worksheet/layout causes.
+
+The ratchets are now DOCX 822, PPTX 308, and XLSX 218, for 1,348 distinct
+full-contract passes.
+
+### DOCX Clustered-Column Chart Batch
+
+Completed on 2026-07-22 without changing any golden PDF, conversion manifest,
+or comparison tolerance:
+
+- ordinary two-dimensional clustered-column charts are lowered at their Word
+  drawing anchor; cached series values are no longer appended as document body
+  paragraphs;
+- combination charts, chart data tables, and explicit chart/plot-area fills
+  remain on the existing fallback path until those visible objects are modeled;
+- the Word profile follows the Office fixed-format content stream for the plot
+  rectangle, 0.525-gray 0.75pt grid and axis strokes, tick marks, category band,
+  and vertical legend spacing;
+- `testBarChart.docx` now passes the full text, geometry, structure, font, and
+  visible-output contract. The 69-case LibreOffice DOCX chart-directory audit
+  found no other stale known error in the currently supported subset.
+
+The follow-up 100-case `word-text-parity` audit also found two stale numbering
+errors, `tdf159054_disableOutlineNumbering.docx` and
+`tdf141966_chapterNumbering.docx`; later pages of the same audit found
+`tdf64222.docx`, `tdf137199.docx`, and `paragraph-marker.docx`. All five pass
+exact full-contract comparison.
+
+The PPTX chart follow-up preserves explicit `c:title/c:spPr` solid fills and
+uses the Office bottom-legend plot bands. Tiled bitmap title fills resolve the
+chart-part image relationship and honor the embedded JPEG JFIF density. The
+solid, gradient, and bitmap title-fill fixtures now pass under the unchanged
+full contract.
+
+The ratchets are now DOCX 828, PPTX 311, and XLSX 218, for 1,357 distinct
+full-contract passes.
+
+### Word Page-Size Limit And PowerPoint Light Table Style
+
+Completed on 2026-07-22 without changing any golden PDF, conversion manifest,
+or comparison tolerance:
+
+- Word page width and height are capped at 31680 twips (22 inches), as required
+  by `[MS-OI29500]` 2.1.220 for ECMA-376 Part 1 section 17.6.13. This moves
+  `tdf149649.docx` past page geometry; its remaining table-line baseline
+  mismatch is retained as an exact `word-text-parity` error;
+- the predefined PowerPoint Light Style 1 GUID family now applies
+  `alpha=20000` to `band1H` and `band1V`, matching LibreOffice
+  `predefined-table-styles.cxx`; `[MS-OE376]` provides the GUID/name mapping;
+- `tdf156718.pptx` now passes the full contract, while the other seven audited
+  `presentation-visible-output` cases retain their evidence-backed failures.
+
+The ratchets are now DOCX 828, PPTX 312, and XLSX 218, for 1,358 distinct
+full-contract passes.
+
+### Excel CEILING/FLOOR Error Semantics
+
+Completed on 2026-07-22 without changing any golden PDF, conversion manifest,
+or comparison tolerance:
+
+- legacy Excel `CEILING` and `FLOOR` retain Office `#NUM!` for arguments with
+  incompatible signs, following ECMA-376 Part 1 sections 18.17.7.33 and
+  18.17.7.125 plus the Office clarification in `[MS-OI29500]`;
+- the PDF/layout recalculation path no longer translates those Excel errors to
+  the LibreOffice UI string `Err:502`;
+- legacy `FLOOR(number, 0)` returns `#DIV/0!`, while legacy
+  `CEILING(number, 0)` retains zero, matching the immutable Office result cells
+  and Office golden PDF for `ceiling-floor.xlsx`;
+- formula-helper, XLSX import, layout-summary, and PDF-summary regressions pass
+  for the corrected behavior. The full Office comparison now has identical
+  normalized text but retains a one-row page-break difference between pages 1
+  and 2, so `ceiling-floor.xlsx` remains an exact known error.
+
+The ratchets remain DOCX 828, PPTX 312, and XLSX 218, for 1,358 distinct
+full-contract passes.
+
+### Word Text-Parity Audit Promotion
+
+Completed on 2026-07-22 without changing any golden PDF, conversion manifest,
+or comparison tolerance:
+
+- the paged `word-text-parity` audit identified
+  `sw/qa/extras/ooxmlexport/data/tdf117137.docx` and
+  `sw/qa/extras/ooxmlexport/data/tdf95376.docx`, plus
+  `sw/qa/extras/ooxmlexport/data/tdf92454.docx` as stale exact errors;
+- all three cases now pass the unchanged full layered Office golden comparison,
+  so only those exact exceptions were removed.
+
+The ratchets are now DOCX 831, PPTX 312, and XLSX 218, for 1,361 distinct
+full-contract passes.
+
+### Word Inline WPS Shape And Textbox Ownership
+
+Completed on 2026-07-22 without changing any golden PDF, conversion manifest,
+or comparison tolerance:
+
+- `wps:spPr` geometry and `wps:txbx` content from the same `wps:wsp` now share
+  one inline layout object instead of consuming two consecutive line boxes;
+- automatic Word run color selects the higher-contrast black or white neutral,
+  while an explicit `a:fontRef` color remains authoritative and textbox run
+  properties retain the precedence required by ECMA-376 Part 1 sections
+  17.3.2.6 and 20.1.4.1.17 plus `[MS-OI29500]` section 20.1.2.2.37;
+- `tdf140828.docx`, `textbox-cut-undo.docx`, and the ooxmlimport
+  `tdf124600.docx`, plus `tdf135923-min.docx`, now pass the unchanged full
+  contract;
+  `tdf114212.docx` passes the text layer but retains its observed visual delta
+  as an exact `word-visible-output` error.
+
+The ratchets are now DOCX 835, PPTX 312, and XLSX 218, for 1,365 distinct
+full-contract passes.
+
+### Word Paragraph Indent Width
+
+Completed on 2026-07-22 without changing any golden PDF or comparison
+tolerance:
+
+- ECMA-376 Part 1 section 17.3.1.12 defines `w:start` and `w:end` as
+  independent distances from the leading and trailing text margins;
+- paragraph layout now removes those distances once from the available width,
+  and keeps the trailing line edge anchored to the trailing text margin,
+  matching Writer's `SwTextMargin::CtorInitTextMargin` calculation;
+- `testParaListRightIndent.docx`, `tdf104348_contextMargin.docx`, and
+  `tdf95377.docx` now pass
+  the unchanged full Office comparison and their exact exceptions were
+  removed;
+- the class audits also updated the exact observed comparison layer for the
+  remaining cases rather than claiming unsupported passes.
+
+The ratchets are now DOCX 838, PPTX 312, and XLSX 218, for 1,368 distinct
+full-contract passes.
 
 ### Latest Verification
 

@@ -1119,7 +1119,7 @@ fn mapped_xlsx_ceiling_floor_keeps_formula_check_values_visible() {
     let summary = render_summary("ceiling-floor.xlsx");
     assert_eq!(summary.page_count, 4);
     assert_page_contains(&summary, 0, "23.5 -23.5");
-    assert_page_contains(&summary, 0, "Err:502");
+    assert_page_contains(&summary, 0, "#NUM!");
     assert_page_contains(&summary, 0, "#DIV/0!");
 }
 

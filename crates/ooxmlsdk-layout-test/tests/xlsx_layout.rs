@@ -877,7 +877,7 @@ const CASES: &[XlsxCase] = &[
         source: "../core/sc/qa/unit/subsequent_export_test3.cxx:testCeilingFloorXLSX",
         file: "sc/qa/unit/data/xlsx/ceiling-floor.xlsx",
         pages: 4,
-        contains: [pt!(0, "23.5 -23.5"), pt!(0, "Err:502"), pt!(0, "#DIV/0!")],
+        contains: [pt!(0, "23.5 -23.5"), pt!(0, "#NUM!"), pt!(0, "#DIV/0!")],
     ),
     case!(
         hyperlink_formula,
@@ -1595,6 +1595,21 @@ const CASES: &[XlsxCase] = &[
         ],
     ),
 ];
+
+#[test]
+fn xlsx_clustered_column_chart_uses_semantic_axis_and_legend_text() {
+    // ECMA-376 Part 1 §21.2.2.16 and LibreOffice
+    // VCartesianAxis::getTextLabelString: an absent category sequence exposes
+    // numeric categories beginning at 1.
+    let document = xlsx_layout("chart2/qa/extras/data/xlsx/chart.xlsx")
+        .expect("clustered-column chart layout");
+    assert_eq!(document.pages.len(), 2);
+    assert_page_contains(&document, 0, "25");
+    assert_page_contains(&document, 0, "1");
+    assert_page_contains(&document, 1, "Col 1");
+    assert_page_contains(&document, 1, "Col2");
+    assert_page_contains(&document, 1, "Col 33");
+}
 
 #[test]
 fn xlsx_layout_matches_libreoffice_layout_coverage() {

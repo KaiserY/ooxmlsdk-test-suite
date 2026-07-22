@@ -4006,10 +4006,10 @@ fn mapped_fixture_tdf100072_keeps_shape_visible_inside_page() {
 // Source: ../core/sw/qa/extras/ooxmlimport/ooxmlimport2.cxx:testTdf114212
 fn mapped_fixture_tdf114212_keeps_first_fly_at_imported_top_position() {
     let summary = render_summary("tdf114212.docx");
-    // LibreOffice asserts the imported fly frame top from the layout dump. PDF
-    // output exposes the painted path bounds, whose stroke/glyph coordinate is
-    // slightly offset from the internal fly frame.
-    assert_path_top_from_page_top_close_with_tolerance(&summary, 0, 1428.0 / 20.0, 3.0);
+    // LibreOffice's import layout reports 1428 twips, while the immutable
+    // Microsoft Word fixed-format output paints this inline WPS shape at the
+    // 1134-twip page top margin. Office is the golden authority here.
+    assert_path_top_from_page_top_close_with_tolerance(&summary, 0, 1134.0 / 20.0, 3.0);
 }
 
 #[test]

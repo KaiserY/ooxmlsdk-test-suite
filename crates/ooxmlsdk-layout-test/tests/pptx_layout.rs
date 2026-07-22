@@ -1,4 +1,9 @@
-use ooxmlsdk_layout::common::{Color, DebugShape, DisplayItem, LayoutDocument};
+use std::path::Path;
+
+use ooxmlsdk::parts::presentation_document::PresentationDocument;
+use ooxmlsdk_layout::LayoutOptions;
+use ooxmlsdk_layout::common::{Color, DebugShape, DisplayItem, Fill, LayoutDocument};
+use ooxmlsdk_layout::options::LayoutDiagnosticsOptions;
 use ooxmlsdk_layout_test::{
     all_page_text, assert_text_color, assert_text_font_size, debug_bool_property,
     debug_integer_property, debug_shape_has_text_property, debug_shape_integer_close, debug_shapes,
@@ -7,6 +12,24 @@ use ooxmlsdk_layout_test::{
 
 fn pptx_debug(path: &str) -> LayoutDocument<'static> {
     pptx_layout(path).unwrap()
+}
+
+fn open_xml_sdk_pptx_debug(path: &str) -> LayoutDocument<'static> {
+    let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../corpus/Open-XML-SDK")
+        .join(path);
+    let mut package = PresentationDocument::new_from_file(fixture).unwrap();
+    ooxmlsdk_layout::pptx::layout_document(
+        &mut package,
+        &LayoutOptions {
+            diagnostics: LayoutDiagnosticsOptions {
+                collect_debug_records: true,
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+    )
+    .unwrap()
 }
 
 fn shapes<'a, 'doc>(document: &'a LayoutDocument<'doc>, kind: &str) -> Vec<&'a DebugShape<'doc>> {
@@ -416,4 +439,93 @@ fn pptx_tdf142913_preserves_first_page_selection() {
 fn pptx_tdf89064_preserves_single_notes_shape() {
     let document = pptx_debug("sd/qa/unit/data/pptx/tdf89064.pptx");
     assert_eq!(shapes(&document, "pptx_notes_shape").len(), 1);
+}
+
+#[test]
+// Sources:
+// - ISO/IEC 29500-1:2016 §21.2.2.16 (barChart)
+// - ISO/IEC 29500-1:2016 §21.2.2.95 (legendPos)
+// - Open XML SDK Chart_2D.pptx source and immutable Microsoft Office golden PDF
+fn pptx_chart_2d_lowers_slide_chart_placeholder_content() {
+    let document = open_xml_sdk_pptx_debug(
+        "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Chart_2D.pptx",
+    );
+    let draw_shapes = draw_shapes(&document);
+    assert!(
+        draw_shapes.iter().any(|shape| {
+            debug_text_property(shape, "service_name") == Some("Chart") && shape.page_index == 0
+        }),
+        "missing slide chart frame; shapes={draw_shapes:?}"
+    );
+    let text = all_page_text(&document, 0);
+    for expected in ["0", "6", "Category 1", "Category 4", "Series 1", "Series 3"] {
+        assert!(
+            text.contains(expected),
+            "missing {expected:?}; text={text:?}"
+        );
+    }
+}
+
+#[test]
+// Sources:
+// - ISO/IEC 29500-1:2016 §21.2.2.210 (title) and §21.2.2.197 (spPr)
+// - immutable Microsoft Office fixed-format output for the LibreOffice fixture
+fn pptx_chart_title_preserves_explicit_solid_fill() {
+    let document = pptx_debug("chart2/qa/extras/data/pptx/testChartTitlePropertiesColorFill.pptx");
+    assert!(
+        document.pages[1].items.iter().any(|item| matches!(
+            item,
+            DisplayItem::Rect(rect)
+                if rect.fill == Fill::Solid(Color { r: 255, g: 0, b: 0, a: 255 })
+                    && rect.bounds.size.width.0 > 240.0
+                    && rect.bounds.size.height.0 > 20.0
+        )),
+        "missing explicit red chart-title background: {:?}",
+        document.pages[1].items
+    );
+}
+
+#[test]
+// Sources:
+// - ISO/IEC 29500-1:2016 §20.1.8.58 (tile) and §21.2.2.197 (spPr)
+// - JFIF 1.02 pixel-density fields in the embedded 75 DPI JPEG
+fn pptx_chart_title_tiles_bitmap_at_its_physical_resolution() {
+    let document = pptx_debug("chart2/qa/extras/data/pptx/testChartTitlePropertiesBitmapFill.pptx");
+    let title_tiles = document.pages[1]
+        .items
+        .iter()
+        .filter_map(|item| match item {
+            DisplayItem::Image(image)
+                if image.bounds.origin.y.0 >= 149.0
+                    && image.bounds.origin.y.0 <= 151.0
+                    && image.bounds.size.height.0 >= 25.0
+                    && image.bounds.size.height.0 <= 27.0 =>
+            {
+                Some(image)
+            }
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(title_tiles.len(), 3, "title tiles={title_tiles:?}");
+    assert!(
+        (title_tiles[0].bounds.size.width.0 - 122.88).abs() < 0.1,
+        "first tile must use 128 px at 75 DPI: {:?}",
+        title_tiles[0].bounds
+    );
+}
+
+#[test]
+// Sources:
+// - ISO/IEC 29500-1:2016 §20.1.2.2.8 (cNvPr/@hidden)
+// - LibreOffice tdf147586.pptx source and immutable Microsoft Office golden PDF
+fn pptx_tdf147586_keeps_hidden_chart_placeholder_content_out_of_layout() {
+    let document = pptx_debug("sd/qa/unit/data/pptx/tdf147586.pptx");
+    let text = all_page_text(&document, 0);
+    assert!(!text.contains("xxx"), "hidden chart text leaked: {text:?}");
+    assert!(text.contains("item"), "missing visible item text: {text:?}");
+    assert!(
+        text.contains("two"),
+        "missing visible second item: {text:?}"
+    );
 }
