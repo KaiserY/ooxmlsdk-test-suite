@@ -57,11 +57,6 @@ evidence = ["Office golden PDF addressed by each exact error entry"]
 
 [[error]]
 corpus = "LibreOffice"
-source = "sw/qa/extras/ooxmlimport/data/tdf108806.docx"
-class = "word-text-parity"
-
-[[error]]
-corpus = "LibreOffice"
 source = "sw/qa/extras/ooxmlimport/data/tdf111550.docx"
 class = "word-nested-table-content"
 
@@ -225,9 +220,7 @@ sources = [
   "sd/qa/unit/data/pptx/tdf165261.pptx",
   "sd/qa/unit/data/pptx/tdf169524.pptx",
   "sd/qa/unit/data/pptx/tdf168835.pptx",
-  "sd/qa/unit/data/pptx/tdf119015.pptx",
   "sd/qa/unit/data/pptx/tdf113198.pptx",
-  "sd/qa/unit/data/pptx/tdf136830.pptx",
   "oox/qa/unit/data/tdf125582_TextOnCircle.pptx",
   "svx/qa/unit/data/tdf145004_gap_by_ScaleX.pptx",
   "xmloff/qa/unit/data/tdf149551_verticalText.pptx",
@@ -510,7 +503,6 @@ class = "spreadsheet-text-parity"
 sources = [
   "sc/qa/unit/data/xlsx/tdf98481.xlsx",
   "sc/qa/unit/data/xlsx/tdf144642_RowHeight_10mm_SavedByCalc.xlsx",
-  "sc/qa/unit/data/xlsx/tdf115022.xlsx",
   "sc/qa/unit/tiledrendering/data/validity.xlsx",
   "sc/qa/unit/uicalc/data/tdf119155.xlsx",
   "sc/qa/unit/data/xlsx/tdf139934.xlsx",
@@ -1110,7 +1102,6 @@ sources = [
   "sw/qa/uitest/data/tdf167956.docx",
   "sw/qa/extras/ooxmlexport/data/tdf147724.docx",
   "sw/qa/extras/ooxmlexport/data/fdo72560b.docx",
-  "sw/qa/extras/ooxmlexport/data/fdo72560c.docx",
   "sw/qa/extras/ooxmlexport/data/default-sect-break-cols.docx",
   "sw/qa/extras/ooxmlexport/data/test_line_spacing.docx",
   "sw/qa/extras/ooxmlexport/data/em.docx",
@@ -2269,7 +2260,6 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/FDO74106.docx",
   "sw/qa/extras/ooxmlexport/data/floatingtbl_with_formula.docx",
   "sw/qa/core/fields/data/suppress-non-numerical.docx",
-  "sw/qa/extras/layout/data/tdf128198-1.docx",
   "sw/qa/extras/ooxmlexport/data/dml-solidfill-alpha.docx",
   "sw/qa/extras/ooxmlexport/data/tdf119143.docx",
   "sw/qa/extras/ooxmlexport/data/tdf134569_nestedTable.docx",
@@ -2349,7 +2339,6 @@ sources = [
   "sw/qa/extras/layout/data/merge_hidden_redline.docx",
   "sw/qa/extras/ooxmlexport/data/header-border.docx",
   "sw/qa/extras/ooxmlexport/data/rhbz988516.docx",
-  "sw/qa/extras/odfexport/data/tdf129520.docx",
   "sw/qa/extras/ooxmlexport/data/Unsupportedtextfields.docx",
   "sw/qa/extras/ooxmlexport/data/tdf99227.docx",
   "sw/qa/core/fields/data/tdf86790.docx",
@@ -2513,7 +2502,6 @@ sources = [
   "sw/qa/extras/ooxmlimport/data/tdf115094.docx",
   "sw/qa/extras/ooxmlexport/data/rel-size-round.docx",
   "sw/qa/extras/ooxmlexport/data/tdf80526_word_wrap.docx",
-  "sw/qa/extras/ooxmlexport/data/fdo72560.docx",
   "sw/qa/extras/ooxmlexport/data/dml-textshapeB.docx",
   "sw/qa/extras/ooxmlexport/data/fdo76016.docx",
   "sw/qa/extras/ooxmlexport/data/tdf134648.docx",

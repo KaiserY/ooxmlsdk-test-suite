@@ -371,3 +371,40 @@ fn docx_tdf58944_repeating_header_keeps_second_page_table_content() {
     assert_page_contains(&document, 1, "Test1");
     assert_page_contains(&document, 1, "Test2");
 }
+
+#[test]
+// Source: ../core/vcl/qa/cppunit/pdfexport/pdfexport2.cxx::testTdf152246
+fn docx_content_control_rtl_retains_paragraph_direction_on_widget_text() {
+    let document =
+        docx_layout("vcl/qa/cppunit/pdfexport/data/content-control-rtl.docx").unwrap();
+    let widgets = document.pages[0]
+        .items
+        .iter()
+        .filter_map(|item| match item {
+            DisplayItem::Text(text) if text.form_widget_id.is_some() => Some((
+                text.form_widget_id,
+                text.paragraph_bidi,
+                text.origin.x.0,
+                text.origin.y.0,
+                text.text.to_string(),
+            )),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(widgets.len(), 5, "widget text runs={widgets:?}");
+    assert_eq!(
+        widgets
+            .iter()
+            .map(|(_, paragraph_bidi, _, _, _)| *paragraph_bidi)
+            .collect::<Vec<_>>(),
+        [false, false, true, true, false],
+        "widget text runs={widgets:?}"
+    );
+    assert!(
+        widgets[0].2 < widgets[1].2
+            && widgets[2].2 < widgets[3].2
+            && widgets[2].2 > widgets[1].2,
+        "LTR controls advance from the left while RTL controls occupy the right side in physical page order; widget text runs={widgets:?}"
+    );
+}

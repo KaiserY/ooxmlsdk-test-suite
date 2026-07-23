@@ -13,8 +13,9 @@ pub mod render;
 use std::path::{Path, PathBuf};
 
 pub use office_golden::{
-    OfficeGoldenCase, OfficeGoldenComparisonLayer, OfficeGoldenFailure, OfficeGoldenReport,
-    VisualDiffMetrics, VisualTolerance, compare_office_golden, compare_office_golden_detailed,
+    OfficeGoldenCase, OfficeGoldenComparisonLayer, OfficeGoldenDiagnosticKind, OfficeGoldenFailure,
+    OfficeGoldenReport, VisualDiffMetrics, VisualTolerance, compare_office_golden,
+    compare_office_golden_detailed,
 };
 pub use office_golden_corpus::{
     OfficeGoldenCorpusReport, OfficeGoldenFormat, run_office_golden_corpus,

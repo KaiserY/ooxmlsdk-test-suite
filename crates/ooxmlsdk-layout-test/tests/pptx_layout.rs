@@ -243,6 +243,20 @@ fn pptx_smartart_tdf134221_preserves_negative_upper_text_inset() {
 }
 
 #[test]
+// Source: ../core/sd/qa/unit/import-tests-smartart.cxx::testMissingBulletAndIndent
+fn pptx_smartart_missing_bullet_preserves_child_bullet_margin() {
+    let document = pptx_debug("sd/qa/unit/data/pptx/smartart-missing-bullet.pptx");
+    let paragraphs = shapes(&document, "pptx_bullet_paragraph");
+    assert!(
+        paragraphs.iter().any(|paragraph| {
+            debug_text_property(paragraph, "text") == Some("Bullet yes")
+                && debug_integer_property(paragraph, "left_margin_100mm") == Some(309)
+        }),
+        "missing SmartArt child bullet left margin 309; paragraphs={paragraphs:?}"
+    );
+}
+
+#[test]
 // Source: ../core/sd/qa/unit/import-tests-smartart.cxx::testTdf145528Matrix
 fn pptx_smartart_tdf145528_matrix_preserves_text_positions() {
     let document = pptx_debug("sd/qa/unit/data/pptx/tdf145528_SmartArt_Matrix.pptx");

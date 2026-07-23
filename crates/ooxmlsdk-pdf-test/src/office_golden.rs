@@ -142,15 +142,133 @@ impl std::str::FromStr for OfficeGoldenComparisonLayer {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct OfficeGoldenFailure {
     pub layer: OfficeGoldenComparisonLayer,
+    pub diagnostic_kind: OfficeGoldenDiagnosticKind,
+    pub page_index: Option<usize>,
+    pub line_index: Option<usize>,
     pub message: String,
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
+pub enum OfficeGoldenDiagnosticKind {
+    #[default]
+    Unclassified,
+    Identity,
+    CandidateConversion,
+    PdfExtraction,
+    PageCount,
+    PageGeometry,
+    TextContent,
+    TextStyle,
+    TextReconstruction,
+    TextLineCount,
+    TextLineContent,
+    TextHorizontalBounds,
+    TextBaseline,
+    FontIntegrity,
+    FontAssignment,
+    VisibleOutput,
+    ComparisonArtifact,
+}
+
+impl OfficeGoldenDiagnosticKind {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Unclassified => "unclassified",
+            Self::Identity => "identity",
+            Self::CandidateConversion => "candidate-conversion",
+            Self::PdfExtraction => "pdf-extraction",
+            Self::PageCount => "page-count",
+            Self::PageGeometry => "page-geometry",
+            Self::TextContent => "text-content",
+            Self::TextStyle => "text-style",
+            Self::TextReconstruction => "text-reconstruction",
+            Self::TextLineCount => "text-line-count",
+            Self::TextLineContent => "text-line-content",
+            Self::TextHorizontalBounds => "text-horizontal-bounds",
+            Self::TextBaseline => "text-baseline",
+            Self::FontIntegrity => "font-integrity",
+            Self::FontAssignment => "font-assignment",
+            Self::VisibleOutput => "visible-output",
+            Self::ComparisonArtifact => "comparison-artifact",
+        }
+    }
+}
+
+impl std::str::FromStr for OfficeGoldenDiagnosticKind {
+    type Err = String;
+
+    fn from_str(value: &str) -> std::result::Result<Self, Self::Err> {
+        match value {
+            "unclassified" => Ok(Self::Unclassified),
+            "identity" => Ok(Self::Identity),
+            "candidate-conversion" => Ok(Self::CandidateConversion),
+            "pdf-extraction" => Ok(Self::PdfExtraction),
+            "page-count" => Ok(Self::PageCount),
+            "page-geometry" => Ok(Self::PageGeometry),
+            "text-content" => Ok(Self::TextContent),
+            "text-style" => Ok(Self::TextStyle),
+            "text-reconstruction" => Ok(Self::TextReconstruction),
+            "text-line-count" => Ok(Self::TextLineCount),
+            "text-line-content" => Ok(Self::TextLineContent),
+            "text-horizontal-bounds" => Ok(Self::TextHorizontalBounds),
+            "text-baseline" => Ok(Self::TextBaseline),
+            "font-integrity" => Ok(Self::FontIntegrity),
+            "font-assignment" => Ok(Self::FontAssignment),
+            "visible-output" => Ok(Self::VisibleOutput),
+            "comparison-artifact" => Ok(Self::ComparisonArtifact),
+            _ => Err(format!("unknown Office golden diagnostic kind {value:?}")),
+        }
+    }
 }
 
 impl OfficeGoldenFailure {
     fn new(layer: OfficeGoldenComparisonLayer, error: impl fmt::Display) -> Self {
+        let diagnostic_kind = match layer {
+            OfficeGoldenComparisonLayer::Identity => OfficeGoldenDiagnosticKind::Identity,
+            OfficeGoldenComparisonLayer::Conversion => {
+                OfficeGoldenDiagnosticKind::CandidateConversion
+            }
+            OfficeGoldenComparisonLayer::PdfExtraction => OfficeGoldenDiagnosticKind::PdfExtraction,
+            OfficeGoldenComparisonLayer::PageGeometry => OfficeGoldenDiagnosticKind::PageGeometry,
+            OfficeGoldenComparisonLayer::Text => OfficeGoldenDiagnosticKind::Unclassified,
+            OfficeGoldenComparisonLayer::Font => OfficeGoldenDiagnosticKind::FontIntegrity,
+            OfficeGoldenComparisonLayer::VisibleOutput => OfficeGoldenDiagnosticKind::VisibleOutput,
+            OfficeGoldenComparisonLayer::ComparisonArtifact => {
+                OfficeGoldenDiagnosticKind::ComparisonArtifact
+            }
+        };
         Self {
             layer,
+            diagnostic_kind,
+            page_index: None,
+            line_index: None,
             message: error.to_string(),
         }
+    }
+
+    fn diagnostic(
+        layer: OfficeGoldenComparisonLayer,
+        diagnostic_kind: OfficeGoldenDiagnosticKind,
+        error: impl fmt::Display,
+    ) -> Self {
+        Self {
+            layer,
+            diagnostic_kind,
+            page_index: None,
+            line_index: None,
+            message: error.to_string(),
+        }
+    }
+
+    fn at(mut self, page_index: usize, line_index: Option<usize>) -> Self {
+        self.page_index = Some(page_index);
+        self.line_index = line_index;
+        self
+    }
+
+    fn with_artifacts(mut self, artifact_dir: &Path) -> Self {
+        self.message = format!("{}; artifacts={}", self.message, artifact_dir.display());
+        self
     }
 }
 
@@ -250,10 +368,7 @@ pub(crate) fn compare_office_golden_detailed_with_artifacts(
                 artifact_error,
             )
         })?;
-        return Err(OfficeGoldenFailure {
-            layer: error.layer,
-            message: format!("{}; artifacts={}", error.message, artifact_dir.display()),
-        });
+        return Err(error.with_artifacts(&artifact_dir));
     }
     stage_trace.mark("font-contract");
 
@@ -270,8 +385,9 @@ pub(crate) fn compare_office_golden_detailed_with_artifacts(
     let candidate_page_count = candidate_page_dimensions.len();
     let golden_page_count = golden_page_dimensions.len();
     if candidate_page_count != golden_page_count {
-        let error = OfficeGoldenFailure::new(
+        let error = OfficeGoldenFailure::diagnostic(
             OfficeGoldenComparisonLayer::PageGeometry,
+            OfficeGoldenDiagnosticKind::PageCount,
             CalibrationError::OfficeGolden(format!(
                 "case {} page count mismatch: candidate={}, golden={}",
                 case.id, candidate_page_count, golden_page_count
@@ -302,10 +418,7 @@ pub(crate) fn compare_office_golden_detailed_with_artifacts(
                 artifact_error,
             )
         })?;
-        return Err(OfficeGoldenFailure {
-            layer: error.layer,
-            message: format!("{}; artifacts={}", error.message, artifact_dir.display()),
-        });
+        return Err(error.with_artifacts(&artifact_dir));
     }
     if let Some((page_index, (candidate, golden))) = candidate_page_dimensions
         .iter()
@@ -318,13 +431,15 @@ pub(crate) fn compare_office_golden_detailed_with_artifacts(
             },
         )
     {
-        let error = OfficeGoldenFailure::new(
+        let error = OfficeGoldenFailure::diagnostic(
             OfficeGoldenComparisonLayer::PageGeometry,
+            OfficeGoldenDiagnosticKind::PageGeometry,
             CalibrationError::OfficeGolden(format!(
                 "case {} page {page_index} media box mismatch: candidate={candidate:?}, golden={golden:?}",
                 case.id
             )),
-        );
+        )
+        .at(page_index, None);
         if !write_failure_artifacts {
             return Err(error);
         }
@@ -347,10 +462,7 @@ pub(crate) fn compare_office_golden_detailed_with_artifacts(
                 artifact_error,
             )
         })?;
-        return Err(OfficeGoldenFailure {
-            layer: error.layer,
-            message: format!("{}; artifacts={}", error.message, artifact_dir.display()),
-        });
+        return Err(error.with_artifacts(&artifact_dir));
     }
 
     // The full summary below performs the same text verdict. Keep the early
@@ -373,13 +485,15 @@ pub(crate) fn compare_office_golden_detailed_with_artifacts(
     };
     if let Some(mismatch) = early_text_mismatch {
         stage_trace.mark("page-text");
-        let error = OfficeGoldenFailure::new(
+        let error = OfficeGoldenFailure::diagnostic(
             OfficeGoldenComparisonLayer::Text,
+            OfficeGoldenDiagnosticKind::TextContent,
             CalibrationError::OfficeGolden(format!(
                 "case {} page {} normalized text mismatch: candidate={:?}, golden={:?}",
                 case.id, mismatch.page_index, mismatch.candidate, mismatch.golden
             )),
-        );
+        )
+        .at(mismatch.page_index, None);
         if !write_failure_artifacts {
             return Err(error);
         }
@@ -402,10 +516,7 @@ pub(crate) fn compare_office_golden_detailed_with_artifacts(
                 artifact_error,
             )
         })?;
-        return Err(OfficeGoldenFailure {
-            layer: error.layer,
-            message: format!("{}; artifacts={}", error.message, artifact_dir.display()),
-        });
+        return Err(error.with_artifacts(&artifact_dir));
     }
     stage_trace.mark("page-text");
 
@@ -418,11 +529,8 @@ pub(crate) fn compare_office_golden_detailed_with_artifacts(
     stage_trace.mark("pdf-summary");
 
     let text_contract = match assert_page_geometry_contract(case.id, &candidate, &golden)
-        .map_err(|error| OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::PageGeometry, error))
-        .and_then(|()| {
-            assert_text_contract(case.id, &candidate, &golden)
-                .map_err(|error| OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::Text, error))
-        }) {
+        .and_then(|()| assert_text_contract(case.id, &candidate, &golden))
+    {
         Ok(text_contract) => text_contract,
         Err(error) => {
             if !write_failure_artifacts {
@@ -447,10 +555,7 @@ pub(crate) fn compare_office_golden_detailed_with_artifacts(
                     artifact_error,
                 )
             })?;
-            return Err(OfficeGoldenFailure {
-                layer: error.layer,
-                message: format!("{}; artifacts={}", error.message, artifact_dir.display()),
-            });
+            return Err(error.with_artifacts(&artifact_dir));
         }
     };
     stage_trace.mark("text-contract");
@@ -460,7 +565,6 @@ pub(crate) fn compare_office_golden_detailed_with_artifacts(
         &text_contract.candidate_lines,
         &text_contract.golden_lines,
     ) {
-        let error = OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::Font, error);
         if !write_failure_artifacts {
             return Err(error);
         }
@@ -483,10 +587,7 @@ pub(crate) fn compare_office_golden_detailed_with_artifacts(
                 artifact_error,
             )
         })?;
-        return Err(OfficeGoldenFailure {
-            layer: error.layer,
-            message: format!("{}; artifacts={}", error.message, artifact_dir.display()),
-        });
+        return Err(error.with_artifacts(&artifact_dir));
     }
     stage_trace.mark("text-font-assignment");
     let text_masks = text_contract.masks;
@@ -603,7 +704,8 @@ pub(crate) fn compare_office_golden_detailed_with_artifacts(
             .map(|&page_index| report.page_diffs[page_index].max_channel_delta)
             .max()
             .unwrap_or(0);
-        Err(OfficeGoldenFailure::new(
+        let first_failing_page = failing_pages.first().copied();
+        let mut failure = OfficeGoldenFailure::new(
             OfficeGoldenComparisonLayer::VisibleOutput,
             format!(
                 "case {} exceeds {:?}; failing pages={} ({} of {}); maxima: significant_pixel_fraction={}, mean_absolute_channel_delta={}, max_channel_delta={}; artifacts={}",
@@ -620,7 +722,11 @@ pub(crate) fn compare_office_golden_detailed_with_artifacts(
                     .as_deref()
                     .map_or_else(|| "none".into(), |path| path.display().to_string())
             ),
-        ))
+        );
+        if let Some(page_index) = first_failing_page {
+            failure = failure.at(page_index, None);
+        }
+        Err(failure)
     }
 }
 
@@ -801,19 +907,27 @@ fn assert_page_geometry_contract(
     case_id: &str,
     candidate: &PdfSummary,
     golden: &PdfSummary,
-) -> Result<()> {
+) -> DetailedResult<()> {
     if candidate.page_count != golden.page_count {
-        return Err(CalibrationError::OfficeGolden(format!(
-            "case {case_id} page count mismatch: candidate={}, golden={}",
-            candidate.page_count, golden.page_count
-        )));
+        return Err(OfficeGoldenFailure::diagnostic(
+            OfficeGoldenComparisonLayer::PageGeometry,
+            OfficeGoldenDiagnosticKind::PageCount,
+            format!(
+                "case {case_id} page count mismatch: candidate={}, golden={}",
+                candidate.page_count, golden.page_count
+            ),
+        ));
     }
     if candidate.media_boxes.len() != golden.media_boxes.len() {
-        return Err(CalibrationError::OfficeGolden(format!(
-            "case {case_id} media box count mismatch: candidate={}, golden={}",
-            candidate.media_boxes.len(),
-            golden.media_boxes.len()
-        )));
+        return Err(OfficeGoldenFailure::diagnostic(
+            OfficeGoldenComparisonLayer::PageGeometry,
+            OfficeGoldenDiagnosticKind::PageCount,
+            format!(
+                "case {case_id} media box count mismatch: candidate={}, golden={}",
+                candidate.media_boxes.len(),
+                golden.media_boxes.len()
+            ),
+        ));
     }
     for (page_index, (candidate_box, golden_box)) in candidate
         .media_boxes
@@ -821,9 +935,14 @@ fn assert_page_geometry_contract(
         .zip(&golden.media_boxes)
         .enumerate()
     {
-        let candidate_box =
-            parse_pdf_rect(candidate_box).map_err(CalibrationError::PdfiumExtraction)?;
-        let golden_box = parse_pdf_rect(golden_box).map_err(CalibrationError::PdfiumExtraction)?;
+        let candidate_box = parse_pdf_rect(candidate_box).map_err(|error| {
+            OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::PdfExtraction, error)
+                .at(page_index, None)
+        })?;
+        let golden_box = parse_pdf_rect(golden_box).map_err(|error| {
+            OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::PdfExtraction, error)
+                .at(page_index, None)
+        })?;
         let max_delta = [
             (candidate_box.left - golden_box.left).abs(),
             (candidate_box.bottom - golden_box.bottom).abs(),
@@ -833,9 +952,14 @@ fn assert_page_geometry_contract(
         .into_iter()
         .fold(0.0_f32, f32::max);
         if max_delta > MEDIA_BOX_TOLERANCE_PT {
-            return Err(CalibrationError::OfficeGolden(format!(
-                "case {case_id} page {page_index} media box mismatch: candidate={candidate_box:?}, golden={golden_box:?}"
-            )));
+            return Err(OfficeGoldenFailure::diagnostic(
+                OfficeGoldenComparisonLayer::PageGeometry,
+                OfficeGoldenDiagnosticKind::PageGeometry,
+                format!(
+                    "case {case_id} page {page_index} media box mismatch: candidate={candidate_box:?}, golden={golden_box:?}"
+                ),
+            )
+            .at(page_index, None));
         }
     }
     Ok(())
@@ -845,17 +969,33 @@ fn assert_text_contract(
     case_id: &str,
     candidate: &PdfSummary,
     golden: &PdfSummary,
-) -> Result<TextContract> {
+) -> DetailedResult<TextContract> {
     let candidate_text = normalized_page_text(candidate);
     let golden_text = normalized_page_text(golden);
     if page_text_content_bags(&candidate_text) != page_text_content_bags(&golden_text) {
-        return Err(CalibrationError::OfficeGolden(format!(
-            "case {case_id} normalized page text mismatch: candidate={candidate_text:?}, golden={golden_text:?}"
-        )));
+        return Err(OfficeGoldenFailure::diagnostic(
+            OfficeGoldenComparisonLayer::Text,
+            OfficeGoldenDiagnosticKind::TextContent,
+            format!(
+                "case {case_id} normalized page text mismatch: candidate={candidate_text:?}, golden={golden_text:?}"
+            ),
+        ));
     }
     assert_text_style_contract(case_id, candidate, golden)?;
-    let candidate_lines = text_line_contracts(candidate)?;
-    let golden_lines = text_line_contracts(golden)?;
+    let candidate_lines = text_line_contracts(candidate).map_err(|error| {
+        OfficeGoldenFailure::diagnostic(
+            OfficeGoldenComparisonLayer::Text,
+            OfficeGoldenDiagnosticKind::TextReconstruction,
+            error,
+        )
+    })?;
+    let golden_lines = text_line_contracts(golden).map_err(|error| {
+        OfficeGoldenFailure::diagnostic(
+            OfficeGoldenComparisonLayer::Text,
+            OfficeGoldenDiagnosticKind::TextReconstruction,
+            error,
+        )
+    })?;
     let masks =
         assert_text_line_geometry(case_id, candidate, golden, &candidate_lines, &golden_lines)?;
     Ok(TextContract {
@@ -889,7 +1029,7 @@ fn assert_text_style_contract(
     case_id: &str,
     candidate: &PdfSummary,
     golden: &PdfSummary,
-) -> Result<()> {
+) -> DetailedResult<()> {
     use std::collections::BTreeSet;
 
     let style_set = |summary: &PdfSummary| {
@@ -915,9 +1055,13 @@ fn assert_text_style_contract(
     let candidate_styles = style_set(candidate);
     let golden_styles = style_set(golden);
     if !text_style_sets_equivalent(&candidate_styles, &golden_styles) {
-        return Err(CalibrationError::OfficeGolden(format!(
-            "case {case_id} text style set mismatch: candidate={candidate_styles:?}, golden={golden_styles:?}"
-        )));
+        return Err(OfficeGoldenFailure::diagnostic(
+            OfficeGoldenComparisonLayer::Text,
+            OfficeGoldenDiagnosticKind::TextStyle,
+            format!(
+                "case {case_id} text style set mismatch: candidate={candidate_styles:?}, golden={golden_styles:?}"
+            ),
+        ));
     }
     // Adobe's PDF reference defines final glyph placement through the complete
     // text rendering matrix. A producer's `Tf` and extracted vertical scale
@@ -1004,20 +1148,28 @@ fn assert_text_line_geometry(
     golden: &PdfSummary,
     candidate_lines: &[Vec<TextLineContract>],
     golden_lines: &[Vec<TextLineContract>],
-) -> Result<Vec<Vec<PdfBounds>>> {
+) -> DetailedResult<Vec<Vec<PdfBounds>>> {
     let mut masks = vec![Vec::new(); candidate.page_count];
     for page_index in 0..candidate.page_count {
         let candidate_page = &candidate_lines[page_index];
         let golden_page = &golden_lines[page_index];
-        let golden_page_bounds = parse_pdf_rect(&golden.media_boxes[page_index])
-            .map_err(CalibrationError::PdfiumExtraction)?;
+        let golden_page_bounds =
+            parse_pdf_rect(&golden.media_boxes[page_index]).map_err(|error| {
+                OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::PdfExtraction, error)
+                    .at(page_index, None)
+            })?;
         let edge_tolerance = text_edge_tolerance_pt(golden_page_bounds);
         if candidate_page.len() != golden_page.len() {
-            return Err(CalibrationError::OfficeGolden(format!(
-                "case {case_id} page {page_index} text line count mismatch: candidate={}, golden={}",
-                candidate_page.len(),
-                golden_page.len()
-            )));
+            return Err(OfficeGoldenFailure::diagnostic(
+                OfficeGoldenComparisonLayer::Text,
+                OfficeGoldenDiagnosticKind::TextLineCount,
+                format!(
+                    "case {case_id} page {page_index} text line count mismatch: candidate={}, golden={}",
+                    candidate_page.len(),
+                    golden_page.len()
+                ),
+            )
+            .at(page_index, None));
         }
         for (line_index, (candidate_line, golden_line)) in
             candidate_page.iter().zip(golden_page).enumerate()
@@ -1025,10 +1177,15 @@ fn assert_text_line_geometry(
             if extracted_text_content_key(&candidate_line.text)
                 != extracted_text_content_key(&golden_line.text)
             {
-                return Err(CalibrationError::OfficeGolden(format!(
-                    "case {case_id} page {page_index} line {line_index} text mismatch: candidate={:?}, golden={:?}",
-                    candidate_line.text, golden_line.text
-                )));
+                return Err(OfficeGoldenFailure::diagnostic(
+                    OfficeGoldenComparisonLayer::Text,
+                    OfficeGoldenDiagnosticKind::TextLineContent,
+                    format!(
+                        "case {case_id} page {page_index} line {line_index} text mismatch: candidate={:?}, golden={:?}",
+                        candidate_line.text, golden_line.text
+                    ),
+                )
+                .at(page_index, Some(line_index)));
             }
             let golden_width = golden_line.bounds.right - golden_line.bounds.left;
             let width_tolerance =
@@ -1054,9 +1211,19 @@ fn assert_text_line_geometry(
                 ),
             ] {
                 if (candidate_value - golden_value).abs() > tolerance {
-                    return Err(CalibrationError::OfficeGolden(format!(
-                        "case {case_id} page {page_index} line {line_index} {edge} mismatch: candidate={candidate_value}, golden={golden_value}, tolerance={tolerance}"
-                    )));
+                    let diagnostic_kind = if edge == "baseline origin" {
+                        OfficeGoldenDiagnosticKind::TextBaseline
+                    } else {
+                        OfficeGoldenDiagnosticKind::TextHorizontalBounds
+                    };
+                    return Err(OfficeGoldenFailure::diagnostic(
+                        OfficeGoldenComparisonLayer::Text,
+                        diagnostic_kind,
+                        format!(
+                            "case {case_id} page {page_index} line {line_index} {edge} mismatch: candidate={candidate_value}, golden={golden_value}, tolerance={tolerance}"
+                        ),
+                    )
+                    .at(page_index, Some(line_index)));
                 }
             }
             masks[page_index].push(union_pdf_bounds(candidate_line.bounds, golden_line.bounds));
@@ -1069,7 +1236,7 @@ fn assert_text_font_assignment_contract(
     case_id: &str,
     candidate_lines: &[Vec<TextLineContract>],
     golden_lines: &[Vec<TextLineContract>],
-) -> Result<()> {
+) -> DetailedResult<()> {
     // MS-OI29500 17.3.2.26 assigns fonts by character class, while PDF
     // producers may split the same run into different text objects. Compare
     // the character-level font assignment after spatial line reconstruction.
@@ -1080,10 +1247,15 @@ fn assert_text_font_assignment_contract(
             candidate_page.iter().zip(golden_page).enumerate()
         {
             if candidate_line.font_runs != golden_line.font_runs {
-                return Err(CalibrationError::OfficeGolden(format!(
-                    "case {case_id} page {page_index} line {line_index} font assignment mismatch: candidate={:?}, golden={:?}",
-                    candidate_line.font_runs, golden_line.font_runs
-                )));
+                return Err(OfficeGoldenFailure::diagnostic(
+                    OfficeGoldenComparisonLayer::Font,
+                    OfficeGoldenDiagnosticKind::FontAssignment,
+                    format!(
+                        "case {case_id} page {page_index} line {line_index} font assignment mismatch: candidate={:?}, golden={:?}",
+                        candidate_line.font_runs, golden_line.font_runs
+                    ),
+                )
+                .at(page_index, Some(line_index)));
             }
         }
     }
@@ -1802,6 +1974,9 @@ fn glyph_page_json(page: &ooxmlsdk_pdf::PdfPageDiagnostics) -> Value {
                 .collect::<Vec<_>>();
             json!({
                 "text": text.text,
+                "source_frame_index": text.source_frame_index,
+                "source_line_index": text.source_line_index,
+                "source_path": text.source_path,
                 "x_pt": text.x_pt,
                 "y_pt": text.y_pt,
                 "baseline_y_pt": text.baseline_y_pt,

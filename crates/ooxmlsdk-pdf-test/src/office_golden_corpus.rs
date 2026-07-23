@@ -14,8 +14,8 @@ use serde::Deserialize;
 
 use crate::office_golden::compare_office_golden_detailed_with_artifacts;
 use crate::{
-    OfficeGoldenCase, OfficeGoldenComparisonLayer, OfficeGoldenFailure, VisualTolerance,
-    workspace_root,
+    OfficeGoldenCase, OfficeGoldenComparisonLayer, OfficeGoldenDiagnosticKind, OfficeGoldenFailure,
+    VisualTolerance, workspace_root,
 };
 
 const ERROR_MANIFEST_SCHEMA_VERSION: u32 = 1;
@@ -86,6 +86,19 @@ struct ReferenceLocale {
     ui_culture: String,
 }
 
+#[derive(Clone, Debug, Deserialize)]
+struct DiagnosticIndexRecord {
+    corpus: String,
+    source: String,
+    diagnostic_kind: String,
+    layer: String,
+    #[serde(default)]
+    page_index: Option<usize>,
+    #[serde(default)]
+    line_index: Option<usize>,
+    message: String,
+}
+
 #[derive(Debug, Deserialize)]
 struct ErrorManifest {
     schema_version: u32,
@@ -126,6 +139,9 @@ struct UnexpectedFailureRecord {
     corpus: String,
     source: String,
     layer: OfficeGoldenComparisonLayer,
+    diagnostic_kind: OfficeGoldenDiagnosticKind,
+    page_index: Option<usize>,
+    line_index: Option<usize>,
     message: String,
 }
 
@@ -156,6 +172,14 @@ pub fn run_office_golden_corpus(
     let source_contains = env::var("OOXMLSDK_GOLDEN_SOURCE_CONTAINS").ok();
     let audit_errors = env::var("OOXMLSDK_GOLDEN_AUDIT_ERRORS").is_ok_and(|value| value == "1");
     let error_class_filter = env::var("OOXMLSDK_GOLDEN_ERROR_CLASS").ok();
+    let diagnostic_kind_filter = env::var("OOXMLSDK_GOLDEN_DIAGNOSTIC_KIND")
+        .ok()
+        .map(|value| {
+            value
+                .parse::<OfficeGoldenDiagnosticKind>()
+                .map(|kind| (value, kind))
+        })
+        .transpose()?;
     let audit_limit = env::var("OOXMLSDK_GOLDEN_AUDIT_LIMIT")
         .ok()
         .map(|value| {
@@ -179,13 +203,21 @@ pub fn run_office_golden_corpus(
         .transpose()?
         .unwrap_or_default();
     let trace_cases = env::var("OOXMLSDK_GOLDEN_TRACE_CASES").is_ok_and(|value| value == "1");
-    if (error_class_filter.is_some() || audit_limit.is_some() || audit_offset != 0) && !audit_errors
+    if (error_class_filter.is_some()
+        || diagnostic_kind_filter.is_some()
+        || audit_limit.is_some()
+        || audit_offset != 0)
+        && !audit_errors
     {
         return Err(
-            "OOXMLSDK_GOLDEN_ERROR_CLASS, OOXMLSDK_GOLDEN_AUDIT_LIMIT, and OOXMLSDK_GOLDEN_AUDIT_OFFSET require OOXMLSDK_GOLDEN_AUDIT_ERRORS=1"
+            "OOXMLSDK_GOLDEN_ERROR_CLASS, OOXMLSDK_GOLDEN_DIAGNOSTIC_KIND, OOXMLSDK_GOLDEN_AUDIT_LIMIT, and OOXMLSDK_GOLDEN_AUDIT_OFFSET require OOXMLSDK_GOLDEN_AUDIT_ERRORS=1"
                 .to_string(),
         );
     }
+    let diagnostic_cases = diagnostic_kind_filter
+        .as_ref()
+        .map(|(_, kind)| load_diagnostic_cases(&root, format, *kind))
+        .transpose()?;
 
     let mut candidates = index
         .candidates
@@ -207,6 +239,9 @@ pub fn run_office_golden_corpus(
                         .get(&candidate.corpus)
                         .and_then(|sources| sources.get(&candidate.record.file))
                         .is_some_and(|error| error.class_id == class_id)
+                })
+                && diagnostic_cases.as_ref().is_none_or(|cases| {
+                    cases.contains(&(candidate.corpus.clone(), candidate.record.file.clone()))
                 })
         })
         .collect::<Vec<_>>();
@@ -231,9 +266,18 @@ pub fn run_office_golden_corpus(
             format.extension()
         ));
     }
+    if let Some((value, _)) = diagnostic_kind_filter.as_ref()
+        && candidates.is_empty()
+    {
+        return Err(format!(
+            "OOXMLSDK_GOLDEN_DIAGNOSTIC_KIND={value:?} did not select an indexed {} record",
+            format.extension()
+        ));
+    }
 
     if audit_errors && exact_case.is_none() {
         let require_pass_target = error_class_filter.is_none()
+            && diagnostic_kind_filter.is_none()
             && audit_limit.is_none()
             && audit_offset == 0
             && corpus_filter.is_none()
@@ -354,6 +398,9 @@ pub fn run_office_golden_corpus(
                             corpus: candidate.corpus.clone(),
                             source: candidate.record.file.clone(),
                             layer: failure.layer,
+                            diagnostic_kind: failure.diagnostic_kind,
+                            page_index: failure.page_index,
+                            line_index: failure.line_index,
                             message: failure.message,
                         });
                     }
@@ -365,6 +412,9 @@ pub fn run_office_golden_corpus(
                     corpus: candidate.corpus.clone(),
                     source: candidate.record.file.clone(),
                     layer: failure.layer,
+                    diagnostic_kind: failure.diagnostic_kind,
+                    page_index: failure.page_index,
+                    line_index: failure.line_index,
                     message: failure.message.clone(),
                 });
                 let group = unexpected.entry(failure.layer).or_insert(FailureGroup {
@@ -439,11 +489,17 @@ impl AuditState {
     fn record_unexpected(&mut self, corpus: &str, source: &str, failure: OfficeGoldenFailure) {
         self.unexpected_count += 1;
         let layer = failure.layer;
+        let diagnostic_kind = failure.diagnostic_kind;
+        let page_index = failure.page_index;
+        let line_index = failure.line_index;
         let message = failure.message;
         self.unexpected_records.push(UnexpectedFailureRecord {
             corpus: corpus.to_string(),
             source: source.to_string(),
             layer,
+            diagnostic_kind,
+            page_index,
+            line_index,
             message: message.clone(),
         });
         let group = self.unexpected.entry(layer).or_insert(FailureGroup {
@@ -687,6 +743,9 @@ fn run_batch_audit(
                         corpus: result.corpus,
                         source: result.source,
                         layer: failure.layer,
+                        diagnostic_kind: failure.diagnostic_kind,
+                        page_index: failure.page_index,
+                        line_index: failure.line_index,
                         message: failure.message,
                     });
                     state.expected_errors += 1;
@@ -822,6 +881,9 @@ fn catch_conversion_panic<T>(
             .unwrap_or("non-string panic payload");
         Err(OfficeGoldenFailure {
             layer: OfficeGoldenComparisonLayer::Conversion,
+            diagnostic_kind: OfficeGoldenDiagnosticKind::CandidateConversion,
+            page_index: None,
+            line_index: None,
             message: format!("Office golden candidate conversion panicked: {message}"),
         })
     })
@@ -851,6 +913,9 @@ fn write_error_report(
                 "corpus": failure.corpus,
                 "source": failure.source,
                 "layer": failure.layer.as_str(),
+                "diagnostic_kind": failure.diagnostic_kind.as_str(),
+                "page_index": failure.page_index,
+                "line_index": failure.line_index,
                 "message": failure.message,
             }),
         )
@@ -865,6 +930,9 @@ fn write_error_report(
                 "corpus": failure.corpus,
                 "source": failure.source,
                 "layer": failure.layer.as_str(),
+                "diagnostic_kind": failure.diagnostic_kind.as_str(),
+                "page_index": failure.page_index,
+                "line_index": failure.line_index,
                 "message": failure.message,
             }),
         )
@@ -885,6 +953,10 @@ fn write_error_report(
     writer
         .flush()
         .map_err(|error| format!("could not flush {}: {error}", path.display()))?;
+    drop(writer);
+    if audit_errors && exact_case.is_none() {
+        update_diagnostic_index(&directory, format, unexpected, expected, stale_errors)?;
+    }
     Ok(path)
 }
 
@@ -901,6 +973,104 @@ fn error_report_file_name(
         "scan"
     };
     format!("{report_kind}-{}-errors.jsonl", format.extension())
+}
+
+fn diagnostic_index_path(root: &Path, format: OfficeGoldenFormat) -> PathBuf {
+    root.join("target/office-golden")
+        .join(format!("diagnostic-index-{}.jsonl", format.extension()))
+}
+
+fn load_diagnostic_cases(
+    root: &Path,
+    format: OfficeGoldenFormat,
+    diagnostic_kind: OfficeGoldenDiagnosticKind,
+) -> std::result::Result<BTreeSet<(String, String)>, String> {
+    let path = diagnostic_index_path(root, format);
+    let contents = fs::read_to_string(&path).map_err(|error| {
+        format!(
+            "could not read diagnostic index {}: {error}; run an unfiltered known-error audit first",
+            path.display()
+        )
+    })?;
+    let mut cases = BTreeSet::new();
+    for (line_index, line) in contents.lines().enumerate() {
+        let record: DiagnosticIndexRecord = serde_json::from_str(line).map_err(|error| {
+            format!(
+                "invalid diagnostic index record at {}:{}: {error}",
+                path.display(),
+                line_index + 1
+            )
+        })?;
+        if record.diagnostic_kind == diagnostic_kind.as_str() {
+            cases.insert((record.corpus, record.source));
+        }
+    }
+    Ok(cases)
+}
+
+fn update_diagnostic_index(
+    directory: &Path,
+    format: OfficeGoldenFormat,
+    unexpected: &[UnexpectedFailureRecord],
+    expected: &[UnexpectedFailureRecord],
+    stale_errors: &[String],
+) -> std::result::Result<(), String> {
+    let path = directory.join(format!("diagnostic-index-{}.jsonl", format.extension()));
+    let mut records = BTreeMap::<(String, String), DiagnosticIndexRecord>::new();
+    if path.is_file() {
+        let contents = fs::read_to_string(&path)
+            .map_err(|error| format!("could not read {}: {error}", path.display()))?;
+        for (line_index, line) in contents.lines().enumerate() {
+            let record: DiagnosticIndexRecord = serde_json::from_str(line).map_err(|error| {
+                format!(
+                    "invalid diagnostic index record at {}:{}: {error}",
+                    path.display(),
+                    line_index + 1
+                )
+            })?;
+            records.insert((record.corpus.clone(), record.source.clone()), record);
+        }
+    }
+    for stale in stale_errors {
+        if let Some((corpus, source)) = stale.split_once('/') {
+            records.remove(&(corpus.to_string(), source.to_string()));
+        }
+    }
+    for failure in unexpected.iter().chain(expected) {
+        let record = DiagnosticIndexRecord {
+            corpus: failure.corpus.clone(),
+            source: failure.source.clone(),
+            diagnostic_kind: failure.diagnostic_kind.as_str().to_string(),
+            layer: failure.layer.as_str().to_string(),
+            page_index: failure.page_index,
+            line_index: failure.line_index,
+            message: failure.message.clone(),
+        };
+        records.insert((record.corpus.clone(), record.source.clone()), record);
+    }
+
+    let file = fs::File::create(&path)
+        .map_err(|error| format!("could not create {}: {error}", path.display()))?;
+    let mut writer = BufWriter::new(file);
+    for record in records.values() {
+        serde_json::to_writer(
+            &mut writer,
+            &serde_json::json!({
+                "corpus": record.corpus,
+                "source": record.source,
+                "layer": record.layer,
+                "diagnostic_kind": record.diagnostic_kind,
+                "page_index": record.page_index,
+                "line_index": record.line_index,
+                "message": record.message,
+            }),
+        )
+        .map_err(|error| format!("could not serialize {}: {error}", path.display()))?;
+        writeln!(writer).map_err(|error| format!("could not write {}: {error}", path.display()))?;
+    }
+    writer
+        .flush()
+        .map_err(|error| format!("could not flush {}: {error}", path.display()))
 }
 
 fn corpus_index(root: &Path) -> std::result::Result<&'static CorpusIndex, String> {

@@ -10,5 +10,5 @@ license.workspace = true
 doctest = false
 
 [dependencies]
-ooxmlsdk = { workspace = true }
+ooxmlsdk = { workspace = true, features = ["mce"] }
 ooxmlsdk-layout = { workspace = true }

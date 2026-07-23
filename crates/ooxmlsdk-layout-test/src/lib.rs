@@ -10,6 +10,10 @@ use ooxmlsdk::parts::{
     presentation_document::PresentationDocument, spreadsheet_document::SpreadsheetDocument,
     wordprocessing_document::WordprocessingDocument,
 };
+use ooxmlsdk::sdk::{
+    FileFormatVersion, MarkupCompatibilityProcessMode, MarkupCompatibilityProcessSettings,
+    OpenSettings,
+};
 use ooxmlsdk_layout::common::{
     Color, DebugRecord, DebugShape, DebugValue, DisplayItem, Fill, FrameFragmentKind,
     LayoutDocument, Point, Rect,
@@ -23,19 +27,34 @@ pub fn corpus_file(path: &str) -> PathBuf {
         .join(path)
 }
 
+fn office_open_settings() -> OpenSettings {
+    OpenSettings {
+        markup_compatibility_process_settings: MarkupCompatibilityProcessSettings {
+            process_mode: MarkupCompatibilityProcessMode::ProcessLoadedPartsOnly,
+            target_file_format_version: FileFormatVersion::Microsoft365,
+        },
+        ..Default::default()
+    }
+}
+
 pub fn docx_layout(path: &str) -> Result<LayoutDocument<'static>> {
-    let mut package = WordprocessingDocument::new_from_file(corpus_file(path))?;
+    let file =
+        std::fs::File::open(corpus_file(path)).map_err(ooxmlsdk::common::SdkError::from)?;
+    let mut package = WordprocessingDocument::new_with_settings(file, office_open_settings())?;
     ooxmlsdk_layout::docx::layout_document(&mut package, &LayoutOptions::default())
 }
 
 pub fn docx_layout_named(name: &str) -> Result<LayoutDocument<'static>> {
     let path = unique_corpus_file_named(name);
-    let mut package = WordprocessingDocument::new_from_file(path)?;
+    let file = std::fs::File::open(path).map_err(ooxmlsdk::common::SdkError::from)?;
+    let mut package = WordprocessingDocument::new_with_settings(file, office_open_settings())?;
     ooxmlsdk_layout::docx::layout_document(&mut package, &LayoutOptions::default())
 }
 
 pub fn pptx_layout(path: &str) -> Result<LayoutDocument<'static>> {
-    let mut package = PresentationDocument::new_from_file(corpus_file(path))?;
+    let file =
+        std::fs::File::open(corpus_file(path)).map_err(ooxmlsdk::common::SdkError::from)?;
+    let mut package = PresentationDocument::new_with_settings(file, office_open_settings())?;
     ooxmlsdk_layout::pptx::layout_document(
         &mut package,
         &LayoutOptions {
@@ -54,11 +73,19 @@ pub fn xlsx_layout(path: &str) -> Result<LayoutDocument<'static>> {
         .file_name()
         .and_then(|file_name| file_name.to_str())
         .map(ToString::to_string);
-    let mut package = SpreadsheetDocument::new_from_file(fixture)?;
+    let file = std::fs::File::open(fixture).map_err(ooxmlsdk::common::SdkError::from)?;
+    let mut package = SpreadsheetDocument::new_with_settings(
+        file,
+        office_open_settings(),
+    )?;
     ooxmlsdk_layout::xlsx::layout_document(
         &mut package,
         &LayoutOptions {
             source_file_name,
+            diagnostics: LayoutDiagnosticsOptions {
+                collect_debug_records: true,
+                ..Default::default()
+            },
             ..Default::default()
         },
     )
@@ -198,6 +225,54 @@ where
     Run: Fn(&T) + Send + Sync + Copy,
     Describe: Fn(&T, String) -> String + Send + Sync + Copy,
 {
+    run_selected_cases_parallel(cases.iter().enumerate().collect(), run, describe)
+}
+
+pub fn run_named_cases_parallel<T, Name, Run, Describe>(
+    cases: &'static [T],
+    name: Name,
+    run: Run,
+    describe: Describe,
+) -> Vec<String>
+where
+    T: Sync + 'static,
+    Name: Fn(&T) -> &str,
+    Run: Fn(&T) + Send + Sync + Copy,
+    Describe: Fn(&T, String) -> String + Send + Sync + Copy,
+{
+    let requested = std::env::var("OOXMLSDK_LAYOUT_CASE")
+        .ok()
+        .filter(|value| !value.trim().is_empty());
+    let selected = cases
+        .iter()
+        .enumerate()
+        .filter(|(_, case)| {
+            requested
+                .as_deref()
+                .is_none_or(|requested| name(case) == requested)
+        })
+        .collect::<Vec<_>>();
+    if selected.is_empty()
+        && let Some(requested) = requested
+    {
+        return vec![format!(
+            "unknown OOXMLSDK_LAYOUT_CASE={requested:?}; available cases: {}",
+            cases.iter().map(&name).collect::<Vec<_>>().join(", ")
+        )];
+    }
+    run_selected_cases_parallel(selected, run, describe)
+}
+
+fn run_selected_cases_parallel<T, Run, Describe>(
+    cases: Vec<(usize, &'static T)>,
+    run: Run,
+    describe: Describe,
+) -> Vec<String>
+where
+    T: Sync + 'static,
+    Run: Fn(&T) + Send + Sync + Copy,
+    Describe: Fn(&T, String) -> String + Send + Sync + Copy,
+{
     if cases.is_empty() {
         return Vec::new();
     }
@@ -208,18 +283,18 @@ where
     let chunk_size = cases.len().div_ceil(worker_count);
     let failures = Mutex::new(Vec::new());
     std::thread::scope(|scope| {
-        for (chunk_index, chunk) in cases.chunks(chunk_size).enumerate() {
+        for chunk in cases.chunks(chunk_size) {
             let failures = &failures;
             scope.spawn(move || {
-                for (case_index, case) in chunk.iter().enumerate() {
+                for (case_index, case) in chunk {
                     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                         run(case);
                     }));
                     if let Err(error) = result {
-                        failures.lock().unwrap().push((
-                            chunk_index * chunk_size + case_index,
-                            describe(case, panic_message(error)),
-                        ));
+                        failures
+                            .lock()
+                            .unwrap()
+                            .push((*case_index, describe(case, panic_message(error))));
                     }
                 }
             });

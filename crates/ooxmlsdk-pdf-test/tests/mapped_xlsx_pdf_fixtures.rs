@@ -680,7 +680,14 @@ fn mapped_xlsx_checkbox_form_control_keeps_label_visible() {
 // Source: ../core/sc/qa/unit/subsequent_filters_test4.cxx:testControlImport
 fn mapped_xlsx_singlecontrol_keeps_form_control_sheet_text_visible() {
     let summary = render_summary("singlecontrol.xlsx");
-    assert_eq!(summary.page_count, 3);
+    assert_eq!(
+        summary.page_count,
+        3,
+        "unexpected print pages: {:?}",
+        (0..summary.page_count)
+            .map(|page_index| page_text(&summary, page_index))
+            .collect::<Vec<_>>()
+    );
     assert_page_contains(&summary, 0, "form control inside cell b517");
     assert_page_contains(&summary, 1, "adfa");
     assert_page_contains(&summary, 2, "adfad");
@@ -1044,11 +1051,13 @@ fn mapped_xlsx_tdf165180_date1904_keeps_early_mac_dates_visible() {
 }
 
 #[test]
-// Source: ../core/sc/qa/unit/subsequent_export_test2.cxx:testTdf122191
-fn mapped_xlsx_tdf122191_keeps_hungarian_boolean_text_visible() {
+// Source: SpreadsheetML t="b" fixed-output behavior, using the tdf#122191
+// fixture whose Calc UI locale test stores a localized number format.
+fn mapped_xlsx_tdf122191_keeps_boolean_text_logical_in_fixed_output() {
     let summary = render_summary("tdf122191.xlsx");
     assert_eq!(summary.page_count, 1);
-    assert_page_contains(&summary, 0, "IGAZ");
+    assert_page_contains(&summary, 0, "TRUE");
+    assert_page_not_contains(&summary, 0, "IGAZ");
     assert_page_not_contains(&summary, 0, "BOOL00AN");
 }
 
@@ -1323,8 +1332,14 @@ fn mapped_xlsx_tdf105272_keeps_structured_reference_table_visible() {
 fn mapped_xlsx_tdf119292_keeps_rotated_text_samples_visible() {
     let summary = render_summary("tdf119292.xlsx");
     assert_eq!(summary.page_count, 1);
-    assert_page_contains(&summary, 0, "text rotated by 270 degrees");
-    assert_page_contains(&summary, 0, "text rotated by 90 degrees");
+    // PDFium spatially extracts 90° and 270° text in opposite line orders.
+    // Assert the complete visible token multiset without imposing horizontal
+    // reading order on vertical text.
+    assert_page_contains(&summary, 0, "text");
+    assert_page_contains(&summary, 0, "rotated");
+    assert_page_contains(&summary, 0, "by 90");
+    assert_page_contains(&summary, 0, "by 270");
+    assert_page_contains(&summary, 0, "degrees");
 }
 
 #[test]

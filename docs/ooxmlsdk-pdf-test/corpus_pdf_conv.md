@@ -79,8 +79,8 @@ the package round-trip corpora:
 - the ratchet visits candidates deterministically by source size, output size,
   corpus, and source path until its per-format pass target is reached.
 
-The current verified ratchet requires 1,557 distinct full-contract passes: 982
-DOCX, 346 PPTX, and 229 XLSX. This exceeds the first 1,000-case breadth target.
+The current verified ratchet requires 1,565 distinct full-contract passes: 987
+DOCX, 348 PPTX, and 230 XLSX. This exceeds the first 1,000-case breadth target.
 The earlier 29 explicit case tests remain as focused historical regressions;
 all 29 pass when run explicitly, but they are not added to the ratchet total.
 
@@ -91,6 +91,19 @@ exceptions that now pass. Error classes explicitly marked as nonterminating are
 skipped by batch audit because the in-process runner has no per-case watchdog;
 setting `OOXMLSDK_GOLDEN_CASE` always executes an exact case, including those
 known errors, so callers can apply an external timeout.
+
+Known-error audits also maintain
+`target/office-golden/diagnostic-index-{docx,pptx,xlsx}.jsonl`. Each record
+classifies the earliest failure as conversion, extraction, page count/geometry,
+text content/style/reconstruction/line geometry, font integrity/assignment, or
+visible output, and includes page/line coordinates when the comparison can
+identify them. Use
+`OOXMLSDK_GOLDEN_DIAGNOSTIC_KIND=<kind>` together with
+`OOXMLSDK_GOLDEN_AUDIT_ERRORS=1` to rerun only one indexed failure class.
+Candidate glyph artifacts include layout frame/line ownership and stable
+engine-local source paths; PPTX paths identify the shape-tree position, while
+XLSX cell text paths identify zero-based row and column. This is the preferred
+iteration path after one unfiltered audit has refreshed the index.
 
 ### Source-Backed Fix Gate
 
@@ -1454,20 +1467,21 @@ source-backed normalization decisions:
 - Paint intent outside a page is no longer called a PDF font-resource error.
   Seven previous font exceptions now remain at their actual text or visible
   output layers, so class audits identify the owning subsystem in one run.
-- Complete release audits passed all three ratchets on 2026-07-23 with no
-  unexpected failures: DOCX 982, PPTX 346, and XLSX 229.
+- Complete release ratchets passed on 2026-07-23 with no unexpected failures:
+  DOCX 987, PPTX 348, and XLSX 230. A known-error audit promoted five DOCX,
+  two PPTX, and one XLSX source after their full comparison contracts passed.
 
 Comparison-layer counts for ratchet cases:
 
 | Format | Conversion | Page geometry | Text | Graphics | Visible output |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| DOCX | 982 / 982 | 982 / 982 | 982 / 982 | 982 / 982 | 982 / 982 |
-| PPTX | 346 / 346 | 346 / 346 | 346 / 346 | 346 / 346 | 346 / 346 |
-| XLSX | 229 / 229 | 229 / 229 | 229 / 229 | 229 / 229 | 229 / 229 |
+| DOCX | 987 / 987 | 987 / 987 | 987 / 987 | 987 / 987 | 987 / 987 |
+| PPTX | 348 / 348 | 348 / 348 | 348 / 348 | 348 / 348 | 348 / 348 |
+| XLSX | 230 / 230 | 230 / 230 | 230 / 230 | 230 / 230 | 230 / 230 |
 
 ### Next Expansion
 
-Continue beyond 1,557 with independently diagnosable, source-backed fixes.
+Continue beyond 1,565 with independently diagnosable, source-backed fixes.
 Keep the errors-only manifest exact, audit it in bounded pages, and optimize a
 slow stage before expanding a batch if per-case timings regress materially.
 

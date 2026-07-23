@@ -1,9 +1,9 @@
 use ooxmlsdk_layout::common::Color;
 use ooxmlsdk_layout_test::{
-    assert_link_target, assert_page_contains, assert_page_contains_any, assert_page_image_count,
-    assert_page_not_contains, assert_page_path_count_at_least, assert_page_size,
-    assert_page_text_occurrences, assert_text_color, assert_text_font_size, run_cases_parallel,
-    xlsx_layout,
+    all_page_text, assert_link_target, assert_page_contains, assert_page_contains_any,
+    assert_page_image_count, assert_page_not_contains, assert_page_path_count_at_least,
+    assert_page_size, assert_page_text_occurrences, assert_text_color, assert_text_font_size,
+    debug_shapes, run_named_cases_parallel, xlsx_layout,
 };
 
 #[derive(Clone, Copy)]
@@ -606,8 +606,8 @@ const CASES: &[XlsxCase] = &[
         file: "sc/qa/unit/data/xlsx/new_cond_format_test.xlsx",
         pages: 3,
         contains: [
-            pt!(0, "top n elements bottom n elements top n percent bottom n percent above average"),
-            pt!(1, "below average above equal average below equal average"),
+            pt!(0, "top n elements bottom n elements top n percent bottom n percent"),
+            pt!(1, "above average below average above equal average below equal average"),
             pt!(2, "2.00 2 1 1.000 4.00 3"),
         ],
     ),
@@ -827,7 +827,7 @@ const CASES: &[XlsxCase] = &[
         source: "../core/sc/qa/unit/subsequent_export_test2.cxx:testTdf122191",
         file: "sc/qa/unit/data/xlsx/tdf122191.xlsx",
         pages: 1,
-        contains: [pt!(0, "IGAZ")],
+        contains: [pt!(0, "TRUE")],
         not_contains: [pt!(0, "BOOL00AN")],
     ),
     case!(
@@ -1581,7 +1581,12 @@ const CASES: &[XlsxCase] = &[
         source: "../core/sc/qa/unit/PivotTable_FieldsAndItemsExport.cxx:Pivot4_Column_Grand_Subtotals_SortDescending",
         file: "sc/qa/unit/data/xlsx/pivot/Pivot4_Column_Grand_Subtotals_SortDescending.xlsx",
         pages: 2,
-        contains: [pt!(1, "Type Name"), pt!(1, "Total Result"), pt!(1, "100 100 200 150 350 100 50### 600")],
+        contains: [
+            pt!(1, "Type Name"),
+            pt!(1, "Total Result"),
+            pt!(1, "100 100 200 150 350 100 50"),
+            pt!(1, "600"),
+        ],
     ),
     case!(
         new_cond_format_export,
@@ -1589,8 +1594,8 @@ const CASES: &[XlsxCase] = &[
         file: "sc/qa/unit/data/xlsx/new_cond_format_test_export.xlsx",
         pages: 3,
         contains: [
-            pt!(0, "top n elements bottom n elements top n percent bottom n percent above average"),
-            pt!(1, "below average above equal average below equal average"),
+            pt!(0, "top n elements bottom n elements top n percent bottom n percent"),
+            pt!(1, "above average below average above equal average below equal average"),
             pt!(1, "1.00 2 2.00"),
         ],
     ),
@@ -1612,13 +1617,35 @@ fn xlsx_clustered_column_chart_uses_semantic_axis_and_legend_text() {
 }
 
 #[test]
+// Sources:
+// - ../core/sc/source/core/data/documen9.cxx::ScDocument::IsPrintEmpty
+// - ../core/sc/qa/unit/subsequent_filters_test4.cxx::testControlImport
+fn xlsx_singlecontrol_skips_empty_page_ranges_before_the_row_517_control() {
+    let document = xlsx_layout("sc/qa/unit/data/xlsx/singlecontrol.xlsx").unwrap();
+    let print_pages = debug_shapes(&document, "xlsx_print_page");
+    assert_eq!(
+        document.pages.len(),
+        3,
+        "unexpected retained print ranges: {print_pages:?}"
+    );
+    assert_page_contains(&document, 0, "form control inside cell b517");
+    assert_page_contains(&document, 1, "adfa");
+    assert_page_contains(&document, 2, "adfad");
+}
+
+#[test]
 fn xlsx_layout_matches_libreoffice_layout_coverage() {
-    let failures = run_cases_parallel(CASES, run_case, |case, message| {
-        format!(
-            "{}\n  source: {}\n  file: {}\n  failure: {}",
-            case.name, case.source, case.file, message
-        )
-    });
+    let failures = run_named_cases_parallel(
+        CASES,
+        |case| case.name,
+        run_case,
+        |case, message| {
+            format!(
+                "{}\n  source: {}\n  file: {}\n  failure: {}",
+                case.name, case.source, case.file, message
+            )
+        },
+    );
     assert!(
         failures.is_empty(),
         "{} XLSX layout cases failed:\n\n{}",
@@ -1634,13 +1661,21 @@ fn run_case(case: &XlsxCase) {
             case.name, case.file, case.source
         )
     });
+    let page_text = document
+        .pages
+        .iter()
+        .enumerate()
+        .map(|(page_index, _)| format!("{page_index}: {:?}", all_page_text(&document, page_index)))
+        .collect::<Vec<_>>()
+        .join("; ");
     assert_eq!(
         document.pages.len(),
         case.page_count,
-        "{} page count mismatch; source={}; file={}",
+        "{} page count mismatch; source={}; file={}; pages=[{}]",
         case.name,
         case.source,
-        case.file
+        case.file,
+        page_text
     );
     for expected in case.contains {
         assert_page_contains(&document, expected.page, expected.text);
