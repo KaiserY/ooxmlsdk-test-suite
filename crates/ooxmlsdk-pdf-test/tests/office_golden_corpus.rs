@@ -24,7 +24,7 @@ fn assert_ratchet(format: OfficeGoldenFormat, target: usize) {
 #[test]
 #[ignore = "run the streamed Office golden corpus ratchet explicitly"]
 fn office_golden_docx_corpus_ratchet() {
-    assert_ratchet(OfficeGoldenFormat::Docx, 987);
+    assert_ratchet(OfficeGoldenFormat::Docx, 990);
 }
 
 #[test]
