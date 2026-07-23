@@ -79,8 +79,8 @@ the package round-trip corpora:
 - the ratchet visits candidates deterministically by source size, output size,
   corpus, and source path until its per-format pass target is reached.
 
-The current verified ratchet requires 1,556 distinct full-contract passes: 982
-DOCX, 345 PPTX, and 229 XLSX. This exceeds the first 1,000-case breadth target.
+The current verified ratchet requires 1,557 distinct full-contract passes: 982
+DOCX, 346 PPTX, and 229 XLSX. This exceeds the first 1,000-case breadth target.
 The earlier 29 explicit case tests remain as focused historical regressions;
 all 29 pass when run explicitly, but they are not added to the ratchet total.
 
@@ -211,6 +211,11 @@ not self-evident from the fixture.
   `target/office-golden/scan-<format>-errors.jsonl`; one record represents one
   document, never one page. Exact-case runs use the separate
   `case-<format>-errors.jsonl` checkpoint and cannot replace a batch page.
+- A successful filtered error audit prints its attempted/pass/expected counts
+  and JSONL report path. Use the bounded font/layout unit test first, one exact
+  `OOXMLSDK_GOLDEN_CASE` only when artifacts are needed, the affected
+  `OOXMLSDK_GOLDEN_ERROR_CLASS` once after the fix, and the release ratchet
+  once at the end. This keeps the diagnostic loop out of the 4,400-file lane.
 - Page raster comparison loads each candidate and golden PDF once, then streams
   page pairs. RGBA pages are not retained after comparison, and PNG artifacts
   are written only for failing pages. Consecutive failed page indexes are
@@ -1437,20 +1442,32 @@ source-backed normalization decisions:
   across all data points, point deletes remain authoritative, hidden axes and
   omitted gridlines do not paint, and long Word category labels wrap within
   their category slots. This makes `tdf134111.docx` a full-contract pass.
+- Font coverage now excludes cmap entries that resolve to glyph zero, and the
+  cached Office fallback policy includes Korean, Japanese/fullwidth, and
+  historic-script faces. `tdf113818-swivel.pptx` is a new full-contract pass;
+  `with_japanese.pptx` now clears font integrity and exposes its remaining
+  text/layout mismatch.
+- The lightweight font audit reports `.notdef` at the layout-to-PDF boundary
+  with the requested family, resolved family, source text, and byte range.
+  The missing C39T30Lfz barcode font in `stress011.docx` is therefore located
+  directly instead of appearing later as an empty ToUnicode CMap.
+- Paint intent outside a page is no longer called a PDF font-resource error.
+  Seven previous font exceptions now remain at their actual text or visible
+  output layers, so class audits identify the owning subsystem in one run.
 - Complete release audits passed all three ratchets on 2026-07-23 with no
-  stale errors or regressions: DOCX 982, PPTX 345, and XLSX 229.
+  unexpected failures: DOCX 982, PPTX 346, and XLSX 229.
 
 Comparison-layer counts for ratchet cases:
 
 | Format | Conversion | Page geometry | Text | Graphics | Visible output |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | DOCX | 982 / 982 | 982 / 982 | 982 / 982 | 982 / 982 | 982 / 982 |
-| PPTX | 345 / 345 | 345 / 345 | 345 / 345 | 345 / 345 | 345 / 345 |
+| PPTX | 346 / 346 | 346 / 346 | 346 / 346 | 346 / 346 | 346 / 346 |
 | XLSX | 229 / 229 | 229 / 229 | 229 / 229 | 229 / 229 | 229 / 229 |
 
 ### Next Expansion
 
-Continue beyond 1,556 with independently diagnosable, source-backed fixes.
+Continue beyond 1,557 with independently diagnosable, source-backed fixes.
 Keep the errors-only manifest exact, audit it in bounded pages, and optimize a
 slow stage before expanding a batch if per-case timings regress materially.
 

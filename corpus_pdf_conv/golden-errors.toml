@@ -4804,18 +4804,8 @@ sources = [
 [[class]]
 id = "word-pdf-font-integrity"
 layer = "font"
-reason = "The candidate has visible text without a usable PDF font resource or emits a Type 0 font whose ToUnicode CMap has no mappings; this fails the font-integrity layer before text parity can be evaluated."
+reason = "The candidate shapes visible text to glyph zero (.notdef) because the requested package font is unavailable and no registered fallback covers the private-use barcode characters; this fails at the font boundary before PDF ToUnicode serialization."
 evidence = ["Office golden PDF and candidate PDF addressed by each exact error source"]
-
-[[error]]
-corpus = "LibreOffice"
-class = "word-pdf-font-integrity"
-sources = [
-  "sw/qa/extras/ooxmlexport/data/vml-text-vertical-adjust.docx",
-  "sw/qa/extras/ooxmlimport/data/groupshape-sdt.docx",
-  "xmloff/qa/unit/data/textbox-loss.docx",
-  "sw/qa/extras/ooxmlexport/data/TextFrameRotation.docx",
-]
 
 [[error]]
 corpus = "Open-XML-SDK"
@@ -4831,6 +4821,16 @@ sources = [
   "sw/qa/extras/ooxmlexport/data/FDO73546.docx",
   "sw/qa/extras/ooxmlexport/data/fdo78384.docx",
   "sw/qa/extras/ooxmlexport/data/tdf83309.docx",
+  "sw/qa/extras/ooxmlexport/data/vml-text-vertical-adjust.docx",
+  "sw/qa/extras/ooxmlimport/data/groupshape-sdt.docx",
+  "sw/qa/extras/ooxmlexport/data/TextFrameRotation.docx",
+]
+
+[[error]]
+corpus = "LibreOffice"
+class = "word-visible-output"
+sources = [
+  "xmloff/qa/unit/data/textbox-loss.docx",
 ]
 
 [[error]]
@@ -4840,29 +4840,16 @@ sources = [
   "test-data/integration/stress011.docx",
 ]
 
-[[class]]
-id = "presentation-pdf-font-integrity"
-layer = "font"
-reason = "The candidate has visible text without a usable PDF font resource or emits a Type 0 font whose ToUnicode CMap has no mappings; this fails the font-integrity layer before presentation text parity can be evaluated."
-evidence = ["Office golden PDF and candidate PDF addressed by each exact error source"]
-
 [[error]]
 corpus = "Apache-POI"
-class = "presentation-pdf-font-integrity"
+class = "presentation-text-parity"
 sources = [
   "test-data/slideshow/with_japanese.pptx",
 ]
 
 [[error]]
-corpus = "LibreOffice"
-class = "presentation-pdf-font-integrity"
-sources = [
-  "sd/qa/unit/data/pptx/tdf113818-swivel.pptx",
-]
-
-[[error]]
 corpus = "Open-XML-SDK"
-class = "presentation-pdf-font-integrity"
+class = "presentation-text-parity"
 sources = [
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/indent-51206400_mainLvl2ppr_IndentLevel2Minimum.pptx",
   "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/indent51206400_mainLvl1ppr_IndentLevel1Maximum.pptx",

@@ -726,6 +726,15 @@ fn run_batch_audit(
         ));
     }
 
+    eprintln!(
+        "office-golden audit {} attempted={} passed={} expected_errors={} records={}",
+        format.extension(),
+        state.attempted,
+        state.passed,
+        state.expected_errors,
+        error_report_path.display()
+    );
+
     Ok(OfficeGoldenCorpusReport {
         format,
         attempted: state.attempted,

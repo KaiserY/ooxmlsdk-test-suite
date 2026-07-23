@@ -1504,12 +1504,6 @@ fn validate_candidate_font_contract(candidate_pdf: &[u8], audit: &PdfFontAudit) 
         .iter()
         .flat_map(|page| &page.fonts)
         .collect::<Vec<_>>();
-    let has_visible_text = audit.painted_text_portion_count > 0;
-    if has_visible_text && fonts.is_empty() {
-        return Err(CalibrationError::OfficeGolden(
-            "candidate has visible text but no PDF font resources".to_string(),
-        ));
-    }
 
     let mut issues = Vec::new();
     for font in fonts {
@@ -1871,12 +1865,55 @@ fn write_png(path: &Path, page: &RenderedPageImage, rgba: &[u8]) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+    use lopdf::{Document, Object, Stream, dictionary};
+    use ooxmlsdk_pdf::PdfFontAudit;
+
     use super::{
         PdfBounds, TEXT_MASK_PADDING_PT, canonical_pdf_base_font_name, extracted_text_content_key,
         format_page_ranges, normalize_extracted_text, pdf_style_colors_equivalent,
         text_edge_tolerance_pt, text_mask_x_spans_by_row, type0_base_font_matches_descendant,
-        unordered_extracted_text_content,
+        unordered_extracted_text_content, validate_candidate_font_contract,
     };
+
+    fn blank_pdf() -> Vec<u8> {
+        let mut document = Document::with_version("1.7");
+        let pages_id = document.new_object_id();
+        let content_id = document.add_object(Stream::new(dictionary! {}, Vec::new()));
+        let page_id = document.add_object(dictionary! {
+            "Type" => "Page",
+            "Parent" => pages_id,
+            "MediaBox" => vec![0.into(), 0.into(), 200.into(), 100.into()],
+            "Contents" => content_id,
+            "Resources" => dictionary! {},
+        });
+        document.objects.insert(
+            pages_id,
+            Object::Dictionary(dictionary! {
+                "Type" => "Pages",
+                "Kids" => vec![page_id.into()],
+                "Count" => 1,
+            }),
+        );
+        let catalog_id = document.add_object(dictionary! {
+            "Type" => "Catalog",
+            "Pages" => pages_id,
+        });
+        document.trailer.set("Root", catalog_id);
+        let mut bytes = Vec::new();
+        document.save_to(&mut bytes).unwrap();
+        bytes
+    }
+
+    #[test]
+    fn off_page_paint_intent_without_pdf_fonts_is_not_a_font_integrity_error() {
+        let audit = PdfFontAudit {
+            text_portion_count: 1,
+            painted_text_portion_count: 1,
+            ..PdfFontAudit::default()
+        };
+
+        validate_candidate_font_contract(&blank_pdf(), &audit).unwrap();
+    }
 
     #[test]
     fn type0_base_font_names_follow_cidfont_subtype_rules() {
