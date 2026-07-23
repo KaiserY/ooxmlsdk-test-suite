@@ -35,29 +35,27 @@ fn assert_has_text_fill_color(summary: &PdfSummary, expected: &str) {
     );
 }
 
-fn assert_has_text_fill_rgb(summary: &PdfSummary, expected_rgb: &str) {
+fn assert_has_path_fill_rgb(summary: &PdfSummary, expected_rgb: &str) {
     assert!(
-        text_objects(summary).any(|object| {
-            object
-                .fill_color
+        summary.paths.iter().any(|path| {
+            path.fill_color
                 .as_deref()
                 .is_some_and(|color| color_rgb(color) == expected_rgb)
         }),
-        "missing text fill rgb {expected_rgb}; text_objects={:?}",
-        summary.text_objects
+        "missing path fill rgb {expected_rgb}; paths={:?}",
+        summary.paths
     );
 }
 
-fn assert_has_text_alpha(summary: &PdfSummary, expected_alpha: &str) {
+fn assert_has_path_fill_alpha(summary: &PdfSummary, expected_alpha: &str) {
     assert!(
-        text_objects(summary).any(|object| {
-            object
-                .fill_color
+        summary.paths.iter().any(|path| {
+            path.fill_color
                 .as_deref()
                 .is_some_and(|color| color_alpha(color) == expected_alpha)
         }),
-        "missing text alpha {expected_alpha}; text_objects={:?}",
-        summary.text_objects
+        "missing path fill alpha {expected_alpha}; paths={:?}",
+        summary.paths
     );
 }
 
@@ -76,7 +74,7 @@ fn assert_has_path_stroke_color(summary: &PdfSummary, expected: &str) {
 fn core_docx_pdf_fixture_semi_transparent_text_preserves_alpha() {
     let summary = render_summary("semi-transparent-text.docx");
     // LibreOffice checks CharTransparence=74, which corresponds to 26% opacity.
-    assert_has_text_alpha(&summary, "42");
+    assert_has_path_fill_alpha(&summary, "42");
 }
 
 #[test]
@@ -84,7 +82,7 @@ fn core_docx_pdf_fixture_semi_transparent_text_preserves_alpha() {
 fn core_docx_pdf_fixture_theme_color_transparency_preserves_alpha() {
     let summary = render_summary("tdf152884_Char_Transparency.docx");
     // LibreOffice checks CharTransparence=74, which corresponds to 26% opacity.
-    assert_has_text_alpha(&summary, "42");
+    assert_has_path_fill_alpha(&summary, "42");
 }
 
 #[test]
@@ -123,5 +121,5 @@ fn core_docx_pdf_fixture_wordart_non_accent_colors_preserve_all_expected_fills()
 // Source: ../core/oox/qa/unit/shape.cxx:testWriterFontworkDarkenTransparency
 fn core_docx_pdf_fixture_wordart_darken_color_preserves_result_fill() {
     let summary = render_summary("tdf152896_WordArt_color_darken.docx");
-    assert_has_text_fill_rgb(&summary, "#d0af72");
+    assert_has_path_fill_rgb(&summary, "#d0af72");
 }

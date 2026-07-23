@@ -79,8 +79,8 @@ the package round-trip corpora:
 - the ratchet visits candidates deterministically by source size, output size,
   corpus, and source path until its per-format pass target is reached.
 
-The current verified ratchet requires 1,484 distinct full-contract passes: 954
-DOCX, 312 PPTX, and 218 XLSX. This exceeds the first 1,000-case breadth target.
+The current verified ratchet requires 1,556 distinct full-contract passes: 982
+DOCX, 345 PPTX, and 229 XLSX. This exceeds the first 1,000-case breadth target.
 The earlier 29 explicit case tests remain as focused historical regressions;
 all 29 pass when run explicitly, but they are not added to the ratchet total.
 
@@ -265,8 +265,8 @@ OOXMLSDK_GOLDEN_AUDIT_ERRORS=1 \
 | Golden inventory | complete | 4,400 converted OOXML cases: 2,707 DOCX, 798 PPTX, 895 XLSX. |
 | Comparison contract | defined | Fixed golden policy and layered comparison model recorded in this document. |
 | Streamed corpus harness | complete | Default conversion-manifest scan, structured failure layers, cached identity index, failed-page-only artifacts, compact page ranges, errors-only manifest, and explicit error audit are in place. |
-| Ratchet passes | 1,484 / 4,400 | DOCX: 954, PPTX: 312, XLSX: 218; all run the full layered comparison contract. The earlier 29 explicit tests remain separate; the first 1,000-case target is complete. |
-| Known errors | 2,916 exact sources | DOCX: 1,753, PPTX: 486, XLSX: 677. They are grouped by evidence-backed class and remain available to exact-case and paged full-audit execution. |
+| Ratchet passes | 1,556 / 4,400 | DOCX: 982, PPTX: 345, XLSX: 229; all run the full layered comparison contract. The earlier 29 explicit tests remain separate; the first 1,000-case target is complete. |
+| Known errors | 2,840 exact sources | DOCX: 1,723, PPTX: 453, XLSX: 664. They are grouped by evidence-backed class and remain available to exact-case and paged full-audit execution. |
 | Autonomous optimization | active | Select a known error, locate specification/LibreOffice evidence, fix only source-backed layout/PDF behavior, remove the exact exception, and raise the ratchet gradually. |
 
 ### First Completed Case
@@ -1098,6 +1098,9 @@ Completed on 2026-07-18 without changing any golden PDF or manifest:
 - Other screened candidates were not admitted: DOCX `cloud.docx` exceeded the
   unchanged raster threshold; XLSX `empty_chart.xlsx` emitted an extra
   candidate chart title, and `image_hyperlink.xlsx` had a page-count mismatch.
+  The chart-title host semantics pass was completed later: `empty_chart.xlsx`
+  now keeps its intentionally empty title, while PowerPoint's explicit
+  automatic-title placeholder remains visible.
 
 ### PPTX Graphic-Frame Chart Batch
 
@@ -1395,18 +1398,59 @@ source-backed normalization decisions:
   receive one raster-sample allowance;
 - XLSX conditional-format DXF font properties are applied in rule-priority
   order alongside differential fills.
+- Spreadsheet DrawingML text with no explicit `a:latin` face inherits the
+  workbook theme's minor Latin font rather than the renderer fallback. This
+  makes `textbox-hyperlink.xlsx` and `test_115192.xlsx` full-contract passes;
+  `WithDrawing.xlsx` advances from text parity to its remaining visible-output
+  difference.
+- DrawingML run properties now inherit bold and italic through paragraph and
+  list defaults, while Office font-slot scanning keeps Basic Latin digits on
+  the Latin face after East Asian text. This makes `fontSize.xlsx` and
+  `tdf130657.xlsx` full-contract passes.
+- DrawingML character `a:ln` now reaches the shared text-outline style and PDF
+  paint path through both direct `a:rPr` and inherited `a:defRPr`. PowerPoint's
+  ordinary outlined text is emitted as visible fill/stroke glyph paths plus
+  its transparent searchable-text layer; width-only outlines preserve the
+  inherited paint, and explicit `a:noFill` clears it. This makes
+  `tdf119087.pptx` a full-contract pass without regressing the four existing
+  `Text_withEffects_100chars` variants.
+- Preset text warp is now retained as WordArt state. The fixed-output path
+  paints vector glyphs independently from its transparent searchable-text
+  overlay, and `textPlain` maps the shaping engine's exact glyph ink bounds to
+  the authored text frame using the normative rectangular warp. This makes
+  both `tdf125085_WordArtFont*` files, `ShapeTextInflateTop.pptx`, and
+  `ShapePlusImage.pptx` full-contract passes. WordArt 3D remains vector-only;
+  its Office PDF intentionally has no searchable overlay.
+- DrawingML connector shapes now use the ECMA preset paths instead of the
+  generic closed-rectangle fallback. `straightConnector1`, `bentConnector2-5`,
+  and `curvedConnector2-5` retain their authored adjustments as open,
+  stroke-only paths; this makes `elbowConnectors.pptx` and
+  `curvedConnectors.pptx` full-contract passes. Empty lines introduced by a
+  soft `a:br` also use PowerPoint's one-em automatic line advance while
+  explicit paragraph line spacing remains authoritative.
+- Solid `roundRect`, `rightArrow`, and `downArrow` shapes now use the same
+  preset path chain instead of painting their bounding rectangles. This makes
+  `tdf162283.pptx`, `tdf144616.pptx`, and `tdf128206.pptx` full-contract
+  passes while unsupported presets remain on the explicit fallback path.
+- Clustered-column data labels now follow Office's documented chart-group,
+  series, and point override hierarchy. Series-wide `c:dLbls` settings expand
+  across all data points, point deletes remain authoritative, hidden axes and
+  omitted gridlines do not paint, and long Word category labels wrap within
+  their category slots. This makes `tdf134111.docx` a full-contract pass.
+- Complete release audits passed all three ratchets on 2026-07-23 with no
+  stale errors or regressions: DOCX 982, PPTX 345, and XLSX 229.
 
 Comparison-layer counts for ratchet cases:
 
 | Format | Conversion | Page geometry | Text | Graphics | Visible output |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| DOCX | 954 / 954 | 954 / 954 | 954 / 954 | 954 / 954 | 954 / 954 |
-| PPTX | 312 / 312 | 312 / 312 | 312 / 312 | 312 / 312 | 312 / 312 |
-| XLSX | 218 / 218 | 218 / 218 | 218 / 218 | 218 / 218 | 218 / 218 |
+| DOCX | 982 / 982 | 982 / 982 | 982 / 982 | 982 / 982 | 982 / 982 |
+| PPTX | 345 / 345 | 345 / 345 | 345 / 345 | 345 / 345 | 345 / 345 |
+| XLSX | 229 / 229 | 229 / 229 | 229 / 229 | 229 / 229 | 229 / 229 |
 
 ### Next Expansion
 
-Continue beyond 1,484 with independently diagnosable, source-backed fixes.
+Continue beyond 1,556 with independently diagnosable, source-backed fixes.
 Keep the errors-only manifest exact, audit it in bounded pages, and optimize a
 slow stage before expanding a batch if per-case timings regress materially.
 

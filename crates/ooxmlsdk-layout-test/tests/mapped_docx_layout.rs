@@ -280,7 +280,9 @@ const CASES: &[DocxCase] = &[
         tdf147724,
         source: "../core/sw/qa/extras/ooxmlexport/ooxmlexport.cxx:testTdf147724",
         file: "tdf147724.docx",
-        contains: [pt!(0, "Placeholder -> *ABC*")],
+        // Office fixed output resolves the placeholder field to its cached
+        // result and does not retain LibreOffice's editor-only `*` markers.
+        contains: [pt!(0, "Placeholder -> ABC")],
     ),
     case!(
         n751077,
@@ -1044,10 +1046,18 @@ const CASES: &[DocxCase] = &[
         tdf128959,
         source: "../core/sw/qa/extras/layout/layout4.cxx:testTdf128959",
         file: "tdf128959.docx",
-        contains: [pt!(
-            0,
-            "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Maecenas porttitor congue"
-        )],
+        pages: 2,
+        contains: [
+            pt!(
+                0,
+                "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Maecenas porttitor congue"
+            ),
+            pt!(
+                0,
+                "massa. Fusce posuere, magna sed pulvinar ultricies, purus lectus malesuada libero, sit"
+            ),
+            pt!(1, "amet commodo magna eros quis urna.")
+        ],
     ),
     case!(
         tdf124423,
@@ -2017,6 +2027,52 @@ fn mapped_docx_layout_matches_libreoffice_layout_coverage() {
 fn tdf128646_matches_libreoffice_layout_in_cell_shape_position() {
     let document = docx_layout_named("tdf128646.docx").unwrap();
     assert_image_below_table_top_and_flush_right(&document, 0, 1.0);
+}
+
+#[test]
+fn tdf164907_matches_office_table_row_and_centered_text_geometry() {
+    let document = docx_layout_named("tdf164907_rowHeightAtLeast.docx").unwrap();
+    let rows = ooxmlsdk_layout_test::row_heights(&document, 0);
+    assert!(
+        rows.first()
+            .is_some_and(|height| (*height - 58.3).abs() <= 0.1),
+        "Office fixed PDF uses a 58.3pt first row after adding the table's top and bottom cell margins; rows={rows:?}"
+    );
+    let (item_index, baseline) = document.pages[0]
+        .items
+        .iter()
+        .enumerate()
+        .find_map(|(item_index, item)| match item {
+            ooxmlsdk_layout::common::DisplayItem::Text(run)
+                if run.text.starts_with("2106/0001") =>
+            {
+                Some((item_index, run.origin.y.0))
+            }
+            _ => None,
+        })
+        .expect("missing second-row text");
+    assert!(
+        (baseline - 154.22).abs() <= 0.25,
+        "Office fixed PDF places the second-row text baseline at 154.22pt; actual={baseline}"
+    );
+    let owners = document
+        .frames
+        .iter()
+        .filter(|frame| frame.page_index == 0)
+        .filter(|frame| {
+            frame
+                .lines
+                .iter()
+                .any(|line| line.item_range.start <= item_index && item_index < line.item_range.end)
+        })
+        .map(|frame| frame.kind.as_ref())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        owners,
+        ["table"],
+        "table-cell text must have one table line owner so PDF painting does not add a second baseline offset; item_index={item_index}; frames={:?}",
+        document.frames
+    );
 }
 
 fn run_case(case: &DocxCase) {
