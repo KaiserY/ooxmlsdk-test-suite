@@ -38,8 +38,7 @@ fn office_open_settings() -> OpenSettings {
 }
 
 pub fn docx_layout(path: &str) -> Result<LayoutDocument<'static>> {
-    let file =
-        std::fs::File::open(corpus_file(path)).map_err(ooxmlsdk::common::SdkError::from)?;
+    let file = std::fs::File::open(corpus_file(path)).map_err(ooxmlsdk::common::SdkError::from)?;
     let mut package = WordprocessingDocument::new_with_settings(file, office_open_settings())?;
     ooxmlsdk_layout::docx::layout_document(&mut package, &LayoutOptions::default())
 }
@@ -52,8 +51,7 @@ pub fn docx_layout_named(name: &str) -> Result<LayoutDocument<'static>> {
 }
 
 pub fn pptx_layout(path: &str) -> Result<LayoutDocument<'static>> {
-    let file =
-        std::fs::File::open(corpus_file(path)).map_err(ooxmlsdk::common::SdkError::from)?;
+    let file = std::fs::File::open(corpus_file(path)).map_err(ooxmlsdk::common::SdkError::from)?;
     let mut package = PresentationDocument::new_with_settings(file, office_open_settings())?;
     ooxmlsdk_layout::pptx::layout_document(
         &mut package,
@@ -74,10 +72,7 @@ pub fn xlsx_layout(path: &str) -> Result<LayoutDocument<'static>> {
         .and_then(|file_name| file_name.to_str())
         .map(ToString::to_string);
     let file = std::fs::File::open(fixture).map_err(ooxmlsdk::common::SdkError::from)?;
-    let mut package = SpreadsheetDocument::new_with_settings(
-        file,
-        office_open_settings(),
-    )?;
+    let mut package = SpreadsheetDocument::new_with_settings(file, office_open_settings())?;
     ooxmlsdk_layout::xlsx::layout_document(
         &mut package,
         &LayoutOptions {

@@ -299,6 +299,7 @@ OOXMLSDK_GOLDEN_AUDIT_LIMIT=all \
 | `OOXMLSDK_GOLDEN_CASE=<corpus>/<source>` | one exact converted identity |
 | `OOXMLSDK_GOLDEN_CORPUS=<corpus>` | restrict to one corpus |
 | `OOXMLSDK_GOLDEN_SOURCE_CONTAINS=<text>` | restrict by source path |
+| `OOXMLSDK_GOLDEN_PACKAGE_PART_CONTAINS=<text>` | restrict by an OOXML ZIP part-name fragment, such as `charts/chart` |
 | `OOXMLSDK_GOLDEN_TARGET=<count>` | temporary diagnostic target; does not update the checked-in ratchet |
 | `OOXMLSDK_GOLDEN_AUDIT_ERRORS=1` | execute known errors and detect stale exceptions |
 | `OOXMLSDK_GOLDEN_ERROR_CLASS=<class>` | restrict an audit by manifest class |

@@ -375,8 +375,7 @@ fn docx_tdf58944_repeating_header_keeps_second_page_table_content() {
 #[test]
 // Source: ../core/vcl/qa/cppunit/pdfexport/pdfexport2.cxx::testTdf152246
 fn docx_content_control_rtl_retains_paragraph_direction_on_widget_text() {
-    let document =
-        docx_layout("vcl/qa/cppunit/pdfexport/data/content-control-rtl.docx").unwrap();
+    let document = docx_layout("vcl/qa/cppunit/pdfexport/data/content-control-rtl.docx").unwrap();
     let widgets = document.pages[0]
         .items
         .iter()
@@ -402,9 +401,7 @@ fn docx_content_control_rtl_retains_paragraph_direction_on_widget_text() {
         "widget text runs={widgets:?}"
     );
     assert!(
-        widgets[0].2 < widgets[1].2
-            && widgets[2].2 < widgets[3].2
-            && widgets[2].2 > widgets[1].2,
+        widgets[0].2 < widgets[1].2 && widgets[2].2 < widgets[3].2 && widgets[2].2 > widgets[1].2,
         "LTR controls advance from the left while RTL controls occupy the right side in physical page order; widget text runs={widgets:?}"
     );
 }

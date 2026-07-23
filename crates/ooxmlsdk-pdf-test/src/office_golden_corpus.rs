@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::env;
 use std::fmt::Write as _;
-use std::fs;
+use std::fs::{self, File};
 use std::io::{BufWriter, Write as _};
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::{Path, PathBuf};
@@ -11,6 +11,7 @@ use std::time::{Duration, Instant};
 use rayon::ThreadPoolBuilder;
 use rayon::iter::{IntoParallelIterator, ParallelBridge, ParallelIterator};
 use serde::Deserialize;
+use zip::ZipArchive;
 
 use crate::office_golden::compare_office_golden_detailed_with_artifacts;
 use crate::{
@@ -229,6 +230,7 @@ pub fn run_office_golden_corpus(
     let exact_case = env::var("OOXMLSDK_GOLDEN_CASE").ok();
     let corpus_filter = env::var("OOXMLSDK_GOLDEN_CORPUS").ok();
     let source_contains = env::var("OOXMLSDK_GOLDEN_SOURCE_CONTAINS").ok();
+    let package_part_contains = env::var("OOXMLSDK_GOLDEN_PACKAGE_PART_CONTAINS").ok();
     let audit_errors = env::var("OOXMLSDK_GOLDEN_AUDIT_ERRORS").is_ok_and(|value| value == "1");
     let error_class_filter = env::var("OOXMLSDK_GOLDEN_ERROR_CLASS").ok();
     let diagnostic_kind_filter = env::var("OOXMLSDK_GOLDEN_DIAGNOSTIC_KIND")
@@ -269,6 +271,10 @@ pub fn run_office_golden_corpus(
         .as_ref()
         .map(|(_, kind)| load_diagnostic_cases(&root, format, *kind))
         .transpose()?;
+    let package_part_cases = package_part_contains
+        .as_deref()
+        .map(|needle| package_part_cases(&root, &index.candidates, format, needle))
+        .transpose()?;
 
     let mut candidates = index
         .candidates
@@ -282,6 +288,9 @@ pub fn run_office_golden_corpus(
                 && source_contains
                     .as_deref()
                     .is_none_or(|needle| candidate.record.file.contains(needle))
+                && package_part_cases.as_ref().is_none_or(|cases| {
+                    cases.contains(&(candidate.corpus.clone(), candidate.record.file.clone()))
+                })
                 && exact_case.as_deref().is_none_or(|case| {
                     case == format!("{}/{}", candidate.corpus, candidate.record.file)
                 })
@@ -305,6 +314,12 @@ pub fn run_office_golden_corpus(
     if source_contains.is_some() && candidates.is_empty() {
         return Err(format!(
             "OOXMLSDK_GOLDEN_SOURCE_CONTAINS did not select a converted {} record",
+            format.extension()
+        ));
+    }
+    if package_part_contains.is_some() && candidates.is_empty() {
+        return Err(format!(
+            "OOXMLSDK_GOLDEN_PACKAGE_PART_CONTAINS did not select a converted {} record",
             format.extension()
         ));
     }
@@ -1296,6 +1311,33 @@ fn load_candidates(root: &Path) -> std::result::Result<Vec<CorpusCandidate>, Str
         }
     }
     Ok(candidates)
+}
+
+fn package_part_cases(
+    root: &Path,
+    candidates: &[CorpusCandidate],
+    format: OfficeGoldenFormat,
+    needle: &str,
+) -> std::result::Result<BTreeSet<(String, String)>, String> {
+    let mut cases = BTreeSet::new();
+    for candidate in candidates.iter().filter(|candidate| {
+        candidate.record.status == "converted"
+            && candidate.record.source_extension == format.extension()
+    }) {
+        let source_path = root
+            .join("corpus")
+            .join(&candidate.corpus)
+            .join(&candidate.record.file);
+        let source = File::open(&source_path)
+            .map_err(|error| format!("could not open {}: {error}", source_path.display()))?;
+        let archive = ZipArchive::new(source).map_err(|error| {
+            format!("could not read {} as OOXML: {error}", source_path.display())
+        })?;
+        if archive.file_names().any(|name| name.contains(needle)) {
+            cases.insert((candidate.corpus.clone(), candidate.record.file.clone()));
+        }
+    }
+    Ok(cases)
 }
 
 fn child_manifest_paths(root: &Path) -> std::result::Result<Vec<PathBuf>, String> {
