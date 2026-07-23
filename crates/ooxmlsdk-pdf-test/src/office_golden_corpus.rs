@@ -20,11 +20,27 @@ use crate::{
 
 const ERROR_MANIFEST_SCHEMA_VERSION: u32 = 1;
 const FAILURE_SAMPLE_LIMIT: usize = 3;
+const DEFAULT_AUDIT_PAGE_SIZE: usize = 32;
 // Keep late-corpus pages bounded: large Office packages can take minutes per
 // comparison, so a 32-record page persists useful classification progress
 // without forcing a long tail to restart from the previous checkpoint.
 const UNEXPECTED_FAILURE_LIMIT: usize = 32;
 const SLOW_CASE_THRESHOLD: Duration = Duration::from_secs(2);
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum AuditLimit {
+    Page(usize),
+    All,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct AuditWindow {
+    offset: usize,
+    selected: usize,
+    total: usize,
+    next_offset: Option<usize>,
+    exhaustive: bool,
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum OfficeGoldenFormat {
@@ -145,6 +161,49 @@ struct UnexpectedFailureRecord {
     message: String,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum CaseVerdict {
+    Pass,
+    Fail,
+    Xfail,
+    Xpass,
+}
+
+impl CaseVerdict {
+    const fn as_str(self) -> &'static str {
+        match self {
+            Self::Pass => "PASS",
+            Self::Fail => "FAIL",
+            Self::Xfail => "XFAIL",
+            Self::Xpass => "XPASS",
+        }
+    }
+}
+
+fn classify_case_verdict(
+    expected_layer: Option<OfficeGoldenComparisonLayer>,
+    failure_layer: Option<OfficeGoldenComparisonLayer>,
+) -> CaseVerdict {
+    match (expected_layer, failure_layer) {
+        (None, None) => CaseVerdict::Pass,
+        (Some(_), None) => CaseVerdict::Xpass,
+        (Some(expected), Some(actual)) if expected == actual => CaseVerdict::Xfail,
+        (_, Some(_)) => CaseVerdict::Fail,
+    }
+}
+
+const fn exact_case_pass_requirement_met(
+    audit_errors: bool,
+    passed: usize,
+    expected_errors: usize,
+) -> bool {
+    if audit_errors {
+        passed + expected_errors == 1
+    } else {
+        passed == 1
+    }
+}
+
 type KnownErrors = BTreeMap<String, BTreeMap<String, ParsedKnownError>>;
 
 struct CorpusIndex {
@@ -180,18 +239,10 @@ pub fn run_office_golden_corpus(
                 .map(|kind| (value, kind))
         })
         .transpose()?;
-    let audit_limit = env::var("OOXMLSDK_GOLDEN_AUDIT_LIMIT")
-        .ok()
-        .map(|value| {
-            value
-                .parse::<usize>()
-                .map_err(|error| format!("invalid OOXMLSDK_GOLDEN_AUDIT_LIMIT {value:?}: {error}"))
-                .and_then(|limit| {
-                    (limit > 0)
-                        .then_some(limit)
-                        .ok_or_else(|| "OOXMLSDK_GOLDEN_AUDIT_LIMIT must be positive".to_string())
-                })
-        })
+    let audit_limit_value = env::var("OOXMLSDK_GOLDEN_AUDIT_LIMIT").ok();
+    let audit_limit = audit_limit_value
+        .as_deref()
+        .map(parse_audit_limit)
         .transpose()?;
     let audit_offset = env::var("OOXMLSDK_GOLDEN_AUDIT_OFFSET")
         .ok()
@@ -205,7 +256,7 @@ pub fn run_office_golden_corpus(
     let trace_cases = env::var("OOXMLSDK_GOLDEN_TRACE_CASES").is_ok_and(|value| value == "1");
     if (error_class_filter.is_some()
         || diagnostic_kind_filter.is_some()
-        || audit_limit.is_some()
+        || audit_limit_value.is_some()
         || audit_offset != 0)
         && !audit_errors
     {
@@ -245,15 +296,6 @@ pub fn run_office_golden_corpus(
                 })
         })
         .collect::<Vec<_>>();
-    if audit_offset >= candidates.len() {
-        candidates.clear();
-    } else if audit_offset != 0 {
-        candidates.drain(..audit_offset);
-    }
-    if let Some(limit) = audit_limit {
-        candidates.truncate(limit);
-    }
-
     if exact_case.is_some() && candidates.is_empty() {
         return Err(format!(
             "OOXMLSDK_GOLDEN_CASE did not select a converted {} record",
@@ -276,9 +318,23 @@ pub fn run_office_golden_corpus(
     }
 
     if audit_errors && exact_case.is_none() {
+        let audit_limit = audit_limit.unwrap_or(AuditLimit::Page(DEFAULT_AUDIT_PAGE_SIZE));
+        if !matches!(audit_limit, AuditLimit::All) {
+            candidates.retain(|candidate| {
+                known_errors
+                    .get(&candidate.corpus)
+                    .is_some_and(|sources| sources.contains_key(&candidate.record.file))
+            });
+        }
+        let window = audit_window(candidates.len(), audit_offset, audit_limit)?;
+        candidates = candidates
+            .into_iter()
+            .skip(window.offset)
+            .take(window.selected)
+            .collect();
         let require_pass_target = error_class_filter.is_none()
             && diagnostic_kind_filter.is_none()
-            && audit_limit.is_none()
+            && matches!(audit_limit, AuditLimit::All)
             && audit_offset == 0
             && corpus_filter.is_none()
             && source_contains.is_none();
@@ -292,6 +348,7 @@ pub fn run_office_golden_corpus(
             BatchAuditOptions {
                 trace_cases,
                 require_pass_target,
+                window,
             },
         );
     }
@@ -384,29 +441,34 @@ pub fn run_office_golden_corpus(
                 elapsed.as_millis()
             );
         }
-        match comparison {
-            Ok(_) => {
+        let verdict = classify_case_verdict(
+            expected_error.map(|expected| expected.layer),
+            comparison.as_ref().err().map(|failure| failure.layer),
+        );
+        if exact_case.is_some() {
+            eprintln!("office-golden verdict {case_key} {}", verdict.as_str());
+        }
+        match (verdict, comparison) {
+            (CaseVerdict::Pass, Ok(_)) => {
                 passed += 1;
-                if expected_error.is_some() {
-                    stale_errors.push(format!("{}/{}", candidate.corpus, candidate.record.file));
-                }
             }
-            Err(failure) => {
-                if expected_error.is_some_and(|expected| expected.layer == failure.layer) {
-                    if audit_errors {
-                        expected_records.push(UnexpectedFailureRecord {
-                            corpus: candidate.corpus.clone(),
-                            source: candidate.record.file.clone(),
-                            layer: failure.layer,
-                            diagnostic_kind: failure.diagnostic_kind,
-                            page_index: failure.page_index,
-                            line_index: failure.line_index,
-                            message: failure.message,
-                        });
-                    }
-                    expected_errors += 1;
-                    continue;
-                }
+            (CaseVerdict::Xpass, Ok(_)) => {
+                passed += 1;
+                stale_errors.push(format!("{}/{}", candidate.corpus, candidate.record.file));
+            }
+            (CaseVerdict::Xfail, Err(failure)) => {
+                expected_records.push(UnexpectedFailureRecord {
+                    corpus: candidate.corpus.clone(),
+                    source: candidate.record.file.clone(),
+                    layer: failure.layer,
+                    diagnostic_kind: failure.diagnostic_kind,
+                    page_index: failure.page_index,
+                    line_index: failure.line_index,
+                    message: failure.message,
+                });
+                expected_errors += 1;
+            }
+            (CaseVerdict::Fail, Err(failure)) => {
                 unexpected_count += 1;
                 unexpected_records.push(UnexpectedFailureRecord {
                     corpus: candidate.corpus.clone(),
@@ -432,6 +494,7 @@ pub fn run_office_golden_corpus(
                     break;
                 }
             }
+            _ => unreachable!("case verdict must match its comparison result"),
         }
     }
 
@@ -446,7 +509,7 @@ pub fn run_office_golden_corpus(
     )?;
 
     let pass_requirement_met = if exact_case.is_some() {
-        passed + expected_errors == 1
+        exact_case_pass_requirement_met(audit_errors, passed, expected_errors)
     } else {
         passed >= pass_target
     };
@@ -461,6 +524,7 @@ pub fn run_office_golden_corpus(
             },
             &stale_errors,
             &unexpected,
+            &expected_records,
             &error_report_path,
         ));
     }
@@ -478,6 +542,7 @@ struct AuditState {
     attempted: usize,
     passed: usize,
     expected_errors: usize,
+    skipped_known_errors: usize,
     stale_errors: Vec<String>,
     unexpected: BTreeMap<OfficeGoldenComparisonLayer, FailureGroup>,
     unexpected_records: Vec<UnexpectedFailureRecord>,
@@ -612,6 +677,7 @@ fn run_normal_ratchet(
             },
             &[],
             &state.unexpected,
+            &[],
             &error_report_path,
         ));
     }
@@ -642,6 +708,7 @@ struct KnownAuditResult {
 struct BatchAuditOptions {
     trace_cases: bool,
     require_pass_target: bool,
+    window: AuditWindow,
 }
 
 fn run_batch_audit(
@@ -698,6 +765,7 @@ fn run_batch_audit(
             state.attempted += 1;
             if case.expected.skip_batch_audit {
                 state.expected_errors += 1;
+                state.skipped_known_errors += 1;
             } else {
                 executable.push(case);
             }
@@ -731,14 +799,22 @@ fn run_batch_audit(
         results.sort_by_key(|result| result.order);
 
         for result in results {
-            match result.comparison {
-                Ok(()) => {
+            let verdict = classify_case_verdict(
+                Some(result.expected_layer),
+                result
+                    .comparison
+                    .as_ref()
+                    .err()
+                    .map(|failure| failure.layer),
+            );
+            match (verdict, result.comparison) {
+                (CaseVerdict::Xpass, Ok(())) => {
                     state.passed += 1;
                     state
                         .stale_errors
                         .push(format!("{}/{}", result.corpus, result.source));
                 }
-                Err(failure) if failure.layer == result.expected_layer => {
+                (CaseVerdict::Xfail, Err(failure)) => {
                     state.expected_records.push(UnexpectedFailureRecord {
                         corpus: result.corpus,
                         source: result.source,
@@ -750,10 +826,13 @@ fn run_batch_audit(
                     });
                     state.expected_errors += 1;
                 }
-                Err(failure) if state.unexpected_count < UNEXPECTED_FAILURE_LIMIT => {
+                (CaseVerdict::Fail, Err(failure))
+                    if state.unexpected_count < UNEXPECTED_FAILURE_LIMIT =>
+                {
                     state.record_unexpected(&result.corpus, &result.source, failure);
                 }
-                Err(_) => {}
+                (CaseVerdict::Fail, Err(_)) => {}
+                _ => unreachable!("known-error verdict must match its comparison result"),
             }
         }
     }
@@ -767,6 +846,22 @@ fn run_batch_audit(
         &state.expected_records,
         &state.stale_errors,
     )?;
+    eprintln!(
+        "office-golden audit-window {} offset={} selected={} total={} next_offset={} mode={}",
+        format.extension(),
+        options.window.offset,
+        options.window.selected,
+        options.window.total,
+        options
+            .window
+            .next_offset
+            .map_or_else(|| "done".to_string(), |offset| offset.to_string()),
+        if options.window.exhaustive {
+            "all"
+        } else {
+            "page"
+        }
+    );
     if !state.stale_errors.is_empty()
         || !state.unexpected.is_empty()
         || (options.require_pass_target && state.passed < pass_target)
@@ -781,16 +876,18 @@ fn run_batch_audit(
             },
             &state.stale_errors,
             &state.unexpected,
+            &state.expected_records,
             &error_report_path,
         ));
     }
 
     eprintln!(
-        "office-golden audit {} attempted={} passed={} expected_errors={} records={}",
+        "office-golden audit {} attempted={} verdicts=PASS:{} XFAIL:{} XPASS:0 FAIL:0 skipped={} records={}",
         format.extension(),
         state.attempted,
         state.passed,
-        state.expected_errors,
+        state.expected_errors - state.skipped_known_errors,
+        state.skipped_known_errors,
         error_report_path.display()
     );
 
@@ -799,6 +896,43 @@ fn run_batch_audit(
         attempted: state.attempted,
         passed: state.passed,
         expected_errors: state.expected_errors,
+    })
+}
+
+fn parse_audit_limit(value: &str) -> std::result::Result<AuditLimit, String> {
+    if value.eq_ignore_ascii_case("all") {
+        return Ok(AuditLimit::All);
+    }
+    value
+        .parse::<usize>()
+        .map_err(|error| format!("invalid OOXMLSDK_GOLDEN_AUDIT_LIMIT {value:?}: {error}"))
+        .and_then(|limit| {
+            (limit > 0)
+                .then_some(AuditLimit::Page(limit))
+                .ok_or_else(|| "OOXMLSDK_GOLDEN_AUDIT_LIMIT must be positive or `all`".to_string())
+        })
+}
+
+fn audit_window(
+    total: usize,
+    offset: usize,
+    limit: AuditLimit,
+) -> std::result::Result<AuditWindow, String> {
+    if offset >= total {
+        return Err(format!(
+            "Office golden audit offset {offset} selected no records from total={total}"
+        ));
+    }
+    let (end, exhaustive) = match limit {
+        AuditLimit::Page(limit) => (offset.saturating_add(limit).min(total), false),
+        AuditLimit::All => (total, true),
+    };
+    Ok(AuditWindow {
+        offset,
+        selected: end - offset,
+        total,
+        next_offset: (end < total).then_some(end),
+        exhaustive,
     })
 }
 
@@ -910,6 +1044,7 @@ fn write_error_report(
             &mut writer,
             &serde_json::json!({
                 "status": "unexpected-error",
+                "verdict": CaseVerdict::Fail.as_str(),
                 "corpus": failure.corpus,
                 "source": failure.source,
                 "layer": failure.layer.as_str(),
@@ -927,6 +1062,7 @@ fn write_error_report(
             &mut writer,
             &serde_json::json!({
                 "status": "expected-error",
+                "verdict": CaseVerdict::Xfail.as_str(),
                 "corpus": failure.corpus,
                 "source": failure.source,
                 "layer": failure.layer.as_str(),
@@ -944,6 +1080,7 @@ fn write_error_report(
             &mut writer,
             &serde_json::json!({
                 "status": "stale-error",
+                "verdict": CaseVerdict::Xpass.as_str(),
                 "case": case,
             }),
         )
@@ -1314,6 +1451,7 @@ fn format_failure_summary(
     counts: ScanCounts,
     stale_errors: &[String],
     unexpected: &BTreeMap<OfficeGoldenComparisonLayer, FailureGroup>,
+    expected: &[UnexpectedFailureRecord],
     error_report_path: &Path,
 ) -> String {
     let ScanCounts {
@@ -1325,17 +1463,24 @@ fn format_failure_summary(
         "Office golden {} scan failed: target={pass_target}, attempted={attempted}, passed={passed}, expected_errors={expected_errors}",
         format.extension()
     );
+    if !expected.is_empty() {
+        let _ = write!(
+            output,
+            "\nXFAIL known errors: {} (do not count as golden passes)",
+            expected.len()
+        );
+    }
     if !stale_errors.is_empty() {
         let _ = write!(
             output,
-            "\nstale error entries (now pass): {}",
+            "\nXPASS known-error entries (remove before promotion): {}",
             stale_errors.join(", ")
         );
     }
     for (layer, group) in unexpected {
         let _ = write!(
             output,
-            "\nunexpected {} failures: {} (showing at most {})",
+            "\nFAIL {} comparisons: {} (showing at most {})",
             layer.as_str(),
             group.count,
             FAILURE_SAMPLE_LIMIT
@@ -1357,8 +1502,9 @@ fn format_failure_summary(
 #[cfg(test)]
 mod tests {
     use super::{
-        OfficeGoldenComparisonLayer, OfficeGoldenFormat, catch_conversion_panic,
-        error_report_file_name, format_failure_summary,
+        AuditLimit, AuditWindow, CaseVerdict, OfficeGoldenComparisonLayer, OfficeGoldenFormat,
+        audit_window, catch_conversion_panic, classify_case_verdict, error_report_file_name,
+        exact_case_pass_requirement_met, format_failure_summary, parse_audit_limit,
     };
     use std::collections::BTreeMap;
     use std::path::Path;
@@ -1391,6 +1537,7 @@ mod tests {
             },
             &[],
             &BTreeMap::new(),
+            &[],
             Path::new("target/office-golden/scan-docx-errors.jsonl"),
         );
         assert!(summary.contains("target=10, attempted=4, passed=4"));
@@ -1419,5 +1566,62 @@ mod tests {
             error_report_file_name(OfficeGoldenFormat::Xlsx, None, true),
             "audit-xlsx-errors.jsonl"
         );
+    }
+
+    #[test]
+    fn audit_limit_accepts_bounded_pages_and_explicit_all() {
+        assert_eq!(parse_audit_limit("32"), Ok(AuditLimit::Page(32)));
+        assert_eq!(parse_audit_limit("all"), Ok(AuditLimit::All));
+        assert_eq!(parse_audit_limit("ALL"), Ok(AuditLimit::All));
+        assert!(parse_audit_limit("0").is_err());
+    }
+
+    #[test]
+    fn audit_window_reports_the_next_deterministic_page() {
+        assert_eq!(
+            audit_window(70, 32, AuditLimit::Page(32)),
+            Ok(AuditWindow {
+                offset: 32,
+                selected: 32,
+                total: 70,
+                next_offset: Some(64),
+                exhaustive: false,
+            })
+        );
+        assert_eq!(
+            audit_window(70, 64, AuditLimit::Page(32)),
+            Ok(AuditWindow {
+                offset: 64,
+                selected: 6,
+                total: 70,
+                next_offset: None,
+                exhaustive: false,
+            })
+        );
+        assert!(audit_window(70, 70, AuditLimit::Page(32)).is_err());
+    }
+
+    #[test]
+    fn case_verdicts_separate_comparison_truth_from_known_error_metadata() {
+        use OfficeGoldenComparisonLayer::{PageGeometry, Text};
+
+        assert_eq!(classify_case_verdict(None, None), CaseVerdict::Pass);
+        assert_eq!(classify_case_verdict(None, Some(Text)), CaseVerdict::Fail);
+        assert_eq!(
+            classify_case_verdict(Some(Text), Some(Text)),
+            CaseVerdict::Xfail
+        );
+        assert_eq!(classify_case_verdict(Some(Text), None), CaseVerdict::Xpass);
+        assert_eq!(
+            classify_case_verdict(Some(Text), Some(PageGeometry)),
+            CaseVerdict::Fail
+        );
+    }
+
+    #[test]
+    fn exact_case_requires_a_real_pass_unless_audit_is_explicit() {
+        assert!(exact_case_pass_requirement_met(false, 1, 0));
+        assert!(!exact_case_pass_requirement_met(false, 0, 1));
+        assert!(exact_case_pass_requirement_met(true, 0, 1));
     }
 }

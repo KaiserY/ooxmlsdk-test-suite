@@ -87,10 +87,17 @@ all 29 pass when run explicitly, but they are not added to the ratchet total.
 Known errors are skipped during the normal breadth ratchet so expanding the
 passing prefix does not repeatedly render hundreds of unchanged failures. Set
 `OOXMLSDK_GOLDEN_AUDIT_ERRORS=1` to execute known errors and detect stale
-exceptions that now pass. Error classes explicitly marked as nonterminating are
-skipped by batch audit because the in-process runner has no per-case watchdog;
-setting `OOXMLSDK_GOLDEN_CASE` always executes an exact case, including those
-known errors, so callers can apply an external timeout.
+exceptions that now pass. An unfiltered audit is a deterministic 32-known-error
+page by default; advance it with `OOXMLSDK_GOLDEN_AUDIT_OFFSET`, and request the
+old exhaustive scan explicitly with `OOXMLSDK_GOLDEN_AUDIT_LIMIT=all`. Error
+classes explicitly marked as nonterminating are skipped by batch audit because
+the in-process runner has no per-case watchdog; setting
+`OOXMLSDK_GOLDEN_CASE` always executes an exact case, including those known
+errors, so callers can apply an external timeout. Exact cases use the same
+strict pass requirement as the release ratchet: a known failure is `XFAIL`,
+not a pass, unless `OOXMLSDK_GOLDEN_AUDIT_ERRORS=1` explicitly selects audit
+semantics. A known error that now passes is `XPASS` and fails the audit until
+its exception is removed.
 
 Known-error audits also maintain
 `target/office-golden/diagnostic-index-{docx,pptx,xlsx}.jsonl`. Each record
@@ -208,11 +215,20 @@ not self-evident from the fixture.
   source path contains the substring. `OOXMLSDK_GOLDEN_TARGET=<count>` provides
   a temporary diagnostic pass target without changing the checked-in ratchet.
 - `OOXMLSDK_GOLDEN_AUDIT_ERRORS=1` reruns exact known failures and reports
-  stale entries or comparison-layer drift.
+  stale entries or comparison-layer drift. It selects 32 known errors by
+  default rather than silently starting an exhaustive conversion-manifest
+  scan.
+- Every executed case has one verdict: `PASS` and `FAIL` are unclassified
+  comparison results, while `XFAIL` and `XPASS` apply known-error metadata to
+  the same strict comparison. Only `PASS` contributes to the ratchet target.
+  Exact-case runs require `PASS`; explicit audit runs may complete with
+  `XFAIL`, but fail on `XPASS` or `FAIL`.
 - `OOXMLSDK_GOLDEN_ERROR_CLASS=<class>` restricts an error audit to one
   manifest class. `OOXMLSDK_GOLDEN_AUDIT_OFFSET=<count>` and
   `OOXMLSDK_GOLDEN_AUDIT_LIMIT=<count>` select a deterministic size-ordered
-  audit page. All three require error-audit mode.
+  audit page; use `OOXMLSDK_GOLDEN_AUDIT_LIMIT=all` only for an intentional
+  exhaustive scan. Audit output reports the selected window and the next
+  offset, or `done`. All three require error-audit mode.
 - `OOXMLSDK_GOLDEN_TRACE_CASES=1` prints start/finish and total elapsed time for
   each selected case. `OOXMLSDK_GOLDEN_TRACE_STAGES=1` additionally splits an
   exact case into identity I/O, candidate rendering, page dimensions, PDF
@@ -224,8 +240,10 @@ not self-evident from the fixture.
   `target/office-golden/scan-<format>-errors.jsonl`; one record represents one
   document, never one page. Exact-case runs use the separate
   `case-<format>-errors.jsonl` checkpoint and cannot replace a batch page.
-- A successful filtered error audit prints its attempted/pass/expected counts
-  and JSONL report path. Use the bounded font/layout unit test first, one exact
+- A successful filtered error audit prints its `PASS`/`XFAIL`/`XPASS`/`FAIL`
+  counts, skipped count, and JSONL report path. Error JSONL records retain
+  their historical `status` field and add the explicit `verdict`. Use the
+  bounded font/layout unit test first, one exact
   `OOXMLSDK_GOLDEN_CASE` only when artifacts are needed, the affected
   `OOXMLSDK_GOLDEN_ERROR_CLASS` once after the fix, and the release ratchet
   once at the end. This keeps the diagnostic loop out of the 4,400-file lane.
@@ -283,8 +301,8 @@ OOXMLSDK_GOLDEN_AUDIT_ERRORS=1 \
 | Golden inventory | complete | 4,400 converted OOXML cases: 2,707 DOCX, 798 PPTX, 895 XLSX. |
 | Comparison contract | defined | Fixed golden policy and layered comparison model recorded in this document. |
 | Streamed corpus harness | complete | Default conversion-manifest scan, structured failure layers, cached identity index, failed-page-only artifacts, compact page ranges, errors-only manifest, and explicit error audit are in place. |
-| Ratchet passes | 1,556 / 4,400 | DOCX: 982, PPTX: 345, XLSX: 229; all run the full layered comparison contract. The earlier 29 explicit tests remain separate; the first 1,000-case target is complete. |
-| Known errors | 2,840 exact sources | DOCX: 1,723, PPTX: 453, XLSX: 664. They are grouped by evidence-backed class and remain available to exact-case and paged full-audit execution. |
+| Ratchet passes | 1,565 / 4,400 | DOCX: 987, PPTX: 348, XLSX: 230; all run the full layered comparison contract. The earlier 29 explicit tests remain separate; the first 1,000-case target is complete. |
+| Known errors | 2,838 exact sources | DOCX: 1,721, PPTX: 450, XLSX: 667. They are grouped by evidence-backed class and remain available to exact-case and paged full-audit execution. |
 | Autonomous optimization | active | Select a known error, locate specification/LibreOffice evidence, fix only source-backed layout/PDF behavior, remove the exact exception, and raise the ratchet gradually. |
 
 ### First Completed Case
@@ -1478,6 +1496,46 @@ Comparison-layer counts for ratchet cases:
 | DOCX | 987 / 987 | 987 / 987 | 987 / 987 | 987 / 987 | 987 / 987 |
 | PPTX | 348 / 348 | 348 / 348 | 348 / 348 | 348 / 348 | 348 / 348 |
 | XLSX | 230 / 230 | 230 / 230 | 230 / 230 | 230 / 230 | 230 / 230 |
+
+### Four-Gap Golden Acceleration Batch
+
+Implemented on 2026-07-23 before the concentrated verification run:
+
+- PDF font auditing now ignores glyph-zero observations whose source cluster
+  contains only non-rendering control characters. Printable characters,
+  including private-use characters, remain reportable.
+- Known-error audits now default to deterministic 32-case pages, report their
+  next offset, and reserve exhaustive behavior for an explicit
+  `OOXMLSDK_GOLDEN_AUDIT_LIMIT=all`.
+- DOCX embedded charts remain attached to their drawing anchor. Ordinary
+  clustered-column charts retain the detailed visual lowerer; other chart
+  families derive fixed-output semantic text from typed chart caches, axes,
+  labels, display units, data tables, and titles instead of appending cache
+  values as detached body paragraphs.
+- Writer paragraph runs now share a line baseline by default. Imported
+  `w:textAlignment` selects top, center, baseline, bottom, or automatic
+  character alignment, and horizontal diagnostic bounds include justified
+  word spacing already applied during shaping.
+
+The behavior was checked twice against the local ECMA-376/MS-OI29500/
+MS-DOC references and LibreOffice Writer/chart source paths. The concentrated
+verification completed with all three release ratchets unchanged and passing:
+987 DOCX, 348 PPTX, and 230 XLSX, for 1,565 full-contract cases. The exhaustive
+DOCX diagnostic audits found no stale exceptions in 232 baseline cases or 148
+horizontal-bounds cases. The seven-case font-integrity audit also found no
+stale exception; its remaining failures contain printable private-use or
+symbol-font characters rather than control-only clusters.
+
+The chart-directory audit attempted 69 DOCX cases. Its two passes were already
+admitted cases, so this batch deliberately promoted no chart exception.
+Typed chart semantics now reconstruct substantially more of the fixed-output
+text, and chart-local Latin typefaces remove an earlier font-classification
+barrier, but representative generic charts still first diverge at text-line
+geometry or run style. The next large, attributable gap is therefore a real
+fixed-output lowerer for those chart families: preserve Office line grouping
+and per-run styling, then replace conservative semantic rectangles with
+family-specific visual geometry. More cache-text heuristics should not be used
+as a substitute for that layer.
 
 ### Next Expansion
 
