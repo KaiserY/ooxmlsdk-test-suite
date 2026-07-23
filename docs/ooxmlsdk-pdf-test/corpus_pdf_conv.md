@@ -51,13 +51,13 @@ by the current OOXML renderer:
 | Format | Golden inventory | Ratchet passes | Exact known errors |
 | --- | ---: | ---: | ---: |
 | DOCX | 2,707 | 990 | 1,717 |
-| PPTX | 798 | 348 | 450 |
+| PPTX | 798 | 349 | 449 |
 | XLSX | 895 | 230 | 665 |
-| Total | 4,400 | 1,568 | 2,832 |
+| Total | 4,400 | 1,569 | 2,831 |
 
 Verified on 2026-07-23: the DOCX release ratchet passed 990 cases after the
 no-legend pie data-label promotion; the latest PPTX and XLSX release ratchets
-passed 348 and 230.
+passed 349 and 230.
 
 The 29 earlier explicit golden tests remain focused historical regressions and
 are not included in the ratchet count.
@@ -366,6 +366,10 @@ Artifacts diagnose the fixed contract; they are never replacement goldens.
 - Keep Office policy above Parley and Fontique. Their cluster and fallback
   mechanics are reusable; Office family assignment, theme slots, locale, and
   legacy-family substitutions belong to the OOXML layer.
+- Discover installed faces through the platform font database. Do not encode
+  Linux distribution font paths in family policy; localized Office names such
+  as `等线` are aliases to the installed family, while script and generic
+  fallback remain ordered database queries.
 - A line is the comparison unit for layout. Preserve run styles and source
   ownership inside the line, but do not force candidate PDF text-object
   segmentation to match Office.
@@ -533,6 +537,7 @@ history.
 | 2026-07-23 | Word pie promotion | Office-documented first-series semantics and right-legend pie geometry; DOCX ratchet raised to 988 |
 | 2026-07-23 | Word bottom pie promotion | deleted legend entries aligned semantic and painted output; chart-local theme font/color resolution and horizontal bottom-legend geometry; DOCX ratchet raised to 989 |
 | 2026-07-23 | Word pie labels and inline drawing flow | chart-group/series/point data-label inheritance, point custom-text replacement, no-legend pie geometry, and occupied-page inline-object overflow preflight; DOCX ratchet raised to 990 |
+| 2026-07-23 | Portable font discovery and chart-host title semantics | removed distribution-specific font paths in favor of Fontique platform-family matching with the existing fontdb legacy fallback; Excel empty authored titles no longer expose editing placeholders; PPTX chart ratchet raised to 349 |
 
 ## Promotion Records
 
@@ -544,6 +549,7 @@ Add one row only after an exact `XPASS` is removed, the exact case becomes
 | 2026-07-23 | `LibreOffice/chart2/qa/extras/data/docx/data_point_inherited_color.docx` | `c63c9be0237bb472ec6478fab543651f4b2c3bfd1003fb8a919e101d38965b04` | `a0983d9160d159355a674d4f0a797d6be44db4f7a090f7dcd72e9d0ec350abc3` | `238d45fa17f25b86fbd61ee81bb755cb9692dbd5ba881afdea771268e08e9157` | DOCX 988 |
 | 2026-07-23 | `LibreOffice/chart2/qa/extras/data/docx/piechart_deleted_legend_entry.docx` | `5e62bfd50b689dfa9d8c37db1c973fc3c30bf0cdb6bcaabb0f8fff7957ddc0fd` | `4cf397d4875065337720c0f7d0ad62f35fc8b2f3b84274faed0982f6ccc96094` | `238d45fa17f25b86fbd61ee81bb755cb9692dbd5ba881afdea771268e08e9157` | DOCX 989 |
 | 2026-07-23 | `LibreOffice/chart2/qa/extras/data/docx/tdf123206.docx` | `d9f89075f45a4bbf47a483b494d5807a6a892585568807a899ea7024513794f1` | `0fb5f08cc51a6688193b142af0658323f50cd27594ba856915cc9763723de122` | `238d45fa17f25b86fbd61ee81bb755cb9692dbd5ba881afdea771268e08e9157` | DOCX 990 |
+| 2026-07-23 | `LibreOffice/sd/qa/unit/data/pptx/chart_pt_color_bg1.pptx` | `11b8fbd9710c79a9e0d7bc466f27a071dc7a8f0de3078eaf79e7967af46d5c1e` | `685cedd3d2752707567e402a57401db937d7f61de47acaaf1cee829ecccb69fe` | `238d45fa17f25b86fbd61ee81bb755cb9692dbd5ba881afdea771268e08e9157` | PPTX 349 |
 
 ## Current Gaps And Next Actions
 

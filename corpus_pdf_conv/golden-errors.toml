@@ -342,7 +342,6 @@ sources = [
   "sd/qa/unit/data/pptx/tdf169825_vertical_layouts.pptx",
   "oox/qa/unit/data/camera-rotation-revolution-nonwps.pptx",
   "sd/qa/unit/data/pptx/rightToLeftParagraph.pptx",
-  "sd/qa/unit/data/pptx/chart_pt_color_bg1.pptx",
   "sd/qa/unit/data/pptx/NumberedList-12ab-ab-34.pptx",
   "sd/qa/unit/data/pptx/tcPr-vert-roundtrip.pptx",
   "svx/qa/unit/data/clip-vertical-overflow.pptx",

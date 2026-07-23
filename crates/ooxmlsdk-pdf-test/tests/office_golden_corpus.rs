@@ -30,7 +30,7 @@ fn office_golden_docx_corpus_ratchet() {
 #[test]
 #[ignore = "run the streamed Office golden corpus ratchet explicitly"]
 fn office_golden_pptx_corpus_ratchet() {
-    assert_ratchet(OfficeGoldenFormat::Pptx, 348);
+    assert_ratchet(OfficeGoldenFormat::Pptx, 349);
 }
 
 #[test]
