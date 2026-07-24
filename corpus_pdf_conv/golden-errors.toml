@@ -512,7 +512,6 @@ sources = [
   "sc/qa/unit/data/xlsx/tdf85617.xlsx",
   "sc/qa/uitest/data/tdf153622.xlsx",
   "chart2/qa/extras/data/xlsx/tdf128732.xlsx",
-  "chart2/qa/extras/data/xlsx/testChartTitlePropertiesGradientFill.xlsx",
   "sc/qa/unit/data/xlsx/tdf73063.xlsx",
   "sc/qa/unit/data/xlsx/database.xlsx",
 ]
@@ -733,8 +732,6 @@ sources = [
 corpus = "Apache-POI"
 class = "presentation-text-parity"
 sources = [
-  "poi-examples/src/main/java/org/apache/poi/examples/xslf/pie-chart-template.pptx",
-  "test-data/slideshow/pie-chart.pptx",
   "test-data/slideshow/layouts.pptx",
   "test-data/slideshow/smartart-simple.pptx",
 ]
@@ -996,9 +993,7 @@ sources = [
   "sw/qa/extras/mailmerge/data/tdf35798.docx",
   "sw/qa/extras/ooxmlexport/data/fdo70812.docx",
   "sw/qa/extras/ooxmlexport/data/tdf89991.docx",
-  "chart2/qa/extras/data/docx/testChartTitlePropertiesColorFill.docx",
   "sw/qa/extras/ooxmlexport/data/tdf135786.docx",
-  "chart2/qa/extras/data/docx/testChartTitlePropertiesGradientFill.docx",
   "sw/qa/core/data/ooxml/pass/fdo64256.docx",
   "sw/qa/extras/ooxmlexport/data/section_break_numbering.docx",
   "sw/qa/extras/ooxmlexport/data/multi-column-line-separator-SAVED.docx",
@@ -1356,7 +1351,6 @@ sources = [
   "test-data/spreadsheet/56502.xlsx",
   "test-data/spreadsheet/xlookup.xlsx",
   "test-data/openxml4j/64473.xlsx",
-  "test-data/spreadsheet/60509.xlsx",
 ]
 
 [[error]]
@@ -1366,12 +1360,9 @@ sources = [
   "sc/qa/unit/uicalc/data/tdf124816.xlsx",
   "chart2/qa/extras/data/xlsx/fdo54361.xlsx",
   "chart2/qa/extras/data/xlsx/title_character_properties.xlsx",
-  "chart2/qa/extras/data/xlsx/axis_character_properties.xlsx",
   "sc/qa/unit/data/xlsx/tablerefsnamed.xlsx",
   "sc/qa/unit/data/xlsx/tdf162963_TableWithTotalsEnabled.xlsx",
   "sc/qa/unit/data/xlsx/tdf145057.xlsx",
-  "chart2/qa/extras/data/xlsx/autotitledel_2007.xlsx",
-  "chart2/qa/extras/data/xlsx/dispBlanksAs_2007.xlsx",
   "sc/qa/unit/data/xlsx/tdf167019.xlsx",
   "sc/qa/unit/data/xlsx/tdf119292.xlsx",
   "sc/qa/unit/data/xlsx/pivot_dark1.xlsx",
@@ -1382,11 +1373,6 @@ sources = [
   "chart2/qa/extras/data/xlsx/sunburst.xlsx",
   "sc/qa/unit/data/xlsx/TableStyleTest.xlsx",
   "sc/qa/unit/data/xlsx/pivot-table/onlycalcfields.xlsx",
-  "chart2/qa/extras/data/xlsx/plotVisOnly.xlsx",
-  "chart2/qa/extras/data/xlsx/hidden_cells.xlsx",
-  "chart2/qa/extras/data/xlsx/majorTickMark.xlsx",
-  "chart2/qa/extras/data/xlsx/minorTickMark.xlsx",
-  "chart2/qa/extras/data/xlsx/data_labels_fill_color.xlsx",
   "sc/qa/unit/data/xlsx/dataValidity.xlsx",
   "sc/qa/unit/data/xlsx/xf_default_values.xlsx",
   "chart2/qa/extras/data/xlsx/chart-auto-background.xlsx",
@@ -1395,7 +1381,6 @@ sources = [
   "sc/qa/unit/data/xlsx/checkbox-form-control.xlsx",
   "chart2/qa/extras/data/xlsx/funnel1.xlsx",
   "chart2/qa/extras/data/xlsx/clusteredColumn.xlsx",
-  "chart2/qa/extras/data/xlsx/testChartTitlePropertiesColorFill.xlsx",
   "chart2/qa/extras/data/xlsx/secondary_axis_title_default_rotation.xlsx",
   "chart2/qa/extras/data/xlsx/chart-hatch-fill.xlsx",
   "chart2/qa/extras/data/xlsx/axis_title_rotated.xlsx",
@@ -1405,7 +1390,6 @@ sources = [
   "chart2/qa/extras/data/xlsx/tdf136752.xlsx",
   "chart2/qa/extras/data/xlsx/column-style.xlsx",
   "sc/qa/unit/data/xlsx/tdf134392.xlsx",
-  "chart2/qa/extras/data/xlsx/chart-area-style-border.xlsx",
   "sc/qa/unit/data/xlsx/tdf112936.xlsx",
   "sc/qa/unit/data/xlsx/pivot-table/PivotTableCellFormatsTest_12_WholeLabelColumnSelected.xlsx",
   "sc/qa/unit/data/xlsx/pivot-table/PivotTableCellFormatsTest_11_WholeDataColumnSelected.xlsx",
@@ -3128,7 +3112,6 @@ sources = [
   "sc/qa/unit/data/xlsx/pivot-table/groupwithcalcfields.xlsx",
   "sc/qa/unit/data/xlsx/PivotTable_CachedDefinitionAndDataNotInSync_SheetColumnsRemoved_WithoutCacheData.xlsx",
   "sc/qa/unit/data/xlsx/pivot-table/two-data-fields.xlsx",
-  "chart2/qa/extras/data/xlsx/smoothed_series2007.xlsx",
   "sc/qa/unit/data/xlsx/tdf162093.xlsx",
   "sc/qa/unit/data/xlsx/tdf131380.xlsx",
   "sc/qa/unit/data/xlsx/pivot-table/PivotTableCellFormatsTest_15_TwoDataFieldColumns_WholeDataColumnSelected.xlsx",
@@ -3142,8 +3125,6 @@ sources = [
   "sc/qa/unit/data/xlsx/pivot-table/PivotTableCellFormatsTest_13_SelectionInLabelAndData.xlsx",
   "sc/qa/unit/data/xlsx/pivot-table/PivotTableCellFormatsTest_6_SingleDataFieldInColumn_DataColor.xlsx",
   "chart2/qa/extras/data/xlsx/tdf133376.xlsx",
-  "chart2/qa/extras/data/xlsx/tdf90876.xlsx",
-  "chart2/qa/extras/data/xlsx/smoothed_series.xlsx",
   "chart2/qa/extras/data/xlsx/SimpleHistogram.xlsx",
   "sc/qa/unit/data/xlsx/tdf151755_stylesLostOnXLSXExport.xlsx",
   "chart2/qa/extras/data/xlsx/pareto-gapwidth.xlsx",
@@ -3160,17 +3141,12 @@ sources = [
   "chart2/qa/extras/xshape/data/xlsx/tdf90839-3.xlsx",
   "chart2/qa/extras/data/xlsx/waterfall.xlsx",
   "sc/qa/unit/data/xlsx/pivot-table/first_header_row_zero.xlsx",
-  "chart2/qa/extras/data/xlsx/autotitledel_2013.xlsx",
-  "chart2/qa/extras/data/xlsx/tdf122031.xlsx",
   "sc/qa/unit/data/xlsx/PivotTable_CachedDefinitionAndDataInSync.xlsx",
   "sc/qa/unit/tiledrendering/data/page-view.xlsx",
   "sc/qa/unit/data/xlsx/Sparklines.xlsx",
   "chart2/qa/extras/data/xlsx/boxWhisker.xlsx",
   "sc/qa/unit/data/xlsx/tdf165503.xlsx",
-  "chart2/qa/extras/data/xlsx/piechart_legend.xlsx",
-  "chart2/qa/extras/data/xlsx/dispBlanksAs_2013.xlsx",
   "sc/qa/unit/data/xlsx/tdf134553.xlsx",
-  "chart2/qa/extras/data/xlsx/piechart_deleted_legendentry.xlsx",
   "sc/qa/unit/data/xlsx/tdf112106.xlsx",
   "sc/qa/unit/data/xlsx/pivot-table/pivotcompact.xlsx",
   "chart2/qa/extras/data/xlsx/xAxisLabelsRotation.xlsx",
@@ -3178,7 +3154,6 @@ sources = [
   "chart2/qa/extras/data/xlsx/tdf128619.xlsx",
   "chart2/qa/extras/data/xlsx/waterfall2.xlsx",
   "chart2/qa/extras/data/xlsx/tdf143942.xlsx",
-  "chart2/qa/extras/data/xlsx/tdf115012.xlsx",
 ]
 
 [[error]]
@@ -3379,17 +3354,14 @@ sources = [
   "chart2/qa/extras/data/xlsx/tdf136105.xlsx",
   "sc/qa/unit/data/xlsx/tdf134769.xlsx",
   "sc/qa/unit/data/xlsx/pivottable_duplicated_member_filter.xlsx",
-  "sc/qa/unit/data/xlsx/tdf115159.xlsx",
   "sc/qa/unit/data/xlsx/pivot-table/shared-dategroup.xlsx",
   "sc/qa/unit/data/xlsx/pivot-table/shared-numgroup.xlsx",
   "sc/qa/unit/data/xlsx/pivottable_double_field_filter.xlsx",
-  "chart2/qa/extras/data/xlsx/ser_labels.xlsx",
   "chart2/qa/extras/data/xlsx/tdf143127.xlsx",
   "chart2/qa/extras/data/xlsx/gapWidth.xlsx",
   "sc/qa/unit/data/xlsx/totalsRowFunction.xlsx",
   "chart2/qa/extras/data/xlsx/tdf114139.xlsx",
   "sc/qa/unit/data/xlsx/pivot-table/shared-nested-dategroup.xlsx",
-  "chart2/qa/extras/data/xlsx/pie_chart_datapoint_explosion.xlsx",
   "sc/qa/unit/data/xlsx/tdf111980_radioButtons.xlsx",
   "chart2/qa/extras/data/xlsx/tdf126033.xlsx",
   "chart2/qa/extras/data/xlsx/deleted_legend_entry2.xlsx",
@@ -3453,7 +3425,6 @@ sources = [
 corpus = "Apache-POI"
 class = "spreadsheet-text-parity"
 sources = [
-  "test-data/spreadsheet/RepeatingRowsCols.xlsx",
   "test-data/spreadsheet/WithEmbeded.xlsx",
   "test-data/spreadsheet/DataTableCities.xlsx",
   "test-data/spreadsheet/49156.xlsx",
@@ -3572,7 +3543,6 @@ sources = [
 corpus = "LibreOffice"
 class = "spreadsheet-text-parity"
 sources = [
-  "chart2/qa/extras/data/xlsx/testChartTitlePropertiesBitmapFill.xlsx",
   "sc/qa/unit/data/xlsx/pivottable_invalid_formats.xlsx",
 ]
 
@@ -3986,7 +3956,6 @@ sources = [
   "chart2/qa/extras/data/docx/testMultipleChart.docx",
   "chart2/qa/extras/data/docx/testMultiplechartembeddings.docx",
   "sw/qa/extras/uiwriter/data/embeddedPPTX.docx",
-  "chart2/qa/extras/data/docx/testChartTitlePropertiesBitmapFill.docx",
   "sw/qa/extras/ooxmlexport/data/tdf116410.docx",
 ]
 
@@ -4524,7 +4493,6 @@ sources = [
   "sc/qa/unit/data/xlsx/seconds-without-truncate-and-decimals.xlsx",
   "sc/qa/unit/data/xlsx/check-boolean.xlsx",
   "sc/qa/unit/data/xlsx/tdf104310.xlsx",
-  "sc/qa/unit/data/xlsx/databar.xlsx",
   "sc/qa/unit/data/xlsx/enhancedProtectionRangeShorthand.xlsx",
   "sc/qa/unit/data/xlsx/colorscale.xlsx",
   "sc/qa/unit/data/xlsx/tdf160371.xlsx",
@@ -4533,11 +4501,6 @@ sources = [
   "chart2/qa/extras/data/xlsx/fdo78080.xlsx",
   "sc/qa/unit/data/xlsx/tdf159581_optimalRowHeight.xlsx",
   "sc/qa/unit/data/xlsx/preserve_space.xlsx",
-  "chart2/qa/extras/data/xlsx/deleted_data_labels.xlsx",
-  "chart2/qa/extras/data/xlsx/pieOfPieChart.xlsx",
-  "chart2/qa/extras/data/xlsx/barOfPieChart.xlsx",
-  "chart2/qa/extras/data/xlsx/pieOfPieChart2.xlsx",
-  "chart2/qa/extras/data/xlsx/barOfPieChart2.xlsx",
   "sc/qa/unit/tiledrendering/data/numlocale.xlsx",
   "chart2/qa/extras/data/xlsx/tdf39052.xlsx",
   "chart2/qa/extras/data/xlsx/invertIfNeg_bubble.xlsx",
@@ -4711,12 +4674,10 @@ sources = [
   "chart2/qa/extras/data/xlsx/bar_chart_simple.xlsx",
   "chart2/qa/extras/data/xlsx/bubble_chart_simple.xlsx",
   "chart2/qa/extras/data/xlsx/chart-area-style-background.xlsx",
-  "chart2/qa/extras/data/xlsx/chart_title.xlsx",
   "chart2/qa/extras/data/xlsx/fdo70609.xlsx",
   "chart2/qa/extras/data/xlsx/invertIfNeg_bar.xlsx",
   "chart2/qa/extras/data/xlsx/legend_manual_layout.xlsx",
   "chart2/qa/extras/data/xlsx/markerColor.xlsx",
-  "chart2/qa/extras/data/xlsx/no_marker.xlsx",
   "chart2/qa/extras/data/xlsx/piechart_outside.xlsx",
   "chart2/qa/extras/data/xlsx/plot_area_manual_layout.xlsx",
   "chart2/qa/extras/data/xlsx/strict_chart.xlsx",
@@ -4731,7 +4692,6 @@ sources = [
   "sc/qa/unit/data/xlsx/tdf106197_import_upright.xlsx",
   "sc/qa/unit/data/xlsx/tdf137000_export_upright.xlsx",
   "sc/qa/unit/data/xlsx/underlineColor.xlsx",
-  "sc/qa/unit/data/xlsx/universal-content.xlsx",
 ]
 
 [[error]]

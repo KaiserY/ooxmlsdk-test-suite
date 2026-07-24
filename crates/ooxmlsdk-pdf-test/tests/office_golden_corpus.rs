@@ -24,17 +24,17 @@ fn assert_ratchet(format: OfficeGoldenFormat, target: usize) {
 #[test]
 #[ignore = "run the streamed Office golden corpus ratchet explicitly"]
 fn office_golden_docx_corpus_ratchet() {
-    assert_ratchet(OfficeGoldenFormat::Docx, 990);
+    assert_ratchet(OfficeGoldenFormat::Docx, 993);
 }
 
 #[test]
 #[ignore = "run the streamed Office golden corpus ratchet explicitly"]
 fn office_golden_pptx_corpus_ratchet() {
-    assert_ratchet(OfficeGoldenFormat::Pptx, 349);
+    assert_ratchet(OfficeGoldenFormat::Pptx, 351);
 }
 
 #[test]
 #[ignore = "run the streamed Office golden corpus ratchet explicitly"]
 fn office_golden_xlsx_corpus_ratchet() {
-    assert_ratchet(OfficeGoldenFormat::Xlsx, 230);
+    assert_ratchet(OfficeGoldenFormat::Xlsx, 265);
 }
