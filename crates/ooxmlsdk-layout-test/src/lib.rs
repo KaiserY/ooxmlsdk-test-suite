@@ -21,6 +21,8 @@ use ooxmlsdk_layout::common::{
 use ooxmlsdk_layout::options::LayoutDiagnosticsOptions;
 use ooxmlsdk_layout::{LayoutOptions, Result};
 
+const DEFAULT_LAYOUT_CASE_WORKERS: usize = 4;
+
 pub fn corpus_file(path: &str) -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../corpus/LibreOffice")
@@ -271,9 +273,15 @@ where
     if cases.is_empty() {
         return Vec::new();
     }
+    let worker_limit = std::env::var("OOXMLSDK_LAYOUT_WORKERS")
+        .ok()
+        .and_then(|value| value.parse::<usize>().ok())
+        .filter(|workers| *workers > 0)
+        .unwrap_or(DEFAULT_LAYOUT_CASE_WORKERS);
     let worker_count = std::thread::available_parallelism()
         .map(usize::from)
         .unwrap_or(1)
+        .min(worker_limit)
         .min(cases.len());
     let chunk_size = cases.len().div_ceil(worker_count);
     let failures = Mutex::new(Vec::new());

@@ -1808,6 +1808,7 @@ dependencies = [
  "hypher",
  "icu_segmenter",
  "image",
+ "kurbo",
  "ooxmlsdk",
  "ooxmlsdk-fonts",
  "ooxmlsdk-formula",
