@@ -2112,11 +2112,70 @@ fn mapped_pptx_smartart_linear_rule_vert_preserves_first_item_height() {
 fn mapped_pptx_smartart_autofit_sync_preserves_scaled_text_groups() {
     let summary = render_summary("pptx/smartart-autofit-sync.pptx");
     assert_page_contains_all(&summary, 0, &["A", "B", "C", "A1", "A2", "B1", "B2", "C1"]);
+    assert_text_font_size(&summary, "A", "10.00");
+    assert_text_font_size(&summary, "B", "10.00");
+    assert_text_font_size(&summary, "C", "16.00");
+    assert_text_font_size(&summary, "A1", "8.00");
+    assert_text_font_size(&summary, "B1", "8.00");
     assert_eq!(
         text_font_size(&summary, "A1"),
         text_font_size(&summary, "B1")
     );
     assert_text_font_size(&summary, "C1", "14.00");
+    // PDFium's path bounds include the 1pt outline on both sides of the
+    // 188pt SmartArt node geometry.
+    assert_any_path_width_close(&summary, 0, 190.0, 1.0);
+}
+
+#[test]
+// Source: ../core/sd/qa/unit/export-tests-ooxml4.cxx:testSmartArtPreserve
+fn mapped_pptx_smartart_preserve_uses_persisted_geometry_and_outlines() {
+    let summary = render_summary("pptx/smartart-preserve.pptx");
+    assert_page_contains_all(
+        &summary,
+        0,
+        &[
+            "This SmartArt should be exported as diagram",
+            "Not group of shapes",
+        ],
+    );
+    assert_has_path_fill_color(&summary, "#5b9bd5@ff");
+    assert_has_stroked_path_color(&summary, "#5b9bd5@ff");
+    assert!(
+        summary.paths.iter().any(|path| {
+            path.stroke_color.as_deref() == Some("#ffffff@ff")
+                && path
+                    .segment_details
+                    .iter()
+                    .any(|segment| segment.segment_type == "BezierTo")
+        }),
+        "missing white-outlined curved persisted SmartArt shape; paths={:?}",
+        summary.paths
+    );
+}
+
+#[test]
+// Source: ../core/sd/qa/unit/import-tests-smartart.cxx:testTdf134221
+fn mapped_pptx_smartart_tdf134221_preserves_nested_ellipse_geometry_and_colors() {
+    let summary = render_summary("pptx/smartart-tdf134221.pptx");
+    assert_page_contains_all(&summary, 0, &["A", "B", "C"]);
+    assert_has_path_fill_color(&summary, "#00314f@ff");
+    assert_has_path_fill_color(&summary, "#71969f@ff");
+    assert_has_path_fill_color(&summary, "#ba161e@ff");
+    assert!(
+        summary
+            .paths
+            .iter()
+            .filter(|path| {
+                path.segment_details
+                    .iter()
+                    .any(|segment| segment.segment_type == "BezierTo")
+            })
+            .count()
+            >= 3,
+        "missing nested curved SmartArt shapes; paths={:?}",
+        summary.paths
+    );
 }
 
 #[test]
