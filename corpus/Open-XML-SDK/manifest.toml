@@ -1,0 +1,69 @@
+[corpus]
+id = "open_xml_sdk"
+name = "Open-XML-SDK"
+path = "corpus/Open-XML-SDK"
+license = "MIT"
+source = "https://github.com/dotnet/Open-XML-SDK"
+source_commit = "00967dc871f06776ae969762c6703d062308a6c9"
+default_roundtrip = false
+
+[[expectation]]
+file = "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/encrypted_pptx.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "encrypted package"
+
+[[expectation]]
+file = "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Invalid_Word15Comments.docx"
+test = "roundtrip"
+mode = "round_trip"
+reason = "opens successfully; round-trip comparison ignores the fixture's synthetic w15:commentExNG child"
+
+[[expectation]]
+file = "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment022.docx"
+test = "roundtrip"
+mode = "open_only"
+reason = "chart series child order does not match the schema sequence"
+
+[[expectation]]
+file = "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment041.docx"
+test = "roundtrip"
+mode = "round_trip"
+reason = "document settings child order does not match the schema sequence"
+
+
+[[expectation]]
+file = "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/ForTestCase/Bug242602_SDT - unknown.docx"
+test = "roundtrip"
+mode = "open_only"
+reason = "w14:docId contains invalid leaf-element text that Open XML SDK preserves as shadow inner XML"
+
+[[expectation]]
+file = "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/ParaPr/parabidi.docx"
+test = "roundtrip"
+mode = "round_trip"
+reason = "paragraph properties child order does not match the schema sequence"
+
+[[expectation]]
+file = "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/5Errors.docx"
+test = "roundtrip"
+mode = "open_only"
+reason = "intentionally invalid fixture contains duplicate singleton paragraph and run properties"
+
+[[expectation]]
+file = "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/simpleSdt.docx"
+test = "roundtrip"
+mode = "round_trip"
+reason = "run contains invalid direct text that Open XML SDK preserves as an OpenXmlMiscNode"
+
+[[expectation]]
+file = "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/protected/document with password.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "encrypted CDFV2 package"
+
+[[expectation]]
+file = "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/unable to normalized/document with password.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "encrypted CDFV2 package"

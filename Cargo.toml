@@ -1,0 +1,102 @@
+[workspace]
+resolver = "3"
+members = [
+  "crates/emfsdk-test",
+  "crates/olecfsdk-test",
+  "crates/olecfsdk-corpus-test-support",
+  "crates/olecfsdk-roundtrip-tests",
+  "crates/ooxmlsdk-bench",
+  "crates/ooxmlsdk-corpus-test-support",
+  "crates/ooxmlsdk-fonts-test",
+  "crates/ooxmlsdk-formula-test",
+  "crates/ooxmlsdk-layout-test",
+  "crates/ooxmlsdk-pdf-test",
+  "crates/ooxmlsdk-test",
+  "crates/ooxmlsdk-roundtrip-tests",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+publish = false
+license = "MIT OR Apache-2.0"
+
+[workspace.dependencies]
+emfsdk = { path = "../emfsdk/crates/emfsdk" }
+olecfsdk = { path = "../olecfsdk/crates/olecfsdk" }
+olecfsdk-ooxml = { path = "../olecfsdk/crates/olecfsdk-ooxml" }
+ooxmlsdk = { path = "../ooxmlsdk/crates/ooxmlsdk", default-features = false }
+ooxmlsdk-fonts = { path = "../ooxmlsdk/crates/ooxmlsdk-fonts" }
+ooxmlsdk-formula = { path = "../ooxmlsdk/crates/ooxmlsdk-formula" }
+ooxmlsdk-layout = { path = "../ooxmlsdk/crates/ooxmlsdk-layout" }
+ooxmlsdk-pdf = { path = "../ooxmlsdk/crates/ooxmlsdk-pdf" }
+ooxmlsdk-corpus-test-support = { path = "crates/ooxmlsdk-corpus-test-support" }
+olecfsdk-corpus-test-support = { path = "crates/olecfsdk-corpus-test-support" }
+criterion = "0.7.0"
+crc32fast = "1.5.0"
+flate2 = "1.1.9"
+image = { version = "0.25.10", default-features = false, features = [
+  "png",
+  "jpeg",
+  "gif",
+  "webp",
+] }
+icu_locale_core = "2.2.0"
+icu_time = { version = "2.2.0", features = ["compiled_data"] }
+jiff = "0.2.35"
+lopdf = "0.41.0"
+pdfium-render = "0.9.3"
+quick-xml = "0.40.1"
+rayon = "1.12.0"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.150"
+sha2 = "0.10.9"
+thiserror = "2.0.18"
+toml = "0.9.8"
+unicode-bidi = "0.3.18"
+unicode-bidi-mirroring = "0.4.0"
+walkdir = "2.5.0"
+zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
+
+[patch.crates-io]
+# Sibling adapters such as olecfsdk-ooxml publish against crates.io, but this
+# integration workspace must exercise one coherent local ooxmlsdk type graph.
+ooxmlsdk = { path = "../ooxmlsdk/crates/ooxmlsdk" }
+
+[profile.bench]
+# Enough for cargo-flamegraph/perf symbolization without full debug-info bloat.
+debug = "line-tables-only"
+
+[profile.test]
+# Preserve line-level backtraces without full debug-info codegen and artifact bloat.
+debug = "line-tables-only"
+
+[profile.test.package.ooxmlsdk-layout]
+# Golden layout diagnostics need local values and Rust collection contents in GDB.
+debug = "full"
+
+[profile.test.package.ooxmlsdk-fonts]
+# Golden font-selection diagnostics need requests, registered families, and
+# shaped glyph identifiers in GDB rather than line-only frames.
+debug = "full"
+
+[profile.test.package.ooxmlsdk-pdf]
+# Golden PDF lowering diagnostics need display-list text metrics, baselines,
+# transforms, and realized font state in GDB rather than line-only frames.
+debug = "full"
+
+[profile.test.package.ooxmlsdk-pdf-test]
+# Golden harness diagnostics need candidate audit state, page dimensions, and
+# exact comparison-layer values in GDB rather than line-only frames.
+debug = "full"
+
+[profile.test.package.emfsdk]
+# Golden OLE/EMF diagnostics need playback state, record fields, and realized
+# glyph values in GDB rather than line-only frames.
+debug = "full"
+
+[profile.test.package.olecfsdk]
+# Golden OLE/CFB diagnostics need compound-root state, typed record fields,
+# and semantic projections such as MS Graph charts in GDB.
+debug = "full"

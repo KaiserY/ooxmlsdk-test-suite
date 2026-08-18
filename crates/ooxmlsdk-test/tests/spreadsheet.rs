@@ -1,0 +1,601 @@
+use std::io::{Cursor, Read};
+
+use ooxmlsdk::schemas::schemas_microsoft_com_office_excel::{
+    BooleanEntryWithBlankValues, ClientData, ClientDataChoice,
+};
+use ooxmlsdk::schemas::schemas_microsoft_com_office_spreadsheetml_2009_9_main::ConditionalFormattings;
+use ooxmlsdk::schemas::schemas_microsoft_com_office_spreadsheetml_2022_featurepropertybag::{
+    ArrayFeatureProperty, ArrayFeaturePropertyChoice, BoolFeatureProperty, IntFeatureProperty,
+};
+use ooxmlsdk::schemas::schemas_openxmlformats_org_drawingml_2006_chart::{
+    ChartSpace, ChartSpaceExtensionChoice,
+};
+use ooxmlsdk::schemas::schemas_openxmlformats_org_spreadsheetml_2006_main::WorkbookExtensionChoice;
+use ooxmlsdk::schemas::schemas_openxmlformats_org_spreadsheetml_2006_main::{
+    CellValue, ColorScale, ConditionalFormatValueObjectValues, SharedStringItem, SharedStringTable,
+    Workbook, Worksheet,
+};
+use ooxmlsdk::sdk::SdkType;
+use ooxmlsdk::simple_type::BooleanValue;
+use ooxmlsdk_test::{
+    assert_stable_roundtrip, assert_xml_namespace_prefixes, fixtures, trim_xml_declaration,
+};
+
+fn xml_namespace_prefix_matches(
+    declaration: &ooxmlsdk::common::XmlNamespace,
+    expected: &[u8],
+) -> bool {
+    match declaration {
+        ooxmlsdk::common::XmlNamespace::Known(namespace) => namespace.prefix_bytes() == expected,
+        ooxmlsdk::common::XmlNamespace::Raw(raw) => raw
+            .split(|byte| *byte == 0)
+            .next()
+            .is_some_and(|prefix| prefix == expected),
+    }
+}
+
+fn doc_sample_part(file_name: &str, part_name: &str) -> String {
+    let bytes = std::fs::read(fixtures::doc_sample_path(file_name)).unwrap();
+    let mut archive = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
+    let mut part = archive.by_name(part_name).unwrap();
+    let mut xml = String::new();
+    part.read_to_string(&mut xml).unwrap();
+    xml
+}
+
+fn assert_cell_value_xml(serialized: &str, expected_value: &str) {
+    let serialized = trim_xml_declaration(serialized);
+    assert!(
+        contains_x_start(serialized, "v") && contains_x_end_text(serialized, expected_value, "v"),
+        "{serialized}"
+    );
+}
+
+fn cell_value_text(value: &CellValue) -> Option<&str> {
+    value.0.xml_content.as_deref()
+}
+
+fn contains_x_start(xml: &str, local_name: &str) -> bool {
+    xml.contains(&format!("<x:{local_name}")) || xml.contains(&format!("<{local_name}"))
+}
+
+fn contains_x_end_text(xml: &str, value: &str, local_name: &str) -> bool {
+    xml.contains(&format!(">{value}</x:{local_name}>"))
+        || xml.contains(&format!(">{value}</{local_name}>"))
+}
+
+fn is_empty_shared_string_table_xml(xml: &str) -> bool {
+    let xml = trim_xml_declaration(xml);
+
+    (xml.starts_with("<x:sst ") || xml.starts_with("<sst "))
+        && xml.contains("http://schemas.openxmlformats.org/spreadsheetml/2006/main")
+        && (xml.ends_with(" />") || xml.ends_with("></x:sst>") || xml.ends_with("></sst>"))
+        && !contains_x_start(xml, "si")
+}
+
+fn assert_cell_value_text_round_trip(value: &str) {
+    let xml = format!(
+        r#"<x:v xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main">{value}</x:v>"#
+    );
+    let (parsed, serialized, reparsed) = assert_stable_roundtrip::<CellValue>(&xml);
+
+    assert_eq!(cell_value_text(&parsed), Some(value));
+    assert_cell_value_xml(&serialized, value);
+    assert_eq!(cell_value_text(&reparsed), Some(value));
+}
+
+#[test]
+fn spreadsheet_prefix_modes_keep_unprefixed_root_paths() {
+    let worksheet_xml = Worksheet::default().to_xml().unwrap();
+    let worksheet_xml = trim_xml_declaration(&worksheet_xml);
+    assert!(worksheet_xml.starts_with("<worksheet"), "{worksheet_xml}");
+    assert!(worksheet_xml.contains("<sheetData"), "{worksheet_xml}");
+    assert!(!worksheet_xml.contains("<x:"), "{worksheet_xml}");
+
+    let extension_xml = ConditionalFormattings::default().to_xml().unwrap();
+    assert!(
+        extension_xml.starts_with("<conditionalFormattings"),
+        "{extension_xml}"
+    );
+    assert!(!extension_xml.contains("<x14:"), "{extension_xml}");
+}
+
+#[test]
+fn vml_client_data_empty_boolean_entry_round_trips_as_empty() {
+    let xml = r#"<x:ClientData xmlns:x="urn:schemas-microsoft-com:office:excel" ObjectType="Note"><x:Visible/></x:ClientData>"#;
+    let (parsed, serialized, reparsed) = assert_stable_roundtrip::<ClientData>(xml);
+
+    for client_data in [&parsed, &reparsed] {
+        assert!(matches!(
+            client_data.client_data_choice.as_slice(),
+            [ClientDataChoice::Visible(
+                BooleanEntryWithBlankValues::Empty
+            )]
+        ));
+    }
+    assert!(!serialized.contains(">Empty<"), "{serialized}");
+}
+
+fn shared_string_items(
+    table: &SharedStringTable,
+) -> Vec<&ooxmlsdk::schemas::schemas_openxmlformats_org_spreadsheetml_2006_main::SharedStringItem> {
+    table.shared_string_item.iter().collect()
+}
+
+fn color_scale_cfvo(
+  scale: &ColorScale,
+) -> Vec<&ooxmlsdk::schemas::schemas_openxmlformats_org_spreadsheetml_2006_main::ConditionalFormatValueObject>{
+    scale.conditional_format_value_object.iter().collect()
+}
+
+fn color_scale_colors(
+    scale: &ColorScale,
+) -> Vec<&ooxmlsdk::schemas::schemas_openxmlformats_org_spreadsheetml_2006_main::Color> {
+    scale.color.iter().collect()
+}
+
+#[test]
+fn workbook_round_trip_from_openxml_part_test() {
+    let (parsed, serialized, reparsed) =
+        assert_stable_roundtrip::<Workbook>(fixtures::SPREADSHEET_WORKBOOK_XML);
+
+    assert_eq!(parsed.sheets.sheet.len(), 2);
+    assert_eq!(parsed.sheets.sheet[0].name.as_str(), "Sheet1");
+    assert_eq!(parsed.sheets.sheet[1].name.as_str(), "Sheet2");
+    assert!(
+        serialized.starts_with("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n")
+    );
+    assert!(contains_x_start(&serialized, "sheet"));
+    assert!(serialized.contains("name=\"Sheet1\""));
+    assert!(serialized.contains("name=\"Sheet2\""));
+    assert_eq!(reparsed.sheets.sheet.len(), 2);
+}
+
+#[test]
+fn workbook_round_trip_from_complex01_part_test() {
+    let workbook_xml = doc_sample_part("Complex01.xlsx", "xl/workbook.xml");
+
+    let (parsed, serialized, reparsed) = assert_stable_roundtrip::<Workbook>(&workbook_xml);
+
+    assert_xml_namespace_prefixes(parsed.mc_ignorable.as_deref(), &["x15"]);
+    assert_eq!(
+        parsed
+            .file_version
+            .as_ref()
+            .and_then(|file_version| file_version.application_name.as_ref())
+            .map(|value| value.as_str()),
+        Some("xl")
+    );
+    assert_eq!(
+        parsed
+            .file_version
+            .as_ref()
+            .and_then(|file_version| file_version.last_edited.as_ref())
+            .map(|value| value.as_str()),
+        Some("6")
+    );
+    assert_eq!(parsed.sheets.sheet.len(), 2);
+    assert_eq!(parsed.sheets.sheet[0].name.as_str(), "Sheet1");
+    assert_eq!(parsed.sheets.sheet[1].name.as_str(), "Sheet2");
+    assert!(
+        serialized.starts_with("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n")
+    );
+    assert!(trim_xml_declaration(&serialized).contains("mc:Ignorable=\"x15\""));
+    assert!(contains_x_start(
+        trim_xml_declaration(&serialized),
+        "calcPr"
+    ));
+    assert!(trim_xml_declaration(&serialized).contains("calcId=\"152511\""));
+    assert_xml_namespace_prefixes(reparsed.mc_ignorable.as_deref(), &["x15"]);
+    assert_eq!(reparsed.sheets.sheet.len(), 2);
+}
+
+#[test]
+fn workbook_extension_loads_excel_2010_workbook_properties_from_m4_conformance_test() {
+    // Source: test/DocumentFormat.OpenXml.Tests/ofapiTest/M4Conformance.cs
+    //   LoadExt
+    let workbook_xml = doc_sample_part("excel14.xlsx", "xl/workbook.xml");
+
+    let (parsed, serialized, _) = assert_stable_roundtrip::<Workbook>(&workbook_xml);
+
+    let extension = parsed
+        .workbook_extension_list
+        .as_ref()
+        .and_then(|extension_list| extension_list.workbook_extension.first())
+        .expect("expected workbook extension");
+    let Some(WorkbookExtensionChoice::X14WorkbookProperties(workbook_properties)) =
+        &extension.workbook_extension_choice
+    else {
+        panic!("expected x14:workbookPr");
+    };
+    assert_eq!(
+        workbook_properties
+            .discard_image_edit_data
+            .map(|value| value.as_bool()),
+        Some(true)
+    );
+    assert!(serialized.contains("<x14:workbookPr"));
+    assert!(serialized.contains(r#"discardImageEditData="1""#));
+}
+
+#[test]
+fn chart_extension_loads_pivot_options_from_m4_conformance_test() {
+    // Source: test/DocumentFormat.OpenXml.Tests/ofapiTest/M4Conformance.cs
+    //   LoadExt2
+    let chart_xml = doc_sample_part("extlst.xlsx", "xl/charts/chart1.xml");
+
+    let (parsed, serialized, _) = assert_stable_roundtrip::<ChartSpace>(&chart_xml);
+
+    let extension = parsed
+        .chart_space_extension_list
+        .as_ref()
+        .and_then(|extension_list| extension_list.chart_space_extension.first())
+        .expect("expected chart-space extension");
+    let Some(ChartSpaceExtensionChoice::PivotOptions(pivot_options)) =
+        &extension.chart_space_extension_choice
+    else {
+        panic!("expected c14:pivotOptions");
+    };
+    assert!(pivot_options.drop_zone_filter.is_some());
+    assert!(pivot_options.drop_zone_categories.is_some());
+    assert!(pivot_options.drop_zone_data.is_some());
+    assert!(pivot_options.drop_zone_series.is_some());
+    assert!(pivot_options.drop_zones_visible.is_some());
+    assert!(serialized.contains("<c14:pivotOptions"));
+}
+
+#[test]
+fn worksheet_round_trip_from_complex01_part_test() {
+    let (parsed, _serialized, reparsed) =
+        assert_stable_roundtrip::<Worksheet>(fixtures::SPREADSHEET_WORKSHEET_COMPLEX01_SHEET1_XML);
+
+    assert_xml_namespace_prefixes(parsed.mc_ignorable.as_deref(), &["x14ac"]);
+    assert_eq!(
+        parsed
+            .sheet_dimension
+            .as_ref()
+            .map(|dimension| dimension.reference.as_str()),
+        Some("A1:V19")
+    );
+    assert_eq!(parsed.sheet_data.row.len(), 13);
+    assert_eq!(
+        parsed.sheet_data.row[0].spans,
+        Some(vec!["1:22".to_string()])
+    );
+    assert_eq!(
+        parsed
+            .hyperlinks
+            .as_ref()
+            .map(|links| links.hyperlink.len()),
+        Some(1)
+    );
+    assert_eq!(
+        parsed
+            .table_parts
+            .as_ref()
+            .and_then(|parts| parts.count.as_ref())
+            .copied(),
+        Some(1)
+    );
+    assert!(parsed.drawing.is_some());
+    assert!(parsed.legacy_drawing.is_some());
+    assert_eq!(
+        reparsed
+            .hyperlinks
+            .as_ref()
+            .map(|links| links.hyperlink.len()),
+        Some(1)
+    );
+    assert_eq!(reparsed.sheet_data.row.len(), 13);
+    assert_eq!(
+        reparsed.sheet_data.row[0].spans,
+        Some(vec!["1:22".to_string()])
+    );
+}
+
+#[test]
+fn shared_string_table_round_trip_from_openxml_part_test() {
+    let (parsed, serialized, reparsed) =
+        assert_stable_roundtrip::<SharedStringTable>(fixtures::SPREADSHEET_SHARED_STRING_TABLE_XML);
+
+    assert!(
+        parsed
+            .xmlns
+            .iter()
+            .any(|declaration| xml_namespace_prefix_matches(declaration, b"x"))
+    );
+    let items = shared_string_items(&parsed);
+    assert_eq!(items.len(), 1);
+    let item = items[0];
+    assert_eq!(
+        item.text
+            .as_ref()
+            .and_then(|text| text.xml_content.as_deref()),
+        Some("Test")
+    );
+    let serialized = trim_xml_declaration(&serialized);
+    assert!(serialized.starts_with("<x:sst ") || serialized.starts_with("<sst "));
+    assert!(contains_x_start(serialized, "si"));
+    assert!(contains_x_start(serialized, "t"));
+    assert!(contains_x_end_text(serialized, "Test", "t"));
+    assert_eq!(shared_string_items(&reparsed).len(), 1);
+}
+
+#[test]
+fn shared_string_table_serialization_matches_get_stream_write_test() {
+    let (_parsed, serialized, reparsed) =
+        assert_stable_roundtrip::<SharedStringTable>(fixtures::SPREADSHEET_SHARED_STRING_TABLE_XML);
+
+    let serialized = trim_xml_declaration(&serialized);
+    assert!(serialized.starts_with("<x:sst ") || serialized.starts_with("<sst "));
+    assert!(contains_x_start(serialized, "si"));
+    assert!(contains_x_start(serialized, "t"));
+    assert!(contains_x_end_text(serialized, "Test", "t"));
+    assert_eq!(shared_string_items(&reparsed).len(), 1);
+}
+
+#[test]
+fn shared_string_item_skips_unknown_child_subtrees() {
+    let xml = br#"<x:si xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:u="urn:unknown"><u:empty/><u:wrapper><x:t>discarded</x:t><u:wrapper/></u:wrapper><x:t>kept</x:t></x:si>"#;
+
+    let borrowed = SharedStringItem::from_bytes(xml).unwrap();
+    let buffered = SharedStringItem::from_reader(Cursor::new(xml)).unwrap();
+
+    for parsed in [&borrowed, &buffered] {
+        assert_eq!(
+            parsed
+                .text
+                .as_ref()
+                .and_then(|text| text.xml_content.as_deref()),
+            Some("kept")
+        );
+        let serialized = parsed.to_xml().unwrap();
+        assert!(!serialized.contains("u:empty"), "{serialized}");
+        assert!(!serialized.contains("u:wrapper"), "{serialized}");
+        assert!(!serialized.contains("discarded"), "{serialized}");
+        assert!(serialized.contains("kept"), "{serialized}");
+    }
+}
+
+#[test]
+fn shared_string_item_rejects_unterminated_unknown_child() {
+    let xml = br#"<x:si xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:u="urn:unknown"><u:wrapper><x:t>discarded</x:t></x:si>"#;
+
+    assert!(SharedStringItem::from_bytes(xml).is_err());
+    assert!(SharedStringItem::from_reader(Cursor::new(xml)).is_err());
+}
+
+#[test]
+fn empty_shared_string_table_round_trip_from_openxml_part_test() {
+    let (parsed, serialized, reparsed) = assert_stable_roundtrip::<SharedStringTable>(
+        fixtures::SPREADSHEET_SHARED_STRING_TABLE_EMPTY_XML,
+    );
+
+    assert_eq!(shared_string_items(&parsed).len(), 0);
+    let serialized = trim_xml_declaration(&serialized);
+    assert!(
+        serialized.starts_with("<x:sst ") || serialized.starts_with("<sst "),
+        "{serialized}"
+    );
+    assert!(is_empty_shared_string_table_xml(serialized), "{serialized}");
+    assert_eq!(shared_string_items(&reparsed).len(), 0);
+}
+
+#[test]
+fn empty_shared_string_table_serialization_matches_get_stream_write_no_updates_test() {
+    let (_parsed, serialized, reparsed) = assert_stable_roundtrip::<SharedStringTable>(
+        fixtures::SPREADSHEET_SHARED_STRING_TABLE_EMPTY_XML,
+    );
+
+    let serialized = trim_xml_declaration(&serialized);
+    assert!(is_empty_shared_string_table_xml(serialized), "{serialized}");
+    assert_eq!(shared_string_items(&reparsed).len(), 0);
+}
+
+#[test]
+fn color_scale_round_trip_from_bug_regression_test() {
+    let (parsed, serialized, reparsed) =
+        assert_stable_roundtrip::<ColorScale>(fixtures::SPREADSHEET_COLOR_SCALE_XML);
+
+    let cfvo = color_scale_cfvo(&parsed);
+    let colors = color_scale_colors(&parsed);
+    assert_eq!(cfvo.len(), 1);
+    assert_eq!(colors.len(), 2);
+    assert!(matches!(
+        cfvo[0].r#type,
+        ConditionalFormatValueObjectValues::Min
+    ));
+    assert_eq!(cfvo[0].val.as_deref(), Some("0"));
+    assert_eq!(colors[0].theme, Some(4));
+    assert_eq!(colors[1].theme, Some(6));
+    let serialized = trim_xml_declaration(&serialized);
+    assert!(serialized.starts_with("<x:colorScale") || serialized.starts_with("<colorScale"));
+    assert!(contains_x_start(serialized, "cfvo"));
+    assert!(serialized.contains("type=\"min\""));
+    assert!(serialized.contains("val=\"0\""));
+    assert!(contains_x_start(serialized, "color"));
+    assert!(serialized.contains("theme=\"4\""));
+    assert!(serialized.contains("theme=\"6\""));
+    assert_eq!(color_scale_colors(&reparsed).len(), 2);
+}
+
+#[test]
+fn array_feature_property_double_text_child_uses_xml_schema_float_lexical_form() {
+    let value = ArrayFeatureProperty {
+        k: "sample".to_string(),
+        array_feature_property_choice: vec![ArrayFeaturePropertyChoice::Xsddouble(f64::NAN)],
+    };
+
+    let xml = value.to_xml().unwrap();
+    let serialized = trim_xml_declaration(&xml);
+    assert!(serialized.contains("<xfpb:d>NaN</xfpb:d>"));
+
+    let reparsed = serialized.parse::<ArrayFeatureProperty>().unwrap();
+    let Some(ArrayFeaturePropertyChoice::Xsddouble(parsed)) =
+        reparsed.array_feature_property_choice.first()
+    else {
+        panic!("expected xfpb:d");
+    };
+    assert!(parsed.is_nan());
+}
+
+#[test]
+fn bool_feature_property_uses_boolean_value_lexical_form() {
+    let value = BoolFeatureProperty {
+        k: "flag".into(),
+        xml_content: Some(BooleanValue::from(true)),
+    };
+
+    let xml = value.to_xml().unwrap();
+    let serialized = trim_xml_declaration(&xml);
+    assert!(serialized.contains("<xfpb:b"));
+    assert!(serialized.contains("k=\"flag\""));
+    assert!(serialized.contains(">1</xfpb:b>"));
+
+    let reparsed = serialized.parse::<BoolFeatureProperty>().unwrap();
+    assert_eq!(reparsed.k.as_str(), "flag");
+    assert_eq!(
+        reparsed.xml_content.map(|value| value.as_bool()),
+        Some(true)
+    );
+}
+
+#[test]
+fn int_feature_property_uses_integer_value_numeric_form() {
+    let value = IntFeatureProperty {
+        k: "count".into(),
+        xml_content: Some(-42),
+    };
+
+    let xml = value.to_xml().unwrap();
+    let serialized = trim_xml_declaration(&xml);
+    assert!(serialized.contains("<xfpb:i"));
+    assert!(serialized.contains("k=\"count\""));
+    assert!(serialized.contains(">-42</xfpb:i>"));
+
+    let reparsed = serialized.parse::<IntFeatureProperty>().unwrap();
+    assert_eq!(reparsed.k.as_str(), "count");
+    assert_eq!(reparsed.xml_content, Some(-42));
+}
+
+#[test]
+fn cell_value_preserves_upstream_numeric_boolean_and_datetime_text_forms() {
+    // Source: test/DocumentFormat.OpenXml.Tests/Spreadsheet/CellValueTests.cs
+    for value in [
+        "2017-11-28T12:25:02.000",
+        "2017-11-28T12:25:02.000+00:00",
+        "2017-11-28T12:25:02.123",
+        "2017-11-28T12:25:02.123+00:00",
+        "-1.5",
+        "-1.0",
+        "0.0",
+        "1.0",
+        "1.5",
+        "987.6E+30",
+        "-12.34E-20",
+        "-2147483648",
+        "-2147483647",
+        "-1",
+        "0",
+        "1",
+        "2147483646",
+        "2147483647",
+        "987E+5",
+        "-79228162514264337593543950335",
+        "987.6E+8",
+        "-12.34E-7",
+        "79228162514264337593543950335",
+        "false",
+        "true",
+    ] {
+        assert_cell_value_text_round_trip(value);
+    }
+}
+
+#[test]
+fn cell_value_double_round_trip_from_cell_value_tests() {
+    let (parsed, serialized, reparsed) =
+        assert_stable_roundtrip::<CellValue>(fixtures::SPREADSHEET_CELL_VALUE_DOUBLE_XML);
+
+    assert_eq!(cell_value_text(&parsed), Some("-1.5"));
+    assert_cell_value_xml(&serialized, "-1.5");
+    assert_eq!(cell_value_text(&reparsed), Some("-1.5"));
+}
+
+#[test]
+fn cell_value_double_exponential_round_trip_from_cell_value_tests() {
+    let (parsed, serialized, reparsed) = assert_stable_roundtrip::<CellValue>(
+        fixtures::SPREADSHEET_CELL_VALUE_DOUBLE_EXPONENTIAL_XML,
+    );
+
+    assert_eq!(cell_value_text(&parsed), Some("987.6E+30"));
+    assert_cell_value_xml(&serialized, "987.6E+30");
+    assert_eq!(cell_value_text(&reparsed), Some("987.6E+30"));
+}
+
+#[test]
+fn cell_value_int_exponential_round_trip_from_cell_value_tests() {
+    let (parsed, serialized, reparsed) =
+        assert_stable_roundtrip::<CellValue>(fixtures::SPREADSHEET_CELL_VALUE_INT_EXPONENTIAL_XML);
+
+    assert_eq!(cell_value_text(&parsed), Some("987E+5"));
+    assert_cell_value_xml(&serialized, "987E+5");
+    assert_eq!(cell_value_text(&reparsed), Some("987E+5"));
+}
+
+#[test]
+fn cell_value_boolean_round_trip_from_cell_value_tests() {
+    let (parsed, serialized, reparsed) =
+        assert_stable_roundtrip::<CellValue>(fixtures::SPREADSHEET_CELL_VALUE_BOOLEAN_XML);
+
+    assert_eq!(cell_value_text(&parsed), Some("true"));
+    assert_cell_value_xml(&serialized, "true");
+    assert_eq!(cell_value_text(&reparsed), Some("true"));
+}
+
+#[test]
+fn cell_value_int_round_trip_from_cell_value_tests() {
+    let (parsed, serialized, reparsed) =
+        assert_stable_roundtrip::<CellValue>(fixtures::SPREADSHEET_CELL_VALUE_INT_XML);
+
+    assert_eq!(cell_value_text(&parsed), Some("2147483647"));
+    assert_cell_value_xml(&serialized, "2147483647");
+    assert_eq!(cell_value_text(&reparsed), Some("2147483647"));
+}
+
+#[test]
+fn cell_value_decimal_exponential_round_trip_from_cell_value_tests() {
+    let (parsed, serialized, reparsed) = assert_stable_roundtrip::<CellValue>(
+        fixtures::SPREADSHEET_CELL_VALUE_DECIMAL_EXPONENTIAL_XML,
+    );
+
+    assert_eq!(cell_value_text(&parsed), Some("987.6E+8"));
+    assert_cell_value_xml(&serialized, "987.6E+8");
+    assert_eq!(cell_value_text(&reparsed), Some("987.6E+8"));
+}
+
+#[test]
+fn cell_value_datetime_round_trip_from_cell_value_tests() {
+    let (parsed, serialized, reparsed) =
+        assert_stable_roundtrip::<CellValue>(fixtures::SPREADSHEET_CELL_VALUE_DATETIME_XML);
+
+    assert_eq!(cell_value_text(&parsed), Some("2017-11-28T12:25:02.123"));
+    assert_cell_value_xml(&serialized, "2017-11-28T12:25:02.123");
+    assert_eq!(cell_value_text(&reparsed), Some("2017-11-28T12:25:02.123"));
+}
+
+#[test]
+fn cell_value_datetime_offset_round_trip_from_cell_value_tests() {
+    let (parsed, serialized, reparsed) =
+        assert_stable_roundtrip::<CellValue>(fixtures::SPREADSHEET_CELL_VALUE_DATETIME_OFFSET_XML);
+
+    assert_eq!(
+        cell_value_text(&parsed),
+        Some("2017-11-28T12:25:02.123+00:00")
+    );
+    assert_cell_value_xml(&serialized, "2017-11-28T12:25:02.123+00:00");
+    assert_eq!(
+        cell_value_text(&reparsed),
+        Some("2017-11-28T12:25:02.123+00:00")
+    );
+}

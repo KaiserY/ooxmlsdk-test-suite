@@ -1,0 +1,1087 @@
+[corpus]
+id = "libreoffice"
+name = "LibreOffice"
+path = "corpus/LibreOffice"
+license = "MPL-2.0"
+source = "https://github.com/LibreOffice/core"
+source_commit = "a9b98f039c8533af22d2ff6eb8b48a01c9e1876e"
+default_roundtrip = false
+
+[[expectation]]
+file = "filter/qa/unit/data/empty.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "empty file used for LibreOffice filter detection"
+
+[[expectation]]
+file = "sc/qa/unit/data/xlsm/pass/CVE-2016-0122-1.xlsm"
+test = "roundtrip"
+mode = "invalid"
+reason = "CVE regression fixture is not an OOXML zip package"
+
+[[expectation]]
+file = "sc/qa/unit/data/xlsx/forcepoint107.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt zip package; LibreOffice test expects normal load failure and RepairPackage recovery"
+
+[[expectation]]
+file = "sc/qa/unit/data/xlsx/pass/CVE-2017-0199-1.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "CVE regression fixture is not an OOXML zip package"
+
+[[expectation]]
+file = "sc/qa/unit/data/xlsx/pass/CVE-2017-0199-2.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "CVE regression fixture is not an OOXML zip package"
+
+[[expectation]]
+file = "sc/qa/unit/data/xlsx/tdf131575.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "broken package; LibreOffice test expects normal load failure and RepairPackage recovery"
+
+[[expectation]]
+file = "sd/qa/unit/data/pptx/fail/ofz35597-1.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt oss-fuzz zip package"
+
+[[expectation]]
+file = "sd/qa/unit/data/pptx/fail/ofz46160-1.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt oss-fuzz zip package"
+
+[[expectation]]
+file = "sw/qa/core/data/ooxml/fail/LIBREOFFICE-DBDAZAEC.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt zip package in LibreOffice fail corpus"
+
+[[expectation]]
+file = "sw/qa/core/data/ooxml/fail/EDB-36788-1.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt zip package in LibreOffice fail corpus"
+
+[[expectation]]
+file = "sw/qa/core/data/ooxml/fail/ofz14422-1.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt oss-fuzz zip package in LibreOffice fail corpus"
+
+[[expectation]]
+file = "sw/qa/core/data/ooxml/fail/ofz37458-1.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt oss-fuzz zip package in LibreOffice fail corpus"
+
+[[expectation]]
+file = "sw/qa/core/data/ooxml/fail/ofz4825-1.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt oss-fuzz zip package in LibreOffice fail corpus"
+
+[[expectation]]
+file = "sw/qa/core/data/ooxml/fail/ofz9934-1.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt oss-fuzz zip package in LibreOffice fail corpus"
+
+[[expectation]]
+file = "sw/qa/extras/odfimport/data/tdf76322_columnBreakInHeader.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "ODF package with OOXML extension"
+
+[[expectation]]
+file = "sw/qa/extras/ooxmlexport/data/Encrypted_LO_Standard_abc.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "encrypted CDFV2 package"
+
+[[expectation]]
+file = "sw/qa/extras/ooxmlexport/data/Encrypted_MSO2007_abc.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "encrypted CDFV2 package"
+
+[[expectation]]
+file = "sw/qa/extras/ooxmlexport/data/Encrypted_MSO2010_abc.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "encrypted CDFV2 package"
+
+[[expectation]]
+file = "sw/qa/extras/ooxmlexport/data/Encrypted_MSO2013_abc.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "encrypted CDFV2 package"
+
+[[expectation]]
+file = "sw/qa/extras/ooxmlimport/data/math-malformed_xml.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "malformed XML in math text; LibreOffice test expects load failure"
+
+[[expectation]]
+file = "sw/qa/extras/ooxmlexport/data/tdf171025_pageAfter.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "ODF package with OOXML extension"
+
+[[expectation]]
+file = "sw/qa/extras/ooxmlexport/data/tdf171038_pageAfter.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "ODF package with OOXML extension"
+
+[[expectation]]
+file = "sw/qa/extras/ooxmlexport/data/tdf102466.docx"
+test = "roundtrip"
+mode = "open_only"
+reason = "document contains duplicate singleton run and paragraph properties plus non-schema child order"
+
+[[expectation]]
+file = "sw/qa/extras/ooxmlexport/data/Tdf147485.docx"
+test = "roundtrip"
+mode = "round_trip"
+reason = "paragraph properties contain duplicate singleton w:pBdr elements in non-schema child order"
+
+[[expectation]]
+file = "package/qa/cppunit/data/dd-stored.docx"
+test = "roundtrip"
+mode = "round_trip"
+reason = "package fixture contains non-XML junk .xml entries and style definition child order does not match the schema sequence"
+
+[[expectation]]
+file = "package/qa/cppunit/data/dot-slash.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "zip contains ./ path alias duplicate; LibreOffice treats normal load as invalid and repair-only"
+
+[[expectation]]
+file = "sc/qa/unit/data/xlsx/tdf76115.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "zip entries use backslash path separators; LibreOffice treats normal load as invalid and repair-only"
+
+[[expectation]]
+file = "sw/qa/extras/uiwriter/data/ofz18563.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt oss-fuzz zip package"
+
+[[expectation]]
+file = "sw/qa/extras/uiwriter/data/fdo72942.docx"
+test = "roundtrip"
+mode = "open_only"
+reason = "styles.xml contains duplicate singleton w:outlineLvl elements; LibreOffice preserves the semantic outline level, not duplicate XML nodes"
+
+[[expectation]]
+file = "sw/qa/extras/uiwriter/data/tdf128375.docx"
+test = "roundtrip"
+mode = "round_trip"
+reason = "settings.xml contains duplicate w:compat singleton elements; the schema allows only one"
+
+[[expectation]]
+file = "sw/qa/extras/uiwriter/data/tdf132596.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "ODF package with OOXML extension"
+
+[[expectation]]
+file = "sw/qa/writerfilter/dmapper/data/alt-chunk-header.docx"
+test = "roundtrip"
+mode = "open_only"
+reason = "document body child order places sectPr before altChunk, which does not match the schema sequence"
+
+[[expectation]]
+file = "sw/qa/extras/ooxmlimport/data/tdf108849.docx"
+test = "roundtrip"
+mode = "open_only"
+reason = "document body contains multiple body-level sectPr elements before later content, which does not match the schema sequence"
+
+[[expectation]]
+file = "filter/qa/unit/data/empty.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "empty LibreOffice filter-detection fixture"
+
+[[expectation]]
+file = "filter/qa/unit/data/tdf169154.doc"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "non-CFB legacy or mislabeled Office fixture"
+
+[[expectation]]
+file = "sc/qa/extras/testdocuments/BGR-RGBTest.xls"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "non-CFB legacy or mislabeled Office fixture"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/fail/CVE-2006-3059-1.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "LibreOffice fail fixture with an invalid CFB container"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/fail/EDB-39398-1.xls"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "non-CFB legacy or mislabeled Office fixture"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/fail/forcepoint-group-range-1.xls"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "non-CFB legacy or mislabeled Office fixture"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/fdo55572-1.xls"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "non-CFB legacy or mislabeled Office fixture"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/pass/CVE-2011-0105-1.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/pass/crash-2.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/pass/crash-3.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/pass/crash-4.xls"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "non-CFB legacy or mislabeled Office fixture"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/pass/crash-5.xls"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "non-CFB legacy or mislabeled Office fixture"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/pass/crash-6.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/pass/forcepoint-pivot-1.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/pass/ofz14101-1.xls"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "non-CFB legacy or mislabeled Office fixture"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/pass/ofz14120-1.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/pass/ofz20904-1.xls"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "non-CFB legacy or mislabeled Office fixture"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/pass/ofz49713-1.xls"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "non-CFB legacy or mislabeled Office fixture"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/pass/ofz5527-1.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/tdf144732.xls"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "non-CFB legacy or mislabeled Office fixture"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/tdf158483.xls"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "non-CFB legacy or mislabeled Office fixture"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/tdf72470.xls"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "non-CFB legacy or mislabeled Office fixture"
+
+[[expectation]]
+file = "sd/qa/unit/data/ppt/pass/crash-1.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sd/qa/unit/data/ppt/pass/crash-3.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sd/qa/unit/data/ppt/pass/hang-10.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sd/qa/unit/data/ppt/pass/hang-12.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sd/qa/unit/data/ppt/pass/hang-13.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sd/qa/unit/data/ppt/pass/hang-14.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sd/qa/unit/data/ppt/pass/hang-15.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sd/qa/unit/data/ppt/pass/hang-16.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sd/qa/unit/data/ppt/pass/hang-17.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sd/qa/unit/data/ppt/pass/hang-18.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sd/qa/unit/data/ppt/pass/hang-2.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sd/qa/unit/data/ppt/pass/hang-20.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sd/qa/unit/data/ppt/pass/hang-21.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sd/qa/unit/data/ppt/pass/hang-4.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sd/qa/unit/data/ppt/pass/hang-6.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sd/qa/unit/data/ppt/pass/hang-7.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sd/qa/unit/data/ppt/pass/hang-8.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sd/qa/unit/data/ppt/pass/ofz14989-1.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sd/qa/unit/data/ppt/pass/ofz21531-1.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sd/qa/unit/data/ppt/pass/ofz37370-1.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sd/qa/unit/data/ppt/pass/ofz43902-1.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sd/qa/unit/data/ppt/pass/ofz7469-leak-1.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww5/pass/crash-1.doc"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "non-CFB legacy or mislabeled Office fixture"
+
+[[expectation]]
+file = "sw/qa/core/data/ww5/pass/crash-2.doc"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "non-CFB legacy or mislabeled Office fixture"
+
+[[expectation]]
+file = "sw/qa/core/data/ww5/pass/crash-3.doc"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "non-CFB legacy or mislabeled Office fixture"
+
+[[expectation]]
+file = "sw/qa/core/data/ww5/pass/hang-1.doc"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "non-CFB legacy or mislabeled Office fixture"
+
+[[expectation]]
+file = "sw/qa/core/data/ww5/pass/hang-2.doc"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "non-CFB legacy or mislabeled Office fixture"
+
+[[expectation]]
+file = "sw/qa/core/data/ww5/pass/hang-3.doc"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "non-CFB legacy or mislabeled Office fixture"
+
+[[expectation]]
+file = "sw/qa/core/data/ww5/pass/ofz18526-1.doc"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "non-CFB legacy or mislabeled Office fixture"
+
+[[expectation]]
+file = "sw/qa/core/data/ww5/pass/ooo2535-1-WW2.doc"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "non-CFB legacy or mislabeled Office fixture"
+
+[[expectation]]
+file = "sw/qa/core/data/ww5/pass/ooo37322-1-WW2.doc"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "non-CFB legacy or mislabeled Office fixture"
+
+[[expectation]]
+file = "sw/qa/core/data/ww5/pass/ooo40683-1-WW1.doc"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "non-CFB legacy or mislabeled Office fixture"
+
+[[expectation]]
+file = "sw/qa/core/data/ww6/fail/ofz45140-1.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "LibreOffice fail fixture with an invalid CFB container"
+
+[[expectation]]
+file = "sw/qa/core/data/ww6/pass/crash-1.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww6/pass/crash-2.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww6/pass/crash-3.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww6/pass/crash-4.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww6/pass/crash-5.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww6/pass/crash-7.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww6/pass/hang-1.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww6/pass/ofz-redlining-1.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww6/pass/ofz-trailingpara.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww6/pass/ofz21168-1.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww6/pass/ofz21385-1.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww6/pass/ofz34898-1.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww6/pass/ofz41398-1.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww6/pass/ofz42330-1.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/fail/CVE-2005-0941-1.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "LibreOffice fail fixture with an invalid CFB container"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/fail/CVE-2006-2389-1.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "LibreOffice fail fixture with an invalid CFB container"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/fail/CVE-2008-0320-1.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "LibreOffice fail fixture with an invalid CFB container"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/fail/hang-2.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "LibreOffice fail fixture with an invalid CFB container"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/fail/redline-1.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "LibreOffice fail fixture with an invalid CFB container"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2010-3454-1.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2015-0064-1.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2015-2431-1.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/crash-2.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/forcepoint50-grfanchor-1.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/hang-1.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/hang-2.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/hang-3.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/ofz18414-1.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/ofz18534-1.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/ofz18554-1.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/ofz19065.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/ofz34749-1.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/ofz38011-1.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/ofz46457-1.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/ofz47205-1.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/ofz53457-1.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/ofz57592-1.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/ofz7322-1.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/extras/layout/data/forcepoint92.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "sw/qa/extras/ww8export/data/tdf128501.doc"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "non-CFB legacy or mislabeled Office fixture"
+
+[[expectation]]
+file = "sw/qa/filter/ww8/data/ofz-delflyinrange-1.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "malformed regression CFB container rejected by the CFB layer"
+
+[[expectation]]
+file = "wizards/source/scriptforge/po/ScriptForge.pot"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "non-CFB legacy or mislabeled Office fixture"
+
+[[expectation]]
+file = "writerperfect/qa/unit/data/impress/libmwaw/pass/PowerPoint_2.ppt"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "non-CFB legacy or mislabeled Office fixture"
+
+[[expectation]]
+file = "writerperfect/qa/unit/data/impress/libmwaw/pass/PowerPoint_3.ppt"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "non-CFB legacy or mislabeled Office fixture"
+
+[[expectation]]
+file = "writerperfect/qa/unit/data/impress/libmwaw/pass/PowerPoint_7.ppt"
+test = "ppt_record_roundtrip"
+mode = "unsupported"
+reason = "PowerPoint 95 record stream is outside the PPT97 milestone"
+
+[[expectation]]
+file = "writerperfect/qa/unit/data/writer/libwps/pass/Word_5.0_DOS.doc"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "non-CFB legacy or mislabeled Office fixture"
+[[expectation]]
+file = "sd/qa/unit/data/ppt/pass/hang-19.ppt"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "property streams contain out-of-bounds section and property offsets"
+
+[[expectation]]
+file = "sd/qa/unit/data/ppt/pass/crash-2.ppt"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "DocumentSummaryInformation declares an invalid property-set size"
+
+[[expectation]]
+file = "sw/qa/core/data/ww6/pass/crash-6.doc"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "SummaryInformation is truncated inside its header"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2007-1347-1.doc"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "DocumentSummaryInformation contains an out-of-bounds property offset"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2010-3200-1.doc"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "DocumentSummaryInformation property table is not ordered by increasing Offset as required by MS-OLEPS 2.21"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2007-1347-1.doc"
+test = "doc_atrd_extra_roundtrip"
+mode = "invalid"
+reason = "FIB AtrdExtra range extends beyond the Table stream"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2007-1347-1.doc"
+test = "doc_plcf_wkb_roundtrip"
+mode = "invalid"
+reason = "FIB PlcfWKB payload has a length that cannot contain 12-byte WKB records"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/hang-4.doc"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "DocumentSummaryInformation declares an invalid property-set count"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/hang-8.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PlcPcd contains a non-increasing CP range and cannot describe a valid text piece"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2006-6561-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PlcBteChpx page number points beyond the WordDocument stream"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2006-6628-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PlcBteChpx page number points beyond the WordDocument stream"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/EDB-37924-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "CHPX FKP contains a truncated grpprl operand"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/forcepoint-layout-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PlcBteChpx page number points beyond the WordDocument stream"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2015-2467-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "CHPX property block extends beyond the 511-byte FKP payload"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2015-0065-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PlcBtePapx page number points beyond the WordDocument stream"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2009-3301-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PAPX contains a truncated variable table operand"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/EDB-37910-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PapxInFkp extends beyond the 511-byte FKP payload"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2009-0201-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PAPX ends inside a variable table operand"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2009-3302-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PAPX contains a truncated variable table operand"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2009-3302-2.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "TDefTable TC80 region is not a multiple of the required 20-byte structure"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/crash-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PlcfSed contains a Sepx offset beyond the WordDocument stream"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/pass/CVE-2007-3490-1.xls"
+test = "vba_compression_roundtrip"
+mode = "invalid"
+reason = "VBA dir declares a Sheet2 module stream that is absent from the VBA storage"
+
+[[expectation]]
+file = "sd/qa/unit/data/ppt/pass/hang-22.ppt"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "DocumentSummaryInformation contains a truncated Dictionary property"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2003-0820-1.doc"
+test = "vba_compression_roundtrip"
+mode = "invalid"
+reason = "VBA storage contains dir but lacks the required PROJECT stream"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/pass/CVE-2014-6361.xls"
+test = "xls_biff_roundtrip"
+mode = "invalid"
+reason = "Workbook stream contains an EOF record with an illegal non-empty payload"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/pass/crash-7.xls"
+test = "xls_biff_roundtrip"
+mode = "invalid"
+reason = "Workbook stream is truncated inside a declared BIFF record payload"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/pass/EDB-22330-1.xls"
+test = "xls_biff_roundtrip"
+mode = "invalid"
+reason = "Workbook stream declares a BIFF record payload larger than the 8224-byte limit"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/pass/CVE-2015-2520-1.xls"
+test = "xls_biff_roundtrip"
+mode = "invalid"
+reason = "Workbook stream declares a BIFF record payload larger than the 8224-byte limit"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/pass/CVE-2012-4233-4.xls"
+test = "xls_biff_roundtrip"
+mode = "invalid"
+reason = "Workbook stream declares a BIFF record payload larger than the 8224-byte limit"
+
+[[expectation]]
+file = "sc/qa/unit/data/xls/pass/CVE-2007-0031-1.xls"
+test = "xls_biff_roundtrip"
+mode = "invalid"
+reason = "BookBool record does not contain the required 2-byte payload"
+
+[[expectation]]
+file = "writerperfect/qa/unit/data/stream/fdo40686-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "STSH cstd declares one LPStd but the structure contains trailing style records"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/fdo40686-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "STSH cstd declares one LPStd but the structure contains trailing style records"
+
+[[expectation]]
+file = "sw/qa/extras/ww8export/data/tdf112535.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "STSH cstd declares 236 LPStd entries but the stream ends before entry 107"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/crash-3.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "STSH contains a zero-length STSHI instead of the required Stshif"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/EDB-37909-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "Main Plcfld contains fldch 0x01 instead of begin, separator, or end"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/hang-5.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "Header Plcfld contains fldch 0x0A instead of begin, separator, or end"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2008-4841-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PlfLst LVL data runs through random bytes and beyond the bounded Table stream"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2009-0259-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PlfLst LVL data runs through random bytes and beyond the bounded Table stream"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/EDB-14092-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PlfLst LVL data runs through random bytes and beyond the bounded Table stream"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/hang-4.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PlfLst LVL length fields misframe following levels as a truncated character grpprl"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2014-6356-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PlfLst LVL paragraph grpprl is truncated inside a declared SPRM operand"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2010-3453-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PlfLfo is truncated at the final LFOData CP"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2012-4886-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "SttbfFfn begins with an FFN whose declared Unicode font name contains shellcode bytes and no null terminator"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/hang-7.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "Tcg ends immediately after PlfAcd record id 0x02 without its count, payload, or 0x40 terminator"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/CVE-2003-0820-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "TcgSttbf declares a 0x0300-character command string that exceeds the bounded Tcg payload"
+
+[[expectation]]
+file = "sw/qa/core/data/ww8/pass/EDB-39396-1.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "Tcg MacroNames consumes the bounded payload without the required Tcg255 0x40 terminator"

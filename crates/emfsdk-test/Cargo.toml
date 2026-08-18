@@ -1,0 +1,17 @@
+[package]
+name = "emfsdk-test"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+doctest = false
+
+[dependencies]
+emfsdk = { workspace = true, features = ["render"] }
+image.workspace = true
+olecfsdk.workspace = true
+walkdir.workspace = true
+zip.workspace = true

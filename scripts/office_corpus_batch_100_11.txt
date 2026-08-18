@@ -1,0 +1,105 @@
+# Apache POI: 40 new files.
+Apache-POI/test-data/document/Bug33519.doc
+Apache-POI/test-data/document/Bug44292.doc
+Apache-POI/test-data/document/61490.doc
+Apache-POI/test-data/document/61586.doc
+Apache-POI/test-data/document/64132.doc
+Apache-POI/test-data/document/61787.docx
+Apache-POI/test-data/document/61991.docx
+Apache-POI/test-data/document/Bug60341.docx
+Apache-POI/test-data/document/Bug66988.docx
+Apache-POI/test-data/document/EmbeddedDocument.docx
+Apache-POI/test-data/document/EnforcedWith.docx
+Apache-POI/test-data/document/HeaderFooterUnicode.docx
+Apache-POI/test-data/document/Headers.docx
+Apache-POI/test-data/document/NoHeadFoot.docx
+Apache-POI/test-data/document/ThreeColFoot.docx
+Apache-POI/test-data/document/Tika-792.docx
+Apache-POI/test-data/document/WordWithAttachments.docx
+Apache-POI/test-data/spreadsheet/15228.xls
+Apache-POI/test-data/spreadsheet/15375.xls
+Apache-POI/test-data/spreadsheet/15556.xls
+Apache-POI/test-data/spreadsheet/15573.xls
+Apache-POI/test-data/spreadsheet/1904DateWindowing.xls
+Apache-POI/test-data/spreadsheet/45540_classic_Footer.xlsx
+Apache-POI/test-data/spreadsheet/45540_form_Footer.xlsx
+Apache-POI/test-data/spreadsheet/45544.xlsx
+Apache-POI/test-data/spreadsheet/46535.xlsx
+Apache-POI/test-data/spreadsheet/46536.xlsx
+Apache-POI/test-data/spreadsheet/47504.xlsx
+Apache-POI/test-data/spreadsheet/47804.xlsx
+Apache-POI/test-data/spreadsheet/47813.xlsx
+Apache-POI/test-data/spreadsheet/47862.xlsx
+Apache-POI/test-data/spreadsheet/47889.xlsx
+Apache-POI/test-data/spreadsheet/48495.xlsx
+Apache-POI/test-data/spreadsheet/48539.xlsx
+Apache-POI/test-data/spreadsheet/48703.xlsx
+Apache-POI/test-data/spreadsheet/48923.xlsx
+Apache-POI/test-data/slideshow/42486.ppt
+Apache-POI/test-data/slideshow/44296.ppt
+Apache-POI/test-data/slideshow/45545_Comment.pptx
+Apache-POI/test-data/slideshow/49386-null_dates.pptx
+
+# LibreOffice: 40 new chart and spreadsheet files.
+LibreOffice/chart2/qa/extras/data/docx/barChartRotation.docx
+LibreOffice/chart2/qa/extras/data/docx/clustered-bar-chart-labels.docx
+LibreOffice/chart2/qa/extras/data/docx/data-label-borders.docx
+LibreOffice/chart2/qa/extras/data/docx/data_point_inherited_color.docx
+LibreOffice/chart2/qa/extras/data/docx/doughnut-chart-labels.docx
+LibreOffice/chart2/qa/extras/data/docx/fdo74115_WallBitmapFill.docx
+LibreOffice/chart2/qa/extras/data/docx/fdo74115_WallGradientFill.docx
+LibreOffice/chart2/qa/extras/data/docx/fdo78290_Combination_Chart_Marker_x.docx
+LibreOffice/chart2/qa/extras/data/docx/fdo78290_Scatter_Chart_Marker_x.docx
+LibreOffice/chart2/qa/extras/data/docx/fdo83058_dlblPos.docx
+LibreOffice/chart2/qa/extras/data/docx/radar-chart-labels.docx
+LibreOffice/chart2/qa/extras/data/docx/tdf115558_footnote_chart.docx
+LibreOffice/chart2/qa/extras/data/docx/tdf121744.docx
+LibreOffice/chart2/qa/extras/data/docx/tdf123206.docx
+LibreOffice/chart2/qa/extras/data/docx/tdf124083.docx
+LibreOffice/sc/qa/extras/testdocuments/Ranges.xls
+LibreOffice/sc/qa/extras/testdocuments/MiscRangeTests.xls
+LibreOffice/sc/qa/extras/testdocuments/Ranges-2.xls
+LibreOffice/sc/qa/extras/testdocuments/Ranges-3.xls
+LibreOffice/sc/qa/extras/testdocuments/PageBreaks.xls
+LibreOffice/chart2/qa/extras/data/xlsx/axis_title_rotation.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/barOfPieChart.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/barOfPieChart2.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/barchart_outend.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/barchart_totalsrow.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/bartest-stroke.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/box-whisker-gapwidth.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/boxWhisker.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/chart-area-style-border.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/chart-auto-background.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/chart-hatch-fill.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/chart-text-can-overlap.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/chart.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/chart_label_text_break.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/chart_title.xlsx
+LibreOffice/chart2/qa/extras/data/pptx/sparse-chart.pptx
+LibreOffice/chart2/qa/extras/data/pptx/tdf105517.pptx
+LibreOffice/chart2/qa/extras/data/pptx/tdf115107-2.pptx
+LibreOffice/chart2/qa/extras/data/pptx/tdf116163.pptx
+LibreOffice/chart2/qa/extras/data/pptx/tdf121205.pptx
+
+# Open XML SDK: 20 new DOCX/PPTX files; XLSX remains excluded.
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment002.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment003.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment007.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment009.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment012.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment017.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment020.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment021.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment026.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment027.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/AllSlidesConverterSC.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/AllSlidesConverterTC.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/AutoShapes_2D (Default Styles).pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/AutoShapes_2D_Reflection (full).pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/AutoShapes_2D_Shadow (Offset, Diagonal).pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/AutoShapes_2D_Soft Edges (5 Point).pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/AutoShapes_3D_Bevel (Circle)+Shadow (Offset, Diagonal).pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/AutoShapes_3D_Bevel (Circle)+Soft Edges (5 Point).pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/AutoShapes_3D_Bevel (Circle).pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/AutoShapes_3D_Bevel (Riblet)+Reflection (full).pptx

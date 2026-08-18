@@ -1,0 +1,105 @@
+# Apache POI: 40 new files.
+Apache-POI/test-data/document/GaiaTest.doc
+Apache-POI/test-data/document/Bug51686.doc
+Apache-POI/test-data/document/hyperlink.doc
+Apache-POI/test-data/document/59322.doc
+Apache-POI/test-data/document/vector_image.doc
+Apache-POI/test-data/document/ThreeColHead.docx
+Apache-POI/test-data/document/TestPoiXMLDocumentCorePropertiesGetKeywords.docx
+Apache-POI/test-data/document/bug-paragraph-alignment.docx
+Apache-POI/test-data/document/Bug54771b.docx
+Apache-POI/test-data/document/SimpleHeadThreeColFoot.docx
+Apache-POI/test-data/document/endnotes.docx
+Apache-POI/test-data/document/IllustrativeCases.docx
+Apache-POI/test-data/document/FancyFoot.docx
+Apache-POI/test-data/document/TestTableColumns.docx
+Apache-POI/test-data/document/footnotes.docx
+Apache-POI/test-data/document/Bug55142.docx
+Apache-POI/test-data/document/NumberingWithOutOfOrderId.docx
+Apache-POI/test-data/spreadsheet/sumifs.xls
+Apache-POI/test-data/spreadsheet/ImaginaryFunctionTestCaseData.xls
+Apache-POI/test-data/spreadsheet/1900DateWindowing.xls
+Apache-POI/test-data/spreadsheet/multibookFormulaB.xls
+Apache-POI/test-data/spreadsheet/45129.xls
+Apache-POI/test-data/spreadsheet/49783.xlsx
+Apache-POI/test-data/spreadsheet/66365.xlsx
+Apache-POI/test-data/spreadsheet/DataValidations-49244.xlsx
+Apache-POI/test-data/spreadsheet/51963.xlsx
+Apache-POI/test-data/spreadsheet/SingleCellTable.xlsx
+Apache-POI/test-data/spreadsheet/sharedhyperlink.xlsx
+Apache-POI/test-data/spreadsheet/58731.xlsx
+Apache-POI/test-data/spreadsheet/WithChart.xlsx
+Apache-POI/test-data/spreadsheet/57523.xlsx
+Apache-POI/test-data/spreadsheet/59026.xlsx
+Apache-POI/test-data/spreadsheet/tile-range-test.xlsx
+Apache-POI/test-data/spreadsheet/sample.xlsx
+Apache-POI/test-data/spreadsheet/55745.xlsx
+Apache-POI/test-data/spreadsheet/55406_Conditional_formatting_sample.xlsx
+Apache-POI/test-data/slideshow/master_text.ppt
+Apache-POI/test-data/slideshow/43781.ppt
+Apache-POI/test-data/slideshow/shapes.pptx
+Apache-POI/test-data/slideshow/60042.pptx
+
+# LibreOffice: 40 new files.
+LibreOffice/sw/qa/extras/cjk/data/cjklist31.doc
+LibreOffice/sw/qa/extras/cjk/data/cjklist30.doc
+LibreOffice/sw/qa/extras/cjk/data/cjklist35.doc
+LibreOffice/sw/qa/extras/ooxmlexport/data/tdf107618.doc
+LibreOffice/sw/qa/extras/ooxmlexport/data/tdf133643.doc
+LibreOffice/oox/qa/unit/data/WPC_tdf158348_shape_text_in_table_cell.docx
+LibreOffice/oox/qa/unit/data/tdf125885_WordArt3.docx
+LibreOffice/oox/qa/unit/data/camera-rotation-revolution.docx
+LibreOffice/oox/qa/unit/data/tdf152896_WordArt_color_darken.docx
+LibreOffice/oox/qa/unit/data/tdf153258_VML_import_WordArt_detection.docx
+LibreOffice/oox/qa/unit/data/WPC_BentConnector.docx
+LibreOffice/oox/qa/unit/data/tdf54095_SmartArtThemeTextColor.docx
+LibreOffice/oox/qa/unit/data/watermark.docx
+LibreOffice/oox/qa/unit/data/WPC_tdf48610_Textbox_with_table_inside.docx
+LibreOffice/oox/qa/unit/data/dml-groupshape-polygon.docx
+LibreOffice/oox/qa/unit/data/WPC_MulticolorGradient.docx
+LibreOffice/oox/qa/unit/data/WPC_ThemeColor.docx
+LibreOffice/oox/qa/unit/data/customshape-position.docx
+LibreOffice/oox/qa/unit/data/WPC_tdf158339_shape_text_in_group.docx
+LibreOffice/sc/qa/unit/data/xls/tdf120177.xls
+LibreOffice/sc/qa/unit/data/xls/validation.xls
+LibreOffice/sc/qa/unit/data/xls/tdf79542_radioGroupBox.xls
+LibreOffice/sc/qa/unit/data/xls/cell-multi-line.xls
+LibreOffice/sc/qa/unit/data/xls/tdf170189.xls
+LibreOffice/sc/qa/unit/data/xlsx/tdf139934.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/tdf139763ShapeAnchor.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/cond_format_formula_listener.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/tdf83779.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot/Pivot1_Row_Grand_Subtotals.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/tdf55417.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/hyperlink_formula.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/tdf122471.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/tdf111876.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/groupShape.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot/Pivot4_Column_Grand_Subtotals_SortDescending.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/tdf60673.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/value-in-column-2000.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot/Pivot2_Row_Grand_Subtotals.xlsx
+LibreOffice/xmloff/qa/unit/data/MCGR_Border_restoration.pptx
+LibreOffice/oox/qa/unit/data/ThemeShapesReference.pptx
+
+# Open XML SDK: 20 new DOCX/PPTX files; XLSX remains excluded.
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment018.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment005.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment004.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment015.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment057.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment006.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment024.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment028.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment008.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/WD/CommentExTest/Comments-Sample-15-12-01/Comment019.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/asSources/presentation/Text_withExtrusion_200chars.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/asSources/presentation/Text_withExtrusion_200chars+Animation (Fly In, by letter).pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Text_withShadow_100chars+Animation (Fly In, all at once).pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Text_withExtrusion_100chars+Animation (Fly In, all at once).pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Chart_3D(Column)+Animation (Fly In, by element in category).pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Table_Large.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Text_withShadow_200chars.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Text_100chars+Animation (Fly In, by letter).pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/SmartArt_OrgChart1+Animation (Fly In, by level one by one).pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/presentation/Chart_3D (Column).pptx

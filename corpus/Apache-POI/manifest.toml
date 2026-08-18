@@ -1,0 +1,931 @@
+[corpus]
+id = "apache_poi"
+name = "Apache POI"
+path = "corpus/Apache-POI"
+license = "Apache-2.0"
+source = "https://github.com/apache/poi"
+source_commit = "913c78891bd0cd20945b050c63abfb8c66c88009"
+default_roundtrip = false
+
+[[expectation]]
+file = "test-data/integration/stress025.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "Apache POI marks this theme-manager-only package as failing; it has no Wordprocessing main document part"
+
+[[expectation]]
+file = "test-data/document/56392.docx"
+test = "roundtrip"
+mode = "round_trip"
+reason = "style definition child order does not match the schema sequence"
+
+[[expectation]]
+file = "test-data/document/Bug51170.docx"
+test = "roundtrip"
+mode = "open_only"
+reason = "compatibility setting child order does not match the schema sequence"
+
+[[expectation]]
+file = "test-data/document/documentProperties.docx"
+test = "roundtrip"
+mode = "round_trip"
+reason = "compatibility setting child order does not match the schema sequence"
+
+[[expectation]]
+file = "test-data/document/headerFooter.docx"
+test = "roundtrip"
+mode = "round_trip"
+reason = "compatibility setting child order does not match the schema sequence"
+
+[[expectation]]
+file = "test-data/document/heading123.docx"
+test = "roundtrip"
+mode = "round_trip"
+reason = "compatibility setting child order does not match the schema sequence"
+
+[[expectation]]
+file = "test-data/document/MultipleBodyBug.docx"
+test = "roundtrip"
+mode = "open_only"
+reason = "document has multiple body elements but the schema allows at most one"
+
+[[expectation]]
+file = "test-data/document/bug53475-password-is-pass.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "encrypted CDFV2 package"
+
+[[expectation]]
+file = "test-data/document/bug53475-password-is-solrcell.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "encrypted CDFV2 package"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIFuzzer-6709287337197568.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIXWPFFuzzer-4791943399604224.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIXWPFFuzzer-4959857092198400.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIXWPFFuzzer-4961551840247808.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIXWPFFuzzer-5166796835258368.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIXWPFFuzzer-5313273089884160.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIXWPFFuzzer-5564805011079168.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIXWPFFuzzer-5569740188549120.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIXWPFFuzzer-6061520554164224.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIXWPFFuzzer-6120975439364096.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIXWPFFuzzer-6442791109263360.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIXWPFFuzzer-6733884933668864.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/document/cpansearch.perl.org_src_tobyink_acme-rundoc-0.001_word-lib_hello_world.docm"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt zip package"
+
+[[expectation]]
+file = "test-data/document/crash-517626e815e0afa9decd0ebb6d1dee63fb9907dd.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt crash fixture"
+
+[[expectation]]
+file = "test-data/document/ExternalEntityInText.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "external entity expansion fixture"
+
+[[expectation]]
+file = "test-data/document/truncated62886.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "truncated zip package"
+
+[[expectation]]
+file = "test-data/openxml4j/invalid.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "empty invalid package fixture"
+
+[[expectation]]
+file = "test-data/spreadsheet/sample-beta.xlsx"
+test = "roundtrip"
+mode = "open_only"
+reason = "pre-standard Excel beta namespace and sstItem elements are outside the current static schema"
+
+[[expectation]]
+file = "test-data/openxml4j/OPCCompliance_CoreProperties_LimitedXSITypeAttribute_PresentWithUnauthorizedValueFAIL.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "intentionally invalid OPC compliance fixture"
+
+[[expectation]]
+file = "test-data/poifs/60320-protected.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "encrypted CDFV2 package"
+
+[[expectation]]
+file = "test-data/poifs/extenxls_pwd123.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "encrypted CDFV2 package"
+
+[[expectation]]
+file = "test-data/poifs/protect.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "encrypted CDFV2 package"
+
+[[expectation]]
+file = "test-data/poifs/protected_agile.docx"
+test = "roundtrip"
+mode = "invalid"
+reason = "encrypted CDFV2 package"
+
+[[expectation]]
+file = "test-data/poifs/protected_sha512.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "encrypted CDFV2 package"
+
+[[expectation]]
+file = "test-data/slideshow/chart-texture-bg.pptx"
+test = "roundtrip"
+mode = "round_trip"
+reason = "chart child order places extLst before showDLblsOverMax, which does not match the schema sequence"
+
+[[expectation]]
+file = "test-data/slideshow/chart-picture-bg.pptx"
+test = "roundtrip"
+mode = "round_trip"
+reason = "chart child order places extLst before showDLblsOverMax, which does not match the schema sequence"
+
+[[expectation]]
+file = "test-data/slideshow/chart-slide-bg.pptx"
+test = "roundtrip"
+mode = "round_trip"
+reason = "chart child order places extLst before showDLblsOverMax, which does not match the schema sequence"
+
+[[expectation]]
+file = "test-data/spreadsheet/clone_sheet.xlsx"
+test = "roundtrip"
+mode = "open_only"
+reason = "chart title and axis child order does not match the schema sequence"
+
+[[expectation]]
+file = "test-data/spreadsheet/123233_charts.xlsx"
+test = "roundtrip"
+mode = "open_only"
+reason = "chart child order does not match the schema sequence"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIFuzzer-5205835528404992.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIXSLFFuzzer-4838644450394112.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIXSLFFuzzer-4986044400861184.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIXSLFFuzzer-5463285576892416.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIXSLFFuzzer-5471515212382208.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIXSLFFuzzer-5611274456596480.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIXSLFFuzzer-6071540680032256.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIXSLFFuzzer-6254434927378432.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIXSLFFuzzer-6372932378820608.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIXSLFFuzzer-6435650376957952.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/slideshow/crash-57308ca363f5b71763c489d1b432aff009d4bc4f.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt crash fixture"
+
+[[expectation]]
+file = "test-data/slideshow/Divino_Revelado.pptx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/49609.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "missing required package part"
+
+[[expectation]]
+file = "test-data/spreadsheet/54764-2.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "XML entity expansion fixture"
+
+[[expectation]]
+file = "test-data/spreadsheet/54764.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "XML entity expansion fixture"
+
+[[expectation]]
+file = "test-data/spreadsheet/58616.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIFuzzer-5040805309710336.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIXSSFFuzzer-4828727001088000.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIXSSFFuzzer-5089447305609216.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIXSSFFuzzer-5185049589579776.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIXSSFFuzzer-5265527465181184.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIXSSFFuzzer-5937385319563264.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIXSSFFuzzer-6123461607817216.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIXSSFFuzzer-6419366255919104.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIXSSFFuzzer-6448258963341312.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-XLSX2CSVFuzzer-5025401116950528.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-XLSX2CSVFuzzer-5542865479270400.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-XLSX2CSVFuzzer-5636439151607808.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-XLSX2CSVFuzzer-6504225896792064.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-XLSX2CSVFuzzer-6594557414080512.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/crash-274d6342e4842d61be0fb48eaadad6208ae767ae.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt crash fixture"
+
+[[expectation]]
+file = "test-data/spreadsheet/crash-9bf3cd4bd6f50a8a9339d363c2c7af14b536865c.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt crash fixture"
+
+[[expectation]]
+file = "test-data/spreadsheet/deep-data.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt zip package"
+
+[[expectation]]
+file = "test-data/spreadsheet/MalformedSSTCount.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "intentionally malformed shared string table fixture"
+
+[[expectation]]
+file = "test-data/spreadsheet/poc-xmlbomb-empty.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "XML entity expansion fixture"
+
+[[expectation]]
+file = "test-data/spreadsheet/poc-xmlbomb.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "XML entity expansion fixture"
+
+[[expectation]]
+file = "test-data/spreadsheet/protected_passtika.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "encrypted CDFV2 package"
+
+[[expectation]]
+file = "test-data/spreadsheet/xlsx-corrupted.xlsx"
+test = "roundtrip"
+mode = "invalid"
+reason = "corrupt package relationships"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIHWPFFuzzer-4892412469968896.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIHWPFFuzzer-4947285593948160.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIHWPFFuzzer-5074346559012864.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIHWPFFuzzer-5195207308541952.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIHWPFFuzzer-5418937293340672.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIHWPFFuzzer-5440721166139392.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIHWPFFuzzer-5832867957309440.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-POIHWPFFuzzer-5696094627495936.doc"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/document/word2.doc"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "raw Word 2 document, not a CFB container"
+
+[[expectation]]
+file = "test-data/slideshow/cf5f6fde99a8b3ea5a4946c258b7abad6f30b0c5.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "truncated CFB directory"
+
+[[expectation]]
+file = "test-data/slideshow/ppt_with_png_encrypted.ppt"
+test = "ppt_record_roundtrip"
+mode = "requires_password"
+reason = "encrypted PowerPoint Document stream awaits MS-OFFCRYPTO support"
+
+[[expectation]]
+file = "test-data/slideshow/Password_Protected-56-hello.ppt"
+test = "ppt_record_roundtrip"
+mode = "requires_password"
+reason = "encrypted PowerPoint Document stream awaits MS-OFFCRYPTO support"
+
+[[expectation]]
+file = "test-data/slideshow/cryptoapi-proc2356.ppt"
+test = "ppt_record_roundtrip"
+mode = "requires_password"
+reason = "encrypted PowerPoint Document stream awaits MS-OFFCRYPTO support"
+
+[[expectation]]
+file = "test-data/slideshow/Password_Protected-hello.ppt"
+test = "ppt_record_roundtrip"
+mode = "requires_password"
+reason = "encrypted PowerPoint Document stream awaits MS-OFFCRYPTO support"
+
+[[expectation]]
+file = "test-data/slideshow/Password_Protected-np-hello.ppt"
+test = "ppt_record_roundtrip"
+mode = "requires_password"
+reason = "encrypted PowerPoint Document stream awaits MS-OFFCRYPTO support"
+
+[[expectation]]
+file = "test-data/slideshow/PPT95.ppt"
+test = "ppt_record_roundtrip"
+mode = "unsupported"
+reason = "PowerPoint 95 record stream is outside the PPT97 milestone"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIFuzzer-5429732352851968.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIHSLFFuzzer-4624961081573376.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIHSLFFuzzer-4983252485210112.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIHSLFFuzzer-5018229722382336.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIHSLFFuzzer-5306877435838464.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB stream length"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIHSLFFuzzer-5962760801091584.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed miniFAT chain"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIHSLFFuzzer-6028723156746240.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "truncated fuzzed CFB stream"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIHSLFFuzzer-6032591399288832.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed FAT chain"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIHSLFFuzzer-6192650357112832.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIHSLFFuzzer-6360479850954752.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIHSLFFuzzer-6416153805979648.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "invalid fuzzed directory entry"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIHSLFFuzzer-6614960949821440.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "invalid fuzzed CFB header"
+
+[[expectation]]
+file = "test-data/slideshow/clusterfuzz-testcase-minimized-POIHSLFFuzzer-6710128412590080.ppt"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed directory tree"
+
+[[expectation]]
+file = "test-data/spreadsheet/61300.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt directory stream length rejected by POI integration tests"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIHSSFFuzzer-4651309315719168.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed FAT chain"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIHSSFFuzzer-4657005060816896.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "invalid fuzzed directory entry"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIHSSFFuzzer-4734163573080064.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed DIFAT"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIHSSFFuzzer-4819588401201152.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIHSSFFuzzer-5175219985448960.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIHSSFFuzzer-5786329142919168.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIHSSFFuzzer-5816431116615680.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIHSSFFuzzer-5889658057523200.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIHSSFFuzzer-6137883240824832.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "invalid fuzzed CFB header"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIHSSFFuzzer-6322470200934400.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIHSSFFuzzer-6483562584932352.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIHSSFFuzzer-6537773940867072.xls"
+test = "cfb_roundtrip"
+mode = "invalid"
+reason = "corrupt fuzzed CFB container"
+
+[[expectation]]
+file = "test-data/spreadsheet/rde.imf.ru_sites_default_files_rde_documents_vodootvedenie_2020.xlsb.xls"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "ZIP-based XLSB file with a misleading .xls suffix"
+
+[[expectation]]
+file = "test-data/spreadsheet/testEXCEL_3.xls"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "raw BIFF3 stream, not a CFB container"
+
+[[expectation]]
+file = "test-data/spreadsheet/testEXCEL_4.xls"
+test = "cfb_roundtrip"
+mode = "unsupported"
+reason = "raw BIFF4 stream, not a CFB container"
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIHWPFFuzzer-5050208641482752.doc"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "DocumentSummaryInformation has an invalid OLEPS byte-order marker"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIHWPFFuzzer-5050208641482752.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "the first LPStd Xstz name declares 12552 UTF-16 code units inside an 88-byte STD"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIHWPFFuzzer-6610789829836800.doc"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "DocumentSummaryInformation has an invalid OLEPS byte-order marker"
+
+[[expectation]]
+file = "test-data/document/57843.doc"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "SummaryInformation is truncated inside its property table"
+
+[[expectation]]
+file = "test-data/document/56880.doc"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "SummaryInformation property table is not ordered by increasing Offset as required by MS-OLEPS 2.21"
+
+[[expectation]]
+file = "test-data/spreadsheet/27933.xls"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "property tables are not ordered by increasing Offset as required by MS-OLEPS 2.21"
+
+[[expectation]]
+file = "test-data/spreadsheet/54500.xls"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "SummaryInformation property table is not ordered by increasing Offset as required by MS-OLEPS 2.21"
+
+[[expectation]]
+file = "test-data/hpsf/TestBug52372.doc"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "DocumentSummaryInformation is truncated inside a declared property"
+
+[[expectation]]
+file = "test-data/hpsf/Test_Humor-Generation.ppt"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "SummaryInformation declares an invalid property-set count"
+
+[[expectation]]
+file = "test-data/slideshow/missing-moveto.ppt"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "SummaryInformation declares an invalid property-set count"
+
+[[expectation]]
+file = "test-data/spreadsheet/poi-fuzz.xls"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "SummaryInformation declares an invalid property-set size"
+
+[[expectation]]
+file = "test-data/spreadsheet/bug66319.xls"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "DocumentSummaryInformation declares an invalid property-set size"
+
+[[expectation]]
+file = "test-data/spreadsheet/cf9f845e73447b092477d0472402a5baea4b8c9f.xls"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "SummaryInformation has an invalid OLEPS byte-order marker"
+
+[[expectation]]
+file = "test-data/spreadsheet/42726.xls"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "property streams contain empty or out-of-bounds property packets"
+
+[[expectation]]
+file = "test-data/spreadsheet/bug55505.xls"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "DocumentSummaryInformation declares an invalid property-set size"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIHSSFFuzzer-5285517825277952.xls"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "DocumentSummaryInformation declares a property count exceeding allocation limits"
+
+[[expectation]]
+file = "test-data/spreadsheet/clusterfuzz-testcase-minimized-POIHSSFFuzzer-5436547081830400.xls"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "DocumentSummaryInformation declares a property count exceeding allocation limits"
+
+[[expectation]]
+file = "test-data/spreadsheet/NoGutsRecords.xls"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "DocumentSummaryInformation declares an invalid property-set size"
+
+[[expectation]]
+file = "test-data/document/60279.doc"
+test = "vba_compression_roundtrip"
+mode = "invalid"
+reason = "VBA MODULEOFFSET points to data without a compressed-container signature"
+
+[[expectation]]
+file = "test-data/hpsf/TestBug44375.xls"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "SummaryInformation contains a truncated Dictionary property"
+
+[[expectation]]
+file = "test-data/spreadsheet/WrongFormulaRecordType.xls"
+test = "oleps_roundtrip"
+mode = "invalid"
+reason = "DocumentSummaryInformation has a Dictionary property without the required CodePage property"
+
+[[expectation]]
+file = "test-data/spreadsheet/cf9f845e73447b092477d0472402a5baea4b8c9f.xls"
+test = "xls_biff_roundtrip"
+mode = "invalid"
+reason = "Workbook stream declares a BIFF record payload larger than the 8224-byte limit"
+
+[[expectation]]
+file = "test-data/spreadsheet/43493.xls"
+test = "xls_biff_roundtrip"
+mode = "invalid"
+reason = "Delta record contains 16 bytes instead of the specified 8-byte floating-point payload"
+
+[[expectation]]
+file = "test-data/spreadsheet/poi-fuzz.xls"
+test = "xls_biff_roundtrip"
+mode = "invalid"
+reason = "Workbook contains a truncated Dimensions record; Apache POI's BiffViewer corpus test also excludes it with RecordFormatException"
+
+[[expectation]]
+file = "test-data/document/password_password_cryptoapi.doc"
+test = "doc_fib_roundtrip"
+mode = "requires_password"
+reason = "WordDocument after the clear 68-byte FIB prefix and the selected Table stream are encrypted"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIHWPFFuzzer-6610789829836800.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "CHPX FKP declares an invalid zero or oversized crun"
+
+[[expectation]]
+file = "test-data/document/clusterfuzz-testcase-minimized-POIHWPFFuzzer-4951943183990784.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "CHPX FKP contains a truncated grpprl operand"
+
+[[expectation]]
+file = "test-data/document/password_tika_binaryrc4.doc"
+test = "doc_fib_roundtrip"
+mode = "requires_password"
+reason = "WordDocument after the clear 68-byte FIB prefix and the selected Table stream are encrypted"
+
+[[expectation]]
+file = "test-data/document/PasswordProtected.doc"
+test = "doc_fib_roundtrip"
+mode = "requires_password"
+reason = "WordDocument after the clear 68-byte FIB prefix and the selected Table stream are encrypted"
+
+[[expectation]]
+file = "test-data/document/testCroppedPictures.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "The final LPStd declares a 90-byte STD with only 68 bytes remaining in STSH"
+
+[[expectation]]
+file = "test-data/document/Fuzzed.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "An LVL paragraph grpprl contains random non-SPRM data followed by a truncated operand"
+
+[[expectation]]
+file = "test-data/document/Bug48075.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "PlfLfo ends after 44 bytes but its FIB lcb overreports 687 bytes across unrelated Table Stream data"
+
+[[expectation]]
+file = "test-data/document/test.doc"
+test = "doc_fib_roundtrip"
+mode = "invalid"
+reason = "Tcg contains version 0 instead of the required nTcgVer 255"

@@ -1,0 +1,29 @@
+[[corpus]]
+id = "open_xml_sdk"
+path = "corpus/Open-XML-SDK"
+manifest = "corpus/Open-XML-SDK/manifest.toml"
+
+[[corpus]]
+id = "apache_poi"
+path = "corpus/Apache-POI"
+manifest = "corpus/Apache-POI/manifest.toml"
+
+[[corpus]]
+id = "libreoffice"
+path = "corpus/LibreOffice"
+manifest = "corpus/LibreOffice/manifest.toml"
+
+[[corpus]]
+id = "libemf2svg"
+path = "corpus/libemf2svg"
+manifest = "corpus/libemf2svg/manifest.toml"
+
+[[corpus]]
+id = "pandoc"
+path = "corpus/Pandoc"
+manifest = "corpus/Pandoc/manifest.toml"
+
+[[corpus]]
+id = "closedxml"
+path = "corpus/ClosedXML"
+manifest = "corpus/ClosedXML/manifest.toml"

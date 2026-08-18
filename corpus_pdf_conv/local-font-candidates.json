@@ -1,0 +1,1320 @@
+{
+  "schema_version": 1,
+  "reference_file": "/home/kazeno/git/ooxmlsdk-test-suite/corpus_pdf_conv/font-references.json",
+  "candidate_font_count": 123,
+  "fonts": [
+    {
+      "name": "Amiri",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\Amiri-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\Amiri-BoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\Amiri-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\Amiri-Regular.ttf"
+      ]
+    },
+    {
+      "name": "Andale Mono",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Andale_Mono.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Andale_Mono.ttf"
+      ]
+    },
+    {
+      "name": "Aptos",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\aptos\\Aptos-Black-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\aptos\\Aptos-Black.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\aptos\\Aptos-Bold-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\aptos\\Aptos-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\aptos\\Aptos-Display-Bold-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\aptos\\Aptos-Display-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\aptos\\Aptos-Display-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\aptos\\Aptos-Display.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\aptos\\Aptos-ExtraBold-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\aptos\\Aptos-ExtraBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\aptos\\Aptos-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\aptos\\Aptos-Light-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\aptos\\Aptos-Light.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\aptos\\Aptos-SemiBold-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\aptos\\Aptos-SemiBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\aptos\\Aptos.ttf"
+      ]
+    },
+    {
+      "name": "Aptos Display",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\aptos\\Aptos-Display-Bold-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\aptos\\Aptos-Display-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\aptos\\Aptos-Display-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\aptos\\Aptos-Display.ttf"
+      ]
+    },
+    {
+      "name": "Aptos Narrow",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\aptos\\Aptos-Narrow-Bold-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\aptos\\Aptos-Narrow-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\aptos\\Aptos-Narrow-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\aptos\\Aptos-Narrow.ttf"
+      ]
+    },
+    {
+      "name": "Arial",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\arial.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\arialbd.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\arialbi.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\ariali.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\ariblk.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Arial.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Arial_Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Arial_Bold_Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Arial_Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Arial_Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Arial_Bold_Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Arial_Italic.ttf"
+      ]
+    },
+    {
+      "name": "Arial Black",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\ariblk.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Arial_Black.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Arial_Black.ttf"
+      ]
+    },
+    {
+      "name": "Bahnschrift",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\bahnschrift.ttf"
+      ]
+    },
+    {
+      "name": "BIZ UD明朝 Medium",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\BIZ-UDMinchoM.ttc"
+      ]
+    },
+    {
+      "name": "Calibri",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\calibri.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\calibrib.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\calibrii.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\calibril.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\calibrili.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\calibriz.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\calibri-font-family\\calibri-bold-italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\calibri-font-family\\calibri-bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\calibri-font-family\\calibri-italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\calibri-font-family\\calibri-regular.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\calibri-light\\calibril.ttf"
+      ]
+    },
+    {
+      "name": "Calibri Light",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\calibril.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\calibrili.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\calibri-light\\calibril.ttf"
+      ]
+    },
+    {
+      "name": "Cambria",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\cambria.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\cambriab.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\cambriai.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\cambriaz.ttf"
+      ]
+    },
+    {
+      "name": "Cambria Math",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\cambria.ttc"
+      ]
+    },
+    {
+      "name": "Candara",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\Candara.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\Candarab.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\Candarai.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\Candaral.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\Candarali.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\Candaraz.ttf"
+      ]
+    },
+    {
+      "name": "Carlito",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\Carlito-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\Carlito-BoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\Carlito-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\Carlito-Regular.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\crosextra\\Carlito-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\crosextra\\Carlito-BoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\crosextra\\Carlito-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\crosextra\\Carlito-Regular.ttf"
+      ]
+    },
+    {
+      "name": "Century Gothic",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\century-gothic\\Century Gothic Bold Italic.otf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\century-gothic\\Century Gothic Bold.otf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\century-gothic\\Century Gothic Italic.otf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\century-gothic\\Century Gothic.otf"
+      ]
+    },
+    {
+      "name": "Comic Sans MS",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\comic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\comicbd.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\comici.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\comicz.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Comic_Sans_MS.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Comic_Sans_MS_Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Comic_Sans_MS.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Comic_Sans_MS_Bold.ttf"
+      ]
+    },
+    {
+      "name": "Consolas",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\consola.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\consolab.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\consolai.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\consolaz.ttf"
+      ]
+    },
+    {
+      "name": "Constantia",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\constan.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\constanb.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\constani.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\constanz.ttf"
+      ]
+    },
+    {
+      "name": "Corbel",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\corbel.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\corbelb.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\corbeli.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\corbell.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\corbelli.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\corbelz.ttf"
+      ]
+    },
+    {
+      "name": "Courier New",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\cour.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\courbd.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\courbi.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\couri.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Courier_New.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Courier_New_Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Courier_New_Bold_Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Courier_New_Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Courier_New.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Courier_New_Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Courier_New_Bold_Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Courier_New_Italic.ttf"
+      ]
+    },
+    {
+      "name": "David CLM",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\DavidCLM-Bold.otf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\DavidCLM-BoldItalic.otf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\DavidCLM-Medium.otf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\DavidCLM-MediumItalic.otf"
+      ]
+    },
+    {
+      "name": "DejaVu Sans",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\DejaVuSans-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\DejaVuSans-BoldOblique.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\DejaVuSans-ExtraLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\DejaVuSans-Oblique.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\DejaVuSans.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\DejaVuSansCondensed-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\DejaVuSansCondensed-BoldOblique.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\DejaVuSansCondensed-Oblique.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\DejaVuSansCondensed.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\dejavu\\DejaVuSans-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\dejavu\\DejaVuSans-BoldOblique.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\dejavu\\DejaVuSans-ExtraLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\dejavu\\DejaVuSans-Oblique.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\dejavu\\DejaVuSans.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\dejavu\\DejaVuSansCondensed-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\dejavu\\DejaVuSansCondensed-BoldOblique.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\dejavu\\DejaVuSansCondensed-Oblique.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\dejavu\\DejaVuSansCondensed.ttf"
+      ]
+    },
+    {
+      "name": "DejaVu Sans Mono",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\DejaVuSansMono-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\DejaVuSansMono-BoldOblique.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\DejaVuSansMono-Oblique.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\DejaVuSansMono.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\dejavu\\DejaVuSansMono-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\dejavu\\DejaVuSansMono-BoldOblique.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\dejavu\\DejaVuSansMono-Oblique.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\dejavu\\DejaVuSansMono.ttf"
+      ]
+    },
+    {
+      "name": "DejaVu Serif",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\DejaVuSerif-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\DejaVuSerif-BoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\DejaVuSerif-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\DejaVuSerif.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\DejaVuSerifCondensed-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\DejaVuSerifCondensed-BoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\DejaVuSerifCondensed-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\DejaVuSerifCondensed.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\dejavu\\DejaVuSerif-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\dejavu\\DejaVuSerif-BoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\dejavu\\DejaVuSerif-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\dejavu\\DejaVuSerif.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\dejavu\\DejaVuSerifCondensed-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\dejavu\\DejaVuSerifCondensed-BoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\dejavu\\DejaVuSerifCondensed-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\dejavu\\DejaVuSerifCondensed.ttf"
+      ]
+    },
+    {
+      "name": "DengXian",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\Deng.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\Dengb.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\Dengl.ttf"
+      ]
+    },
+    {
+      "name": "DengXian Light",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\Dengl.ttf"
+      ]
+    },
+    {
+      "name": "DIN",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\din-bold_HBhUR\\DIN Bold\\DIN Bold.otf"
+      ]
+    },
+    {
+      "name": "DINPro-Medium",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\dinpro-medium\\DINPro-Medium_13936.ttf"
+      ]
+    },
+    {
+      "name": "Droid Sans Fallback",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\droid\\DroidSansFallbackFull.ttf"
+      ]
+    },
+    {
+      "name": "Ebrima",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\ebrima.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\ebrimabd.ttf"
+      ]
+    },
+    {
+      "name": "Franklin Gothic Medium",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\framd.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\framdit.ttf"
+      ]
+    },
+    {
+      "name": "Garamond",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\garamond-bold_nJtvW\\Garamond Bold\\Garamond Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\garamond\\garamond_[allfont.ru].ttf"
+      ]
+    },
+    {
+      "name": "Gentium",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\gentium\\Gentium-I.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\gentium\\Gentium-R.ttf"
+      ]
+    },
+    {
+      "name": "Georgia",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\georgia.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\georgiab.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\georgiai.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\georgiaz.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Georgia.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Georgia_Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Georgia_Bold_Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Georgia_Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Georgia_Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Georgia_Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Georgia_Bold_Italic.ttf"
+      ]
+    },
+    {
+      "name": "Impact",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\impact.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Impact.ttf"
+      ]
+    },
+    {
+      "name": "Javanese Text",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\javatext.ttf"
+      ]
+    },
+    {
+      "name": "Leelawadee UI",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\LeelUIsl.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\LeelaUIb.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\LeelawUI.ttf"
+      ]
+    },
+    {
+      "name": "Liberation Mono",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\LiberationMono-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\LiberationMono-BoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\LiberationMono-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\LiberationMono-Regular.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\liberation\\LiberationMono-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\liberation\\LiberationMono-BoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\liberation\\LiberationMono-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\liberation\\LiberationMono-Regular.ttf"
+      ]
+    },
+    {
+      "name": "Liberation Sans",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\LiberationSans-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\LiberationSans-BoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\LiberationSans-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\LiberationSans-Regular.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\liberation\\LiberationSans-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\liberation\\LiberationSans-BoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\liberation\\LiberationSans-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\liberation\\LiberationSans-Regular.ttf"
+      ]
+    },
+    {
+      "name": "Liberation Sans Narrow",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\LiberationSansNarrow-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\LiberationSansNarrow-BoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\LiberationSansNarrow-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\LiberationSansNarrow-Regular.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\liberation\\LiberationSansNarrow-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\liberation\\LiberationSansNarrow-BoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\liberation\\LiberationSansNarrow-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\liberation\\LiberationSansNarrow-Regular.ttf"
+      ]
+    },
+    {
+      "name": "Liberation Serif",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\LiberationSerif-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\LiberationSerif-BoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\LiberationSerif-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\LiberationSerif-Regular.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\liberation\\LiberationSerif-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\liberation\\LiberationSerif-BoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\liberation\\LiberationSerif-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\liberation\\LiberationSerif-Regular.ttf"
+      ]
+    },
+    {
+      "name": "Linux Biolinum G",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\LinBiolinum_RB_G.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\LinBiolinum_RI_G.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\LinBiolinum_R_G.ttf"
+      ]
+    },
+    {
+      "name": "Linux Libertine G",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\LinLibertine_RBI_G.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\LinLibertine_RB_G.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\LinLibertine_RI_G.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\LinLibertine_RZI_G.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\LinLibertine_RZ_G.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\LinLibertine_R_G.ttf"
+      ]
+    },
+    {
+      "name": "Linux Libertine O",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\opentype\\linux-libertine\\LinLibertine_R.otf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\opentype\\linux-libertine\\LinLibertine_RB.otf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\opentype\\linux-libertine\\LinLibertine_RBI.otf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\opentype\\linux-libertine\\LinLibertine_RI.otf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\opentype\\linux-libertine\\LinLibertine_RZ.otf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\opentype\\linux-libertine\\LinLibertine_RZI.otf"
+      ]
+    },
+    {
+      "name": "Lohit Devanagari",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Lohit-Devanagari.ttf"
+      ]
+    },
+    {
+      "name": "Lucida Console",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\lucon.ttf"
+      ]
+    },
+    {
+      "name": "Lucida Sans Unicode",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\l_10646.ttf"
+      ]
+    },
+    {
+      "name": "Malgun Gothic",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\malgun.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\malgunbd.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\malgunsl.ttf"
+      ]
+    },
+    {
+      "name": "Marlett",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\marlett.ttf"
+      ]
+    },
+    {
+      "name": "Meiryo",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\meiryo.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\meiryob.ttc"
+      ]
+    },
+    {
+      "name": "Microsoft Himalaya",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\himalaya.ttf"
+      ]
+    },
+    {
+      "name": "Microsoft JhengHei",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\msjh.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\msjhbd.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\msjhl.ttc"
+      ]
+    },
+    {
+      "name": "Microsoft New Tai Lue",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\ntailu.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\ntailub.ttf"
+      ]
+    },
+    {
+      "name": "Microsoft Sans Serif",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\micross.ttf"
+      ]
+    },
+    {
+      "name": "Microsoft Tai Le",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\taile.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\taileb.ttf"
+      ]
+    },
+    {
+      "name": "Microsoft YaHei",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\msyh.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\msyhbd.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\msyhl.ttc"
+      ]
+    },
+    {
+      "name": "Microsoft Yi Baiti",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\msyi.ttf"
+      ]
+    },
+    {
+      "name": "Mongolian Baiti",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\monbaiti.ttf"
+      ]
+    },
+    {
+      "name": "MS Gothic",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\msgothic.ttc"
+      ]
+    },
+    {
+      "name": "MS Mincho",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\msmincho.ttc"
+      ]
+    },
+    {
+      "name": "MS PGothic",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\msgothic.ttc"
+      ]
+    },
+    {
+      "name": "MV Boli",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\mvboli.ttf"
+      ]
+    },
+    {
+      "name": "Myanmar Text",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\mmrtext.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\mmrtextb.ttf"
+      ]
+    },
+    {
+      "name": "Nachlieli CLM",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\NachlieliCLM-Bold.otf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\NachlieliCLM-BoldOblique.otf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\NachlieliCLM-Light.otf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\NachlieliCLM-LightOblique.otf"
+      ]
+    },
+    {
+      "name": "Nirmala UI",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\Nirmala.ttc"
+      ]
+    },
+    {
+      "name": "Noto Color Emoji",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoColorEmoji.ttf"
+      ]
+    },
+    {
+      "name": "Noto Sans",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\NotoSans-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\NotoSans-BoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\NotoSans-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\NotoSans-Regular.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-Black.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-BlackItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-BoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-Condensed.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-CondensedBlack.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-CondensedBlackItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-CondensedBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-CondensedBoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-CondensedExtraBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-CondensedExtraBoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-CondensedExtraLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-CondensedExtraLightItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-CondensedItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-CondensedLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-CondensedLightItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-CondensedMedium.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-CondensedMediumItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-CondensedSemiBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-CondensedSemiBoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-CondensedThin.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-CondensedThinItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-ExtraBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-ExtraBoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-ExtraCondensed.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-ExtraCondensedBlack.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-ExtraCondensedBlackItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-ExtraCondensedBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-ExtraCondensedBoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-ExtraCondensedExtraBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-ExtraCondensedExtraBoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-ExtraCondensedExtraLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-ExtraCondensedExtraLightItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-ExtraCondensedItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-ExtraCondensedLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-ExtraCondensedLightItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-ExtraCondensedMedium.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-ExtraCondensedMediumItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-ExtraCondensedSemiBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-ExtraCondensedSemiBoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-ExtraCondensedThin.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-ExtraCondensedThinItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-ExtraLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-ExtraLightItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-Light.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-LightItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-Medium.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-MediumItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-Regular.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-SemiBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-SemiBoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-SemiCondensed.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-SemiCondensedBlack.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-SemiCondensedBlackItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-SemiCondensedBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-SemiCondensedBoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-SemiCondensedExtraBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-SemiCondensedExtraBoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-SemiCondensedExtraLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-SemiCondensedExtraLightItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-SemiCondensedItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-SemiCondensedLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-SemiCondensedLightItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-SemiCondensedMedium.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-SemiCondensedMediumItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-SemiCondensedSemiBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-SemiCondensedSemiBoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-SemiCondensedThin.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-SemiCondensedThinItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-Thin.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-ThinItalic.ttf"
+      ]
+    },
+    {
+      "name": "Noto Sans Arabic UI",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-Black.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-Condensed.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-CondensedBlack.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-CondensedBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-CondensedExtraBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-CondensedExtraLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-CondensedLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-CondensedMedium.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-CondensedSemiBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-CondensedThin.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-ExtraBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-ExtraCondensed.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-ExtraCondensedBlack.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-ExtraCondensedBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-ExtraCondensedExtraBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-ExtraCondensedExtraLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-ExtraCondensedLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-ExtraCondensedMedium.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-ExtraCondensedSemiBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-ExtraCondensedThin.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-ExtraLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-Light.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-Medium.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-Regular.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-SemiBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-SemiCondensed.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-SemiCondensedBlack.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-SemiCondensedBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-SemiCondensedExtraBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-SemiCondensedExtraLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-SemiCondensedLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-SemiCondensedMedium.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-SemiCondensedSemiBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-SemiCondensedThin.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansArabicUI-Thin.ttf"
+      ]
+    },
+    {
+      "name": "Noto Sans CJK SC",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\opentype\\noto\\NotoSansCJK-Black.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\opentype\\noto\\NotoSansCJK-Bold.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\opentype\\noto\\NotoSansCJK-DemiLight.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\opentype\\noto\\NotoSansCJK-Light.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\opentype\\noto\\NotoSansCJK-Medium.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\opentype\\noto\\NotoSansCJK-Regular.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\opentype\\noto\\NotoSansCJK-Thin.ttc"
+      ]
+    },
+    {
+      "name": "Noto Sans Devanagari",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-Black.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-Condensed.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-CondensedBlack.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-CondensedBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-CondensedExtraBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-CondensedExtraLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-CondensedLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-CondensedMedium.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-CondensedSemiBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-CondensedThin.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-ExtraBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-ExtraCondensed.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-ExtraCondensedBlack.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-ExtraCondensedBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-ExtraCondensedExtraBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-ExtraCondensedExtraLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-ExtraCondensedLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-ExtraCondensedMedium.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-ExtraCondensedSemiBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-ExtraCondensedThin.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-ExtraLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-Light.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-Medium.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-Regular.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-SemiBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-SemiCondensed.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-SemiCondensedBlack.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-SemiCondensedBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-SemiCondensedExtraBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-SemiCondensedExtraLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-SemiCondensedLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-SemiCondensedMedium.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-SemiCondensedSemiBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-SemiCondensedThin.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansDevanagari-Thin.ttf"
+      ]
+    },
+    {
+      "name": "Noto Sans Light",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-Light.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSans-LightItalic.ttf"
+      ]
+    },
+    {
+      "name": "Noto Sans Mono CJK SC",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\opentype\\noto\\NotoSansCJK-Bold.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\opentype\\noto\\NotoSansCJK-Regular.ttc"
+      ]
+    },
+    {
+      "name": "Noto Sans OldHung",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansOldHungarian-Regular.ttf"
+      ]
+    },
+    {
+      "name": "Noto Sans Symbols",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansSymbols-Black.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansSymbols-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansSymbols-ExtraBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansSymbols-ExtraLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansSymbols-Light.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansSymbols-Medium.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansSymbols-Regular.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansSymbols-SemiBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSansSymbols-Thin.ttf"
+      ]
+    },
+    {
+      "name": "Noto Serif",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\NotoSerif-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\NotoSerif-BoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\NotoSerif-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\NotoSerif-Regular.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-Black.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-BlackItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-BoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-Condensed.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-CondensedBlack.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-CondensedBlackItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-CondensedBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-CondensedBoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-CondensedExtraBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-CondensedExtraBoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-CondensedExtraLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-CondensedExtraLightItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-CondensedItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-CondensedLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-CondensedLightItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-CondensedMedium.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-CondensedMediumItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-CondensedSemiBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-CondensedSemiBoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-CondensedThin.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-CondensedThinItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-ExtraBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-ExtraBoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-ExtraCondensed.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-ExtraCondensedBlack.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-ExtraCondensedBlackItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-ExtraCondensedBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-ExtraCondensedBoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-ExtraCondensedExtraBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-ExtraCondensedExtraBoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-ExtraCondensedExtraLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-ExtraCondensedExtraLightItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-ExtraCondensedItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-ExtraCondensedLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-ExtraCondensedLightItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-ExtraCondensedMedium.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-ExtraCondensedMediumItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-ExtraCondensedSemiBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-ExtraCondensedSemiBoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-ExtraCondensedThin.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-ExtraCondensedThinItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-ExtraLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-ExtraLightItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-Light.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-LightItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-Medium.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-MediumItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-Regular.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-SemiBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-SemiBoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-SemiCondensed.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-SemiCondensedBlack.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-SemiCondensedBlackItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-SemiCondensedBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-SemiCondensedBoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-SemiCondensedExtraBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-SemiCondensedExtraBoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-SemiCondensedExtraLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-SemiCondensedExtraLightItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-SemiCondensedItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-SemiCondensedLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-SemiCondensedLightItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-SemiCondensedMedium.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-SemiCondensedMediumItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-SemiCondensedSemiBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-SemiCondensedSemiBoldItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-SemiCondensedThin.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-SemiCondensedThinItalic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-Thin.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerif-ThinItalic.ttf"
+      ]
+    },
+    {
+      "name": "Noto Serif CJK SC",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\opentype\\noto\\NotoSerifCJK-Black.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\opentype\\noto\\NotoSerifCJK-Bold.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\opentype\\noto\\NotoSerifCJK-ExtraLight.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\opentype\\noto\\NotoSerifCJK-Light.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\opentype\\noto\\NotoSerifCJK-Medium.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\opentype\\noto\\NotoSerifCJK-Regular.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\opentype\\noto\\NotoSerifCJK-SemiBold.ttc"
+      ]
+    },
+    {
+      "name": "Noto Serif CJK TC",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\opentype\\noto\\NotoSerifCJK-Black.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\opentype\\noto\\NotoSerifCJK-Bold.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\opentype\\noto\\NotoSerifCJK-ExtraLight.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\opentype\\noto\\NotoSerifCJK-Light.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\opentype\\noto\\NotoSerifCJK-Medium.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\opentype\\noto\\NotoSerifCJK-Regular.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\opentype\\noto\\NotoSerifCJK-SemiBold.ttc"
+      ]
+    },
+    {
+      "name": "Noto Serif Hebrew",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\NotoSerifHebrew-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\NotoSerifHebrew-Regular.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-Black.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-Condensed.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-CondensedBlack.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-CondensedBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-CondensedExtraBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-CondensedExtraLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-CondensedLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-CondensedMedium.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-CondensedSemiBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-CondensedThin.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-ExtraBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-ExtraCondensed.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-ExtraCondensedBlack.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-ExtraCondensedBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-ExtraCondensedExtraBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-ExtraCondensedExtraLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-ExtraCondensedLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-ExtraCondensedMedium.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-ExtraCondensedSemiBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-ExtraCondensedThin.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-ExtraLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-Light.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-Medium.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-Regular.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-SemiBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-SemiCondensed.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-SemiCondensedBlack.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-SemiCondensedBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-SemiCondensedExtraBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-SemiCondensedExtraLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-SemiCondensedLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-SemiCondensedMedium.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-SemiCondensedSemiBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-SemiCondensedThin.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\noto\\NotoSerifHebrew-Thin.ttf"
+      ]
+    },
+    {
+      "name": "Noto Serif SC",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\NotoSerifSC-VF.ttf"
+      ]
+    },
+    {
+      "name": "NSimSun",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\simsun.ttc"
+      ]
+    },
+    {
+      "name": "OpenSymbol",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\opens___.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\libreoffice\\opens___.ttf"
+      ]
+    },
+    {
+      "name": "Palatino Linotype",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\pala.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\palab.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\palabi.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\palai.ttf"
+      ]
+    },
+    {
+      "name": "PMingLiU-ExtB",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\mingliub.ttc"
+      ]
+    },
+    {
+      "name": "Segoe Script",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\segoesc.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\segoescb.ttf"
+      ]
+    },
+    {
+      "name": "Segoe UI",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\segoeui.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\segoeuib.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\segoeuii.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\segoeuil.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\segoeuisl.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\segoeuiz.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\seguibl.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\seguibli.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\seguili.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\seguisb.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\seguisbi.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\seguisli.ttf"
+      ]
+    },
+    {
+      "name": "Segoe UI Emoji",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\seguiemj.ttf"
+      ]
+    },
+    {
+      "name": "Segoe UI Light",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\segoeuil.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\seguili.ttf"
+      ]
+    },
+    {
+      "name": "Segoe UI Semibold",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\seguisb.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\seguisbi.ttf"
+      ]
+    },
+    {
+      "name": "Segoe UI Symbol",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\seguisym.ttf"
+      ]
+    },
+    {
+      "name": "SimHei",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\simhei.ttf"
+      ]
+    },
+    {
+      "name": "SimSun",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\simsun.ttc"
+      ]
+    },
+    {
+      "name": "Sitka Text",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\SitkaVF-Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\SitkaVF.ttf"
+      ]
+    },
+    {
+      "name": "Sylfaen",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\sylfaen.ttf"
+      ]
+    },
+    {
+      "name": "Symbol",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\symbol.ttf"
+      ]
+    },
+    {
+      "name": "Tahoma",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\tahoma.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\tahomabd.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\tahoma.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\tahomabd.ttf"
+      ]
+    },
+    {
+      "name": "Times New Roman",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\times.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\timesbd.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\timesbi.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\timesi.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Times_New_Roman.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Times_New_Roman_Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Times_New_Roman_Bold_Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Times_New_Roman_Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Times_New_Roman.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Times_New_Roman_Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Times_New_Roman_Bold_Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Times_New_Roman_Italic.ttf"
+      ]
+    },
+    {
+      "name": "Trebuchet MS",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\trebuc.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\trebucbd.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\trebucbi.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\trebucit.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Trebuchet_MS.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Trebuchet_MS_Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Trebuchet_MS_Bold_Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Trebuchet_MS_Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Trebuchet_MS.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Trebuchet_MS_Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Trebuchet_MS_Bold_Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Trebuchet_MS_Italic.ttf"
+      ]
+    },
+    {
+      "name": "Ubuntu",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\ubuntu\\Ubuntu-Italic[wdth,wght].ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\ubuntu\\Ubuntu[wdth,wght].ttf"
+      ]
+    },
+    {
+      "name": "Univers",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\univers\\UniversBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\univers\\UniversCnBold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\univers\\UniversCnRg.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\univers\\UniversLight.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\univers\\UniversRegular.ttf"
+      ]
+    },
+    {
+      "name": "Verdana",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\verdana.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\verdanab.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\verdanai.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\verdanaz.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Verdana.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Verdana_Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Verdana_Bold_Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Verdana_Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Verdana_Bold.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Verdana_Italic.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Verdana_Bold_Italic.ttf"
+      ]
+    },
+    {
+      "name": "Webdings",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\webdings.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\msttcorefonts\\Webdings.ttf"
+      ]
+    },
+    {
+      "name": "Wingdings",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\wingding.ttf"
+      ]
+    },
+    {
+      "name": "Yu Gothic",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\YuGothB.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\YuGothL.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\YuGothM.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\YuGothR.ttc"
+      ]
+    },
+    {
+      "name": "Yu Gothic Light",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\YuGothL.ttc"
+      ]
+    },
+    {
+      "name": "Yu Mincho",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\yumin.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\yumindb.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\yuminl.ttf"
+      ]
+    },
+    {
+      "name": "メイリオ",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\meiryo.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\meiryob.ttc"
+      ]
+    },
+    {
+      "name": "宋体",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\simsun.ttc"
+      ]
+    },
+    {
+      "name": "微軟正黑體",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\msjh.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\msjhbd.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\msjhl.ttc"
+      ]
+    },
+    {
+      "name": "微软雅黑",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\msyh.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\msyhbd.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\msyhl.ttc"
+      ]
+    },
+    {
+      "name": "新細明體-ExtB",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\mingliub.ttc"
+      ]
+    },
+    {
+      "name": "楷体",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\simkai.ttf"
+      ]
+    },
+    {
+      "name": "游ゴシック",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\YuGothB.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\YuGothL.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\YuGothM.ttc",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\YuGothR.ttc"
+      ]
+    },
+    {
+      "name": "游ゴシック Light",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\YuGothL.ttc"
+      ]
+    },
+    {
+      "name": "游明朝",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\yumin.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\yumindb.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\yuminl.ttf"
+      ]
+    },
+    {
+      "name": "等线",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\Deng.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\Dengb.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\Dengl.ttf"
+      ]
+    },
+    {
+      "name": "等线 Light",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\Dengl.ttf"
+      ]
+    },
+    {
+      "name": "黑体",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\simhei.ttf"
+      ]
+    },
+    {
+      "name": "맑은 고딕",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\malgun.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\malgunbd.ttf",
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\malgunsl.ttf"
+      ]
+    },
+    {
+      "name": "ＭＳ ゴシック",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\msgothic.ttc"
+      ]
+    },
+    {
+      "name": "ＭＳ 明朝",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\msmincho.ttc"
+      ]
+    },
+    {
+      "name": "ＭＳ Ｐゴシック",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\msgothic.ttc"
+      ]
+    },
+    {
+      "name": "ＭＳ Ｐ明朝",
+      "files": [
+        "\\\\wsl.localhost\\Ubuntu-26.04\\usr\\share\\fonts\\truetype\\Fonts\\msmincho.ttc"
+      ]
+    }
+  ]
+}

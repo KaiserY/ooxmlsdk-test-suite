@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "pdf_version": "1.7",
+  "pages": [
+    {
+      "page_index": 0,
+      "width_pt": "612",
+      "height_pt": "792",
+      "content_operations": [
+        "q",
+        "1 0 0 -1 0 792 cm",
+        "0 0 0 rg",
+        "BT",
+        "0 Tr",
+        "/f0 12 Tf",
+        "1 0 0 -1 90 84 Tm",
+        "[<0001000200030004>] TJ",
+        "ET",
+        "Q",
+        "q",
+        "1 0 0 -1 0 792 cm",
+        "0 0 0 rg",
+        "BT",
+        "0 Tr",
+        "/f0 12 Tf",
+        "1 0 0 -1 90 136 Tm",
+        "[<0001000200030004>] TJ",
+        "ET",
+        "Q"
+      ],
+      "fonts": [
+        {
+          "resource_path": "page/f0",
+          "subtype": "Type0",
+          "base_font": "Calibri",
+          "encoding": "Identity-H",
+          "descendant_subtype": "CIDFontType2",
+          "descendant_base_font": "Calibri",
+          "first_char": null,
+          "last_char": null,
+          "simple_width_count": null,
+          "cid_width_entry_count": 12,
+          "descriptor_flags": 131076,
+          "font_bounds": "[0.0000 -193.8477 477.5391 680.1758]",
+          "ascent": "750.0000",
+          "descent": "-250.0000",
+          "cap_height": "631.8359",
+          "italic_angle": "0.0000",
+          "embedded_font_kind": "FontFile2",
+          "has_to_unicode": true,
+          "to_unicode_mapping_count": 4,
+          "to_unicode_error": null
+        }
+      ],
+      "xobjects": [],
+      "annotations": []
+    }
+  ],
+  "outlines": []
+}

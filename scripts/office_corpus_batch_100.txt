@@ -1,0 +1,105 @@
+# Apache POI: 35 files across DOC/DOCX/XLS/XLSX/PPT/PPTX.
+Apache-POI/test-data/document/47304.doc
+Apache-POI/test-data/document/47950_lower.doc
+Apache-POI/test-data/document/47950_normal.doc
+Apache-POI/test-data/document/47950_upper.doc
+Apache-POI/test-data/document/simple-list.doc
+Apache-POI/test-data/document/52420.doc
+Apache-POI/poi-examples/src/main/java/org/apache/poi/examples/xwpf/usermodel/bar-chart-template.docx
+Apache-POI/test-data/document/52288.docx
+Apache-POI/test-data/document/52449.docx
+Apache-POI/test-data/document/55733.docx
+Apache-POI/test-data/document/55966.docx
+Apache-POI/test-data/document/58618.docx
+Apache-POI/poi-examples/src/main/java/org/apache/poi/examples/ss/formula/mortgage-calculation.xls
+Apache-POI/test-data/spreadsheet/12843-1.xls
+Apache-POI/test-data/hpsf/TestThumbnail.xls
+Apache-POI/test-data/hpsf/TestUnicode.xls
+Apache-POI/test-data/spreadsheet/12561-1.xls
+Apache-POI/test-data/spreadsheet/12561-2.xls
+Apache-POI/test-data/spreadsheet/table-sample.xlsx
+Apache-POI/test-data/integration/stress020.xlsx
+Apache-POI/test-data/spreadsheet/58325_lt.xlsx
+Apache-POI/test-data/openxml4j/50154.xlsx
+Apache-POI/test-data/openxml4j/51444.xlsx
+Apache-POI/test-data/openxml4j/53282.xlsx
+Apache-POI/test-data/slideshow/41071.ppt
+Apache-POI/test-data/slideshow/37625.ppt
+Apache-POI/test-data/slideshow/119877_all type background_save_by_AOO.ppt
+Apache-POI/test-data/slideshow/basic_test_ppt_file.ppt
+Apache-POI/test-data/slideshow/23884_defense_FINAL_OOimport_edit.ppt
+Apache-POI/test-data/slideshow/Single_Coloured_Page.ppt
+Apache-POI/poi-examples/src/main/java/org/apache/poi/examples/xslf/bar-chart-template.pptx
+Apache-POI/poi-examples/src/main/java/org/apache/poi/examples/xslf/pie-chart-template.pptx
+Apache-POI/test-data/slideshow/picture-transparency.pptx
+Apache-POI/test-data/integration/stress013.pptx
+Apache-POI/test-data/integration/stress021.pptx
+
+# LibreOffice: 35 files across DOC/DOCX/XLS/XLSX/PPT/PPTX.
+LibreOffice/svx/qa/unit/data/tdf145700_3D_FrontLightDim.doc
+LibreOffice/embeddedobj/qa/cppunit/data/insert-file-config.doc
+LibreOffice/svx/qa/unit/data/tdf145700_3D_FirstLightHarsh.doc
+LibreOffice/svx/qa/unit/data/tdf121845_HalfEllipseVML.doc
+LibreOffice/svx/qa/unit/data/tdf121845_start40_swing480.doc
+LibreOffice/svx/qa/unit/data/tdf124029_Arc_position.doc
+LibreOffice/chart2/qa/extras/data/docx/3d-bar-label.docx
+LibreOffice/chart2/qa/extras/data/docx/Bar_horizontal_cone.docx
+LibreOffice/chart2/qa/extras/data/docx/DisplayUnits.docx
+LibreOffice/chart2/qa/extras/data/docx/FDO74430.docx
+LibreOffice/chart2/qa/extras/data/docx/FDO75975.docx
+LibreOffice/chart2/qa/extras/data/docx/MSO_Custom_Leader_Line.docx
+LibreOffice/basic/qa/vba_tests/data/ADODBdata.xls
+LibreOffice/chart2/qa/extras/data/xls/axis_sourceformatting.xls
+LibreOffice/chart2/qa/extras/data/xls/chart.xls
+LibreOffice/chart2/qa/extras/data/xls/piechart_outside.xls
+LibreOffice/chart2/qa/extras/data/xls/source_number_format_axis.xls
+LibreOffice/chart2/qa/extras/data/xls/testRotatedAxisTitlePositions.xls
+LibreOffice/chart2/qa/extras/chart2dump/data/tdf118150.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/ChartDataTable.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/DataTable-MultipleLegendEntriesForOneDataSeries.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/SimpleHistogram.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/add_series_secondary_axis.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/auto_marker_excel10.xlsx
+LibreOffice/svx/qa/unit/data/tdf157543_5PointStar.ppt
+LibreOffice/sd/qa/unit/data/fdo64586.ppt
+LibreOffice/sd/qa/unit/data/n758621.ppt
+LibreOffice/sd/qa/unit/data/ppt/FillPatterns.ppt
+LibreOffice/sd/qa/unit/data/ppt/crop.ppt
+LibreOffice/sd/qa/unit/data/ppt/fdo68594.ppt
+LibreOffice/chart2/qa/extras/chart2dump/data/date-categories.pptx
+LibreOffice/chart2/qa/extras/data/pptx/1904NullDate.pptx
+LibreOffice/chart2/qa/extras/data/pptx/CustomDataLabel_tdf115107.pptx
+LibreOffice/chart2/qa/extras/data/pptx/PieChartWithAutomaticLayout_SizeAndPosition.pptx
+LibreOffice/chart2/qa/extras/data/pptx/bnc864396.pptx
+
+# Open XML SDK: 30 DOCX/XLSX/PPTX files.
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Graphics/2D Column-O12-Word-Charts.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Graphics/AllShadows-O12-Word-OartTextEffects.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Graphics/AlphaMod - Parent Cont - Enum tree.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/AbbreviatedCaseNumber-Abbreviated Case Number.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/BookAuthor-Book Author.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/City-City.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/CommentRangeStart.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/argSz-Argument Size (Sub-Superscript Function Superscript)-val--2.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/bdr-Text Border-themeColor-text1.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/bottom-Bottom Border-themeColor-dark1.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Excel/2D Rotation-O12-XL-OartEffects.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Excel/Contrast-O12-XL-PictureProperties.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Excel/Hyperlinks on OArt Objects-O12-XL-Hyperlinks.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Excel/OLE-O12-XL-OLE.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Excel/Photo Formats - CGM-O12-XL-Pictures.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Excel/Recolor(Graphics mode)-O12-XL-PictureProperties.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Excel/filter_type.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Excel/xl8galry.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Graphics/2D Rotation-O12-XL-OartEffects.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Graphics/3D Bar-O12-XL-Charts.xlsx
+Open-XML-SDK/samples/Linq/SvgExample/Content/EmptySlide.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Graphics/2D Area-O12-PPT-Charts.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Graphics/3D Pie-O12-PPT-Charts.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Graphics/5.9.3.7(unfinished).pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Graphics/Accent1sysClr.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Graphics/algnDist_mainLvl5ppr_AlignmentLevel5Distributed.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Graphics/algnJustLow_mainLvl4ppr_AlignmentLevel4JustifiedLow.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Graphics/algnJust_mainLvl4ppr_AlignmentLevel4Justified.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Graphics/algnR_mainLvl5ppr_AlignmentLevel5Right.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Graphics/algnThaiDist_mainLvl5ppr_AlignmentLevel5ThaiDistributed.pptx

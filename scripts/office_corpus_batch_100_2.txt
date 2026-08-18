@@ -1,0 +1,105 @@
+# Apache POI: 35 new files across DOC/DOCX/XLS/XLSX/PPT/PPTX.
+Apache-POI/test-data/document/53379.doc
+Apache-POI/test-data/document/53446.doc
+Apache-POI/test-data/document/56880.doc
+Apache-POI/test-data/document/57603-seven_columns.doc
+Apache-POI/test-data/document/58804.doc
+Apache-POI/test-data/document/58804_1.doc
+Apache-POI/test-data/document/57312.docx
+Apache-POI/test-data/document/58067.docx
+Apache-POI/test-data/document/59030.docx
+Apache-POI/test-data/document/59378.docx
+Apache-POI/test-data/document/60293.docx
+Apache-POI/test-data/document/60316.docx
+Apache-POI/test-data/spreadsheet/12843-2.xls
+Apache-POI/test-data/spreadsheet/13224.xls
+Apache-POI/test-data/spreadsheet/13796.xls
+Apache-POI/test-data/spreadsheet/14330-1.xls
+Apache-POI/test-data/spreadsheet/14330-2.xls
+Apache-POI/test-data/spreadsheet/14460.xls
+Apache-POI/test-data/openxml4j/64473.xlsx
+Apache-POI/test-data/openxml4j/ExcelWithHyperlinks.xlsx
+Apache-POI/test-data/openxml4j/OPCCompliance_NoCoreProperties.xlsx
+Apache-POI/test-data/openxml4j/sample.xlsx
+Apache-POI/test-data/spreadsheet/1_NoIden.xlsx
+Apache-POI/test-data/spreadsheet/SampleSS.xlsx
+Apache-POI/test-data/slideshow/38256.ppt
+Apache-POI/test-data/slideshow/41246-1.ppt
+Apache-POI/test-data/slideshow/41246-2.ppt
+Apache-POI/test-data/slideshow/41384.ppt
+Apache-POI/test-data/slideshow/42474-1.ppt
+Apache-POI/test-data/slideshow/42474-2.ppt
+Apache-POI/test-data/slideshow/themes.pptx
+Apache-POI/test-data/openxml4j/at.pzp.www_uploads_media_PP_Scheinecker-jdk6error.pptx
+Apache-POI/test-data/slideshow/2411-Performance_Up.pptx
+Apache-POI/test-data/slideshow/45541_Footer.pptx
+Apache-POI/test-data/slideshow/45541_Header.pptx
+
+# LibreOffice: 35 new files across DOC/DOCX/XLS/XLSX/PPT/PPTX.
+LibreOffice/svx/qa/unit/data/tdf145700_3D_NonUI.doc
+LibreOffice/svx/qa/unit/data/tdf145904_center_Y0dot25.doc
+LibreOffice/sw/qa/extras/ww8import/data/tdf125281.doc
+LibreOffice/sw/qa/extras/ww8import/data/tdf124601.doc
+LibreOffice/sw/qa/extras/ww8import/data/floating-table-section-columns.doc
+LibreOffice/sw/qa/extras/ww8import/data/n816593.doc
+LibreOffice/chart2/qa/extras/data/docx/MSO_axis_position.docx
+LibreOffice/chart2/qa/extras/data/docx/PieChartDataLabels.docx
+LibreOffice/chart2/qa/extras/data/docx/TableOnPage3.docx
+LibreOffice/chart2/qa/extras/data/docx/UpDownBars.docx
+LibreOffice/chart2/qa/extras/data/docx/area-chart-labels.docx
+LibreOffice/chart2/qa/extras/data/docx/bar-chart-labels.docx
+LibreOffice/chart2/qa/extras/xshape/data/xls/tdf150832.xls
+LibreOffice/sc/qa/extras/testdocuments/AutoFilter.xls
+LibreOffice/sc/qa/extras/testdocuments/CalcFont.xls
+LibreOffice/sc/qa/extras/testdocuments/CheckOptionToggleValue.xls
+LibreOffice/sc/qa/extras/testdocuments/GeneratedEventTest.xls
+LibreOffice/sc/qa/extras/testdocuments/MiscControlTests.xls
+LibreOffice/chart2/qa/extras/data/xlsx/autotitledel_2007.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/autotitledel_2013.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/axis-label-rotation.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/axis_character_properties.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/axis_title_default_rotation.xlsx
+LibreOffice/chart2/qa/extras/data/xlsx/axis_title_rotated.xlsx
+LibreOffice/sd/qa/unit/data/ppt/indent_multiple_spacings.ppt
+LibreOffice/sd/qa/unit/data/ppt/loopNoPause.ppt
+LibreOffice/sd/qa/unit/data/ppt/novell6655408.ppt
+LibreOffice/sd/qa/unit/data/ppt/ppt-indentation-bullets.ppt
+LibreOffice/sd/qa/unit/data/ppt/tdf105150.ppt
+LibreOffice/sd/qa/unit/data/ppt/tdf115394.ppt
+LibreOffice/chart2/qa/extras/data/pptx/bnc882383.pptx
+LibreOffice/chart2/qa/extras/data/pptx/bnc889755.pptx
+LibreOffice/chart2/qa/extras/data/pptx/chart.pptx
+LibreOffice/chart2/qa/extras/data/pptx/funnel-pp1.pptx
+LibreOffice/chart2/qa/extras/data/pptx/percentage-number-formats.pptx
+
+# Open XML SDK: 30 new DOCX/XLSX/PPTX files.
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/bottom-Bottom Border-val-holly.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/bottom-Bottom Border-val-zigZagStitch.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/bottom-Table Cell Bottom Border-val-double.docx.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/clrSchemeMapping-theme color-w-bg2-background2-light1.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/customXmlDelRangeStart-Custom XML Markup Deletion Start-val-author-special-chars.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/document - HexColor - RGB - Document Background.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/eastAsianLayout-East Asian Typography Settings-vert-1.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/fldSimple-Field Definitions-GreetingLine.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/fldSimple-FormulasAndExpressions-Bookmark-GeneralFormat.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/ftr - Footer - bookmarkStart - Bookmark Start.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Graphics/3D Rotation(Parallel)-O12-XL-OartEffects.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Graphics/3DRotation-O12-XL-OartTextEffects.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Graphics/ActiveXControls-O12-XL-Controls.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Graphics/Axis Title-O12-XL-ChartProperties.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Graphics/Bevel-O12-XL-OartEffects.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/XL/WebExtension/Bing.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O15Conformance/XL/WebExtension/Youtube.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/ForTestCase/worksheets.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/asSources/spreadsheet/SST.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/asSources/spreadsheet/SharedWorkbook.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Graphics/anchorModified.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Graphics/audioCdModifiedAndReSaved.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/4.6.10 bg.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/Photo Album3.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/[HC]animclr-Direction-cw.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/[HC]bg-Background-bwmode-white.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/[HC]clrMap-ColorMap-accent1-accent3.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/[HC]cmedianode-CommonMediaNodProperties.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/[HC]gridSpacing-GidSpacing-cy-0.pptx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/[HC]grpsppr-GroupShapeProperties-bwmode-ltgray.pptx

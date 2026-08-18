@@ -1,0 +1,102 @@
+# Checked Office PDF batch 29: Apache POI 19, LibreOffice 63, Open XML SDK 18.
+# Format mix: DOC 11, DOCX 65, XLS 15, XLSX 9 (PowerPoint recovery fallback).
+Apache-POI/test-data/hpsf/TestShiftJIS.doc
+Apache-POI/test-data/openxml4j/OPCCompliance_DerivedPartNameFAIL.docx
+Apache-POI/test-data/openxml4j/TestCreatePackageOUTPUT.docx
+Apache-POI/test-data/openxml4j/TestOpenPackageINPUT.docx
+Apache-POI/test-data/openxml4j/TestOpenPackageOUTPUT.docx
+Apache-POI/test-data/openxml4j/TestPackageCommon.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/cell-btlr.docx
+Apache-POI/test-data/spreadsheet/ex42564-elementOrder.xls
+Apache-POI/test-data/spreadsheet/ex42570-20305.xls
+Apache-POI/test-data/spreadsheet/ex44921-21902.xls
+Apache-POI/test-data/spreadsheet/ex45046-21984.xls
+Apache-POI/test-data/spreadsheet/ex45582-22397.xls
+Apache-POI/test-data/spreadsheet/ex45672.xls
+Apache-POI/test-data/spreadsheet/ex45698-22488.xls
+Apache-POI/test-data/spreadsheet/ex45978-extraLinkTableSheets.xls
+Apache-POI/test-data/spreadsheet/ex46548-23133.xls
+Apache-POI/test-data/spreadsheet/ex47747-sharedFormula.xls
+Apache-POI/test-data/spreadsheet/excel_with_embeded.xls
+Apache-POI/test-data/spreadsheet/excelant.xls
+Apache-POI/test-data/spreadsheet/xxe_in_schema.xlsx
+LibreOffice/sc/qa/uitest/data/tdf159707.xls
+LibreOffice/sc/qa/uitest/data/tdf77509.xls
+LibreOffice/sc/qa/unit/data/xls/XlStartupExternal.xls
+LibreOffice/sc/qa/unit/data/xlsx/pivot-table/test_diff_aggregation.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot-table/two-data-fields.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot-table/with-strings-integers-and-dates.xlsx
+LibreOffice/sc/qa/unit/data/xlsx/pivot/Pivot1_Row.xlsx
+LibreOffice/sw/qa/extras/layout/data/tdf116925.docx
+LibreOffice/sw/qa/extras/layout/data/tdf117028.docx
+LibreOffice/sw/qa/extras/layout/data/tdf117188.docx
+LibreOffice/sw/qa/extras/layout/data/tdf117923.docx
+LibreOffice/sw/qa/extras/layout/data/tdf117982.docx
+LibreOffice/sw/qa/extras/layout/data/tdf122014.docx
+LibreOffice/sw/qa/extras/layout/data/tdf122225.docx
+LibreOffice/sw/qa/extras/layout/data/tdf122878.docx
+LibreOffice/sw/qa/extras/ooxmlexport/data/cell-grid-span.docx
+LibreOffice/sw/qa/extras/layout/data/tdf123651.docx
+LibreOffice/sw/qa/extras/layout/data/tdf124261.docx
+LibreOffice/sw/qa/extras/layout/data/tdf124423.docx
+LibreOffice/sw/qa/extras/layout/data/tdf124600.docx
+LibreOffice/sw/qa/extras/layout/data/tdf125300.docx
+LibreOffice/sw/qa/extras/layout/data/tdf125893.docx
+LibreOffice/sw/qa/extras/layout/data/tdf126244.docx
+LibreOffice/sw/qa/extras/layout/data/tdf127118.docx
+LibreOffice/sw/qa/extras/layout/data/tdf128198-1.docx
+LibreOffice/sw/qa/extras/layout/data/tdf128399.docx
+LibreOffice/sw/qa/extras/layout/data/tdf128959.docx
+LibreOffice/sw/qa/extras/layout/data/tdf128996.docx
+LibreOffice/sw/qa/extras/layout/data/tdf129054.docx
+LibreOffice/sw/qa/extras/layout/data/tdf129095.docx
+LibreOffice/sw/qa/extras/layout/data/tdf130031.docx
+LibreOffice/sw/qa/extras/layout/data/tdf130088.docx
+LibreOffice/sw/qa/extras/layout/data/tdf130380.docx
+LibreOffice/sw/qa/extras/layout/data/tdf130969.docx
+LibreOffice/sw/qa/extras/layout/data/tdf132956.docx
+LibreOffice/sw/qa/extras/layout/data/tdf134146.docx
+LibreOffice/sw/qa/extras/layout/data/tdf134235.docx
+LibreOffice/sw/qa/extras/layout/data/tdf134277.docx
+LibreOffice/sw/qa/extras/layout/data/tdf134463.docx
+LibreOffice/sw/qa/extras/layout/data/tdf134659.docx
+LibreOffice/sw/qa/extras/layout/data/tdf134676.docx
+LibreOffice/sw/qa/extras/layout/data/tdf134685.docx
+LibreOffice/sw/qa/extras/layout/data/tdf134866.docx
+LibreOffice/sw/qa/extras/layout/data/tdf135035.docx
+LibreOffice/sw/qa/extras/layout/data/tdf136061.docx
+LibreOffice/sw/qa/extras/layout/data/tdf136588.docx
+LibreOffice/sw/qa/extras/layout/data/tdf136613.docx
+LibreOffice/sw/qa/extras/layout/data/tdf137025.docx
+LibreOffice/sw/qa/extras/layout/data/tdf137116.docx
+LibreOffice/sw/qa/extras/layout/data/tdf137154.docx
+LibreOffice/sw/qa/extras/layout/data/tdf138018.docx
+LibreOffice/sw/qa/extras/layout/data/tdf138465min.docx
+LibreOffice/sw/qa/extras/ww8export/data/btlr-cell.doc
+LibreOffice/sw/qa/extras/ww8export/data/clearing-break.doc
+LibreOffice/sw/qa/extras/ww8export/data/commented-table.doc
+LibreOffice/sw/qa/extras/ww8export/data/comments-nested.doc
+LibreOffice/sw/qa/extras/ww8export/data/continuous-sections.doc
+LibreOffice/sw/qa/extras/ww8export/data/cp1000044.doc
+LibreOffice/sw/qa/extras/ww8export/data/fdo36868.doc
+LibreOffice/sw/qa/extras/ww8export/data/fdo53985.doc
+LibreOffice/sw/qa/extras/ww8export/data/fdo56513.doc
+LibreOffice/sw/qa/extras/ww8export/data/n816603.doc
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/RelationalPivotB5.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/RelationalPivotB6.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/SST.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/SharedWorkbook.xlsx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/watermark/background - texture.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/watermark/background - yellow 2 green.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/watermark/background.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/watermark/chinese watermark with font size color specified.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/watermark/confidential - upper.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/watermark/draft - horizotal.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/watermark/picture watermark with auto scale and washout.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/watermark/picture watermark with scale 150% and washout effect.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/watermark/picture watermark with scale 50% and not washout.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/AnnotationRef.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/mcdoc.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/Comments.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/Complex01.docx
+Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/Data-Bound-Content-Controls.docx
