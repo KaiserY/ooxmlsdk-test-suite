@@ -1,12 +1,13 @@
 use std::env;
+use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::Duration;
 
 use ooxmlsdk_pdf_test::{
-    audit_campaign, audit_one_with_artifacts, convert_campaign, generate_campaign_assignments,
-    read_plan, scan_campaign_font_references, scan_local_font_candidates, validate_assignments,
-    workspace_root, write_plan,
+    audit_campaign, audit_one_with_artifacts, audit_worker_loop, convert_campaign,
+    generate_campaign_assignments, read_plan, scan_campaign_font_references,
+    scan_local_font_candidates, validate_assignments, workspace_root, write_plan,
 };
 
 fn main() -> ExitCode {
@@ -139,7 +140,7 @@ fn run() -> Result<(), String> {
                     ));
                 }
             };
-            let jobs = optional_number(&arguments, "--jobs")?.unwrap_or(4);
+            let jobs = optional_number(&arguments, "--jobs")?.unwrap_or_else(default_audit_jobs);
             let timeout_seconds = optional_number(&arguments, "--timeout-seconds")?.unwrap_or(180);
             reject_unknown_options(
                 &arguments,
@@ -171,6 +172,10 @@ fn run() -> Result<(), String> {
             let write_artifacts = optional_bool(&arguments, "--write-artifacts")?.unwrap_or(false);
             reject_unknown_options(&arguments, &["--task", "--result", "--write-artifacts"])?;
             audit_one_with_artifacts(&task, &result, write_artifacts)?;
+        }
+        "audit-worker" => {
+            reject_unknown_options(&arguments, &[])?;
+            audit_worker_loop()?;
         }
         "help" | "--help" | "-h" => println!("{}", usage()),
         _ => return Err(format!("unknown command {command:?}\n{}", usage())),
@@ -235,6 +240,17 @@ fn optional_bool(arguments: &[String], option: &str) -> Result<Option<bool>, Str
         .transpose()
 }
 
+fn default_audit_jobs() -> usize {
+    let parallelism = std::thread::available_parallelism()
+        .map(NonZeroUsize::get)
+        .unwrap_or(4);
+    audit_jobs_for_parallelism(parallelism)
+}
+
+fn audit_jobs_for_parallelism(parallelism: usize) -> usize {
+    parallelism.clamp(1, 12)
+}
+
 fn option_value(arguments: &[String], option: &str) -> Result<Option<String>, String> {
     let mut value = None;
     let mut index = 0;
@@ -274,6 +290,19 @@ fn reject_unknown_options(arguments: &[String], known: &[&str]) -> Result<(), St
 }
 
 fn usage() -> String {
-    "usage:\n  office_pdf_campaign generate-plan [--plan PATH]\n  office_pdf_campaign validate-plan [--plan PATH]\n  office_pdf_campaign font-scan [--plan PATH] [--output PATH]\n  office_pdf_campaign local-font-candidates [--references PATH] [--output PATH]\n  office_pdf_campaign convert [--plan PATH] [--selection pilot-300|full] [--pwsh PATH] [--jobs N] [--timeout-seconds N] [--max-attempts N]\n  office_pdf_campaign audit [--plan PATH] [--selection pilot-300|full] [--jobs N] [--timeout-seconds N]\n  office_pdf_campaign audit-one --task PATH --result PATH [--write-artifacts true|false]"
+    "usage:\n  office_pdf_campaign generate-plan [--plan PATH]\n  office_pdf_campaign validate-plan [--plan PATH]\n  office_pdf_campaign font-scan [--plan PATH] [--output PATH]\n  office_pdf_campaign local-font-candidates [--references PATH] [--output PATH]\n  office_pdf_campaign convert [--plan PATH] [--selection pilot-300|full] [--pwsh PATH] [--jobs N] [--timeout-seconds N] [--max-attempts N]\n  office_pdf_campaign audit [--plan PATH] [--selection pilot-300|full] [--jobs N] [--timeout-seconds N]\n  office_pdf_campaign audit-one --task PATH --result PATH [--write-artifacts true|false]\n  office_pdf_campaign audit-worker"
         .to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::audit_jobs_for_parallelism;
+
+    #[test]
+    fn default_audit_jobs_use_available_parallelism_with_a_safe_cap() {
+        assert_eq!(audit_jobs_for_parallelism(0), 1);
+        assert_eq!(audit_jobs_for_parallelism(8), 8);
+        assert_eq!(audit_jobs_for_parallelism(16), 12);
+        assert_eq!(audit_jobs_for_parallelism(64), 12);
+    }
 }

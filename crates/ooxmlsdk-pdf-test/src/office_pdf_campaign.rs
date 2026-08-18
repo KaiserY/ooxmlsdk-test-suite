@@ -2,8 +2,8 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fs::{self, File};
 use std::io::{BufRead, BufReader, BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
-use std::process::{Child, Command, Stdio};
-use std::sync::Arc;
+use std::process::{Child, ChildStdin, Command, Stdio};
+use std::sync::{Arc, mpsc};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use walkdir::WalkDir;
 
-use crate::office_golden::compare_office_golden_detailed_with_options;
+use crate::office_golden::compare_office_golden_detailed_with_prevalidated_options;
 use crate::{OfficeGoldenCase, VisualTolerance};
 
 pub const CAMPAIGN_SCHEMA_VERSION: u32 = 1;
@@ -27,6 +27,8 @@ pub const CAMPAIGN_SEED: &str = "ooxmlsdk-office-pdf-options-2026-08-18-v1";
 pub const EXPECTED_ASSIGNMENT_COUNT: usize = 5_370;
 pub const PILOT_PER_FAMILY: usize = 100;
 pub const PILOT_ASSIGNMENT_COUNT: usize = 300;
+
+const AUDIT_WORKER_POLL_INTERVAL: Duration = Duration::from_millis(10);
 
 const LOCALES: [&str; 8] = [
     "zh-CN", "zh-TW", "ja-JP", "ko-KR", "en-US", "de-DE", "fr-FR", "es-ES",
@@ -2358,6 +2360,19 @@ struct AuditTask {
     conversion: CampaignConversionRecord,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+struct AuditWorkerRequest {
+    configuration_id: String,
+    task_path: PathBuf,
+    result_path: PathBuf,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct AuditWorkerResponse {
+    configuration_id: String,
+    error: Option<String>,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct CampaignAuditRecord {
     pub corpus: String,
@@ -2497,58 +2512,122 @@ pub fn audit_campaign(
         }
     }
 
-    let mut pending = tasks.into_iter();
-    let mut running = Vec::<RunningAudit>::new();
-    loop {
-        while running.len() < jobs {
-            let Some(task) = pending.next() else {
-                break;
-            };
-            running.push(spawn_audit_worker(
-                executable,
-                &task_root,
-                &result_root,
-                task,
-            )?);
+    let report_path = work_root.join(format!("{selection_name}-audit.jsonl"));
+    let serial_task_count = prioritize_audit_tasks(&mut tasks, &report_path, timeout);
+    let mut pending = tasks
+        .into_iter()
+        .enumerate()
+        .map(|(index, task)| {
+            prepare_audit_task(&task_root, &result_root, task, index < serial_task_count)
+        })
+        .collect::<Result<VecDeque<_>, _>>()?;
+    let desired_worker_count = jobs.min(pending.len());
+    let initial_worker_count = if serial_task_count == 0 {
+        desired_worker_count
+    } else {
+        1
+    };
+    let mut serial_tasks_remaining = serial_task_count;
+    let mut workers = Vec::with_capacity(desired_worker_count);
+    for _ in 0..initial_worker_count {
+        match spawn_audit_worker(executable) {
+            Ok(worker) => workers.push(worker),
+            Err(error) => {
+                shutdown_audit_workers(&mut workers, true);
+                return Err(error);
+            }
         }
-        if running.is_empty() {
+    }
+    for worker in &mut workers {
+        if let Some(task) = pending.pop_front() {
+            assign_audit_task(worker, task)?;
+        }
+    }
+
+    loop {
+        if pending.is_empty() && workers.iter().all(|worker| worker.active.is_none()) {
             break;
         }
         let mut index = 0;
-        while index < running.len() {
-            let status = running[index]
-                .child
-                .try_wait()
-                .map_err(|error| format!("could not poll audit worker: {error}"))?;
-            if let Some(status) = status {
-                let worker = running.swap_remove(index);
-                records.push(finish_audit_worker(worker, status.success())?);
-                continue;
-            }
-            if running[index].started.elapsed() >= timeout {
-                let mut worker = running.swap_remove(index);
-                let _ = worker.child.kill();
-                let _ = worker.child.wait();
-                records.push(CampaignAuditRecord {
-                    corpus: worker.task.assignment.corpus,
-                    file: worker.task.assignment.file,
-                    family: worker.task.assignment.family,
-                    configuration_id: worker.task.assignment.configuration_id,
-                    reference_status: worker.task.conversion.status,
-                    verdict: "INFRA_TIMEOUT".to_string(),
-                    layer: None,
-                    diagnostic_kind: None,
-                    page_index: None,
-                    line_index: None,
-                    elapsed_ms: worker.started.elapsed().as_millis(),
-                    message: format!("candidate audit exceeded {} seconds", timeout.as_secs()),
-                });
-                continue;
+        while index < workers.len() {
+            match poll_audit_worker(&workers[index], timeout) {
+                AuditWorkerEvent::Pending => {}
+                AuditWorkerEvent::Completed(response) => {
+                    let active = workers[index]
+                        .active
+                        .take()
+                        .expect("completed audit worker must have an active task");
+                    let expected_id = &active.task.assignment.configuration_id;
+                    let (error, restart) = match response {
+                        Ok(response) if response.configuration_id == *expected_id => {
+                            (response.error, false)
+                        }
+                        Ok(response) => (
+                            Some(format!(
+                                "audit worker response identity mismatch: expected={expected_id}, actual={}",
+                                response.configuration_id
+                            )),
+                            true,
+                        ),
+                        Err(error) => (Some(error), true),
+                    };
+                    let constrains_parallelism = active.constrains_parallelism;
+                    records.push(finish_audit_worker(active, error)?);
+                    if constrains_parallelism {
+                        serial_tasks_remaining = serial_tasks_remaining.saturating_sub(1);
+                    }
+                    if restart {
+                        stop_audit_worker(&mut workers[index], true);
+                        workers[index] = spawn_audit_worker(executable)?;
+                    }
+                }
+                AuditWorkerEvent::TimedOut => {
+                    let active = workers[index]
+                        .active
+                        .take()
+                        .expect("timed-out audit worker must have an active task");
+                    let constrains_parallelism = active.constrains_parallelism;
+                    records.push(audit_timeout_record(&active, timeout));
+                    if constrains_parallelism {
+                        serial_tasks_remaining = serial_tasks_remaining.saturating_sub(1);
+                    }
+                    stop_audit_worker(&mut workers[index], true);
+                    workers[index] = spawn_audit_worker(executable)?;
+                }
+                AuditWorkerEvent::Disconnected => {
+                    let active = workers[index]
+                        .active
+                        .take()
+                        .expect("disconnected audit worker must have an active task");
+                    let constrains_parallelism = active.constrains_parallelism;
+                    records.push(finish_audit_worker(
+                        active,
+                        Some("audit worker exited before returning a response".to_string()),
+                    )?);
+                    if constrains_parallelism {
+                        serial_tasks_remaining = serial_tasks_remaining.saturating_sub(1);
+                    }
+                    stop_audit_worker(&mut workers[index], true);
+                    workers[index] = spawn_audit_worker(executable)?;
+                }
             }
             index += 1;
         }
-        thread::sleep(Duration::from_millis(100));
+        if serial_tasks_remaining == 0 {
+            while workers.len() < desired_worker_count {
+                workers.push(spawn_audit_worker(executable)?);
+            }
+        }
+        for worker in &mut workers {
+            if worker.active.is_none()
+                && let Some(task) = pending.pop_front()
+            {
+                assign_audit_task(worker, task)?;
+            }
+        }
+        thread::sleep(AUDIT_WORKER_POLL_INTERVAL);
     }
+    shutdown_audit_workers(&mut workers, false);
 
     records.sort_by(|left, right| {
         (&left.family, &left.corpus, &left.file).cmp(&(&right.family, &right.corpus, &right.file))
@@ -2559,7 +2638,6 @@ pub fn audit_campaign(
             records.len()
         ));
     }
-    let report_path = work_root.join(format!("{selection_name}-audit.jsonl"));
     write_json_lines(&report_path, &records)?;
     let mut verdicts = BTreeMap::new();
     let mut layers = BTreeMap::new();
@@ -2616,31 +2694,93 @@ pub fn audit_campaign(
     Ok(summary)
 }
 
+struct PendingAudit {
+    task: AuditTask,
+    task_path: PathBuf,
+    result_path: PathBuf,
+    constrains_parallelism: bool,
+}
+
 struct RunningAudit {
-    child: Child,
     started: Instant,
     task: AuditTask,
     result_path: PathBuf,
+    constrains_parallelism: bool,
 }
 
-fn spawn_audit_worker(
-    executable: &Path,
+struct AuditWorkerProcess {
+    child: Option<Child>,
+    input: Option<BufWriter<ChildStdin>>,
+    responses: mpsc::Receiver<std::result::Result<AuditWorkerResponse, String>>,
+    reader: Option<thread::JoinHandle<()>>,
+    active: Option<RunningAudit>,
+}
+
+enum AuditWorkerEvent {
+    Pending,
+    Completed(std::result::Result<AuditWorkerResponse, String>),
+    TimedOut,
+    Disconnected,
+}
+
+fn prioritize_audit_tasks(tasks: &mut [AuditTask], report_path: &Path, timeout: Duration) -> usize {
+    let Ok(file) = File::open(report_path) else {
+        return 0;
+    };
+    let elapsed_by_id = BufReader::new(file)
+        .lines()
+        .map_while(Result::ok)
+        .filter_map(|line| serde_json::from_str::<CampaignAuditRecord>(&line).ok())
+        .map(|record| (record.configuration_id, record.elapsed_ms))
+        .collect::<BTreeMap<_, _>>();
+    if elapsed_by_id.is_empty() {
+        return 0;
+    }
+    tasks.sort_by(|left, right| {
+        let left_elapsed = elapsed_by_id
+            .get(&left.assignment.configuration_id)
+            .copied()
+            .unwrap_or_default();
+        let right_elapsed = elapsed_by_id
+            .get(&right.assignment.configuration_id)
+            .copied()
+            .unwrap_or_default();
+        right_elapsed.cmp(&left_elapsed)
+    });
+    let serial_threshold = timeout.as_millis() / 2;
+    tasks
+        .iter()
+        .take_while(|task| {
+            elapsed_by_id
+                .get(&task.assignment.configuration_id)
+                .is_some_and(|elapsed| *elapsed >= serial_threshold)
+        })
+        .count()
+}
+
+fn prepare_audit_task(
     task_root: &Path,
     result_root: &Path,
     task: AuditTask,
-) -> Result<RunningAudit, String> {
+    constrains_parallelism: bool,
+) -> Result<PendingAudit, String> {
     let stem = &task.assignment.configuration_id;
     let task_path = task_root.join(format!("{stem}.json"));
     let result_path = result_root.join(format!("{stem}.json"));
     write_json(&task_path, &task)?;
-    let child = Command::new(executable)
-        .arg("audit-one")
-        .arg("--task")
-        .arg(&task_path)
-        .arg("--result")
-        .arg(&result_path)
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
+    Ok(PendingAudit {
+        task,
+        task_path,
+        result_path,
+        constrains_parallelism,
+    })
+}
+
+fn spawn_audit_worker(executable: &Path) -> Result<AuditWorkerProcess, String> {
+    let mut child = Command::new(executable)
+        .arg("audit-worker")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
         .stderr(Stdio::null())
         .spawn()
         .map_err(|error| {
@@ -2649,27 +2789,118 @@ fn spawn_audit_worker(
                 executable.display()
             )
         })?;
-    Ok(RunningAudit {
-        child,
-        started: Instant::now(),
-        task,
-        result_path,
+    let input = child
+        .stdin
+        .take()
+        .ok_or_else(|| "audit worker has no stdin pipe".to_string())?;
+    let output = child
+        .stdout
+        .take()
+        .ok_or_else(|| "audit worker has no stdout pipe".to_string())?;
+    let (sender, responses) = mpsc::channel();
+    let reader = thread::spawn(move || {
+        for (line_index, line) in BufReader::new(output).lines().enumerate() {
+            let response = line
+                .map_err(|error| format!("could not read audit worker response: {error}"))
+                .and_then(|line| {
+                    serde_json::from_str(&line).map_err(|error| {
+                        format!(
+                            "invalid audit worker response line {}: {error}",
+                            line_index + 1
+                        )
+                    })
+                });
+            let stop = response.is_err();
+            if sender.send(response).is_err() || stop {
+                break;
+            }
+        }
+    });
+    Ok(AuditWorkerProcess {
+        child: Some(child),
+        input: Some(BufWriter::new(input)),
+        responses,
+        reader: Some(reader),
+        active: None,
     })
 }
 
-fn finish_audit_worker(worker: RunningAudit, success: bool) -> Result<CampaignAuditRecord, String> {
-    let result = if success {
+fn assign_audit_task(worker: &mut AuditWorkerProcess, pending: PendingAudit) -> Result<(), String> {
+    if worker.active.is_some() {
+        return Err("cannot assign a second task to a busy audit worker".to_string());
+    }
+    let request = AuditWorkerRequest {
+        configuration_id: pending.task.assignment.configuration_id.clone(),
+        task_path: pending.task_path,
+        result_path: pending.result_path.clone(),
+    };
+    let input = worker
+        .input
+        .as_mut()
+        .ok_or_else(|| "audit worker stdin is closed".to_string())?;
+    serde_json::to_writer(&mut *input, &request)
+        .map_err(|error| format!("could not serialize audit worker request: {error}"))?;
+    input
+        .write_all(b"\n")
+        .map_err(|error| format!("could not delimit audit worker request: {error}"))?;
+    input
+        .flush()
+        .map_err(|error| format!("could not flush audit worker request: {error}"))?;
+    worker.active = Some(RunningAudit {
+        started: Instant::now(),
+        task: pending.task,
+        result_path: pending.result_path,
+        constrains_parallelism: pending.constrains_parallelism,
+    });
+    Ok(())
+}
+
+fn poll_audit_worker(worker: &AuditWorkerProcess, timeout: Duration) -> AuditWorkerEvent {
+    let Some(active) = &worker.active else {
+        return AuditWorkerEvent::Pending;
+    };
+    match worker.responses.try_recv() {
+        Ok(response) => AuditWorkerEvent::Completed(response),
+        Err(mpsc::TryRecvError::Disconnected) => AuditWorkerEvent::Disconnected,
+        Err(mpsc::TryRecvError::Empty) if active.started.elapsed() >= timeout => {
+            AuditWorkerEvent::TimedOut
+        }
+        Err(mpsc::TryRecvError::Empty) => AuditWorkerEvent::Pending,
+    }
+}
+
+fn stop_audit_worker(worker: &mut AuditWorkerProcess, force: bool) {
+    worker.input.take();
+    if let Some(mut child) = worker.child.take() {
+        if force {
+            let _ = child.kill();
+        }
+        let _ = child.wait();
+    }
+    if let Some(reader) = worker.reader.take() {
+        let _ = reader.join();
+    }
+}
+
+fn shutdown_audit_workers(workers: &mut [AuditWorkerProcess], force: bool) {
+    for worker in workers {
+        stop_audit_worker(worker, force);
+    }
+}
+
+fn finish_audit_worker(
+    worker: RunningAudit,
+    worker_error: Option<String>,
+) -> Result<CampaignAuditRecord, String> {
+    let result = if let Some(error) = worker_error {
+        Err(error)
+    } else {
         fs::read(&worker.result_path)
             .map_err(|error| format!("could not read {}: {error}", worker.result_path.display()))
             .and_then(|bytes| {
                 serde_json::from_slice(&bytes)
                     .map_err(|error| format!("invalid {}: {error}", worker.result_path.display()))
             })
-    } else {
-        Err(format!(
-            "audit worker exited unsuccessfully for {}",
-            worker.task.assignment.source_key()
-        ))
     };
     result.or_else(|error| {
         Ok(CampaignAuditRecord {
@@ -2689,6 +2920,56 @@ fn finish_audit_worker(worker: RunningAudit, success: bool) -> Result<CampaignAu
     })
 }
 
+fn audit_timeout_record(worker: &RunningAudit, timeout: Duration) -> CampaignAuditRecord {
+    CampaignAuditRecord {
+        corpus: worker.task.assignment.corpus.clone(),
+        file: worker.task.assignment.file.clone(),
+        family: worker.task.assignment.family,
+        configuration_id: worker.task.assignment.configuration_id.clone(),
+        reference_status: worker.task.conversion.status.clone(),
+        verdict: "INFRA_TIMEOUT".to_string(),
+        layer: None,
+        diagnostic_kind: None,
+        page_index: None,
+        line_index: None,
+        elapsed_ms: worker.started.elapsed().as_millis(),
+        message: format!("candidate audit exceeded {} seconds", timeout.as_secs()),
+    }
+}
+
+pub fn audit_worker_loop() -> Result<(), String> {
+    let stdin = std::io::stdin();
+    let stdout = std::io::stdout();
+    let mut output = BufWriter::new(stdout.lock());
+    for (line_index, line) in stdin.lock().lines().enumerate() {
+        let line = line.map_err(|error| {
+            format!(
+                "could not read audit worker request line {}: {error}",
+                line_index + 1
+            )
+        })?;
+        let request: AuditWorkerRequest = serde_json::from_str(&line).map_err(|error| {
+            format!(
+                "invalid audit worker request line {}: {error}",
+                line_index + 1
+            )
+        })?;
+        let response = AuditWorkerResponse {
+            configuration_id: request.configuration_id,
+            error: audit_one_with_artifacts(&request.task_path, &request.result_path, false).err(),
+        };
+        serde_json::to_writer(&mut output, &response)
+            .map_err(|error| format!("could not serialize audit worker response: {error}"))?;
+        output
+            .write_all(b"\n")
+            .map_err(|error| format!("could not delimit audit worker response: {error}"))?;
+        output
+            .flush()
+            .map_err(|error| format!("could not flush audit worker response: {error}"))?;
+    }
+    Ok(())
+}
+
 pub fn audit_one(task_path: &Path, result_path: &Path) -> Result<(), String> {
     audit_one_with_artifacts(task_path, result_path, false)
 }
@@ -2705,6 +2986,13 @@ pub fn audit_one_with_artifacts(
     let started = Instant::now();
     let assignment = &task.assignment;
     let conversion = &task.conversion;
+    validate_conversion_record(assignment, conversion)?;
+    if conversion.status != "converted" {
+        return Err(format!(
+            "audit task does not reference a converted record: {}",
+            assignment.source_key()
+        ));
+    }
     let case = OfficeGoldenCase {
         id: &assignment.configuration_id,
         corpus: &assignment.corpus,
@@ -2716,7 +3004,7 @@ pub fn audit_one_with_artifacts(
         format_locale: &assignment.effective.format_locale,
     };
     let comparison = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        compare_office_golden_detailed_with_options(
+        compare_office_golden_detailed_with_prevalidated_options(
             case,
             assignment.requested_pdf_options(),
             VisualTolerance::OFFICE_FIXED_OUTPUT,

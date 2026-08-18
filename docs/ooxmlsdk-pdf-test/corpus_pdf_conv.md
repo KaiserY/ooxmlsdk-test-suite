@@ -33,17 +33,24 @@ carried forward.
 
 | Family | Assigned | Office golden | Office failed | Office timeout | Candidate PASS | Candidate FAIL |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Word | 3,045 | 2,972 | 71 | 2 | 1,369 | 1,603 |
-| Excel | 1,345 | 1,215 | 128 | 2 | 146 | 1,069 |
-| PowerPoint | 980 | 957 | 23 | 0 | 375 | 582 |
-| **Total** | **5,370** | **5,144** | **222** | **4** | **1,890** | **3,254** |
+| Word | 3,045 | 2,972 | 71 | 2 | 1,872 | 1,100 |
+| Excel | 1,345 | 1,215 | 128 | 2 | 190 | 1,025 |
+| PowerPoint | 980 | 957 | 23 | 0 | 497 | 460 |
+| **Total** | **5,370** | **5,144** | **222** | **4** | **2,559** | **2,585** |
 
 The final replay skipped all 5,370 records with zero conversion attempts,
 proving plan, source, environment, manifest, and output-hash stability. The
 full candidate audit accounts for all 5,370 assignments and has zero
-infrastructure errors; its ordinary FAIL layers are conversion 1,306, font 5,
-page geometry 89, text 1,598, and visible output 256. The 226 Office failures
+infrastructure errors; its ordinary FAIL layers are conversion 16, font 5,
+page geometry 118, text 2,098, and visible output 348. The 226 Office failures
 remain explicit `REFERENCE_FAIL` records and have no golden file.
+
+The current promotion batch contributes 102 identity-preserving PASS changes
+with no prior PASS regression: Word +91, PowerPoint +9, and Excel +2. The most
+recent promotions include 34 cross-format PDFium extraction false negatives
+and LibreOffice `listformat.docx`, `indentation.docx`, and
+`tdf104420_lostParagraph.docx`; independent ordered-text controls, exact
+configured audits, and completed full-campaign identity diffs lock the gains.
 
 The balanced 300-case go gate completed before full generation: 282 Office
 goldens, 18 reference failures, 85 candidate PASS, 197 ordinary FAIL, and zero
@@ -321,18 +328,10 @@ The campaign binary owns plan validation, font scanning, Office supervision,
 manifest promotion, hash replay, and candidate audit:
 
 ```sh
-cargo build -p ooxmlsdk-pdf-test --bin office_pdf_campaign
-./target/debug/office_pdf_campaign generate-plan
-./target/debug/office_pdf_campaign validate-plan
-./target/debug/office_pdf_campaign font-scan
-./target/debug/office_pdf_campaign convert \
-  --selection pilot-300 --jobs 3 --timeout-seconds 120 --max-attempts 2
-./target/debug/office_pdf_campaign convert \
-  --selection full --jobs 3 --timeout-seconds 120 --max-attempts 2
-
 cargo build -p ooxmlsdk-pdf-test --bin office_pdf_campaign --release
+./target/release/office_pdf_campaign validate-plan
 ./target/release/office_pdf_campaign audit \
-  --selection full --jobs 4 --timeout-seconds 180
+  --selection full --timeout-seconds 180
 ```
 
 On a host where WSL cannot launch Windows COM children directly, start the
@@ -409,72 +408,22 @@ the current Office build, Word's raw `UseISO19005_1=true` request produces XMP
 declaring PDF/A-3A; the record therefore keeps the raw COM request separate
 from the observed standard and maps the candidate to `PdfA3a`.
 
-One exact case:
+After a full audit has materialized `target/office-pdf-campaign/full-tasks/`,
+rerun one exact configured identity with its configuration ID:
 
 ```sh
-OOXMLSDK_GOLDEN_CASE='LibreOffice/path/to/case.docx' \
-OOXMLSDK_GOLDEN_TRACE_STAGES=1 \
-OOXMLSDK_GOLDEN_WRITE_PAGE_ARTIFACTS=1 \
-OOXMLSDK_GOLDEN_JOBS=1 \
-  cargo test -p ooxmlsdk-pdf-test --release \
-  --test office_golden_corpus office_golden_docx_corpus_ratchet \
-  -- --ignored --exact --nocapture
+case_id='<configuration-id>'
+./target/release/office_pdf_campaign audit-one \
+  --task "target/office-pdf-campaign/full-tasks/$case_id.json" \
+  --result "/tmp/ooxmlsdk-$case_id.json" \
+  --write-artifacts true
+jq . "/tmp/ooxmlsdk-$case_id.json"
 ```
 
-An exact registered error is `XFAIL`; exact non-audit mode intentionally fails
-because it accepts only one unregistered PASS. Add
-`OOXMLSDK_GOLDEN_AUDIT_ERRORS=1` when rechecking an XFAIL before ledger cleanup.
-
-For a coherent cluster, audit the filtered set so the fixed ratchet is not
-mistaken for the cluster's expected count:
-
-```sh
-OOXMLSDK_GOLDEN_AUDIT_ERRORS=1 \
-OOXMLSDK_GOLDEN_AUDIT_LIMIT=all \
-OOXMLSDK_GOLDEN_SOURCE_CONTAINS='narrow/source/token' \
-OOXMLSDK_GOLDEN_JOBS=4 \
-  cargo test -p ooxmlsdk-pdf-test --release \
-  --test office_golden_corpus office_golden_docx_corpus_ratchet \
-  -- --ignored --exact --nocapture
-```
-
-Replace the source filter with `OOXMLSDK_GOLDEN_PACKAGE_PART_CONTAINS` or
-`OOXMLSDK_GOLDEN_PACKAGE_FEATURE` when that is the semantic boundary. An
-`OOXMLSDK_GOLDEN_DIAGNOSTIC_KIND` filter is valid only against the diagnostic
-index from a completed audit of the same revisions and candidate environment.
-Do not use a broad historical category during development.
-
-Normal ratchet:
-
-```sh
-OOXMLSDK_GOLDEN_JOBS=4 \
-  cargo test -p ooxmlsdk-pdf-test --release \
-  --test office_golden_corpus office_golden_docx_corpus_ratchet \
-  -- --ignored --exact --nocapture
-```
-
-Full audit only at a phase gate or after a shared change whose complete failure
-set must be known:
-
-```sh
-OOXMLSDK_GOLDEN_AUDIT_ERRORS=1 \
-OOXMLSDK_GOLDEN_AUDIT_LIMIT=all \
-OOXMLSDK_GOLDEN_JOBS=4 \
-  cargo test -p ooxmlsdk-pdf-test --release \
-  --test office_golden_corpus office_golden_docx_corpus_ratchet \
-  -- --ignored --exact --nocapture
-```
-
-A completed DOCX audit must satisfy:
-
-```text
-PASS + XFAIL + XPASS + FAIL + skipped = 2707
-```
-
-Ratchets are code constants; change one only after a completed audit and ledger
-cleanup. Do not repeatedly run all 2,707 records during focused diagnosis.
-Reports and diagnostic indexes are valid only after their reporting phase
-completes; check timestamps and audited revisions after an interruption.
+The configured campaign reports a fixed identity directly as `PASS` or `FAIL`;
+the older default-options `office_golden_corpus` ratchet is not this campaign's
+acceptance path. Reports are valid only after their reporting phase completes;
+check timestamps and audited revisions after an interruption.
 
 ## Diagnostics And Inspection
 

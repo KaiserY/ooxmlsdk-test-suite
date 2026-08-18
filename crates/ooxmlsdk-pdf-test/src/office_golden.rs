@@ -315,16 +315,22 @@ pub(crate) fn compare_office_golden_detailed_with_artifacts(
     tolerance: VisualTolerance,
     write_failure_artifacts: bool,
 ) -> DetailedResult<OfficeGoldenReport> {
-    compare_office_golden_detailed_inner(case, tolerance, write_failure_artifacts, None)
+    compare_office_golden_detailed_inner(case, tolerance, write_failure_artifacts, None, true)
 }
 
-pub(crate) fn compare_office_golden_detailed_with_options(
+pub(crate) fn compare_office_golden_detailed_with_prevalidated_options(
     case: OfficeGoldenCase<'_>,
     options: ooxmlsdk_pdf::PdfOptions,
     tolerance: VisualTolerance,
     write_failure_artifacts: bool,
 ) -> DetailedResult<OfficeGoldenReport> {
-    compare_office_golden_detailed_inner(case, tolerance, write_failure_artifacts, Some(options))
+    compare_office_golden_detailed_inner(
+        case,
+        tolerance,
+        write_failure_artifacts,
+        Some(options),
+        false,
+    )
 }
 
 fn compare_office_golden_detailed_inner(
@@ -332,6 +338,7 @@ fn compare_office_golden_detailed_inner(
     tolerance: VisualTolerance,
     write_failure_artifacts: bool,
     configured_options: Option<ooxmlsdk_pdf::PdfOptions>,
+    verify_conversion_manifest: bool,
 ) -> DetailedResult<OfficeGoldenReport> {
     let mut stage_trace = OfficeGoldenStageTrace::new(case);
     let root = workspace_root();
@@ -340,7 +347,9 @@ fn compare_office_golden_detailed_inner(
         .join("corpus_pdf_conv")
         .join(case.corpus)
         .join(format!("{}.pdf", case.source));
-    let manifest_record = verify_manifest_record(&root, case)
+    let manifest_record = verify_conversion_manifest
+        .then(|| verify_manifest_record(&root, case))
+        .transpose()
         .map_err(|error| OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::Identity, error))?;
 
     let source_bytes = fs::read(&source_path)
@@ -380,14 +389,28 @@ fn compare_office_golden_detailed_inner(
                     || extension.eq_ignore_ascii_case("ppsx")
                     || extension.eq_ignore_ascii_case("ppsm")
             })
-            .then(|| reference_field_update_datetime(&root, &manifest_record))
+            .then(|| {
+                reference_field_update_datetime(
+                    &root,
+                    manifest_record
+                        .as_ref()
+                        .expect("default options require a verified conversion manifest"),
+                )
+            })
             .transpose()
             .map_err(|error| {
                 OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::Identity, error)
             })?;
         let field_update_time_zone = field_update_datetime
             .is_some()
-            .then(|| reference_field_update_time_zone(&root, &manifest_record))
+            .then(|| {
+                reference_field_update_time_zone(
+                    &root,
+                    manifest_record
+                        .as_ref()
+                        .expect("default options require a verified conversion manifest"),
+                )
+            })
             .transpose()
             .map_err(|error| {
                 OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::Identity, error)
@@ -624,6 +647,7 @@ fn compare_office_golden_detailed_inner(
         &text_contract.candidate_lines,
         &text_contract.golden_lines,
         text_contract.pdftotext_confirmed_pdfium_mismatch,
+        text_contract.pdftotext_confirmed_ordered_text,
     ) {
         if !write_failure_artifacts {
             return Err(error);
@@ -1317,12 +1341,13 @@ fn assert_text_contract(
     let golden_content = page_text_content_bags(&golden_text);
     let mut content_matches = candidate_content == golden_content;
     let mut pdftotext_confirmed_pdfium_mismatch = false;
+    let mut pdftotext_confirmed_ordered_text = false;
+    let mut pdftotext_checked_ordered_text = false;
     if !content_matches && candidate_content.len() == golden_content.len() {
+        pdftotext_checked_ordered_text = true;
         content_matches = true;
+        let mut ordered_text_matches = true;
         for page_index in 0..candidate_content.len() {
-            if candidate_content[page_index] == golden_content[page_index] {
-                continue;
-            }
             let candidate_fallback =
                 pdftotext_page(candidate_pdf, page_index).map_err(|error| {
                     OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::PdfExtraction, error)
@@ -1332,14 +1357,22 @@ fn assert_text_contract(
                 OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::PdfExtraction, error)
                     .at(page_index, None)
             })?;
-            if unordered_extracted_text_content(&candidate_fallback)
-                != unordered_extracted_text_content(&golden_fallback)
+            // The ordered-text confirmation enables mirror canonicalization in
+            // later document-wide line and font comparisons, so Poppler must
+            // independently confirm every page, including pages where PDFium's
+            // unordered content already agrees.
+            ordered_text_matches &= pdftotext_line_content_keys(&candidate_fallback)
+                == pdftotext_line_content_keys(&golden_fallback);
+            if candidate_content[page_index] != golden_content[page_index]
+                && unordered_extracted_text_content(&candidate_fallback)
+                    != unordered_extracted_text_content(&golden_fallback)
             {
                 content_matches = false;
                 break;
             }
         }
         pdftotext_confirmed_pdfium_mismatch = content_matches;
+        pdftotext_confirmed_ordered_text = content_matches && ordered_text_matches;
     }
     if !content_matches {
         return Err(OfficeGoldenFailure::diagnostic(
@@ -1367,10 +1400,27 @@ fn assert_text_contract(
                 error,
             )
         })?;
+    if !pdftotext_checked_ordered_text
+        && text_line_topology_differs(
+            &candidate_lines,
+            &golden_lines,
+            pdftotext_confirmed_pdfium_mismatch,
+            pdftotext_confirmed_ordered_text,
+        )
+    {
+        // A mirrored pair can leave PDFium's unordered page character bag
+        // unchanged, so the page-level fallback above is not entered. Require
+        // Poppler to independently confirm every ordered line before enabling
+        // the same narrowly-scoped mirror canonicalization for that case.
+        pdftotext_confirmed_ordered_text =
+            pdftotext_ordered_text_matches(candidate_pdf, golden_pdf, candidate_content.len())?;
+        pdftotext_confirmed_pdfium_mismatch = pdftotext_confirmed_ordered_text;
+    }
     if text_line_topology_differs(
         &candidate_lines,
         &golden_lines,
         pdftotext_confirmed_pdfium_mismatch,
+        pdftotext_confirmed_ordered_text,
     ) {
         // PDFium exposes painted glyph bounds rather than source line
         // ownership. Two unrelated text objects hundreds of points apart can
@@ -1401,6 +1451,7 @@ fn assert_text_contract(
         &candidate_lines,
         &mut golden_lines,
         pdftotext_confirmed_pdfium_mismatch,
+        pdftotext_confirmed_ordered_text,
     );
     let masks = assert_text_line_geometry(
         case_id,
@@ -1409,12 +1460,14 @@ fn assert_text_contract(
         &candidate_lines,
         &golden_lines,
         pdftotext_confirmed_pdfium_mismatch,
+        pdftotext_confirmed_ordered_text,
     )?;
     Ok(TextContract {
         masks,
         candidate_lines,
         golden_lines,
         pdftotext_confirmed_pdfium_mismatch,
+        pdftotext_confirmed_ordered_text,
     })
 }
 
@@ -1422,16 +1475,21 @@ fn text_line_topology_differs(
     candidate: &[Vec<TextLineContract>],
     golden: &[Vec<TextLineContract>],
     accept_pdfium_bidi_mirroring: bool,
+    accept_pdfium_ltr_mirroring: bool,
 ) -> bool {
     candidate.len() != golden.len()
         || candidate.iter().zip(golden).any(|(candidate, golden)| {
             candidate.len() != golden.len()
                 || candidate.iter().zip(golden).any(|(candidate, golden)| {
-                    extracted_text_line_content_key(&candidate.text, accept_pdfium_bidi_mirroring)
-                        != extracted_text_line_content_key(
-                            &golden.text,
-                            accept_pdfium_bidi_mirroring,
-                        )
+                    extracted_text_line_content_key(
+                        &candidate.text,
+                        accept_pdfium_bidi_mirroring,
+                        accept_pdfium_ltr_mirroring,
+                    ) != extracted_text_line_content_key(
+                        &golden.text,
+                        accept_pdfium_bidi_mirroring,
+                        accept_pdfium_ltr_mirroring,
+                    )
                 })
         })
 }
@@ -1440,6 +1498,7 @@ fn align_golden_text_lines_by_content_and_position(
     candidate: &[Vec<TextLineContract>],
     golden: &mut [Vec<TextLineContract>],
     accept_pdfium_bidi_mirroring: bool,
+    accept_pdfium_ltr_mirroring: bool,
 ) {
     for (candidate_page, golden_page) in candidate.iter().zip(golden.iter_mut()) {
         if candidate_page.len() != golden_page.len() {
@@ -1448,15 +1507,21 @@ fn align_golden_text_lines_by_content_and_position(
         let mut unmatched = golden_page.iter().cloned().map(Some).collect::<Vec<_>>();
         let mut aligned = Vec::with_capacity(candidate_page.len());
         for candidate_line in candidate_page {
-            let candidate_key =
-                extracted_text_line_content_key(&candidate_line.text, accept_pdfium_bidi_mirroring);
+            let candidate_key = extracted_text_line_content_key(
+                &candidate_line.text,
+                accept_pdfium_bidi_mirroring,
+                accept_pdfium_ltr_mirroring,
+            );
             let Some((best_index, _)) = unmatched
                 .iter()
                 .enumerate()
                 .filter_map(|(index, line)| line.as_ref().map(|line| (index, line)))
                 .filter(|(_, line)| {
-                    extracted_text_line_content_key(&line.text, accept_pdfium_bidi_mirroring)
-                        == candidate_key
+                    extracted_text_line_content_key(
+                        &line.text,
+                        accept_pdfium_bidi_mirroring,
+                        accept_pdfium_ltr_mirroring,
+                    ) == candidate_key
                 })
                 .map(|(index, line)| {
                     let dx = candidate_line.origin_x - line.origin_x;
@@ -1487,6 +1552,7 @@ struct TextContract {
     candidate_lines: Vec<Vec<TextLineContract>>,
     golden_lines: Vec<Vec<TextLineContract>>,
     pdftotext_confirmed_pdfium_mismatch: bool,
+    pdftotext_confirmed_ordered_text: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -1775,6 +1841,7 @@ fn assert_text_line_geometry(
     candidate_lines: &[Vec<TextLineContract>],
     golden_lines: &[Vec<TextLineContract>],
     accept_pdfium_bidi_mirroring: bool,
+    accept_pdfium_ltr_mirroring: bool,
 ) -> DetailedResult<Vec<Vec<PdfBounds>>> {
     let mut masks = vec![Vec::new(); candidate.page_count];
     for page_index in 0..candidate.page_count {
@@ -1818,9 +1885,15 @@ fn assert_text_line_geometry(
         for (line_index, (candidate_line, golden_line)) in
             candidate_page.iter().zip(golden_page).enumerate()
         {
-            if extracted_text_line_content_key(&candidate_line.text, accept_pdfium_bidi_mirroring)
-                != extracted_text_line_content_key(&golden_line.text, accept_pdfium_bidi_mirroring)
-            {
+            if extracted_text_line_content_key(
+                &candidate_line.text,
+                accept_pdfium_bidi_mirroring,
+                accept_pdfium_ltr_mirroring,
+            ) != extracted_text_line_content_key(
+                &golden_line.text,
+                accept_pdfium_bidi_mirroring,
+                accept_pdfium_ltr_mirroring,
+            ) {
                 return Err(OfficeGoldenFailure::diagnostic(
                     OfficeGoldenComparisonLayer::Text,
                     OfficeGoldenDiagnosticKind::TextLineContent,
@@ -1907,6 +1980,7 @@ fn assert_text_font_assignment_contract(
     candidate_lines: &[Vec<TextLineContract>],
     golden_lines: &[Vec<TextLineContract>],
     accept_pdfium_bidi_mirroring: bool,
+    accept_pdfium_ltr_mirroring: bool,
 ) -> DetailedResult<()> {
     // MS-OI29500 17.3.2.26 assigns fonts by character class, while PDF
     // producers may split the same run into different text objects. Compare
@@ -1918,7 +1992,8 @@ fn assert_text_font_assignment_contract(
             candidate_page.iter().zip(golden_page).enumerate()
         {
             let canonicalize_mirrors = accept_pdfium_bidi_mirroring
-                && (contains_strong_rtl_character(&candidate_line.text)
+                && (accept_pdfium_ltr_mirroring
+                    || contains_strong_rtl_character(&candidate_line.text)
                     || contains_strong_rtl_character(&golden_line.text));
             let font_runs_match = candidate_line.font_runs.len() == golden_line.font_runs.len()
                 && candidate_line
@@ -2252,10 +2327,44 @@ fn extracted_text_content_key(text: &str) -> String {
         .collect()
 }
 
-fn extracted_text_line_content_key(text: &str, accept_pdfium_bidi_mirroring: bool) -> String {
+fn pdftotext_line_content_keys(text: &str) -> Vec<String> {
+    text.lines()
+        .map(normalize_extracted_text)
+        .map(|line| extracted_text_content_key(&line))
+        .filter(|line| !line.is_empty())
+        .collect()
+}
+
+fn pdftotext_ordered_text_matches(
+    candidate_pdf: &[u8],
+    golden_pdf: &[u8],
+    page_count: usize,
+) -> DetailedResult<bool> {
+    for page_index in 0..page_count {
+        let candidate = pdftotext_page(candidate_pdf, page_index).map_err(|error| {
+            OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::PdfExtraction, error)
+                .at(page_index, None)
+        })?;
+        let golden = pdftotext_page(golden_pdf, page_index).map_err(|error| {
+            OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::PdfExtraction, error)
+                .at(page_index, None)
+        })?;
+        if pdftotext_line_content_keys(&candidate) != pdftotext_line_content_keys(&golden) {
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
+fn extracted_text_line_content_key(
+    text: &str,
+    accept_pdfium_bidi_mirroring: bool,
+    accept_pdfium_ltr_mirroring: bool,
+) -> String {
     extracted_text_content_key_with_bidi_mirroring(
         text,
-        accept_pdfium_bidi_mirroring && contains_strong_rtl_character(text),
+        accept_pdfium_bidi_mirroring
+            && (accept_pdfium_ltr_mirroring || contains_strong_rtl_character(text)),
     )
 }
 
@@ -3994,9 +4103,9 @@ mod tests {
         localized_flat_palette_stencil_diff_metrics, localized_visual_diff_metrics,
         normalize_extracted_text, normalized_page_text_from_parts,
         parse_utc_datetime_in_reference_time_zone, pdf_style_colors_equivalent,
-        pixel_matches_stencil_paint, same_text_line, same_writing_axis,
-        semantic_soft_mask_samples_match, text_characters_share_line, text_edge_tolerance_pt,
-        text_mask_x_spans_by_row, type0_base_font_matches_descendant,
+        pdftotext_line_content_keys, pixel_matches_stencil_paint, same_text_line,
+        same_writing_axis, semantic_soft_mask_samples_match, text_characters_share_line,
+        text_edge_tolerance_pt, text_mask_x_spans_by_row, type0_base_font_matches_descendant,
         unordered_extracted_text_content, validate_candidate_font_contract, visual_diff_metrics,
     };
 
@@ -4184,20 +4293,40 @@ mod tests {
         let candidate = "=defined)ةعقوتمةجيتن)11";
         let golden = "=defined)ةعقوتمةجيتن(11";
         assert_ne!(
-            extracted_text_line_content_key(candidate, false),
-            extracted_text_line_content_key(golden, false)
+            extracted_text_line_content_key(candidate, false, false),
+            extracted_text_line_content_key(golden, false, false)
         );
         assert_eq!(
-            extracted_text_line_content_key(candidate, true),
-            extracted_text_line_content_key(golden, true)
+            extracted_text_line_content_key(candidate, true, false),
+            extracted_text_line_content_key(golden, true, false)
         );
         assert_ne!(
-            extracted_text_line_content_key("LTR ) text", true),
-            extracted_text_line_content_key("LTR ( text", true)
+            extracted_text_line_content_key("LTR ) text", true, false),
+            extracted_text_line_content_key("LTR ( text", true, false)
         );
         assert_ne!(
-            extracted_text_line_content_key("ن)", true),
-            extracted_text_line_content_key("ن()", true)
+            extracted_text_line_content_key("ن)", true, false),
+            extracted_text_line_content_key("ن()", true, false)
+        );
+    }
+
+    #[test]
+    fn independently_confirmed_ordered_text_tolerates_ltr_pdfium_mirroring_only() {
+        assert_eq!(
+            pdftotext_line_content_keys("  [Type text]\n\nnext line  \n"),
+            vec!["[Typetext]", "nextline"]
+        );
+        assert_ne!(
+            pdftotext_line_content_keys("[Type text]\nnext line"),
+            pdftotext_line_content_keys("[Type text] next line")
+        );
+        assert_eq!(
+            extracted_text_line_content_key("[Type text[", true, true),
+            extracted_text_line_content_key("[Type text]", true, true)
+        );
+        assert_ne!(
+            extracted_text_line_content_key("[Type text[", true, true),
+            extracted_text_line_content_key("[Type texts]", true, true)
         );
     }
 
