@@ -813,12 +813,36 @@ fn normalized_pdfium_page_text(page_index: usize, page: &PdfPage<'_>) -> Result<
     let text = page
         .text()
         .map_err(|error| format!("PDFium could not extract page {page_index} text: {error}"))?;
+    let pdfium_text_characters = text.chars();
+    let mut characters = Vec::with_capacity(pdfium_text_characters.len());
+    let mut pdfium_characters = pdfium_text_characters.iter().peekable();
+    while let Some(character) = pdfium_characters.next() {
+        let (decoded, consume_next) = decode_pdfium_unicode_scalar(
+            character.unicode_value(),
+            pdfium_characters
+                .peek()
+                .map(|character| character.unicode_value()),
+        );
+        if consume_next {
+            pdfium_characters.next();
+        }
+        characters.push(decoded.map(|character| character.to_string()));
+    }
     Ok(normalized_pdfium_page_text_from_parts(
-        text.chars()
-            .iter()
-            .map(|character| character.unicode_string()),
+        characters,
         text.segments().iter().map(|segment| segment.text()),
     ))
+}
+
+fn decode_pdfium_unicode_scalar(value: u32, next: Option<u32>) -> (Option<char>, bool) {
+    if (0xd800..=0xdbff).contains(&value) {
+        let Some(low) = next.filter(|low| (0xdc00..=0xdfff).contains(low)) else {
+            return (None, false);
+        };
+        let scalar = 0x1_0000 + ((value - 0xd800) << 10) + (low - 0xdc00);
+        return (char::from_u32(scalar), true);
+    }
+    (char::from_u32(value), false)
 }
 
 fn normalized_pdfium_page_text_from_parts<C, Character, S, Segment>(
@@ -1119,19 +1143,28 @@ fn pdfium_summary(pdf: &[u8]) -> Result<PdfiumSummary, String> {
                 bounds: format_rect(segment.bounds(), 2),
             });
         }
-        for char in text.chars().iter() {
-            if let Some(value) = char.unicode_string() {
-                let bounds = char
+        let pdfium_text_characters = text.chars();
+        let mut characters = pdfium_text_characters.iter().peekable();
+        while let Some(character) = characters.next() {
+            let (value, consume_next) = decode_pdfium_unicode_scalar(
+                character.unicode_value(),
+                characters.peek().map(|character| character.unicode_value()),
+            );
+            if consume_next {
+                characters.next();
+            }
+            if let Some(value) = value {
+                let bounds = character
                     .loose_bounds()
                     .map_err(|error| format!("PDFium could not read char bounds: {error}"))?;
-                let (origin_x, origin_y) = char
+                let (origin_x, origin_y) = character
                     .origin()
                     .map_err(|error| format!("PDFium could not read char origin: {error}"))?;
-                let matrix = char
+                let matrix = character
                     .matrix()
                     .map_err(|error| format!("PDFium could not read char matrix: {error}"))?;
                 let angle_degrees = text_matrix_writing_angle_degrees(matrix.a(), matrix.b());
-                let font_name = normalize_pdf_font_name(&char.font_name());
+                let font_name = normalize_pdf_font_name(&character.font_name());
                 let font_metric_bounds = font_metrics
                     .get(&font_name)
                     .filter(|_| angle_degrees.abs() <= f32::EPSILON)
@@ -1139,13 +1172,13 @@ fn pdfium_summary(pdf: &[u8]) -> Result<PdfiumSummary, String> {
                         font_metric_bounds(
                             bounds,
                             origin_y.value,
-                            char.scaled_font_size().value,
+                            character.scaled_font_size().value,
                             *metrics,
                         )
                     });
                 text_chars.push(TextCharSummary {
                     page_index,
-                    text: value,
+                    text: value.to_string(),
                     font_name,
                     bounds: format_rect(bounds, 2),
                     font_metric_bounds,
@@ -2531,6 +2564,23 @@ impl PdfBytesExt for [u8] {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn pdfium_utf16_surrogate_pair_decodes_to_one_unicode_scalar() {
+        assert_eq!(
+            decode_pdfium_unicode_scalar(0xd83e, Some(0xdc78)),
+            (Some('\u{1f878}'), true)
+        );
+        assert_eq!(
+            decode_pdfium_unicode_scalar(0xd83e, Some('A' as u32)),
+            (None, false)
+        );
+        assert_eq!(decode_pdfium_unicode_scalar(0xdc78, None), (None, false));
+        assert_eq!(
+            decode_pdfium_unicode_scalar('\u{1f878}' as u32, None),
+            (Some('\u{1f878}'), false)
+        );
+    }
 
     #[test]
     fn lightweight_page_text_uses_characters_before_overlapping_segments() {

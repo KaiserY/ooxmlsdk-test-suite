@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt;
 use std::fs;
@@ -587,7 +588,24 @@ fn compare_office_golden_detailed_inner(
     };
     if let Some(mismatch) = early_text_mismatch {
         stage_trace.mark("page-text-preflight-mismatch");
-        if !write_failure_artifacts {
+        let legacy_symbol_transport_match = if contains_legacy_symbol_transport(&mismatch.candidate)
+            || contains_legacy_symbol_transport(&mismatch.golden)
+        {
+            let candidate_fallback =
+                pdftotext_page(&candidate_pdf, mismatch.page_index).map_err(|error| {
+                    OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::PdfExtraction, error)
+                        .at(mismatch.page_index, None)
+                })?;
+            let golden_fallback =
+                pdftotext_page(&golden_pdf, mismatch.page_index).map_err(|error| {
+                    OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::PdfExtraction, error)
+                        .at(mismatch.page_index, None)
+                })?;
+            legacy_symbol_unordered_text_equivalent(&candidate_fallback, &golden_fallback)
+        } else {
+            false
+        };
+        if !write_failure_artifacts && !legacy_symbol_transport_match {
             return Err(OfficeGoldenFailure::diagnostic(
                 OfficeGoldenComparisonLayer::Text,
                 OfficeGoldenDiagnosticKind::TextContent,
@@ -1361,11 +1379,10 @@ fn assert_text_contract(
             // later document-wide line and font comparisons, so Poppler must
             // independently confirm every page, including pages where PDFium's
             // unordered content already agrees.
-            ordered_text_matches &= pdftotext_line_content_keys(&candidate_fallback)
-                == pdftotext_line_content_keys(&golden_fallback);
+            ordered_text_matches &=
+                pdftotext_line_content_equivalent(&candidate_fallback, &golden_fallback);
             if candidate_content[page_index] != golden_content[page_index]
-                && unordered_extracted_text_content(&candidate_fallback)
-                    != unordered_extracted_text_content(&golden_fallback)
+                && !legacy_symbol_unordered_text_equivalent(&candidate_fallback, &golden_fallback)
             {
                 content_matches = false;
                 break;
@@ -1475,7 +1492,7 @@ fn text_line_topology_differs(
     candidate: &[Vec<TextLineContract>],
     golden: &[Vec<TextLineContract>],
     accept_pdfium_bidi_mirroring: bool,
-    accept_pdfium_ltr_mirroring: bool,
+    accept_pdfium_ordered_text_substitutions: bool,
 ) -> bool {
     candidate.len() != golden.len()
         || candidate.iter().zip(golden).any(|(candidate, golden)| {
@@ -1484,11 +1501,11 @@ fn text_line_topology_differs(
                     extracted_text_line_content_key(
                         &candidate.text,
                         accept_pdfium_bidi_mirroring,
-                        accept_pdfium_ltr_mirroring,
+                        accept_pdfium_ordered_text_substitutions,
                     ) != extracted_text_line_content_key(
                         &golden.text,
                         accept_pdfium_bidi_mirroring,
-                        accept_pdfium_ltr_mirroring,
+                        accept_pdfium_ordered_text_substitutions,
                     )
                 })
         })
@@ -1498,7 +1515,7 @@ fn align_golden_text_lines_by_content_and_position(
     candidate: &[Vec<TextLineContract>],
     golden: &mut [Vec<TextLineContract>],
     accept_pdfium_bidi_mirroring: bool,
-    accept_pdfium_ltr_mirroring: bool,
+    accept_pdfium_ordered_text_substitutions: bool,
 ) {
     for (candidate_page, golden_page) in candidate.iter().zip(golden.iter_mut()) {
         if candidate_page.len() != golden_page.len() {
@@ -1510,7 +1527,7 @@ fn align_golden_text_lines_by_content_and_position(
             let candidate_key = extracted_text_line_content_key(
                 &candidate_line.text,
                 accept_pdfium_bidi_mirroring,
-                accept_pdfium_ltr_mirroring,
+                accept_pdfium_ordered_text_substitutions,
             );
             let Some((best_index, _)) = unmatched
                 .iter()
@@ -1520,7 +1537,7 @@ fn align_golden_text_lines_by_content_and_position(
                     extracted_text_line_content_key(
                         &line.text,
                         accept_pdfium_bidi_mirroring,
-                        accept_pdfium_ltr_mirroring,
+                        accept_pdfium_ordered_text_substitutions,
                     ) == candidate_key
                 })
                 .map(|(index, line)| {
@@ -1841,7 +1858,7 @@ fn assert_text_line_geometry(
     candidate_lines: &[Vec<TextLineContract>],
     golden_lines: &[Vec<TextLineContract>],
     accept_pdfium_bidi_mirroring: bool,
-    accept_pdfium_ltr_mirroring: bool,
+    accept_pdfium_ordered_text_substitutions: bool,
 ) -> DetailedResult<Vec<Vec<PdfBounds>>> {
     let mut masks = vec![Vec::new(); candidate.page_count];
     for page_index in 0..candidate.page_count {
@@ -1888,11 +1905,11 @@ fn assert_text_line_geometry(
             if extracted_text_line_content_key(
                 &candidate_line.text,
                 accept_pdfium_bidi_mirroring,
-                accept_pdfium_ltr_mirroring,
+                accept_pdfium_ordered_text_substitutions,
             ) != extracted_text_line_content_key(
                 &golden_line.text,
                 accept_pdfium_bidi_mirroring,
-                accept_pdfium_ltr_mirroring,
+                accept_pdfium_ordered_text_substitutions,
             ) {
                 return Err(OfficeGoldenFailure::diagnostic(
                     OfficeGoldenComparisonLayer::Text,
@@ -1980,7 +1997,7 @@ fn assert_text_font_assignment_contract(
     candidate_lines: &[Vec<TextLineContract>],
     golden_lines: &[Vec<TextLineContract>],
     accept_pdfium_bidi_mirroring: bool,
-    accept_pdfium_ltr_mirroring: bool,
+    accept_pdfium_ordered_text_substitutions: bool,
 ) -> DetailedResult<()> {
     // MS-OI29500 17.3.2.26 assigns fonts by character class, while PDF
     // producers may split the same run into different text objects. Compare
@@ -1991,10 +2008,6 @@ fn assert_text_font_assignment_contract(
         for (line_index, (candidate_line, golden_line)) in
             candidate_page.iter().zip(golden_page).enumerate()
         {
-            let canonicalize_mirrors = accept_pdfium_bidi_mirroring
-                && (accept_pdfium_ltr_mirroring
-                    || contains_strong_rtl_character(&candidate_line.text)
-                    || contains_strong_rtl_character(&golden_line.text));
             let font_runs_match = candidate_line.font_runs.len() == golden_line.font_runs.len()
                 && candidate_line
                     .font_runs
@@ -2002,12 +2015,14 @@ fn assert_text_font_assignment_contract(
                     .zip(&golden_line.font_runs)
                     .all(|(candidate_run, golden_run)| {
                         candidate_run.font_name == golden_run.font_name
-                            && extracted_text_content_key_with_bidi_mirroring(
+                            && extracted_text_line_content_key(
                                 &candidate_run.text,
-                                canonicalize_mirrors,
-                            ) == extracted_text_content_key_with_bidi_mirroring(
+                                accept_pdfium_bidi_mirroring,
+                                accept_pdfium_ordered_text_substitutions,
+                            ) == extracted_text_line_content_key(
                                 &golden_run.text,
-                                canonicalize_mirrors,
+                                accept_pdfium_bidi_mirroring,
+                                accept_pdfium_ordered_text_substitutions,
                             )
                     });
             if !font_runs_match {
@@ -2080,9 +2095,10 @@ fn text_line_contracts(
                 character.page_index
             ))
         })?;
+        let font_name = canonical_pdf_base_font_name(&character.font_name);
         page.push(TextCharacterContract {
-            text: character.text.clone(),
-            font_name: canonical_pdf_base_font_name(&character.font_name),
+            text: legacy_symbol_semantic_text(&character.text, &font_name).into_owned(),
+            font_name,
             bounds,
             origin_x,
             origin_y,
@@ -2239,12 +2255,22 @@ fn union_pdf_bounds(left: PdfBounds, right: PdfBounds) -> PdfBounds {
 }
 
 fn normalized_page_text(summary: &PdfSummary) -> Vec<String> {
+    let characters = summary
+        .text_chars
+        .iter()
+        .map(|character| {
+            let font_name = canonical_pdf_base_font_name(&character.font_name);
+            (
+                character.page_index,
+                legacy_symbol_semantic_text(&character.text, &font_name).into_owned(),
+            )
+        })
+        .collect::<Vec<_>>();
     normalized_page_text_from_parts(
         summary.page_count,
-        summary
-            .text_chars
+        characters
             .iter()
-            .map(|character| (character.page_index, character.text.as_str())),
+            .map(|(page_index, text)| (*page_index, text.as_str())),
         summary
             .text_segments
             .iter()
@@ -2335,6 +2361,221 @@ fn pdftotext_line_content_keys(text: &str) -> Vec<String> {
         .collect()
 }
 
+fn pdftotext_line_content_equivalent(candidate: &str, golden: &str) -> bool {
+    let candidate = pdftotext_line_content_keys(candidate);
+    let golden = pdftotext_line_content_keys(golden);
+    candidate.len() == golden.len()
+        && candidate
+            .iter()
+            .zip(&golden)
+            .all(|(candidate, golden)| legacy_symbol_ordered_text_equivalent(candidate, golden))
+}
+
+fn legacy_symbol_semantic_text<'a>(text: &'a str, canonical_font_name: &str) -> Cow<'a, str> {
+    let symbol = canonical_font_name == "symbol";
+    let wingdings = canonical_font_name == "wingdings";
+    let wingdings_2 = canonical_font_name == "wingdings2";
+    let mt_extra = canonical_font_name == "mtextra";
+    if !(symbol || wingdings || wingdings_2 || mt_extra) {
+        return Cow::Borrowed(text);
+    }
+
+    let mut changed = false;
+    let mapped = text
+        .chars()
+        .map(|character| {
+            let mapped = match character {
+                '\u{f020}' if symbol => '\u{0020}',
+                '\u{f02a}' if symbol => '\u{2217}',
+                '\u{f02d}' if symbol => '\u{2212}',
+                '\u{f031}' if symbol => '\u{0031}',
+                '\u{f05e}' if symbol => '\u{22a5}',
+                '\u{f061}' if symbol => '\u{03b1}',
+                '\u{f062}' if symbol => '\u{03b2}',
+                '\u{f0a2}' if symbol => '\u{2032}',
+                '\u{f0a3}' if symbol => '\u{2264}',
+                '\u{f0b3}' if symbol => '\u{2265}',
+                '\u{f0b4}' if symbol => '\u{00d7}',
+                '\u{f0b7}' if symbol => '\u{2022}',
+                '\u{f0b9}' if symbol => '\u{2260}',
+                '\u{f0c9}' if symbol => '\u{2283}',
+                '\u{f0ca}' if symbol => '\u{2287}',
+                '\u{f0cb}' if symbol => '\u{2284}',
+                '\u{f0cc}' if symbol => '\u{2282}',
+                '\u{f0cd}' if symbol => '\u{2286}',
+                '\u{f0ce}' if symbol => '\u{2208}',
+                '\u{f0cf}' if symbol => '\u{2209}',
+                '\u{f0d5}' if symbol => '\u{220f}',
+                '\u{f0d6}' if symbol => '\u{221a}',
+                '\u{f0d7}' if symbol => '\u{22c5}',
+                '\u{f0e5}' if symbol => '\u{2211}',
+                '\u{f0e6}' if symbol => '\u{239b}',
+                '\u{f0e7}' if symbol => '\u{239c}',
+                '\u{f0e8}' if symbol => '\u{239d}',
+                '\u{f0f6}' if symbol => '\u{239e}',
+                '\u{f0f7}' if symbol => '\u{239f}',
+                '\u{f0f8}' if symbol => '\u{23a0}',
+                '\u{f07f}' if symbol => '\u{25a1}',
+                '\u{f081}' if symbol => '\u{25a1}',
+                '\u{f04a}' if wingdings => '\u{263a}',
+                '\u{f04c}' if wingdings => '\u{2639}',
+                '\u{f04d}' if wingdings => '\u{1f4a3}',
+                '\u{f04f}' if wingdings => '\u{1f3f3}',
+                '\u{f06c}' if wingdings => '\u{26ab}',
+                '\u{f06e}' if wingdings => '\u{25fc}',
+                '\u{f06f}' if wingdings => '\u{1f78f}',
+                '\u{f071}' if wingdings => '\u{2751}',
+                '\u{f075}' if wingdings => '\u{25c6}',
+                '\u{f076}' if wingdings => '\u{2756}',
+                '\u{f097}' if wingdings => '\u{1f660}',
+                '\u{f0a3}' if wingdings => '\u{1f788}',
+                '\u{f0a7}' if wingdings => '\u{25aa}',
+                '\u{f0c9}' if wingdings => '\u{2bb6}',
+                '\u{f0ca}' if wingdings => '\u{2bb7}',
+                '\u{f0cb}' if wingdings => '\u{1f66a}',
+                '\u{f0cc}' if wingdings => '\u{1f66b}',
+                '\u{f0cd}' if wingdings => '\u{1f655}',
+                '\u{f0ce}' if wingdings => '\u{1f654}',
+                '\u{f0cf}' if wingdings => '\u{1f657}',
+                '\u{f0d5}' if wingdings => '\u{232b}',
+                '\u{f0d8}' if wingdings => '\u{27a2}',
+                '\u{f0e0}' if wingdings => '\u{2192}',
+                '\u{f0e7}' if wingdings => '\u{1f878}',
+                '\u{f0fb}' if wingdings => '\u{1f5f6}',
+                '\u{f0fc}' if wingdings => '\u{2713}',
+                '\u{f0fd}' if wingdings => '\u{1f5f7}',
+                '\u{f0fe}' if wingdings => '\u{1f5f9}',
+                '\u{f020}' if wingdings => '\u{2002}',
+                '\u{f097}' if wingdings_2 => '\u{2981}',
+                '\u{f0a3}' if wingdings_2 => '\u{25a1}',
+                '\u{f04c}' if mt_extra => '\u{22ef}',
+                '\u{f04d}' if mt_extra => '\u{22ee}',
+                '\u{f04f}' if mt_extra => '\u{22f1}',
+                _ => character,
+            };
+            changed |= mapped != character;
+            mapped
+        })
+        .collect();
+    if changed {
+        Cow::Owned(mapped)
+    } else {
+        Cow::Borrowed(text)
+    }
+}
+
+fn contains_legacy_symbol_transport(text: &str) -> bool {
+    text.chars()
+        .any(|character| !legacy_symbol_standard_equivalents(character).is_empty())
+}
+
+fn legacy_symbol_standard_equivalents(character: char) -> &'static [char] {
+    match character {
+        '\u{f020}' => &['\u{0020}', '\u{2002}'],
+        '\u{f02a}' => &['\u{2217}'],
+        '\u{f02d}' => &['\u{2212}'],
+        '\u{f031}' => &['\u{0031}'],
+        '\u{f05e}' => &['\u{22a5}'],
+        '\u{f061}' => &['\u{03b1}'],
+        '\u{f062}' => &['\u{03b2}'],
+        '\u{f04a}' => &['\u{263a}'],
+        '\u{f04c}' => &['\u{2639}', '\u{22ef}'],
+        '\u{f04d}' => &['\u{1f4a3}', '\u{22ee}'],
+        '\u{f04f}' => &['\u{1f3f3}', '\u{22f1}'],
+        '\u{f06c}' => &['\u{26ab}'],
+        '\u{f06e}' => &['\u{25fc}'],
+        '\u{f06f}' => &['\u{1f78f}'],
+        '\u{f071}' => &['\u{2751}'],
+        '\u{f075}' => &['\u{25c6}'],
+        '\u{f076}' => &['\u{2756}'],
+        '\u{f097}' => &['\u{1f660}', '\u{2981}'],
+        '\u{f0a2}' => &['\u{2032}'],
+        '\u{f0a3}' => &['\u{2264}', '\u{1f788}', '\u{25a1}'],
+        '\u{f0a7}' => &['\u{25aa}'],
+        '\u{f0b3}' => &['\u{2265}'],
+        '\u{f0b4}' => &['\u{00d7}'],
+        '\u{f0b7}' => &['\u{2022}'],
+        '\u{f0b9}' => &['\u{2260}'],
+        '\u{f0c9}' => &['\u{2283}', '\u{2bb6}'],
+        '\u{f0ca}' => &['\u{2287}', '\u{2bb7}'],
+        '\u{f0cb}' => &['\u{2284}', '\u{1f66a}'],
+        '\u{f0cc}' => &['\u{2282}', '\u{1f66b}'],
+        '\u{f0cd}' => &['\u{2286}', '\u{1f655}'],
+        '\u{f0ce}' => &['\u{2208}', '\u{1f654}'],
+        '\u{f0cf}' => &['\u{2209}', '\u{1f657}'],
+        '\u{f0d5}' => &['\u{220f}', '\u{232b}'],
+        '\u{f0d6}' => &['\u{221a}', '\u{2326}'],
+        '\u{f0d7}' => &['\u{22c5}'],
+        '\u{f0d8}' => &['\u{27a2}'],
+        '\u{f0e0}' => &['\u{2192}'],
+        '\u{f0e5}' => &['\u{2211}'],
+        '\u{f0e6}' => &['\u{239b}'],
+        '\u{f0e7}' => &['\u{1f878}', '\u{239c}'],
+        '\u{f0e8}' => &['\u{239d}'],
+        '\u{f0f6}' => &['\u{239e}'],
+        '\u{f0f7}' => &['\u{239f}'],
+        '\u{f0f8}' => &['\u{23a0}'],
+        '\u{f07f}' | '\u{f081}' => &['\u{25a1}'],
+        '\u{f0fb}' => &['\u{1f5f6}'],
+        '\u{f0fc}' => &['\u{2713}'],
+        '\u{f0fd}' => &['\u{1f5f7}'],
+        '\u{f0fe}' => &['\u{1f5f9}'],
+        _ => &[],
+    }
+}
+
+fn legacy_symbol_characters_equivalent(candidate: char, golden: char) -> bool {
+    candidate == golden
+        || legacy_symbol_standard_equivalents(candidate).contains(&golden)
+        || legacy_symbol_standard_equivalents(golden).contains(&candidate)
+}
+
+fn legacy_symbol_ordered_text_equivalent(candidate: &str, golden: &str) -> bool {
+    let candidate = extracted_text_content_key(&normalize_extracted_text(candidate))
+        .chars()
+        .collect::<Vec<_>>();
+    let golden = extracted_text_content_key(&normalize_extracted_text(golden))
+        .chars()
+        .collect::<Vec<_>>();
+    candidate.len() == golden.len()
+        && candidate
+            .into_iter()
+            .zip(golden)
+            .all(|(candidate, golden)| legacy_symbol_characters_equivalent(candidate, golden))
+}
+
+fn legacy_symbol_unordered_text_equivalent(candidate: &str, golden: &str) -> bool {
+    let mut candidate = extracted_text_content_key(&normalize_extracted_text(candidate))
+        .chars()
+        .collect::<Vec<_>>();
+    let mut golden = extracted_text_content_key(&normalize_extracted_text(golden))
+        .chars()
+        .collect::<Vec<_>>();
+    if candidate.len() != golden.len() {
+        return false;
+    }
+
+    // Cancel exact characters first so an ambiguous transport code cannot
+    // consume a standard character that has an exact counterpart.
+    let mut unmatched_candidate = Vec::new();
+    for character in candidate.drain(..) {
+        if let Some(index) = golden.iter().position(|other| *other == character) {
+            golden.swap_remove(index);
+        } else {
+            unmatched_candidate.push(character);
+        }
+    }
+    unmatched_candidate.into_iter().all(|character| {
+        golden
+            .iter()
+            .position(|other| legacy_symbol_characters_equivalent(character, *other))
+            .is_some_and(|index| {
+                golden.swap_remove(index);
+                true
+            })
+    }) && golden.is_empty()
+}
+
 fn pdftotext_ordered_text_matches(
     candidate_pdf: &[u8],
     golden_pdf: &[u8],
@@ -2349,7 +2590,7 @@ fn pdftotext_ordered_text_matches(
             OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::PdfExtraction, error)
                 .at(page_index, None)
         })?;
-        if pdftotext_line_content_keys(&candidate) != pdftotext_line_content_keys(&golden) {
+        if !pdftotext_line_content_equivalent(&candidate, &golden) {
             return Ok(false);
         }
     }
@@ -2359,13 +2600,24 @@ fn pdftotext_ordered_text_matches(
 fn extracted_text_line_content_key(
     text: &str,
     accept_pdfium_bidi_mirroring: bool,
-    accept_pdfium_ltr_mirroring: bool,
+    accept_pdfium_ordered_text_substitutions: bool,
 ) -> String {
-    extracted_text_content_key_with_bidi_mirroring(
+    let key = extracted_text_content_key_with_bidi_mirroring(
         text,
         accept_pdfium_bidi_mirroring
-            && (accept_pdfium_ltr_mirroring || contains_strong_rtl_character(text)),
-    )
+            && (accept_pdfium_ordered_text_substitutions || contains_strong_rtl_character(text)),
+    );
+    if accept_pdfium_ordered_text_substitutions {
+        // PDFium expands an embedded-font U+2026 glyph into three U+002E
+        // characters for some candidate PDFs even though their ToUnicode CMap
+        // and Poppler extraction retain U+2026. Only canonicalize that known
+        // decomposition after Poppler has independently confirmed every
+        // ordered non-empty line in both PDFs. A real source "..." versus
+        // U+2026 therefore keeps failing because it cannot enable this gate.
+        key.replace("...", "\u{2026}")
+    } else {
+        key
+    }
 }
 
 fn contains_strong_rtl_character(text: &str) -> bool {
@@ -4100,8 +4352,9 @@ mod tests {
         TextWritingDirection, VisualTolerance, canonical_pdf_base_font_name,
         extracted_text_content_key, extracted_text_line_content_key, fixed_output_stroke_tile,
         flat_soft_mask_palette, format_page_ranges, image_placement_matches_at_comparison_grid,
-        localized_flat_palette_stencil_diff_metrics, localized_visual_diff_metrics,
-        normalize_extracted_text, normalized_page_text_from_parts,
+        legacy_symbol_ordered_text_equivalent, legacy_symbol_semantic_text,
+        legacy_symbol_unordered_text_equivalent, localized_flat_palette_stencil_diff_metrics,
+        localized_visual_diff_metrics, normalize_extracted_text, normalized_page_text_from_parts,
         parse_utc_datetime_in_reference_time_zone, pdf_style_colors_equivalent,
         pdftotext_line_content_keys, pixel_matches_stencil_paint, same_text_line,
         same_writing_axis, semantic_soft_mask_samples_match, text_characters_share_line,
@@ -4289,6 +4542,68 @@ mod tests {
     }
 
     #[test]
+    fn legacy_symbol_semantics_are_font_specific() {
+        assert_eq!(
+            legacy_symbol_semantic_text("\u{f0a3}", "symbol"),
+            "\u{2264}"
+        );
+        assert_eq!(
+            legacy_symbol_semantic_text("\u{f0a3}", "wingdings"),
+            "\u{1f788}"
+        );
+        assert_eq!(
+            legacy_symbol_semantic_text("\u{f0a3}", "wingdings2"),
+            "\u{25a1}"
+        );
+        assert_eq!(
+            legacy_symbol_semantic_text("\u{f0a3}", "calibri"),
+            "\u{f0a3}"
+        );
+        assert_eq!(
+            legacy_symbol_semantic_text("\u{f07f}\u{f081}", "symbol"),
+            "\u{25a1}\u{25a1}"
+        );
+        assert_eq!(
+            legacy_symbol_semantic_text("\u{f081}", "calibri"),
+            "\u{f081}"
+        );
+        assert_eq!(
+            legacy_symbol_semantic_text("\u{f04c}\u{f04d}\u{f04f}", "mtextra"),
+            "\u{22ef}\u{22ee}\u{22f1}"
+        );
+        assert_eq!(
+            legacy_symbol_semantic_text(
+                "\u{f0e6}\u{f0e7}\u{f0e8}\u{f0f6}\u{f0f7}\u{f0f8}",
+                "symbol"
+            ),
+            "\u{239b}\u{239c}\u{239d}\u{239e}\u{239f}\u{23a0}"
+        );
+    }
+
+    #[test]
+    fn poppler_symbol_equivalence_preserves_order_and_multiplicity() {
+        assert!(legacy_symbol_ordered_text_equivalent(
+            "A\u{1f878}B",
+            "A\u{f0e7}B"
+        ));
+        assert!(legacy_symbol_unordered_text_equivalent(
+            "\u{2208}\u{2209}\u{2282}\u{2283}\u{2284}\u{2286}\u{2287}",
+            "\u{f0c9}\u{f0ca}\u{f0cb}\u{f0cc}\u{f0cd}\u{f0ce}\u{f0cf}"
+        ));
+        assert!(!legacy_symbol_ordered_text_equivalent(
+            "A\u{1f878}B",
+            "B\u{f0e7}A"
+        ));
+        assert!(!legacy_symbol_unordered_text_equivalent(
+            "\u{1f878}\u{1f878}",
+            "\u{f0e7}"
+        ));
+        assert!(!legacy_symbol_unordered_text_equivalent(
+            "\u{2192}", "\u{f0e7}"
+        ));
+    }
+
+    #[test]
     fn independently_confirmed_rtl_text_tolerates_only_bidi_mirror_identity() {
         let candidate = "=defined)ةعقوتمةجيتن)11";
         let golden = "=defined)ةعقوتمةجيتن(11";
@@ -4311,7 +4626,7 @@ mod tests {
     }
 
     #[test]
-    fn independently_confirmed_ordered_text_tolerates_ltr_pdfium_mirroring_only() {
+    fn independently_confirmed_ordered_text_tolerates_only_known_pdfium_substitutions() {
         assert_eq!(
             pdftotext_line_content_keys("  [Type text]\n\nnext line  \n"),
             vec!["[Typetext]", "nextline"]
@@ -4320,6 +4635,10 @@ mod tests {
             pdftotext_line_content_keys("[Type text]\nnext line"),
             pdftotext_line_content_keys("[Type text] next line")
         );
+        assert_ne!(
+            pdftotext_line_content_keys("Comments..."),
+            pdftotext_line_content_keys("Comments…")
+        );
         assert_eq!(
             extracted_text_line_content_key("[Type text[", true, true),
             extracted_text_line_content_key("[Type text]", true, true)
@@ -4327,6 +4646,18 @@ mod tests {
         assert_ne!(
             extracted_text_line_content_key("[Type text[", true, true),
             extracted_text_line_content_key("[Type texts]", true, true)
+        );
+        assert_ne!(
+            extracted_text_line_content_key("Comments...", true, false),
+            extracted_text_line_content_key("Comments…", true, false)
+        );
+        assert_eq!(
+            extracted_text_line_content_key("Comments...", true, true),
+            extracted_text_line_content_key("Comments…", true, true)
+        );
+        assert_ne!(
+            extracted_text_line_content_key("Comments..", true, true),
+            extracted_text_line_content_key("Comments…", true, true)
         );
     }
 
