@@ -30,7 +30,8 @@ pub use office_golden_corpus::{
 pub use office_pdf_campaign::{
     CampaignAssignment, CampaignAuditSummary, CampaignConversionSummary, PlanValidationSummary,
     audit_campaign, audit_campaign_pilot, audit_one, audit_one_with_artifacts, audit_worker_loop,
-    convert_campaign, generate_campaign_assignments, read_plan, validate_assignments, write_plan,
+    convert_campaign, generate_campaign_assignments, prepare_audit_one, read_plan,
+    validate_assignments, write_plan,
 };
 pub use pdf_extract::{
     AnnotationSummary, LinkTargetKind, PathObjectSummary, PdfBounds, PdfFontResourceSummary,

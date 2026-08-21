@@ -33,24 +33,64 @@ carried forward.
 
 | Family | Assigned | Office golden | Office failed | Office timeout | Candidate PASS | Candidate FAIL |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Word | 3,045 | 2,972 | 71 | 2 | 1,872 | 1,100 |
+| Word | 3,045 | 2,972 | 71 | 2 | 1,895 | 1,077 |
 | Excel | 1,345 | 1,215 | 128 | 2 | 190 | 1,025 |
-| PowerPoint | 980 | 957 | 23 | 0 | 497 | 460 |
-| **Total** | **5,370** | **5,144** | **222** | **4** | **2,559** | **2,585** |
+| PowerPoint | 980 | 957 | 23 | 0 | 498 | 459 |
+| **Total** | **5,370** | **5,144** | **222** | **4** | **2,583** | **2,561** |
 
 The final replay skipped all 5,370 records with zero conversion attempts,
 proving plan, source, environment, manifest, and output-hash stability. The
 full candidate audit accounts for all 5,370 assignments and has zero
-infrastructure errors; its ordinary FAIL layers are conversion 16, font 5,
-page geometry 118, text 2,098, and visible output 348. The 226 Office failures
+infrastructure errors; its ordinary FAIL layers are conversion 2, font 2,
+page geometry 120, text 2,100, and visible output 337. The 226 Office failures
 remain explicit `REFERENCE_FAIL` records and have no golden file.
 
-The current promotion batch contributes 102 identity-preserving PASS changes
-with no prior PASS regression: Word +91, PowerPoint +9, and Excel +2. The most
-recent promotions include 34 cross-format PDFium extraction false negatives
-and LibreOffice `listformat.docx`, `indentation.docx`, and
-`tdf104420_lostParagraph.docx`; independent ordered-text controls, exact
-configured audits, and completed full-campaign identity diffs lock the gains.
+The current worktree raises the checked-in checkpoint by 24
+identity-preserving PASS changes, 23 in Word and one in PowerPoint, with no
+prior PASS regression.
+The latest promotions include one Poppler layout-order false negative recovered
+by an independent raw-order confirmation and LibreOffice `fdo73215.docx`, whose
+VML group path overflow and legacy GDI textbox line fit were independently
+controlled. The latter retained all 200 prior PASS documents in the 408-case
+VML group/textbox set; exact configured audits and the completed full-campaign
+identity diff lock the gains. The Wordprocessing Canvas batch then promoted
+eight more documents by implementing the canvas-owned background and keeping
+zero relative-size fallback on the host instead of suppressing child shapes.
+Those ownership rules are backed by LibreOffice's WPC import path and 0%
+relative-size QA, and all seven prior PASS documents in the 22-document WPC
+cluster remain PASS. Finally, geometry-aware `wrapTopAndBottom` avoidance
+promoted `tdf142305StrokeGlowMargin.docx`; the no-following-text
+`tdf136841.docx` and prior-PASS `tdf137850_compat15ZOrder.docx` controls remain
+PASS. A subsequent shared DrawingML arc fix converts the authored ray angles
+to non-circular ellipse parameters, promoting both
+`WPC_tdf104671_Cloud.docx` and the independent preset/custom-geometry control
+`tdf144742_funnel.pptx`. LibreOffice's `ARCANGLETO` conversion and focused
+funnel QA provide the source and opposite representation evidence; full-page
+inspection shows only subpixel antialiasing differences. The next table-wrap
+batch implements the side segment chosen by LibreOffice
+`SwTabFrame::CalcFlyOffsets()` when an inline table fits beside a floating
+table, while retaining the existing vertical dodge when neither side fits.
+Word COM measurements for `tdf134227.docx`, a focused fit/no-fit unit control,
+and the independent LibreOffice `floattable-wrapped-by-table.docx` fixture all
+agree; both documents are now PASS. The following WPC table-cell batch separates
+a table cell's stored baseline from the paragraph line top used for floating
+object collision, preserving that offset when `wrapTopAndBottom` moves a line.
+It also converts the preset text-rectangle top to a baseline only for a direct,
+centered, overflowing WPS story whose host is owned by a real table cell.
+LibreOffice's `wpc_drawing_canvas.cxx`, `WpsContext.cxx`, and `svdotext.cxx`
+establish the ownership and vertical-anchor path. Word COM measured the cell
+and paragraph top at 96.75 pt and the canvas at a paragraph-relative 16.5 pt;
+GDB independently exposed the candidate's 107.266 pt stored baseline, 96.792 pt
+line top, and 113.292 pt wrap boundary. The line box therefore does not collide,
+while the old baseline-as-top comparison did. The direct and opposite controls
+include `WPC_tdf48610_Textbox_with_table_inside.docx`, `fdo74401.docx`, and nine
+previously passing body-owned WPS documents. All remain at their prior verdict,
+while `WPC_tdf158348_shape_text_in_table_cell.docx` changes from text FAIL to
+PASS. Candidate, Office, and diff pages were inspected. The focused layout and
+PDF libraries pass 1,109 and 61 tests, respectively. A reconstructed old-rule
+control audit and the final 5,370-assignment audit differ at exactly that one
+configuration identity, with no PASS-to-FAIL change and zero infrastructure
+errors.
 
 The balanced 300-case go gate completed before full generation: 282 Office
 goldens, 18 reference failures, 85 candidate PASS, 197 ordinary FAIL, and zero
@@ -78,6 +118,7 @@ are satisfied; **U** is not assignable.
 | PDF/A | R | R | R | A-1/A-2/A-3/A-4 variants supported; deterministic creation date required; conformance compatibility still applies |
 | PDF/UA | R | R | R | UA-1 request forces tags, outline availability, and display-title preference |
 | content-stream compression | S | S | S | changes serialized page streams |
+| fixed-format optimization | S | S | S | print is the default; screen caps bitmap-backed fixed-output surfaces at 96 DPI independently of explicit image downsampling |
 | UI language | R | R | R | valid BCP 47; generated UI strings have English and Chinese packs, otherwise recorded English fallback |
 | format locale | S | S | S | valid BCP 47; number/date/currency formatting only |
 | document language | S | S | S | valid BCP 47; authoring defaults and PDF document language |
@@ -408,22 +449,38 @@ the current Office build, Word's raw `UseISO19005_1=true` request produces XMP
 declaring PDF/A-3A; the record therefore keeps the raw COM request separate
 from the observed standard and maps the candidate to `PdfA3a`.
 
-After a full audit has materialized `target/office-pdf-campaign/full-tasks/`,
-rerun one exact configured identity with its configuration ID:
+Build the campaign binary after implementation changes, then prepare and audit
+one exact configured identity by configuration ID. `prepare-audit-one`
+validates the complete plan plus the matching conversion environment and
+golden hash before writing the single task; it does not require a prior full
+audit or a populated `target/` directory.
 
 ```sh
+cargo build -p ooxmlsdk-pdf-test --bin office_pdf_campaign --release
 case_id='<configuration-id>'
+task="/tmp/ooxmlsdk-$case_id-task.json"
+result="/tmp/ooxmlsdk-$case_id-result.json"
+./target/release/office_pdf_campaign prepare-audit-one \
+  --configuration-id "$case_id" \
+  --task "$task"
 ./target/release/office_pdf_campaign audit-one \
-  --task "target/office-pdf-campaign/full-tasks/$case_id.json" \
-  --result "/tmp/ooxmlsdk-$case_id.json" \
+  --task "$task" \
+  --result "$result" \
   --write-artifacts true
-jq . "/tmp/ooxmlsdk-$case_id.json"
+jq -e --arg id "$case_id" \
+  '.configuration_id == $id and .verdict == "PASS"' \
+  "$result"
 ```
 
-The configured campaign reports a fixed identity directly as `PASS` or `FAIL`;
-the older default-options `office_golden_corpus` ratchet is not this campaign's
-acceptance path. Reports are valid only after their reporting phase completes;
-check timestamps and audited revisions after an interruption.
+`audit-one` records ordinary comparison failures in JSON and therefore can
+exit successfully while the recorded verdict is `FAIL`; the final `jq -e`
+check is part of the acceptance command, not optional display. The configured
+campaign reports a fixed identity directly as `PASS` or `FAIL`. Do not
+substitute the default-options `office_golden_corpus` ratchet: it uses a
+different option contract and a separate `golden-errors.toml` ledger, and is
+not an acceptance path for this campaign. Reports are valid only after their
+reporting phase completes; check timestamps and audited revisions after an
+interruption.
 
 ## Diagnostics And Inspection
 
@@ -489,24 +546,37 @@ typed resolver/backend validation error already identifies its branch and does
 not need a performative debugger session; fix that semantic owner, then verify
 the resulting PDF objects and pages.
 
-1. Build the exact corpus test without `--release`. The suite test profile
-   already enables full debug info for the golden-path layout, font, PDF,
-   metafile, and compound-file packages; other packages retain line tables.
-2. Use `OOXMLSDK_GOLDEN_JOBS=1`; worker processes otherwise hide state from
-   breakpoints in the loaded test executable.
-3. Run `cargo test -p ooxmlsdk-pdf-test --test office_golden_corpus --no-run`,
-   then start the printed test executable under GDB with
-   `office_golden_docx_corpus_ratchet --exact --ignored --nocapture`. Preserve
-   `OOXMLSDK_GOLDEN_CASE` and `OOXMLSDK_GOLDEN_JOBS=1` in GDB's environment.
-4. Resolve qualified breakpoints to concrete addresses and confirm the filter
-   reports `running 1 test`. `running 0 tests` proves nothing.
-5. Condition on source, part, page, object, or content hash. Trace one value
+1. Build the campaign binary without `--release`. The suite test profile
+   enables full debug info for the golden-path layout, font, PDF, metafile,
+   and compound-file packages; other packages retain line tables.
+2. Prepare the exact task with the same debug binary and verify both embedded
+   configuration IDs before starting GDB:
+
+   ```sh
+   cargo build -p ooxmlsdk-pdf-test --bin office_pdf_campaign
+   case_id='<configuration-id>'
+   task="/tmp/ooxmlsdk-$case_id-gdb-task.json"
+   result="/tmp/ooxmlsdk-$case_id-gdb-result.json"
+   ./target/debug/office_pdf_campaign prepare-audit-one \
+     --configuration-id "$case_id" --task "$task"
+   jq -e --arg id "$case_id" \
+     '.assignment.configuration_id == $id and
+      .conversion.configuration_id == $id' "$task"
+   gdb --args ./target/debug/office_pdf_campaign audit-one \
+     --task "$task" --result "$result" --write-artifacts true
+   ```
+
+3. `audit-one` consumes exactly one task in the current process; it does not
+   spawn campaign workers and needs no `OOXMLSDK_GOLDEN_CASE` or
+   `OOXMLSDK_GOLDEN_JOBS` variables. Resolve qualified breakpoints to concrete
+   addresses and confirm the task ID at the breakpoint.
+4. Condition on source, part, page, object, or content hash. Trace one value
    through import, effective model, layout/shaping, display list, and PDF.
-6. The pipeline may render more than once; use `tbreak` or disable a breakpoint
+5. The pipeline may render more than once; use `tbreak` or disable a breakpoint
    after the intended hit.
-7. Record authored/raw value, resolved value, selected branch, owner, final
+6. Record authored/raw value, resolved value, selected branch, owner, final
    coordinate/resource, and the first point where candidate diverges.
-8. Inspect the exact written PDF and images. Run release acceptance only when
+7. Inspect the exact written PDF and images. Run release acceptance only when
    the trace and predicted diagnostic change agree.
 
 For crashes capture all threads, full backtraces, arguments, locals, and
@@ -514,31 +584,28 @@ For crashes capture all threads, full backtraces, arguments, locals, and
 slow progress; identical blocked stacks suggest non-progress. Debug timing is
 not performance evidence.
 
-## Regression, Ledger, And Promotion
+## Regression And Promotion
 
-Ledger meanings:
-
-- `PASS`: an unregistered identity passes;
-- `FAIL`: an unregistered identity fails;
-- `XFAIL`: a registered exact identity still fails;
-- `XPASS`: a registered identity passes and its stale entry must be removed.
+The configured campaign has three terminal audit states: `PASS`, `FAIL`, and
+`REFERENCE_FAIL`. It does not read `golden-errors.toml` and therefore has no
+`XFAIL` or `XPASS` state. Those names belong only to the separate legacy
+default-options ratchet; do not use its ledger or counts when reporting this
+campaign.
 
 For a promotion batch:
 
 1. record exact removed and introduced identities, not only counts;
-2. remove fixed identities and orphaned classes from `golden-errors.toml`;
-3. run focused implementation regressions;
-4. run each exact golden, its coherent cluster, and a stopping counterexample;
-5. visually inspect every PASS and require the earliest failure scope to shrink;
-6. run the affected normal ratchet;
-7. at the phase gate, complete the audit, remove XPASS, repair ledger drift,
-   and rerun the raised ratchet.
+2. run focused implementation regressions;
+3. run each exact configured golden, its coherent cluster, and a stopping
+   counterexample;
+4. visually inspect every PASS and require the earliest failure scope to shrink;
+5. at the phase gate, complete the configured full audit and verify an exact
+   identity diff with no prior `PASS` regression or infrastructure error.
 
 Implementation-local tests preserve private algorithms and boundaries that
 golden output cannot distinguish. Fixture-backed public behavior belongs in
 the test suite. Do not update a failing expectation unless independent
 specification or production-source evidence proves the old assertion stale.
 
-Never call XFAIL success, retain XPASS, or present a focused count as an
-exhaustive baseline. Delete obsolete plans and case narratives instead of
-accumulating them here.
+Never present a focused result as an exhaustive baseline. Delete obsolete
+plans and case narratives instead of accumulating them here.

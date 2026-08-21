@@ -3,9 +3,9 @@ use std::fs;
 
 use lopdf::{Document, Object};
 use ooxmlsdk_pdf::{
-    PdfDocumentKind, PdfError, PdfLinkDefaultAction, PdfOptionFeature, PdfOptionSupport,
-    PdfOptions, PdfPageLayout, PdfStandard, PdfViewerMagnification, PdfViewerPageMode,
-    pdf_option_support, resolve_pdf_options,
+    PdfDocumentKind, PdfError, PdfLinkDefaultAction, PdfOptimizeFor, PdfOptionFeature,
+    PdfOptionSupport, PdfOptions, PdfPageLayout, PdfStandard, PdfViewerMagnification,
+    PdfViewerPageMode, pdf_option_support, resolve_pdf_options,
 };
 use ooxmlsdk_pdf_test::{PdfSummary, libreoffice_fixture, rendered_page_image_from_pdf};
 use serde_json::{Value, json};
@@ -26,7 +26,13 @@ fn public_capability_matrix_is_document_kind_aware() {
             pdf_option_support(kind, PdfOptionFeature::ViewerPreferences),
             PdfOptionSupport::Supported
         );
+        assert_eq!(
+            pdf_option_support(kind, PdfOptionFeature::OptimizeFor),
+            PdfOptionSupport::Supported
+        );
     }
+
+    assert_eq!(PdfOptions::default().optimize_for, PdfOptimizeFor::Print);
 
     assert_eq!(
         pdf_option_support(PdfDocumentKind::Docx, PdfOptionFeature::FormFields),

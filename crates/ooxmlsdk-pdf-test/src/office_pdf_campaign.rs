@@ -9,8 +9,8 @@ use std::time::{Duration, Instant};
 
 use ooxmlsdk_pdf::{
     FieldUpdateDateTime, PdfAttachment, PdfAttachmentAssociation, PdfDateTime, PdfDocumentKind,
-    PdfFormSubmitFormat, PdfLinkDefaultAction, PdfOptions, PdfPageLayout, PdfStandard,
-    PdfViewerMagnification, PdfViewerPageMode, resolve_pdf_options,
+    PdfFormSubmitFormat, PdfLinkDefaultAction, PdfOptimizeFor, PdfOptions, PdfPageLayout,
+    PdfStandard, PdfViewerMagnification, PdfViewerPageMode, resolve_pdf_options,
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -563,13 +563,19 @@ impl CampaignAssignment {
     }
 
     pub fn requested_pdf_options(&self) -> PdfOptions {
-        self.requested.to_pdf_options(
+        let mut options = self.requested.to_pdf_options(
             &self.source_key(),
             Path::new(&self.file)
                 .file_name()
                 .and_then(|name| name.to_str())
                 .unwrap_or(&self.file),
-        )
+        );
+        options.optimize_for = if self.office.quality == "screen" {
+            PdfOptimizeFor::Screen
+        } else {
+            PdfOptimizeFor::Print
+        };
+        options
     }
 }
 
@@ -2972,6 +2978,68 @@ pub fn audit_worker_loop() -> Result<(), String> {
 
 pub fn audit_one(task_path: &Path, result_path: &Path) -> Result<(), String> {
     audit_one_with_artifacts(task_path, result_path, false)
+}
+
+pub fn prepare_audit_one(
+    root: &Path,
+    plan_path: &Path,
+    configuration_id: &str,
+    task_path: &Path,
+) -> Result<(), String> {
+    let assignments = read_plan(plan_path)?;
+    validate_assignments(root, &assignments)?;
+    let assignment = assignments
+        .into_iter()
+        .find(|assignment| assignment.configuration_id == configuration_id)
+        .ok_or_else(|| {
+            format!(
+                "configured audit plan has no assignment with configuration ID {configuration_id}"
+            )
+        })?;
+    let conversions = read_conversion_records(root)?;
+    let key = (assignment.corpus.clone(), assignment.file.clone());
+    let conversion = conversions.get(&key).cloned().ok_or_else(|| {
+        format!(
+            "configured audit assignment has no terminal conversion record: {}",
+            assignment.source_key()
+        )
+    })?;
+    validate_conversion_record(&assignment, &conversion)?;
+    if conversion.environment_id != load_environment_id(root)? {
+        return Err(format!("environment drift for {}", assignment.source_key()));
+    }
+    if conversion.status != "converted" {
+        return Err(format!(
+            "configured audit assignment has no Office golden: {} ({})",
+            assignment.source_key(),
+            conversion.status
+        ));
+    }
+    let golden_path = root
+        .join("corpus_pdf_conv")
+        .join(&assignment.corpus)
+        .join(&conversion.output);
+    let golden = fs::read(&golden_path).map_err(|error| {
+        format!(
+            "could not read configured golden {}: {error}",
+            golden_path.display()
+        )
+    })?;
+    if golden.len() as u64 != conversion.output_bytes
+        || sha256_bytes(&golden) != conversion.output_sha256
+    {
+        return Err(format!(
+            "configured golden identity drift for {}",
+            assignment.source_key()
+        ));
+    }
+    write_json(
+        task_path,
+        &AuditTask {
+            assignment,
+            conversion,
+        },
+    )
 }
 
 pub fn audit_one_with_artifacts(

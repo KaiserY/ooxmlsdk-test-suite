@@ -6,7 +6,7 @@ use std::time::Duration;
 
 use ooxmlsdk_pdf_test::{
     audit_campaign, audit_one_with_artifacts, audit_worker_loop, convert_campaign,
-    generate_campaign_assignments, read_plan, scan_campaign_font_references,
+    generate_campaign_assignments, prepare_audit_one, read_plan, scan_campaign_font_references,
     scan_local_font_candidates, validate_assignments, workspace_root, write_plan,
 };
 
@@ -166,6 +166,16 @@ fn run() -> Result<(), String> {
                     .map_err(|error| format!("could not serialize audit summary: {error}"))?
             );
         }
+        "prepare-audit-one" => {
+            let plan_path = optional_path(&root, &arguments, "--plan")?
+                .unwrap_or_else(|| root.join("corpus_pdf_conv/plan.jsonl"));
+            let configuration_id = option_value(&arguments, "--configuration-id")?
+                .ok_or_else(|| "missing required option --configuration-id".to_string())?;
+            let task = required_path(&arguments, "--task")?;
+            reject_unknown_options(&arguments, &["--plan", "--configuration-id", "--task"])?;
+            prepare_audit_one(&root, &plan_path, configuration_id.as_str(), task.as_path())?;
+            println!("task={}", task.display());
+        }
         "audit-one" => {
             let task = required_path(&arguments, "--task")?;
             let result = required_path(&arguments, "--result")?;
@@ -290,7 +300,7 @@ fn reject_unknown_options(arguments: &[String], known: &[&str]) -> Result<(), St
 }
 
 fn usage() -> String {
-    "usage:\n  office_pdf_campaign generate-plan [--plan PATH]\n  office_pdf_campaign validate-plan [--plan PATH]\n  office_pdf_campaign font-scan [--plan PATH] [--output PATH]\n  office_pdf_campaign local-font-candidates [--references PATH] [--output PATH]\n  office_pdf_campaign convert [--plan PATH] [--selection pilot-300|full] [--pwsh PATH] [--jobs N] [--timeout-seconds N] [--max-attempts N]\n  office_pdf_campaign audit [--plan PATH] [--selection pilot-300|full] [--jobs N] [--timeout-seconds N]\n  office_pdf_campaign audit-one --task PATH --result PATH [--write-artifacts true|false]\n  office_pdf_campaign audit-worker"
+    "usage:\n  office_pdf_campaign generate-plan [--plan PATH]\n  office_pdf_campaign validate-plan [--plan PATH]\n  office_pdf_campaign font-scan [--plan PATH] [--output PATH]\n  office_pdf_campaign local-font-candidates [--references PATH] [--output PATH]\n  office_pdf_campaign convert [--plan PATH] [--selection pilot-300|full] [--pwsh PATH] [--jobs N] [--timeout-seconds N] [--max-attempts N]\n  office_pdf_campaign audit [--plan PATH] [--selection pilot-300|full] [--jobs N] [--timeout-seconds N]\n  office_pdf_campaign prepare-audit-one --configuration-id ID --task PATH [--plan PATH]\n  office_pdf_campaign audit-one --task PATH --result PATH [--write-artifacts true|false]\n  office_pdf_campaign audit-worker"
         .to_string()
 }
 

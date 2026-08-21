@@ -167,31 +167,6 @@ pub(crate) struct SemanticSoftMaskImage {
     pub(crate) black_matte_rgb: Vec<u8>,
 }
 
-pub(crate) fn semantic_soft_mask_opaque_core_color(
-    image: &SemanticSoftMaskImage,
-) -> Option<[u8; 3]> {
-    if image.black_matte_rgb.len() != image.alpha.len().checked_mul(3)? {
-        return None;
-    }
-
-    // PDF Reference 1.5 section 7.5.4 defines /Matte samples as preblended
-    // against the matte color. At alpha=255 the stored sample is nevertheless
-    // the exact straight color. Office can package an opaque colored stroke
-    // and separate translucent strokes in one image XObject; classify only
-    // the uniquely colored opaque core. The localized omission guard anchors
-    // that semantic core, while the page-wide raster contract continues to
-    // cover translucent adjuncts.
-    let mut opaque_colors = image
-        .alpha
-        .iter()
-        .zip(image.black_matte_rgb.chunks_exact(3))
-        .filter_map(|(&alpha, rgb)| (alpha == u8::MAX).then_some([rgb[0], rgb[1], rgb[2]]));
-    let solid_rgb = opaque_colors.next()?;
-    opaque_colors
-        .all(|rgb| rgb == solid_rgb)
-        .then_some(solid_rgb)
-}
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum LinkTargetKind {
     ExternalUri,
@@ -2486,6 +2461,27 @@ pub(crate) fn pdftotext_page(pdf: &[u8], page_index: usize) -> std::result::Resu
     )
 }
 
+pub(crate) fn pdftotext_page_raw(
+    pdf: &[u8],
+    page_index: usize,
+) -> std::result::Result<String, String> {
+    let page_number = page_index
+        .checked_add(1)
+        .ok_or_else(|| format!("PDF page index {page_index} cannot be represented by pdftotext"))?
+        .to_string();
+    run_pdftotext(
+        pdf,
+        [
+            "-f",
+            page_number.as_str(),
+            "-l",
+            page_number.as_str(),
+            "-raw",
+            "-nopgbrk",
+        ],
+    )
+}
+
 fn pdftotext(pdf: &[u8]) -> std::result::Result<String, String> {
     run_pdftotext(pdf, ["-layout", "-nopgbrk"])
 }
@@ -2746,33 +2742,6 @@ mod tests {
         let nonuniform = lopdf::Stream::new(dictionary, nonuniform_content);
         assert_eq!(
             solid_rgb_image(&nonuniform, Some("Image"), Some(2), Some(2)),
-            None
-        );
-    }
-
-    #[test]
-    fn soft_mask_opaque_core_color_ignores_translucent_adjuncts() {
-        let red_core_with_translucent_black = SemanticSoftMaskImage {
-            alpha: vec![0, 81, 203, 255],
-            black_matte_rgb: vec![0, 0, 0, 0, 0, 0, 202, 0, 0, 255, 0, 0],
-        };
-        assert_eq!(
-            semantic_soft_mask_opaque_core_color(&red_core_with_translucent_black),
-            Some([255, 0, 0])
-        );
-
-        let multicolor = SemanticSoftMaskImage {
-            alpha: vec![255, 255],
-            black_matte_rgb: vec![255, 0, 0, 0, 0, 255],
-        };
-        assert_eq!(semantic_soft_mask_opaque_core_color(&multicolor), None);
-
-        let translucent_without_core = SemanticSoftMaskImage {
-            alpha: vec![0, 30, 203],
-            black_matte_rgb: vec![0, 0, 0, 30, 0, 0, 202, 0, 0],
-        };
-        assert_eq!(
-            semantic_soft_mask_opaque_core_color(&translucent_without_core),
             None
         );
     }
