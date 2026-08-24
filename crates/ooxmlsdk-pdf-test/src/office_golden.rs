@@ -316,7 +316,14 @@ pub(crate) fn compare_office_golden_detailed_with_artifacts(
     tolerance: VisualTolerance,
     write_failure_artifacts: bool,
 ) -> DetailedResult<OfficeGoldenReport> {
-    compare_office_golden_detailed_inner(case, tolerance, write_failure_artifacts, None, true)
+    compare_office_golden_detailed_inner(
+        case,
+        tolerance,
+        write_failure_artifacts,
+        false,
+        None,
+        true,
+    )
 }
 
 pub(crate) fn compare_office_golden_detailed_with_prevalidated_options(
@@ -324,11 +331,13 @@ pub(crate) fn compare_office_golden_detailed_with_prevalidated_options(
     options: ooxmlsdk_pdf::PdfOptions,
     tolerance: VisualTolerance,
     write_failure_artifacts: bool,
+    write_page_artifacts: bool,
 ) -> DetailedResult<OfficeGoldenReport> {
     compare_office_golden_detailed_inner(
         case,
         tolerance,
         write_failure_artifacts,
+        write_page_artifacts,
         Some(options),
         false,
     )
@@ -338,6 +347,7 @@ fn compare_office_golden_detailed_inner(
     case: OfficeGoldenCase<'_>,
     tolerance: VisualTolerance,
     write_failure_artifacts: bool,
+    write_page_artifacts: bool,
     configured_options: Option<ooxmlsdk_pdf::PdfOptions>,
     verify_conversion_manifest: bool,
 ) -> DetailedResult<OfficeGoldenReport> {
@@ -697,8 +707,8 @@ fn compare_office_golden_detailed_inner(
     let mut page_diffs = Vec::with_capacity(golden.page_count);
     let mut visual_passes = true;
     let mut failing_pages = Vec::new();
-    let write_page_artifacts =
-        std::env::var("OOXMLSDK_GOLDEN_WRITE_PAGE_ARTIFACTS").is_ok_and(|value| value == "1");
+    let write_page_artifacts = write_page_artifacts
+        || std::env::var("OOXMLSDK_GOLDEN_WRITE_PAGE_ARTIFACTS").is_ok_and(|value| value == "1");
     let mut artifact_dir = if write_page_artifacts {
         Some(
             write_candidate_artifact(
@@ -1868,6 +1878,16 @@ fn canonical_pdf_base_font_name(font_name: &str) -> String {
     if let Some(without_suffix) = normalized.strip_suffix("regular") {
         normalized.truncate(without_suffix.len());
     }
+    // Office commonly emits the PDF Base-14 family name `Times`, while other
+    // producers retain the registered family name `Times New Roman` (including
+    // the historical `PS` marker). These names identify the same Times family;
+    // normalize only this standards-defined alias and preserve all other family
+    // distinctions.
+    if let Some(style) = normalized.strip_prefix("timesnewromanps") {
+        normalized = format!("times{style}");
+    } else if let Some(style) = normalized.strip_prefix("timesnewroman") {
+        normalized = format!("times{style}");
+    }
     normalized
 }
 
@@ -2034,7 +2054,8 @@ fn assert_text_font_assignment_contract(
                     .iter()
                     .zip(&golden_line.font_runs)
                     .all(|(candidate_run, golden_run)| {
-                        candidate_run.font_name == golden_run.font_name
+                        canonical_pdf_base_font_name(&candidate_run.font_name)
+                            == canonical_pdf_base_font_name(&golden_run.font_name)
                             && extracted_text_line_content_key(
                                 &candidate_run.text,
                                 accept_pdfium_bidi_mirroring,
@@ -2660,9 +2681,16 @@ fn is_extracted_whitespace(character: char) -> bool {
     character.is_whitespace() || character == '\u{f020}'
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum LocalizedGraphicsComparison {
+    Pixels,
+    SoftMaskStencil { solid_rgb: [u8; 3] },
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct LocalizedGraphicRegion {
     bounds: PdfBounds,
+    comparison: LocalizedGraphicsComparison,
 }
 
 fn localized_graphics_bounds(
@@ -2695,6 +2723,8 @@ fn localized_graphics_bounds(
                 .find(|(candidate_index, candidate_image)| {
                     !matched_candidate_images[*candidate_index]
                         && exact_decoded_image_match(
+                            candidate,
+                            golden,
                             candidate_image,
                             image,
                             page_bounds,
@@ -2749,11 +2779,64 @@ fn localized_graphics_bounds(
             // preserve the content as vectors or a form instead of mirroring
             // Office's PDF object decomposition.
             if unmatched_image_requires_localized_comparison(page_bounds, rect) {
-                bounds.push(LocalizedGraphicRegion { bounds: rect });
+                let comparison = soft_mask_stencil_color(golden, image)
+                    .map_or(LocalizedGraphicsComparison::Pixels, |solid_rgb| {
+                        LocalizedGraphicsComparison::SoftMaskStencil { solid_rgb }
+                    });
+                bounds.push(LocalizedGraphicRegion {
+                    bounds: rect,
+                    comparison,
+                });
             }
         }
     }
     Ok(bounds)
+}
+
+fn soft_mask_stencil_color(summary: &PdfSummary, image: &ImageSummary) -> Option<[u8; 3]> {
+    let width = image.width.as_deref()?.parse::<u32>().ok()?;
+    let height = image.height.as_deref()?.parse::<u32>().ok()?;
+    let resource_name = page_object_image_resource_name(summary, image)?;
+    let raw_page = summary
+        .raw_pages
+        .iter()
+        .find(|page| page.page_index == image.page_index)?;
+    let xobject = raw_page.xobjects.iter().find(|xobject| {
+        xobject.name == resource_name
+            && xobject.subtype_name.as_deref() == Some("Image")
+            && xobject.width_px == Some(width)
+            && xobject.height_px == Some(height)
+    })?;
+    if !xobject.has_soft_mask || xobject.soft_mask_has_opaque_core != Some(true) {
+        return None;
+    }
+    xobject
+        .semantic_soft_mask_image
+        .as_ref()
+        .and_then(crate::pdf_extract::semantic_soft_mask_opaque_core_color)
+        .or(xobject.solid_rgb)
+}
+
+fn page_object_image_resource_name<'a>(
+    summary: &'a PdfSummary,
+    image: &ImageSummary,
+) -> Option<&'a str> {
+    let raw_page = summary
+        .raw_pages
+        .iter()
+        .find(|page| page.page_index == image.page_index)?;
+    let page_image_count = summary
+        .images
+        .iter()
+        .filter(|candidate| candidate.page_index == image.page_index)
+        .count();
+    if raw_page.image_draw_names.len() != page_image_count {
+        return None;
+    }
+    raw_page
+        .image_draw_names
+        .get(image.page_image_index)
+        .map(String::as_str)
 }
 
 fn unmatched_image_requires_localized_comparison(
@@ -2767,6 +2850,8 @@ fn unmatched_image_requires_localized_comparison(
 }
 
 fn exact_decoded_image_match(
+    candidate_summary: &PdfSummary,
+    golden_summary: &PdfSummary,
     candidate: &ImageSummary,
     golden: &ImageSummary,
     page_bounds: PdfBounds,
@@ -2783,7 +2868,111 @@ fn exact_decoded_image_match(
             raster_width_px,
             raster_height_px,
         );
-    same_identity && decoded_image_samples_match(candidate, golden)
+    same_identity
+        && (decoded_image_samples_match(candidate, golden)
+            || semantic_soft_mask_images_match(
+                candidate_summary,
+                golden_summary,
+                candidate,
+                golden,
+            ))
+}
+
+fn semantic_soft_mask_images_match(
+    candidate_summary: &PdfSummary,
+    golden_summary: &PdfSummary,
+    candidate: &ImageSummary,
+    golden: &ImageSummary,
+) -> bool {
+    let Some(candidate_image) = page_object_semantic_soft_mask_image(candidate_summary, candidate)
+    else {
+        return false;
+    };
+    let Some(golden_image) = page_object_semantic_soft_mask_image(golden_summary, golden) else {
+        return false;
+    };
+    if candidate.axis_aligned_orientation == golden.axis_aligned_orientation {
+        return semantic_soft_mask_samples_match(candidate_image, golden_image);
+    }
+    let Some((candidate_x, candidate_y)) = candidate.axis_aligned_orientation else {
+        return false;
+    };
+    let Some((golden_x, golden_y)) = golden.axis_aligned_orientation else {
+        return false;
+    };
+    let Some(width) = candidate
+        .width
+        .as_deref()
+        .and_then(|value| value.parse::<usize>().ok())
+    else {
+        return false;
+    };
+    candidate_x == golden_x
+        && candidate_y == -golden_y
+        && vertically_flipped_semantic_soft_mask_samples_match(candidate_image, golden_image, width)
+}
+
+fn page_object_semantic_soft_mask_image<'a>(
+    summary: &'a PdfSummary,
+    image: &ImageSummary,
+) -> Option<&'a crate::pdf_extract::SemanticSoftMaskImage> {
+    let width = image.width.as_deref()?.parse::<u32>().ok()?;
+    let height = image.height.as_deref()?.parse::<u32>().ok()?;
+    let resource_name = page_object_image_resource_name(summary, image)?;
+    summary
+        .raw_pages
+        .iter()
+        .find(|page| page.page_index == image.page_index)?
+        .xobjects
+        .iter()
+        .find(|xobject| {
+            xobject.name == resource_name
+                && xobject.subtype_name.as_deref() == Some("Image")
+                && xobject.width_px == Some(width)
+                && xobject.height_px == Some(height)
+        })
+        .and_then(|xobject| xobject.semantic_soft_mask_image.as_ref())
+}
+
+fn semantic_soft_mask_samples_match(
+    candidate: &crate::pdf_extract::SemanticSoftMaskImage,
+    golden: &crate::pdf_extract::SemanticSoftMaskImage,
+) -> bool {
+    candidate.alpha == golden.alpha
+        && candidate.black_matte_rgb.len() == golden.black_matte_rgb.len()
+        && candidate
+            .black_matte_rgb
+            .iter()
+            .zip(&golden.black_matte_rgb)
+            .all(|(candidate, golden)| candidate.abs_diff(*golden) <= 1)
+}
+
+fn vertically_flipped_semantic_soft_mask_samples_match(
+    candidate: &crate::pdf_extract::SemanticSoftMaskImage,
+    golden: &crate::pdf_extract::SemanticSoftMaskImage,
+    width: usize,
+) -> bool {
+    if width == 0
+        || candidate.alpha.len() != golden.alpha.len()
+        || !candidate.alpha.len().is_multiple_of(width)
+        || candidate.black_matte_rgb.len() != golden.black_matte_rgb.len()
+        || candidate.black_matte_rgb.len() != candidate.alpha.len() * 3
+    {
+        return false;
+    }
+    candidate
+        .alpha
+        .chunks_exact(width)
+        .rev()
+        .flatten()
+        .eq(golden.alpha.iter())
+        && candidate
+            .black_matte_rgb
+            .chunks_exact(width * 3)
+            .rev()
+            .flatten()
+            .zip(&golden.black_matte_rgb)
+            .all(|(candidate, golden)| candidate.abs_diff(*golden) <= 1)
 }
 
 fn decoded_image_samples_match(candidate: &ImageSummary, golden: &ImageSummary) -> bool {
@@ -2929,21 +3118,55 @@ fn visual_diff_metrics(
                 candidate.width_px,
                 comparison_height_px,
             )
+            .map(|rect| (rect, region.comparison))
         })
         .collect::<Vec<_>>();
-    pixel_regions.sort_unstable_by_key(|rect| (rect.top, rect.left, rect.height, rect.width));
+    pixel_regions.sort_unstable_by_key(|(rect, comparison)| {
+        (
+            rect.top,
+            rect.left,
+            rect.height,
+            rect.width,
+            match comparison {
+                LocalizedGraphicsComparison::Pixels => (0, [0, 0, 0]),
+                LocalizedGraphicsComparison::SoftMaskStencil { solid_rgb } => (1, *solid_rgb),
+            },
+        )
+    });
     pixel_regions.dedup();
-    for rect in pixel_regions {
-        let localized = localized_visual_diff_metrics(
-            candidate,
-            golden,
-            rect,
-            significant_channel_delta,
-            comparison_height_px,
-        );
+    for (rect, comparison) in pixel_regions {
+        // The text contract has already verified content, style, bounds, and
+        // font assignment before this raster stage. Office can place an image
+        // XObject below independently painted text while another producer
+        // preserves the same background as vectors. Attribute only the
+        // unoccluded pixels to that unmatched image; otherwise text rasterizer
+        // differences inside the image bounds are counted a second time as a
+        // graphics error. The localized guard remains strict everywhere not
+        // covered by a verified text run.
+        let localized = match comparison {
+            LocalizedGraphicsComparison::Pixels => localized_visual_diff_metrics_with_text_masks(
+                candidate,
+                golden,
+                rect,
+                significant_channel_delta,
+                comparison_height_px,
+                &text_mask_rows,
+            ),
+            LocalizedGraphicsComparison::SoftMaskStencil { solid_rgb } => {
+                localized_stencil_diff_metrics(
+                    candidate,
+                    golden,
+                    rect,
+                    solid_rgb,
+                    significant_channel_delta,
+                    comparison_height_px,
+                    TEXT_EDGE_TOLERANCE_RASTER_PIXELS.ceil() as u32,
+                )
+            }
+        };
         if std::env::var("OOXMLSDK_GOLDEN_TRACE_STAGES").is_ok_and(|value| value == "1") {
             eprintln!(
-                "office-golden localized-image rect=[{} {} {} {}] significant_fraction={} mean_delta={}",
+                "office-golden localized-image rect=[{} {} {} {}] comparison={comparison:?} significant_fraction={} mean_delta={}",
                 rect.left,
                 rect.top,
                 rect.width,
@@ -3054,12 +3277,49 @@ struct LocalizedVisualDiffMetrics {
     mean_absolute_channel_delta: f64,
 }
 
+#[cfg(test)]
 fn localized_visual_diff_metrics(
     candidate: &RenderedPageImage,
     golden: &RenderedPageImage,
     rect: PixelRect,
     significant_channel_delta: u8,
     comparison_height_px: u32,
+) -> LocalizedVisualDiffMetrics {
+    localized_visual_diff_metrics_with_optional_text_masks(
+        candidate,
+        golden,
+        rect,
+        significant_channel_delta,
+        comparison_height_px,
+        None,
+    )
+}
+
+fn localized_visual_diff_metrics_with_text_masks(
+    candidate: &RenderedPageImage,
+    golden: &RenderedPageImage,
+    rect: PixelRect,
+    significant_channel_delta: u8,
+    comparison_height_px: u32,
+    text_mask_rows: &[Vec<TextMaskXSpan>],
+) -> LocalizedVisualDiffMetrics {
+    localized_visual_diff_metrics_with_optional_text_masks(
+        candidate,
+        golden,
+        rect,
+        significant_channel_delta,
+        comparison_height_px,
+        Some(text_mask_rows),
+    )
+}
+
+fn localized_visual_diff_metrics_with_optional_text_masks(
+    candidate: &RenderedPageImage,
+    golden: &RenderedPageImage,
+    rect: PixelRect,
+    significant_channel_delta: u8,
+    comparison_height_px: u32,
+    text_mask_rows: Option<&[Vec<TextMaskXSpan>]>,
 ) -> LocalizedVisualDiffMetrics {
     // Image XObject bounds are independently rounded to each producer's
     // output grid. Exclude exactly one fixed-raster sample at the perimeter
@@ -3096,6 +3356,7 @@ fn localized_visual_diff_metrics(
                     x: offset_x,
                     y: offset_y,
                 },
+                text_mask_rows,
             )
         })
         .min_by(|left, right| {
@@ -3154,6 +3415,7 @@ fn localized_visual_diff_metrics_at_offset(
     significant_channel_delta: u8,
     comparison_height_px: u32,
     candidate_offset: PixelOffset,
+    text_mask_rows: Option<&[Vec<TextMaskXSpan>]>,
 ) -> LocalizedVisualDiffMetrics {
     // Resolve both producers through the same box filter before measuring
     // them. This is a uniform sampling normalization: it absorbs different
@@ -3172,6 +3434,12 @@ fn localized_visual_diff_metrics_at_offset(
             let mut pixels = 0u32;
             for y in block_top..block_bottom {
                 for x in block_left..block_right {
+                    if text_mask_rows.is_some_and(|rows| {
+                        rows.get(y as usize)
+                            .is_some_and(|spans| pixel_is_in_text_mask(spans, x))
+                    }) {
+                        continue;
+                    }
                     let candidate_pixel = pixel_rgb(
                         candidate,
                         (i64::from(x) + i64::from(candidate_offset.x)) as u32,
@@ -3195,36 +3463,191 @@ fn localized_visual_diff_metrics_at_offset(
         }
     }
 
-    // Kompari's image-agnostic comparison core normalizes statistics to a
-    // dominant background shared by both images. Apply the same rule after
-    // the common box resolve so unchanged page background cannot dilute a
-    // missing or recolored foreground feature.
+    // Kompari's image-agnostic comparison core normalizes the significant
+    // foreground fraction to a dominant background shared by both images, so
+    // unchanged background cannot dilute a missing or recolored feature. The
+    // mean delta has a different purpose: it detects broad low-contrast
+    // changes and therefore keeps the complete unmasked region as its
+    // denominator. Using only foreground blocks for that mean amplifies a few
+    // sub-threshold antialias samples into a false broad-area failure.
     let common_background = dominant_rgb(resolved.iter().map(|sample| sample.candidate))
         .zip(dominant_rgb(resolved.iter().map(|sample| sample.golden)))
         .and_then(|(candidate, golden)| (candidate == golden).then_some(candidate));
     let mut significant = 0u64;
-    let mut absolute_delta_sum = 0u64;
-    let mut compared_samples = 0u64;
+    let mut foreground_samples = 0u64;
+    let mut mean_absolute_delta_sum = 0u64;
+    let mut mean_samples = 0u64;
     for sample in resolved {
-        if common_background
-            .is_some_and(|background| sample.candidate == background && sample.golden == background)
-        {
-            continue;
-        }
         let deltas = [
             sample.candidate[0].abs_diff(sample.golden[0]),
             sample.candidate[1].abs_diff(sample.golden[1]),
             sample.candidate[2].abs_diff(sample.golden[2]),
         ];
+        mean_absolute_delta_sum += deltas.iter().copied().map(u64::from).sum::<u64>();
+        mean_samples += 1;
+        if common_background
+            .is_some_and(|background| sample.candidate == background && sample.golden == background)
+        {
+            continue;
+        }
         significant +=
             u64::from(deltas.iter().copied().max().unwrap_or_default() > significant_channel_delta);
-        absolute_delta_sum += deltas.iter().copied().map(u64::from).sum::<u64>();
-        compared_samples += 1;
+        foreground_samples += 1;
     }
     LocalizedVisualDiffMetrics {
-        significant_pixel_fraction: ratio(significant, compared_samples),
-        mean_absolute_channel_delta: ratio(absolute_delta_sum, compared_samples * 3),
+        significant_pixel_fraction: ratio(significant, foreground_samples),
+        mean_absolute_channel_delta: ratio(mean_absolute_delta_sum, mean_samples * 3),
     }
+}
+
+fn pixel_is_in_text_mask(spans: &[TextMaskXSpan], x: u32) -> bool {
+    spans
+        .iter()
+        .take_while(|span| span.start <= x)
+        .any(|span| x < span.end)
+}
+
+fn localized_stencil_diff_metrics(
+    candidate: &RenderedPageImage,
+    golden: &RenderedPageImage,
+    rect: PixelRect,
+    solid_rgb: [u8; 3],
+    significant_channel_delta: u8,
+    comparison_height_px: u32,
+    radius: u32,
+) -> LocalizedVisualDiffMetrics {
+    let right = (rect.left + rect.width).min(candidate.width_px);
+    let bottom = (rect.top + rect.height).min(comparison_height_px);
+    let width = right.saturating_sub(rect.left);
+    let height = bottom.saturating_sub(rect.top);
+    if width == 0 || height == 0 {
+        return LocalizedVisualDiffMetrics::default();
+    }
+
+    let candidate_mask = stencil_core_mask(
+        candidate,
+        rect.left,
+        rect.top,
+        width,
+        height,
+        solid_rgb,
+        significant_channel_delta,
+    );
+    let golden_mask = stencil_core_mask(
+        golden,
+        rect.left,
+        rect.top,
+        width,
+        height,
+        solid_rgb,
+        significant_channel_delta,
+    );
+    let candidate_pixels = candidate_mask.iter().filter(|&&pixel| pixel).count() as u64;
+    let golden_pixels = golden_mask.iter().filter(|&&pixel| pixel).count() as u64;
+    let stencil_pixels = candidate_pixels + golden_pixels;
+    if stencil_pixels == 0 {
+        // A fully transparent stencil has no visible contract of its own; the
+        // surrounding page comparison still covers the rendered background.
+        return LocalizedVisualDiffMetrics::default();
+    }
+
+    let unmatched = unmatched_stencil_pixels(&candidate_mask, &golden_mask, width, height, radius)
+        + unmatched_stencil_pixels(&golden_mask, &candidate_mask, width, height, radius);
+    LocalizedVisualDiffMetrics {
+        significant_pixel_fraction: ratio(unmatched, stencil_pixels),
+        // A recolored or missing core produces no matching stencil samples and
+        // is represented by the foreground-normalized significant fraction.
+        mean_absolute_channel_delta: 0.0,
+    }
+}
+
+fn stencil_core_mask(
+    image: &RenderedPageImage,
+    left: u32,
+    top: u32,
+    width: u32,
+    height: u32,
+    solid_rgb: [u8; 3],
+    channel_tolerance: u8,
+) -> Vec<bool> {
+    let mut mask = Vec::with_capacity((width * height) as usize);
+    for y in top..top + height {
+        for x in left..left + width {
+            mask.push(pixel_matches_stencil_paint(
+                pixel_rgb(image, x, y),
+                solid_rgb,
+                channel_tolerance,
+            ));
+        }
+    }
+    mask
+}
+
+fn pixel_matches_stencil_paint(actual: [u8; 3], solid_rgb: [u8; 3], channel_tolerance: u8) -> bool {
+    const WHITE: u8 = u8::MAX;
+
+    // A fixed-width page raster can resample a one-device-pixel stencil until
+    // no fully opaque sample survives. Recognize the PDF alpha-compositing
+    // line between the solid paint and the white page backdrop rather than
+    // requiring the straight paint color itself.
+    let Some(reference_channel) = solid_rgb
+        .iter()
+        .enumerate()
+        .max_by_key(|(_, component)| WHITE - **component)
+        .filter(|(_, component)| **component != WHITE)
+        .map(|(channel, _)| channel)
+    else {
+        return false;
+    };
+    let reference_contrast = u16::from(WHITE - solid_rgb[reference_channel]);
+    let reference_delta = u16::from(WHITE - actual[reference_channel]);
+    if reference_delta <= u16::from(channel_tolerance) {
+        return false;
+    }
+    let alpha = ((reference_delta * u16::from(WHITE) + reference_contrast / 2)
+        / reference_contrast)
+        .min(u16::from(WHITE));
+    actual.into_iter().zip(solid_rgb).all(|(actual, solid)| {
+        let contrast = u16::from(WHITE - solid);
+        let expected = WHITE - ((contrast * alpha + u16::from(WHITE) / 2) / u16::from(WHITE)) as u8;
+        actual.abs_diff(expected) <= channel_tolerance
+    })
+}
+
+fn unmatched_stencil_pixels(
+    source: &[bool],
+    target: &[bool],
+    width: u32,
+    height: u32,
+    radius: u32,
+) -> u64 {
+    let stride = width as usize + 1;
+    let mut integral = vec![0u32; stride * (height as usize + 1)];
+    for y in 0..height as usize {
+        let mut row_sum = 0u32;
+        for x in 0..width as usize {
+            row_sum += u32::from(target[y * width as usize + x]);
+            integral[(y + 1) * stride + x + 1] = integral[y * stride + x + 1] + row_sum;
+        }
+    }
+
+    let mut unmatched = 0u64;
+    for y in 0..height {
+        for x in 0..width {
+            if !source[(y * width + x) as usize] {
+                continue;
+            }
+            let left = x.saturating_sub(radius) as usize;
+            let top = y.saturating_sub(radius) as usize;
+            let right = (x + radius + 1).min(width) as usize;
+            let bottom = (y + radius + 1).min(height) as usize;
+            let target_pixels = integral[bottom * stride + right] + integral[top * stride + left]
+                - integral[top * stride + right]
+                - integral[bottom * stride + left];
+            unmatched += u64::from(target_pixels == 0);
+        }
+    }
+    unmatched
 }
 
 fn dominant_rgb(samples: impl Iterator<Item = [u8; 3]>) -> Option<[u8; 3]> {
@@ -3786,18 +4209,18 @@ mod tests {
     use ooxmlsdk_pdf::PdfFontAudit;
 
     use super::{
-        LocalizedGraphicRegion, PdfBounds, PixelRect, RenderedPageImage, TEXT_MASK_PADDING_PT,
-        TextCharacterContract, TextLineContract, TextLineGeometry, TextWritingDirection,
-        VisualTolerance, canonical_pdf_base_font_name, extracted_text_content_key,
-        extracted_text_line_content_key, format_page_ranges,
+        LocalizedGraphicRegion, LocalizedGraphicsComparison, PdfBounds, PixelRect,
+        RenderedPageImage, TEXT_MASK_PADDING_PT, TextCharacterContract, TextLineContract,
+        TextLineGeometry, TextWritingDirection, VisualTolerance, canonical_pdf_base_font_name,
+        extracted_text_content_key, extracted_text_line_content_key, format_page_ranges,
         image_placement_matches_at_comparison_grid, legacy_symbol_ordered_text_equivalent,
         legacy_symbol_semantic_text, legacy_symbol_unordered_text_equivalent,
-        localized_visual_diff_metrics, normalize_extracted_text, normalized_page_text_from_parts,
-        parse_utc_datetime_in_reference_time_zone, pdf_style_colors_equivalent, same_text_line,
-        same_writing_axis, text_characters_share_line, text_edge_tolerance_pt,
-        text_line_topology_differs, text_mask_x_spans_by_row, type0_base_font_matches_descendant,
-        unmatched_image_requires_localized_comparison, unordered_extracted_text_content,
-        validate_candidate_font_contract, visual_diff_metrics,
+        localized_stencil_diff_metrics, localized_visual_diff_metrics, normalize_extracted_text,
+        normalized_page_text_from_parts, parse_utc_datetime_in_reference_time_zone,
+        pdf_style_colors_equivalent, same_text_line, same_writing_axis, text_characters_share_line,
+        text_edge_tolerance_pt, text_line_topology_differs, text_mask_x_spans_by_row,
+        type0_base_font_matches_descendant, unmatched_image_requires_localized_comparison,
+        unordered_extracted_text_content, validate_candidate_font_contract, visual_diff_metrics,
     };
 
     #[test]
@@ -4136,6 +4559,15 @@ mod tests {
         assert_eq!(canonical_pdf_base_font_name("Arial,Bold"), "arialbold");
         assert_eq!(canonical_pdf_base_font_name("OpenSans-Regular"), "opensans");
         assert_eq!(canonical_pdf_base_font_name("OpenSans"), "opensans");
+        assert_eq!(canonical_pdf_base_font_name("TimesNewRoman"), "times");
+        assert_eq!(
+            canonical_pdf_base_font_name("TimesNewRomanPS-BoldMT"),
+            "timesbold"
+        );
+        assert_eq!(
+            canonical_pdf_base_font_name("TimesNewRomanPS-ItalicMT"),
+            "timesitalic"
+        );
         assert_eq!(
             canonical_pdf_base_font_name("Aptos Narrow,Italic"),
             "aptosnarrowitalic"
@@ -4460,8 +4892,77 @@ mod tests {
         );
     }
 
+    #[test]
+    fn localized_pixels_do_not_amplify_sparse_low_contrast_edges() {
+        let width = 100;
+        let height = 100;
+        let rect = PixelRect {
+            left: 34,
+            top: 34,
+            width: 32,
+            height: 32,
+        };
+        let candidate = white_page(width, height);
+        let mut golden = white_page(width, height);
+        // One resolved 4x4 block differs by less than the significant-channel
+        // threshold. It is a sparse edge phase, not a broad low-contrast
+        // change across the localized image bounds.
+        fill_rgb(&mut golden, 46, 46, 4, 4, [243, 243, 243]);
+        let metrics = localized_visual_diff_metrics(
+            &candidate,
+            &golden,
+            rect,
+            VisualTolerance::OFFICE_FIXED_OUTPUT.significant_channel_delta,
+            height,
+        );
+
+        assert_eq!(metrics.significant_pixel_fraction, 0.0, "{metrics:?}");
+        assert!(
+            metrics.mean_absolute_channel_delta
+                <= VisualTolerance::OFFICE_FIXED_OUTPUT.max_mean_absolute_channel_delta,
+            "{metrics:?}"
+        );
+    }
+
     fn pixel_region(bounds: PdfBounds) -> LocalizedGraphicRegion {
-        LocalizedGraphicRegion { bounds }
+        LocalizedGraphicRegion {
+            bounds,
+            comparison: LocalizedGraphicsComparison::Pixels,
+        }
+    }
+
+    #[test]
+    fn localized_solid_soft_mask_accepts_edge_phase_but_rejects_missing_core() {
+        let width = 100;
+        let height = 100;
+        let mut golden = white_page(width, height);
+        let mut shifted = white_page(width, height);
+        let missing = white_page(width, height);
+        fill_black(&mut golden, 40, 40, 20, 20);
+        fill_black(&mut shifted, 41, 40, 20, 20);
+        let rect = PixelRect {
+            left: 35,
+            top: 35,
+            width: 30,
+            height: 30,
+        };
+        let compare = |candidate| {
+            localized_stencil_diff_metrics(
+                candidate,
+                &golden,
+                rect,
+                [0, 0, 0],
+                VisualTolerance::OFFICE_FIXED_OUTPUT.significant_channel_delta,
+                height,
+                1,
+            )
+        };
+
+        assert_eq!(compare(&shifted).significant_pixel_fraction, 0.0);
+        assert!(
+            compare(&missing).significant_pixel_fraction
+                > VisualTolerance::OFFICE_FIXED_OUTPUT.max_significant_pixel_fraction
+        );
     }
 
     #[test]
@@ -4607,12 +5108,15 @@ mod tests {
     }
 
     #[test]
-    fn localized_graphics_are_not_silenced_by_text_masks() {
+    fn localized_graphics_do_not_reassign_verified_text_differences() {
         let width = 200;
         let height = 200;
-        let candidate = white_page(width, height);
+        let mut candidate = white_page(width, height);
         let mut golden = white_page(width, height);
-        fill_black(&mut golden, 40, 60, 40, 30);
+        fill_rgb(&mut candidate, 20, 40, 160, 80, [242, 125, 43]);
+        fill_rgb(&mut golden, 20, 40, 160, 80, [242, 125, 43]);
+        fill_rgb(&mut candidate, 40, 60, 40, 30, [255, 255, 255]);
+        fill_rgb(&mut golden, 40, 60, 40, 30, [190, 190, 190]);
         let page = PdfBounds {
             left: 0.0,
             bottom: 0.0,
@@ -4637,8 +5141,12 @@ mod tests {
 
         assert_eq!(metrics.significant_pixels, 0);
         assert!(metrics.masked_pixels > 0);
-        assert!(
-            metrics.max_localized_graphics_significant_pixel_fraction > 0.9,
+        assert_eq!(
+            metrics.max_localized_graphics_significant_pixel_fraction, 0.0,
+            "the localized background comparison must not reassign a verified text difference: {metrics:?}"
+        );
+        assert_eq!(
+            metrics.max_localized_graphics_mean_absolute_channel_delta, 0.0,
             "{metrics:?}"
         );
     }

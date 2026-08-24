@@ -12,6 +12,13 @@ use pdfium_render::prelude::*;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 
+// Native image identity and soft-mask diagnostics stay bounded so a corpus
+// audit never eagerly expands source-resolution photographs. One MiB covers
+// ordinary fixed-output assets through 512 x 512 RGBA, including Office's
+// 300 x 300 transparent image controls, while preserving a small per-object
+// ceiling.
+const MAX_DIAGNOSTIC_DECODED_BYTES: usize = 1024 * 1024;
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PdfSummary {
     pub page_count: usize,
@@ -165,6 +172,23 @@ pub struct RawXObjectSummary {
 pub(crate) struct SemanticSoftMaskImage {
     pub(crate) alpha: Vec<u8>,
     pub(crate) black_matte_rgb: Vec<u8>,
+}
+
+pub(crate) fn semantic_soft_mask_opaque_core_color(
+    image: &SemanticSoftMaskImage,
+) -> Option<[u8; 3]> {
+    if image.black_matte_rgb.len() != image.alpha.len().checked_mul(3)? {
+        return None;
+    }
+    let mut opaque_colors = image
+        .alpha
+        .iter()
+        .zip(image.black_matte_rgb.chunks_exact(3))
+        .filter_map(|(&alpha, rgb)| (alpha == u8::MAX).then_some([rgb[0], rgb[1], rgb[2]]));
+    let solid_rgb = opaque_colors.next()?;
+    opaque_colors
+        .all(|rgb| rgb == solid_rgb)
+        .then_some(solid_rgb)
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -1316,7 +1340,6 @@ fn small_image_decoded_pixel_sha256(
     // Localized graphics diagnostics must not turn a corpus scan into an
     // eager decode of every source-resolution photograph. This is the same
     // bounded diagnostic budget used by the raw soft-mask classifier.
-    const MAX_DIAGNOSTIC_DECODED_BYTES: usize = 256 * 1024;
     let width = usize::try_from(width?).ok()?;
     let expected_rgba_bytes = width
         .checked_mul(usize::try_from(height?).ok()?)?
@@ -1865,7 +1888,6 @@ fn semantic_soft_mask_image(
     // representations emitted by Office and Krilla to black-matte RGB plus
     // exact alpha. Keep this bounded and deliberately narrower than a general
     // PDF image decoder.
-    const MAX_DIAGNOSTIC_DECODED_BYTES: usize = 256 * 1024;
     let components = match image
         .dict
         .get(b"ColorSpace")
@@ -2000,7 +2022,6 @@ fn decoded_soft_mask_has_opaque_core(mask: &lopdf::Stream) -> Option<bool> {
     // composed object as a stencil when the DeviceGray mask has a genuinely
     // opaque core. Unknown bit depths or non-default Decode arrays remain
     // ordinary pixel regions.
-    const MAX_DIAGNOSTIC_DECODED_BYTES: usize = 256 * 1024;
     if mask
         .dict
         .get(b"Subtype")
@@ -2045,7 +2066,6 @@ fn solid_rgb_image(
     // constant RGB paint image plus an SMask carrying the actual silhouette.
     // Decode only small, simple RGB streams: this is diagnostic
     // classification, not a general PDF image decoder.
-    const MAX_DIAGNOSTIC_DECODED_BYTES: usize = 256 * 1024;
     if subtype_name != Some("Image") || !stream.dict.has(b"SMask") {
         return None;
     }

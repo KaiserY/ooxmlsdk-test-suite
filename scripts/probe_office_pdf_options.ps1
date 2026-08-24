@@ -146,6 +146,17 @@ function Assert-ProbeOptions {
     }
 }
 
+function Get-FixedFormatQualityValue {
+    param([string]$Family, [string]$Quality)
+
+    switch ($Family) {
+        "Word" { return $(if ($Quality -eq "print") { 0 } else { 1 }) }
+        "Excel" { return $(if ($Quality -eq "print") { 0 } else { 1 }) }
+        "PowerPoint" { return $(if ($Quality -eq "print") { 2 } else { 1 }) }
+    }
+    throw "Unsupported Office family for fixed-format quality: $Family"
+}
+
 function Export-WithWord {
     param($Application, [string]$InputPath, [string]$OutputPath, $Options)
 
@@ -161,11 +172,12 @@ function Export-WithWord {
             "headings" { 1 }
             "word-bookmarks" { 2 }
         }
+        $quality = Get-FixedFormatQualityValue "Word" ([string]$Options.quality)
         $document.ExportAsFixedFormat(
             $OutputPath,
             17,
             $false,
-            $(if ($Options.quality -eq "print") { 0 } else { 1 }),
+            $quality,
             $range,
             $from,
             $to,
@@ -196,10 +208,11 @@ function Export-WithExcel {
         Assert-ProbeOptions $Options "Excel" ([int]::MaxValue)
         $from = if ($null -eq $Options.page_from) { $missing } else { [int]$Options.page_from }
         $to = if ($null -eq $Options.page_to) { $missing } else { [int]$Options.page_to }
+        $quality = Get-FixedFormatQualityValue "Excel" ([string]$Options.quality)
         $workbook.ExportAsFixedFormat(
             0,
             $OutputPath,
-            $(if ($Options.quality -eq "print") { 0 } else { 1 }),
+            $quality,
             [bool]$Options.include_document_properties,
             $false,
             $from,
@@ -227,10 +240,11 @@ function Export-WithPowerPoint {
         $from = if ($null -eq $Options.page_from) { 1 } else { [int]$Options.page_from }
         $to = if ($null -eq $Options.page_to) { $slideCount } else { [int]$Options.page_to }
         $printRange = $presentation.PrintOptions.Ranges.Add($from, $to)
+        $quality = Get-FixedFormatQualityValue "PowerPoint" ([string]$Options.quality)
         $presentation.ExportAsFixedFormat(
             $OutputPath,
             2,
-            $(if ($Options.quality -eq "print") { 2 } else { 1 }),
+            $quality,
             0,
             1,
             1,
@@ -330,11 +344,13 @@ $output = Get-Item -LiteralPath $OutputRoot
 if (-not $corpus.PSIsContainer -or -not $output.PSIsContainer -or $plan.PSIsContainer) {
     throw "CorpusRoot/OutputRoot must be directories and PlanFile must be a file."
 }
-if (-not (Test-WslPath $corpus.FullName) -or -not $corpus.FullName.EndsWith(
+$isSuiteCorpus = (Test-WslPath $corpus.FullName) -and $corpus.FullName.EndsWith(
     "\ooxmlsdk-test-suite\corpus",
     [StringComparison]::OrdinalIgnoreCase
-)) {
-    throw "CorpusRoot must be this test-suite's WSL corpus directory."
+)
+$isTemporaryInputRoot = Test-WslTempPath $corpus.FullName
+if (-not $isSuiteCorpus -and -not $isTemporaryInputRoot) {
+    throw "CorpusRoot must be this test-suite's WSL corpus directory or a WSL /tmp minimal-case directory."
 }
 if (-not (Test-WslTempPath $plan.FullName) -or -not (Test-WslTempPath $output.FullName)) {
     throw "PlanFile and OutputRoot must be under WSL /tmp."
@@ -392,7 +408,7 @@ try {
             $corpusPrefix,
             [StringComparison]::OrdinalIgnoreCase
         )) {
-            throw "Input is outside the allowed corpus: $relative"
+            throw "Input is outside the allowed input root: $relative"
         }
         $family = Get-ApplicationFamily $source.Extension
         if (-not $applications.ContainsKey($family)) {

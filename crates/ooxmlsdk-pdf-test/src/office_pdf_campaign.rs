@@ -9,8 +9,9 @@ use std::time::{Duration, Instant};
 
 use ooxmlsdk_pdf::{
     FieldUpdateDateTime, PdfAttachment, PdfAttachmentAssociation, PdfDateTime, PdfDocumentKind,
-    PdfFormSubmitFormat, PdfLinkDefaultAction, PdfOptimizeFor, PdfOptions, PdfPageLayout,
-    PdfStandard, PdfViewerMagnification, PdfViewerPageMode, resolve_pdf_options,
+    PdfFormSubmitFormat, PdfImageOptimizationPolicy, PdfLinkDefaultAction, PdfOptimizeFor,
+    PdfOptions, PdfPageLayout, PdfStandard, PdfViewerMagnification, PdfViewerPageMode,
+    resolve_pdf_options,
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -532,6 +533,16 @@ pub struct OfficeExportOptions {
     pub print_hidden_slides: bool,
 }
 
+impl OfficeExportOptions {
+    fn candidate_optimize_for(&self) -> Option<PdfOptimizeFor> {
+        match self.quality.as_str() {
+            "print" => Some(PdfOptimizeFor::Print),
+            "screen" => Some(PdfOptimizeFor::Screen),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct CampaignAssignment {
@@ -562,7 +573,7 @@ impl CampaignAssignment {
         root.join("corpus").join(&self.corpus).join(&self.file)
     }
 
-    pub fn requested_pdf_options(&self) -> PdfOptions {
+    pub fn requested_pdf_options(&self) -> Result<PdfOptions, String> {
         let mut options = self.requested.to_pdf_options(
             &self.source_key(),
             Path::new(&self.file)
@@ -570,12 +581,17 @@ impl CampaignAssignment {
                 .and_then(|name| name.to_str())
                 .unwrap_or(&self.file),
         );
-        options.optimize_for = if self.office.quality == "screen" {
-            PdfOptimizeFor::Screen
-        } else {
-            PdfOptimizeFor::Print
-        };
-        options
+        options.optimize_for = self
+            .office
+            .candidate_optimize_for()
+            .ok_or_else(|| format!("invalid Office quality for {}", self.source_key()))?;
+        options.images.optimization_policy =
+            PdfImageOptimizationPolicy::MicrosoftOfficeFixedOutput(match self.family {
+                OfficeFamily::Word => PdfDocumentKind::Docx,
+                OfficeFamily::Excel => PdfDocumentKind::Xlsx,
+                OfficeFamily::PowerPoint => PdfDocumentKind::Pptx,
+            });
+        Ok(options)
     }
 }
 
@@ -1326,7 +1342,7 @@ pub fn validate_assignments(
 
 fn validate_office_options(assignment: &CampaignAssignment) -> Result<(), String> {
     let options = &assignment.office;
-    if !matches!(options.quality.as_str(), "print" | "screen") {
+    if options.candidate_optimize_for().is_none() {
         return Err(format!(
             "invalid Office quality for {}",
             assignment.source_key()
@@ -3045,7 +3061,7 @@ pub fn prepare_audit_one(
 pub fn audit_one_with_artifacts(
     task_path: &Path,
     result_path: &Path,
-    write_failure_artifacts: bool,
+    write_artifacts: bool,
 ) -> Result<(), String> {
     let task_bytes = fs::read(task_path)
         .map_err(|error| format!("could not read audit task {}: {error}", task_path.display()))?;
@@ -3071,12 +3087,14 @@ pub fn audit_one_with_artifacts(
         ui_language: &assignment.effective.ui_language,
         format_locale: &assignment.effective.format_locale,
     };
+    let candidate_options = assignment.requested_pdf_options()?;
     let comparison = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         compare_office_golden_detailed_with_prevalidated_options(
             case,
-            assignment.requested_pdf_options(),
+            candidate_options,
             VisualTolerance::OFFICE_FIXED_OUTPUT,
-            write_failure_artifacts,
+            write_artifacts,
+            write_artifacts,
         )
     }));
     let result = match comparison {
@@ -3111,6 +3129,58 @@ pub fn audit_one_with_artifacts(
         },
     };
     write_json(result_path, &result)
+}
+
+pub fn render_one_with_task(
+    task_path: &Path,
+    input_path: &Path,
+    output_path: &Path,
+) -> Result<(), String> {
+    let task_bytes = fs::read(task_path)
+        .map_err(|error| format!("could not read audit task {}: {error}", task_path.display()))?;
+    let task: AuditTask = serde_json::from_slice(&task_bytes).map_err(|error| {
+        format!(
+            "could not parse audit task {}: {error}",
+            task_path.display()
+        )
+    })?;
+    validate_conversion_record(&task.assignment, &task.conversion)?;
+    if task.conversion.status != "converted" {
+        return Err(format!(
+            "render task does not reference a converted record: {}",
+            task.assignment.source_key()
+        ));
+    }
+    let extension = input_path
+        .extension()
+        .and_then(|extension| extension.to_str())
+        .map(str::to_ascii_lowercase)
+        .ok_or_else(|| format!("minimum input has no extension: {}", input_path.display()))?;
+    let family = OfficeFamily::from_extension(&extension)
+        .ok_or_else(|| format!("unsupported minimum input extension: {extension}"))?;
+    if family != task.assignment.family {
+        return Err(format!(
+            "minimum input family {family:?} differs from golden family {:?}",
+            task.assignment.family
+        ));
+    }
+    let options = task.assignment.requested_pdf_options()?;
+    let pdf =
+        crate::render::render_fixture_pdf_with_options(input_path, options).map_err(|error| {
+            format!(
+                "could not render minimum input {}: {error}",
+                input_path.display()
+            )
+        })?;
+    let mut output = File::options()
+        .write(true)
+        .create_new(true)
+        .open(output_path)
+        .map_err(|error| format!("could not create {}: {error}", output_path.display()))?;
+    output
+        .write_all(&pdf)
+        .map_err(|error| format!("could not write {}: {error}", output_path.display()))?;
+    Ok(())
 }
 
 fn audit_failure_record(
@@ -3256,6 +3326,33 @@ mod tests {
         let assignments = generate_campaign_assignments(&root).unwrap();
         for assignment in assignments {
             validate_office_options(&assignment).unwrap();
+        }
+    }
+
+    #[test]
+    fn recorded_office_quality_owns_the_candidate_fixed_output_profile() {
+        let root = crate::workspace_root();
+        let assignments = generate_campaign_assignments(&root).unwrap();
+        for assignment in assignments {
+            let expected = assignment.office.candidate_optimize_for().unwrap();
+            let candidate = assignment.requested_pdf_options().unwrap();
+            assert_eq!(
+                candidate.optimize_for,
+                expected,
+                "{}",
+                assignment.source_key()
+            );
+            let expected_kind = match assignment.family {
+                OfficeFamily::Word => PdfDocumentKind::Docx,
+                OfficeFamily::Excel => PdfDocumentKind::Xlsx,
+                OfficeFamily::PowerPoint => PdfDocumentKind::Pptx,
+            };
+            assert_eq!(
+                candidate.images.optimization_policy,
+                PdfImageOptimizationPolicy::MicrosoftOfficeFixedOutput(expected_kind),
+                "{}",
+                assignment.source_key(),
+            );
         }
     }
 }

@@ -68,6 +68,30 @@ ooxmlsdk = { path = "../ooxmlsdk/crates/ooxmlsdk" }
 # Enough for cargo-flamegraph/perf symbolization without full debug-info bloat.
 debug = "line-tables-only"
 
+[profile.release]
+# Release golden audits are the authoritative rendering lane. Preserve line
+# tables globally, then keep local values for the packages inspected in GDB so
+# a release-only regression does not require switching to a different profile.
+debug = "line-tables-only"
+
+[profile.release.package.ooxmlsdk-layout]
+debug = "full"
+
+[profile.release.package.ooxmlsdk-fonts]
+debug = "full"
+
+[profile.release.package.ooxmlsdk-pdf]
+debug = "full"
+
+[profile.release.package.ooxmlsdk-pdf-test]
+debug = "full"
+
+[profile.release.package.emfsdk]
+debug = "full"
+
+[profile.release.package.olecfsdk]
+debug = "full"
+
 [profile.test]
 # Preserve line-level backtraces without full debug-info codegen and artifact bloat.
 debug = "line-tables-only"
