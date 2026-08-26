@@ -16,19 +16,26 @@ Office environment, and input/output hashes.
 | Checkpoint | PASS | FAIL | Reference fail | Infrastructure error |
 | --- | ---: | ---: | ---: | ---: |
 | calibration commit `1415b2688fba8902e0993ba8d7ae97db42d1b961` | 2,567 | 2,577 | 226 | 0 |
-| latest completed worktree full audit | 2,563 | 2,581 | 226 | 0 |
+| direct-refactor starting checkpoint `50a2e302` | 2,565 | 2,579 | 226 | 0 |
+| latest completed worktree full audit | 2,583 | 2,561 | 226 | 0 |
 
 The calibration commit subject is
-`fix(pdf): raise configured DOCX golden fidelity to 2,567 PASS`. The latest
-full audit has 78 identities that were PASS at calibration and are now FAIL.
-Acceptance requires all of those regressions to return to PASS and total PASS
-to be at least 2,567; unrelated new passes never offset a regression.
+`fix(pdf): raise configured DOCX golden fidelity to 2,567 PASS`. The frozen
+calibration and direct-refactor-start PASS sets have 2,646 identities in their
+union. The latest full audit retains 2,572 of them and has 74 regressions;
+acceptance requires all 2,646 identities to return to PASS. Unrelated new
+passes never offset a regression.
 
-The retained summaries are
-`/tmp/ooxmlsdk-baseline-1415-full-audit-summary.json` and
-`/tmp/ooxmlsdk-full-audit-centered-gdi-20260823-summary.json`. Counts are valid only for a
-completed release audit with zero infrastructure errors. Update this section
-only after another completed full identity audit; do not append case history.
+The retained reports are
+`/tmp/ooxmlsdk-pdf-direct-backend-calibration-baseline.jsonl`,
+`/tmp/ooxmlsdk-pdf-direct-backend-current-baseline.jsonl`, and
+`/tmp/ooxmlsdk-pdf-direct-after-image-signature-full-audit.jsonl`.
+Derive the
+remaining regressions by configuration-ID set difference between the union of
+the first two reports' PASS records and the latest report's PASS records. Counts
+are valid only for a completed release audit with zero
+infrastructure errors. Update this section only after another completed full
+identity audit; do not append case history.
 
 ## Contract
 
@@ -51,9 +58,11 @@ OOXML package
 - A PASS must satisfy the independent identity, page, text, font, line,
   geometry, image-placement, and raster checks in `office_golden.rs`.
   Never weaken thresholds, exclude a source, or relabel a failure.
-- Cargo build, test, format, clippy, and GDB preparation run sequentially in
+- Cargo build, test, format, clippy, and every GDB session run sequentially in
   the owning repository with its default `target/`. Use release artifacts for
-  development, debugging, focused acceptance, and full audits.
+  real-path reproduction and acceptance. If optimization hides state, rerun the
+  identical task with the dev-profile binary, then reconfirm the branch and
+  result in release.
 
 ## Evidence And Fix Workflow
 
@@ -148,7 +157,7 @@ cargo build -p ooxmlsdk-pdf-test --bin office_pdf_campaign --release
 ```
 
 Prepare one exact configured task, verify both embedded identities, then use
-the same release binary for GDB and acceptance:
+the same release binary for the first GDB pass and acceptance:
 
 ```sh
 case_id='<configuration-id>'
@@ -161,7 +170,8 @@ jq -e --arg id "$case_id" \
   '.assignment.configuration_id == $id and
    .conversion.configuration_id == $id' "$task"
 
-gdb --args ./target/release/office_pdf_campaign audit-one \
+gdb -q -x /tmp/ooxmlsdk-case-release.gdb --args \
+  ./target/release/office_pdf_campaign audit-one \
   --task "$task" --result "$result" --write-artifacts true
 
 ./target/release/office_pdf_campaign audit-one \
@@ -278,12 +288,47 @@ all candidate/Office pages. Keep physical frame edge, print edge, line box,
 baseline, display coordinate, PDF matrix, clip, natural height, flow advance,
 and page-fit boundary as separate quantities.
 
-For unexplained state or ownership, run GDB against the exact release task.
-Confirm the configuration ID at the breakpoint. Trace one value through import,
-resolution, layout/shaping, display list, and PDF lowering; record the authored
-value, resolved value, selected branch, owner, final coordinate/resource, and
-first divergence. Use conditional or temporary breakpoints because the pipeline
-may render more than once.
+For unexplained state or ownership, debug the exact prepared task and confirm
+its configuration ID at the breakpoint. Reproduce with release first; use dev
+only when a required value is `<optimized out>`, then reconfirm the branch and
+golden result with release. Trace one value at a time from import through PDF
+lowering and record its authored value, resolved value, owner, selected branch,
+and first divergence.
+
+Builds and GDB sessions are strictly serial. Every debugger invocation starts
+with literal `gdb`; put environment variables in the script with
+`set environment NAME VALUE`. Resolve `rustc --print sysroot` once, substitute
+the literal path, and keep the script and log under `/tmp`:
+
+```gdb
+set pagination off
+set breakpoint pending on
+source <sysroot>/lib/rustlib/etc/gdb_load_rust_pretty_printers.py
+info pretty-printer
+set logging file /tmp/ooxmlsdk-case-gdb.log
+set logging overwrite on
+set logging enabled on
+# set environment NAME VALUE
+# break path/to/source.rs:LINE
+run
+```
+
+`info pretty-printer` must include the Rust printers such as `StdVec`. Invoke the
+release binary with the same task used by acceptance; if state is optimized out,
+end GDB before this dev-only fallback:
+
+```sh
+cargo build -p ooxmlsdk-pdf-test --bin office_pdf_campaign
+gdb -q -x /tmp/ooxmlsdk-case-dev.gdb --args \
+  ./target/debug/office_pdf_campaign audit-one \
+  --task "$task" --result /tmp/ooxmlsdk-case-dev-result.json \
+  --write-artifacts true
+```
+
+Dev output and timing are diagnostic only. Keep the exact command, task/result
+JSON, breakpoint, and log together under `/tmp`; use source-line, helper,
+conditional, or temporary breakpoints because GDB's Rust expression support is
+limited.
 
 For crashes capture all threads, full backtraces, arguments, locals, and
 `$_siginfo`. For an apparent hang, interrupt more than once: changing stacks

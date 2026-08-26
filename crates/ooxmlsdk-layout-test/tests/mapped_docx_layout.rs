@@ -593,6 +593,7 @@ const CASES: &[DocxCase] = &[
         tdf156902_glow_group,
         source: "../core/oox/qa/unit/shape.cxx:testGlowOnGroup",
         file: "tdf156902_GlowOnGroup.docx",
+        occurrences: [count!(0, "A b c d e f g h i j k l m n o p q r s t u v w x y z", 17)],
         image_minimums: [page_count!(0, 1)],
     ),
     case!(
