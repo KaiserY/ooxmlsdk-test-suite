@@ -9,7 +9,11 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$OutputRoot,
 
-    [string]$ProcessIdFile
+    [string]$ProcessIdFile,
+
+    [switch]$DiagnosticWordXps,
+
+    [switch]$DiagnosticWordEmf
 )
 
 Set-StrictMode -Version Latest
@@ -157,8 +161,31 @@ function Get-FixedFormatQualityValue {
     throw "Unsupported Office family for fixed-format quality: $Family"
 }
 
+function Export-WordContentEmf {
+    param($Document, [string]$OutputPath)
+
+    $content = $null
+    try {
+        # Word returns the native EMF bytes, without a clipboard round trip
+        # or a second image encoder. This is a content-range diagnostic, not
+        # a fixed-format page export and not necessarily lossless internally.
+        $content = $Document.Content
+        [byte[]]$bits = $content.EnhMetaFileBits
+        if ($bits.Length -lt 88 -or
+            [BitConverter]::ToUInt32($bits, 0) -ne 1 -or
+            [BitConverter]::ToUInt32($bits, 40) -ne 0x464D4520) {
+            throw "Word Content.EnhMetaFileBits did not return an EMF header."
+        }
+        [IO.File]::WriteAllBytes($OutputPath, $bits)
+    }
+    finally {
+        if ($null -ne $content) { Release-ComObject $content }
+    }
+}
+
 function Export-WithWord {
-    param($Application, [string]$InputPath, [string]$OutputPath, $Options)
+    param($Application, [string]$InputPath, [string]$OutputPath, $Options,
+        [switch]$IncludeDiagnosticXps, [switch]$IncludeDiagnosticEmf)
 
     $document = $null
     try {
@@ -173,22 +200,34 @@ function Export-WithWord {
             "word-bookmarks" { 2 }
         }
         $quality = Get-FixedFormatQualityValue "Word" ([string]$Options.quality)
-        $document.ExportAsFixedFormat(
-            $OutputPath,
-            17,
-            $false,
-            $quality,
-            $range,
-            $from,
-            $to,
-            0,
-            [bool]$Options.include_document_properties,
-            $false,
-            $bookmarks,
-            [bool]$Options.tagged_pdf,
-            [bool]$Options.bitmap_missing_fonts,
-            [bool]$Options.pdf_a_1
-        )
+        # Keep PDF first and unchanged. XPS is a companion diagnostic of the
+        # same open document, not another golden assignment or a PDF fallback.
+        $formats = @(17)
+        if ($IncludeDiagnosticXps) { $formats += 18 }
+        foreach ($format in $formats) {
+            $formatPath = if ($format -eq 17) { $OutputPath } else {
+                [IO.Path]::ChangeExtension($OutputPath, ".xps")
+            }
+            $document.ExportAsFixedFormat(
+                $formatPath,
+                $format,
+                $false,
+                $quality,
+                $range,
+                $from,
+                $to,
+                0,
+                [bool]$Options.include_document_properties,
+                $false,
+                $bookmarks,
+                [bool]$Options.tagged_pdf,
+                [bool]$Options.bitmap_missing_fonts,
+                [bool]$Options.pdf_a_1
+            )
+        }
+        if ($IncludeDiagnosticEmf) {
+            Export-WordContentEmf $document ([IO.Path]::ChangeExtension($OutputPath, ".emf"))
+        }
     }
     finally {
         if ($null -ne $document) {
@@ -378,6 +417,14 @@ foreach ($line in Get-Content -LiteralPath $plan.FullName -Encoding UTF8) {
         throw "Only normalized forward-slash corpus-relative paths are allowed: $rawRelative"
     }
     $relative = $rawRelative.Replace("/", "\")
+    if ($DiagnosticWordXps -and
+        (Get-ApplicationFamily ([IO.Path]::GetExtension($relative))) -ne "Word") {
+        throw "DiagnosticWordXps accepts only Word inputs."
+    }
+    if ($DiagnosticWordEmf -and
+        (Get-ApplicationFamily ([IO.Path]::GetExtension($relative))) -ne "Word") {
+        throw "DiagnosticWordEmf accepts only Word inputs."
+    }
     $segments = $relative.Split("\")
     if ([IO.Path]::IsPathRooted($relative) -or $segments -contains "" -or
         $segments -contains "." -or $segments -contains "..") {
@@ -426,7 +473,11 @@ try {
 
         $started = [Diagnostics.Stopwatch]::StartNew()
         switch ($family) {
-            "Word" { Export-WithWord $application $stageInput $stageOutput $record.options }
+            "Word" {
+                Export-WithWord $application $stageInput $stageOutput $record.options `
+                    -IncludeDiagnosticXps:$DiagnosticWordXps `
+                    -IncludeDiagnosticEmf:$DiagnosticWordEmf
+            }
             "Excel" { Export-WithExcel $application $stageInput $stageOutput $record.options }
             "PowerPoint" {
                 Export-WithPowerPoint $application $stageInput $stageOutput $record.options
@@ -451,6 +502,29 @@ try {
             output_bytes = (Get-Item -LiteralPath $destination).Length
             output_sha256 = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash.ToLowerInvariant()
             elapsed_ms = $started.ElapsedMilliseconds
+        }
+        if ($DiagnosticWordXps) {
+            $xpsDestination = [IO.Path]::ChangeExtension($destination, ".xps")
+            Copy-Item -LiteralPath ([IO.Path]::ChangeExtension($stageOutput, ".xps")) `
+                -Destination $xpsDestination
+            $result.diagnostic_xps = [ordered]@{
+                export_format = 18
+                output = [IO.Path]::GetFileName($xpsDestination)
+                output_bytes = (Get-Item -LiteralPath $xpsDestination).Length
+                output_sha256 = (Get-FileHash -LiteralPath $xpsDestination -Algorithm SHA256).Hash.ToLowerInvariant()
+            }
+        }
+        if ($DiagnosticWordEmf) {
+            $emfDestination = [IO.Path]::ChangeExtension($destination, ".emf")
+            Copy-Item -LiteralPath ([IO.Path]::ChangeExtension($stageOutput, ".emf")) `
+                -Destination $emfDestination
+            $result.diagnostic_emf = [ordered]@{
+                method = "Document.Content.EnhMetaFileBits"
+                scope = "entire-content-range; not fixed-format page-range export"
+                output = [IO.Path]::GetFileName($emfDestination)
+                output_bytes = (Get-Item -LiteralPath $emfDestination).Length
+                output_sha256 = (Get-FileHash -LiteralPath $emfDestination -Algorithm SHA256).Hash.ToLowerInvariant()
+            }
         }
         $resultPath = Join-Path $output.FullName ("case-{0:D3}.json" -f $index)
         [IO.File]::WriteAllText(

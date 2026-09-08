@@ -546,7 +546,6 @@ dependencies = [
  "skrifa 0.46.2",
  "thiserror",
  "tiny-skia",
- "zeno",
 ]
 
 [[package]]
@@ -1800,6 +1799,7 @@ dependencies = [
  "ooxmlsdk-fonts",
  "ooxmlsdk-formula",
  "parley",
+ "png",
  "quick-xml 0.41.0",
  "rustc-hash",
  "skrifa 0.46.2",
@@ -1865,7 +1865,9 @@ dependencies = [
  "image",
  "jiff",
  "lopdf",
+ "ooxmlsdk",
  "ooxmlsdk-fonts",
+ "ooxmlsdk-layout",
  "ooxmlsdk-pdf",
  "pdfium-render",
  "quick-xml 0.40.1",
@@ -3342,12 +3344,6 @@ dependencies = [
  "syn 2.0.119",
  "synstructure",
 ]
-
-[[package]]
-name = "zeno"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6df3dc4292935e51816d896edcd52aa30bc297907c26167fec31e2b0c6a32524"
 
 [[package]]
 name = "zerocopy"

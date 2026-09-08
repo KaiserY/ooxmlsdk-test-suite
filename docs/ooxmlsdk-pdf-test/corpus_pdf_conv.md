@@ -1,118 +1,155 @@
 # Configured Office Golden PDF Fidelity
 
-This is the operating guide for advancing `ooxmlsdk-layout` and
-`ooxmlsdk-pdf` against configured Microsoft Office PDFs. Keep only the latest
-golden status, durable evidence routes, and reusable development/debugging
-practice here. Per-case conclusions belong in tests and code; chronological run
-history belongs in Git or disposable `/tmp` audit artifacts.
+Current progress and evidence entry points for matching configured Microsoft
+Office output. Paths below are relative to the test-suite root unless noted.
+This is a working reference, not a fixed debugging procedure. Earlier experiments
+are evidence with a scope, not rules that prevent a better implementation.
 
 ## Golden Status
 
-The `office-ooxml-pdf-options-v1` plan has 5,370 deterministic assignments:
-5,144 usable Office PDFs and 226 explicit `REFERENCE_FAIL` records. Every
-reference is tied to one source identity, one complete option object, the
-Office environment, and input/output hashes.
+The `office-ooxml-pdf-options-v1` campaign has 5,370 assignments:
+5,144 usable Office PDFs and 226 explicit `REFERENCE_FAIL` records.
 
-| Checkpoint | PASS | FAIL | Reference fail | Infrastructure error |
+### Current accepted result — 2026-09-08
+
+| Scope | PASS | FAIL | Reference fail | Infrastructure error |
 | --- | ---: | ---: | ---: | ---: |
-| calibration commit `1415b2688fba8902e0993ba8d7ae97db42d1b961` | 2,567 | 2,577 | 226 | 0 |
-| direct-refactor starting checkpoint `50a2e302` | 2,565 | 2,579 | 226 | 0 |
-| latest completed worktree full audit | 2,583 | 2,561 | 226 | 0 |
+| Full configured campaign | 2,606 | 2,538 | 226 | 0 |
+| Required dual-baseline PASS union | 2,601 | 59 | 0 | 0 |
+| Related 3D text cases, including `31166a26` and `5dff0c41` | 10 | 0 | 0 | 0 |
 
-The calibration commit subject is
-`fix(pdf): raise configured DOCX golden fidelity to 2,567 PASS`. The frozen
-calibration and direct-refactor-start PASS sets have 2,646 identities in their
-union. The latest full audit retains 2,572 of them and has 74 regressions;
-acceptance requires all 2,646 identities to return to PASS. Unrelated new
-passes never offset a regression.
+Latest full evidence:
+`target/full-native-locked-canvas-20260908/{results.jsonl,campaign-summary.json,verification.json}`.
+Exact identity comparison against `target/full-direct2d-coverage-20260908/`
+retains all 2,605 accepted PASS identities, including five outside the required
+union, and adds `b0b95eb1`. The verification file lists the 59 remaining union
+failures. Results SHA-256:
+`73e36e08d9f60b5ad29afa6f6a0e9e7bbbcf7b63ce26b2d775271e9dd8216ea3`.
+Release binary SHA-256:
+`999c94f0b2f59d6e36d2774bf2f909a5d4401d462a233e10e9e27ebe8934a900`.
 
-The retained reports are
-`/tmp/ooxmlsdk-pdf-direct-backend-calibration-baseline.jsonl`,
-`/tmp/ooxmlsdk-pdf-direct-backend-current-baseline.jsonl`, and
-`/tmp/ooxmlsdk-pdf-direct-after-image-signature-full-audit.jsonl`.
-Derive the
-remaining regressions by configuration-ID set difference between the union of
-the first two reports' PASS records and the latest report's PASS records. Counts
-are valid only for a completed release audit with zero
-infrastructure errors. Update this section only after another completed full
-identity audit; do not append case history.
+`b0b95eb1` (lockedCanvas image/line) now PASS: per-path device coverage,
+physical-EMU pen realization, native source transport, and one associated-alpha
+resolve to the configured PDF grid. Default output matches the passing candidate
+byte-for-byte. The final full audit also verifies arbitrary group-coordinate
+units do not scale physical pen width (`dc11a2b1`) and oversized source ranges
+cannot abort allocation (`c9827663`, unchanged pre-existing FAIL). The rejected
+first audit is retained separately in
+`target/full-native-locked-canvas-initial-20260908/`.
+Temporary detail: `/tmp/locked-canvas-image-line-ledger.md` and
+`/tmp/ooxmlsdk-phase-closure-20260908.md`.
 
-## Contract
+`31166a26` now passes the unchanged configured PDF gate:
+17 / 3,325 significant foreground blocks (0.511278%), localized MAE
+0.85004668534, comparison offset [0, 0]. Its paired actual-preJPEG diagnostic has
+0 / 3,378 significant blocks and MAE 0.58300653595; this is supporting evidence,
+not a replacement for PDF acceptance. Dev and release produce identical PDF bytes.
 
-```text
-OOXML package
-  -> import/effective model
-  -> layout display list
-  -> candidate PDF
-  -> layered comparison with the configured Office PDF
+The 3D closure evidence is in `target/full-profile-realization-20260908/`;
+temporary detail is in `/tmp/31166-ledger.md` and
+`/tmp/static3d-ten-profile-realization/`. Passing the campaign does not mean
+every diagnostic pixel is identical or improves.
+
+`feb5dadf` (grouped-shape text highlighting) now PASS: corrected Word highlight
+colors, consistent Windows vertical metrics, and logical cell widths retained
+through output-font realization and paint segmentation. Dev/release PDF bytes
+match; GDB verifies final consumed widths. Retained Office controls cover 45
+color/host combinations and 72 font/size/content combinations. Temporary details
+and counterexamples are indexed in `/tmp/feb5-ledger.md`. `/tmp` is disposable,
+not baseline storage.
+
+Next priority after the phase commit: restore the remaining 59 required identities while retaining
+current PASS gains. The ten-case 3D cluster is closed at the existing acceptance
+standard; tolerance-level differences alone do not require more work.
+
+### Phase handoff checks — 2026-09-08
+
+`target/phase-closure-20260908/verification.json` indexes complete check logs and
+failed assertion names. All three changed workspaces pass `cargo fmt --all -- --check`.
+Implementation workspace strict clippy and the suite's PDF/layout test-package
+strict clippy pass. Native-picture, device-stroke, allocation-guard, PDF resolve,
+audit-wrapper, and mocked Office adapter argument/cleanup checks pass.
+
+Non-golden checks are **not all green**: implementation tests have 1,982 PASS /
+12 FAIL / 3 ignored; PDF/layout suite tests have 720 PASS / 137 FAIL / 34 ignored.
+These include older rendering expectations and other subsystem gaps; do not
+assume every failure is a LibreOffice mismatch without checking Office evidence.
+No assertions were rewritten just to obtain a green handoff. emfsdk all-feature
+tests have 193 PASS / 0 FAIL / 1 ignored; its six strict-clippy findings are in
+unchanged functions. Whole-suite clippy is blocked by the unchanged
+`../olecfsdk/crates/olecfsdk-ooxml/src/ppt.rs:1304` Option/Result mismatch.
+These exceptions are recorded separately from the accepted golden audit above.
+
+### Baselines and completion
+
+| Historical checkpoint | PASS | FAIL | Reference fail |
+| --- | ---: | ---: | ---: |
+| `1415b2688fba8902e0993ba8d7ae97db42d1b961` | 2,567 | 2,577 | 226 |
+| `45189fab4397aa5dd41f92ce51b90f028ab28b4b` | 2,591 | 2,553 | 226 |
+
+Subjects:
+`fix(pdf): raise configured DOCX golden fidelity to 2,567 PASS` and
+`refactor(pdf): migrate rendering to direct pdf-writer output`.
+The second is the completed refactor, not its `50a2e302` starting checkpoint.
+
+Their PASS union contains **2,660 identities**:
+2,498 shared, 69 calibration-only, 93 refactor-only.
+Durable records are in
+`/home/kazeno/test/ooxmlsdk-progress/ooxmlsdk-dual-baseline-results/`:
+`README.md`, `1415b268-full-audit.jsonl`, `45189fab-full-audit.jsonl`,
+and `target-pass-union.jsonl`.
+Union SHA-256:
+`92de1314a71d728bc6405dfae880641becaa2b1fe1e264c13b2d6fa00e56186a`.
+
+These historical sets define scope, not today's comparison behavior. Completion
+requires all 2,660 identities to PASS under current gates and no loss of accepted
+current PASS identities. New passes do not cancel regressions elsewhere.
+Reference PDFs and their complete configured options remain the target;
+threshold changes, exclusions and relabeling failures are not repairs.
+
+### Audit entry points
+
+Run from the test-suite root. Build once after code changes; use release for
+campaign timing and acceptance:
+
+```sh
+cargo build -p ooxmlsdk-pdf-test --bin office_pdf_campaign --release
+
+./target/release/office_pdf_campaign prepare-audit-one \
+  --configuration-id '<configuration-id>' --task /tmp/case-task.json
+./target/release/office_pdf_campaign audit-one \
+  --task /tmp/case-task.json --result /tmp/case-result.json --write-artifacts true
+jq -e '.verdict == "PASS"' /tmp/case-result.json
+
+./target/release/office_pdf_campaign audit \
+  --selection full --timeout-seconds 180
 ```
 
-- A reference PDF and its conversion record are immutable within the campaign.
-  Never regenerate it from candidate output or silently change its options.
-- One normalized source identity has exactly one assignment and one terminal
-  conversion record. Unsupported Office options remain explicit.
-- Office fixed output is the visible target. Specifications and production
-  source establish semantics; Office probes settle bounded visible behavior.
-- Fix the earliest incorrect owner: import, cascade, font/shaping, layout,
-  display list, or PDF lowering.
-- A PASS must satisfy the independent identity, page, text, font, line,
-  geometry, image-placement, and raster checks in `office_golden.rs`.
-  Never weaken thresholds, exclude a source, or relabel a failure.
-- Cargo build, test, format, clippy, and every GDB session run sequentially in
-  the owning repository with its default `target/`. Use release artifacts for
-  real-path reproduction and acceptance. If optimization hides state, rerun the
-  identical task with the dev-profile binary, then reconfirm the branch and
-  result in release.
+A successful process exit does not imply a PASS verdict. Compare reports by exact
+configuration ID, retaining full-campaign and selected-set counts separately.
 
-## Evidence And Fix Workflow
+For the required union, use the batch wrapper and a fresh output directory:
 
-Use evidence in this order:
+```sh
+python3 scripts/audit_office_pdf_pass_union.py \
+  --baseline /home/kazeno/test/ooxmlsdk-progress/ooxmlsdk-dual-baseline-results/target-pass-union.jsonl \
+  --output-root target/pass-union-audit-new --jobs 4
+```
 
-1. local specifications and documents under `references/references/`;
-2. local production projects and their nearby tests in the Source Map;
-3. primary online specifications or official documentation;
-4. an exact-config Office minimum-case matrix when sources do not settle the
-   visible rule.
-
-A code change for a regression requires all three runtime checks: GDB identifies
-the first wrong state or branch, complete Office/candidate images identify the
-visible boundary, and an exact-config Office comparison establishes the target.
-Source and test evidence remains necessary whenever it exists.
-
-Treat each missing function or state transition as an independent repair point.
-Do not tune the golden fixture. Build a minimum DOCX/XLSX/PPTX that contains the
-gap, copy the complete option object from its golden task, and vary one
-independent variable at a time. For numeric boundaries, cover both sides and
-interpolate between them. Include same-state positives and opposite-state
-counterexamples. The rule is pinned only when the matrix, original golden, and
-counterexamples all agree.
-
-For each gap:
-
-1. verify source bytes, package part, relationship, authored presence, and exact
-   assignment;
-2. inspect the full Office and candidate pages before crops;
-3. search the Source Map for the semantic owner and nearby QA;
-4. trace package -> resolved state -> layout -> display list -> PDF in GDB;
-5. construct the smallest exact-config Office matrix that distinguishes the
-   remaining hypotheses;
-6. implement the complete state chain at its owner and add focused
-   positive/negative tests;
-7. run the minimum matrix, exact golden, coherent cluster, and a stopping
-   counterexample;
-8. run a full release identity audit after any broad or complex change.
-
-When sources disagree with Office, state the narrow disagreement and use the
-controlled Office matrix for visible behavior. When no source exists, Office
-may pin the rule only after single-variable combinations and boundary values
-cover the relevant state space. Keep moving: an unresolved source search is not
-a reason to leave a known regression unfixed.
+Add `--previous-results target/<previous-union-run>/results.jsonl` for exact
+verdict transitions, and `--require-all-pass` for final closure. Previous results
+must cover the same ID/file set. A union-only audit does not replace a full audit.
+The wrapper archives identities, hashes and timing; audit once per batch rather
+than looping `prepare-audit-one`, which revalidates the whole plan each time.
+Run only one campaign audit at a time because its native report paths are shared.
 
 ## Source Map
 
-Search local checkouts and converted documents before browsing. The Markdown
-files in `references/references/` are searchable copies; do not reconvert
-their source documents unless a copy is demonstrably defective.
+Start with local documents and implementations, supplement with primary online
+sources, and use controlled Office observations when behavior remains unclear.
+Read the relevant complete section or function and its callers, not just a
+matching line. The table is an index, not an exhaustive search boundary or a
+requirement to scan every project for every bug.
 
 | Need | Durable route |
 | --- | --- |
@@ -120,17 +157,19 @@ their source documents unless a copy is demonstrably defective.
 | Office deviations/defaults/extensions | local `[MS-OI29500]`, `[MS-DOCX]`, and `[MS-OE376]` Markdown |
 | Microsoft Open XML/API guidance | `../open-xml-docs/`, Microsoft Learn |
 | Office fixed-format export policy | `scripts/convert_office_corpus.ps1`, `scripts/probe_office_pdf_options.ps1`; Microsoft Learn [Word](https://learn.microsoft.com/en-us/office/vba/api/word.document.exportasfixedformat), [Excel](https://learn.microsoft.com/en-us/office/vba/api/excel.workbook.exportasfixedformat), [PowerPoint](https://learn.microsoft.com/en-us/office/vba/api/powerpoint.presentation.exportasfixedformat), and [fixed-format extension](https://learn.microsoft.com/en-us/office/pdf/extendingofficepdfexport) documentation |
-| Archived Microsoft Open XML examples | `../msdn-code-gallery-microsoft/` |
+| Archived Microsoft/Windows examples | `../msdn-code-gallery-microsoft/`, `../msdn-code-gallery-community-{0-9-non-alphabetic,a-c,d-l,s-z}/`; verify each sample's API, provenance, and license |
 | VML, GDI, and Win32 contracts | `../win32/`, especially `desktop-src/VML/` |
+| Windows API declarations and interop | `../win32metadata/`, `../CsWin32/`, `../WindowsAppSDK/`; `../windows-api-function-cheatsheets/` for discovery, not normative behavior |
 | Windows Forms GDI text measurement and padding | `../winforms/src/System.Windows.Forms/System/Windows/Forms/Rendering/TextExtensions.cs` and `../winforms/src/test/unit/System.Windows.Forms/System/Windows/Forms/TextRendererTests.cs` |
 | Windows rendering, printing, and XPS | `../Windows-classic-samples/`, `../Win2D/`; `../wpf/src/Microsoft.DotNet.Wpf/src/ReachFramework/Serialization/XpsImageSerializationService.cs`, `../wpf/src/Microsoft.DotNet.Wpf/src/System.Printing/CPP/src/GDIExporter/gdibitmap.cpp`, `../wpf/src/Microsoft.DotNet.Wpf/src/WpfGfx/core/common/Gamma.{cpp,h}`, `../wpf/src/Microsoft.DotNet.Wpf/src/WpfGfx/core/sw/swlib/swglyphpainter.cpp`, and `../wpf/src/Microsoft.DotNet.Wpf/src/WpfGfx/core/resources/{BlurEffect,DropShadowEffect}.cpp` |
+| Direct2D path coverage and device grids | `../win32/desktop-src/Direct2D/`, local `d2d1.h` in `../win32metadata/`; Microsoft [D3D11.3 functional specification](https://microsoft.github.io/DirectX-Specs/d3d/archive/D3D11_3_FunctionalSpec.htm), especially fixed-point rasterization and per-path resolve. The standard sample patterns do not by themselves establish which profile an Office render target uses. |
 | Package, schema, validators, fixtures | `../Open-XML-SDK/` |
 | WordprocessingML transforms and content controls | `../Open-Xml-PowerTools/` as supplemental implementation evidence |
 | DOCX import and visible layout | `../core/sw/`, `../core/oox/`, matching `qa/` |
 | XLSX import and print layout | `../core/sc/source/filter/oox/`, `../core/sc/source/ui/view/printfun.cxx`, `../core/sc/qa/` |
 | PPTX import and fixed pages | `../core/oox/source/ppt/`, `../core/oox/source/drawingml/`, `../core/sd/qa/` |
 | LibreOffice PDF export | `../core/vcl/source/pdf/`, `../core/filter/source/pdf/`, `../core/officecfg/registry/schema/org/openoffice/Office/Common.xcs`, `../core/vcl/qa/cppunit/pdfexport/` |
-| PDF catalog, actions, metadata, conformance | Adobe PDF Reference/pdfmark, `../krilla/`, object-level `lopdf` tests |
+| PDF catalog, actions, metadata, conformance | Adobe PDF Reference/pdfmark; `../pdf-issues/` for errata with their approval status; `../pdf-writer/`, `../krilla/`, and object-level `../lopdf/` tests for implementation evidence |
 | OpenType contract | current Microsoft OpenType pages; `../OpenType-Specification/` is a historical mirror |
 | Font parsing, shaping, bidi, breaking | `../fontations/`, `../parley/` |
 | PDF comparison and output mechanisms | test code, `../pdfium-render/`, `../krilla/`, `../typst/crates/typst-pdf/`, `../cairo/`, `../tiny-skia/` |
@@ -141,171 +180,75 @@ their source documents unless a copy is demonstrably defective.
 | OfficeMath/UnicodeMath | ECMA-376, Microsoft deviations, `../UnicodeMathML/` |
 | Independent spreadsheet behavior | `../poi/`, `../EPPlus/`, `../ClosedXML/` |
 
-For Windows Office boundaries, consult official Win32 APIs and samples, WPF,
-and WinForms first. OpenType defines font data, not system or Office fallback
-policy. LibreOffice, Wine, ReactOS, PDFium, Krilla, Cairo, and tiny-skia supply
-portable algorithms and counterexamples; do not present them as Office policy
-without an Office control. Verify origin and license before translating code.
 
-## Release Golden Loop
+Portable implementations provide algorithms and counterexamples, not automatic
+proof of Office policy. Distinguish normative specifications, documented Office
+deviations, implementation observations and hypotheses. Check provenance and
+license before adapting code. Existing Markdown under `references/references/`
+usually makes document reconversion unnecessary.
 
-Run from `../ooxmlsdk-test-suite`. Keep candidate fonts and PDFium binding
-stable. Build once after implementation changes:
+### Office and image diagnostics
 
-```sh
-cargo build -p ooxmlsdk-pdf-test --bin office_pdf_campaign --release
-```
+- Configured conversion: `scripts/probe_office_pdf_options.ps1`.
+  Minimum-case plans: `scripts/prepare_office_pdf_options_probe_plan.ps1`.
+  Reuse the complete accepted task options for both producers, including
+  `assignment.office` and `conversion.office_options`; avoid implicit COM defaults.
+- Companion exports: `-DiagnosticWordXps` and `-DiagnosticWordEmf` on the same
+  adapter. These preserve the normal PDF export and record companion hashes.
+  Inspect actual image payloads, alpha and physical placement when relating formats.
+- Candidate lossless route:
+  `office_pdf_campaign render-native-one --task TASK --input DOCX --output-root NEW_DIR --dpi 600`.
+  It writes PNG assets and a realization manifest without PDF/JPEG encoding.
+  Native and actual-preJPEG diagnostics can isolate shared rendering defects;
+  their results remain distinct from configured PDF verdicts.
+- Adapter checks: `scripts/test_office_pdf_options_adapter.ps1`.
+  Batch wrapper checks:
+  `python3 -m unittest discover -s scripts -p 'test_audit_office_pdf_pass_union.py'`.
 
-Prepare one exact configured task, verify both embedded identities, then use
-the same release binary for the first GDB pass and acceptance:
-
-```sh
-case_id='<configuration-id>'
-task="/tmp/ooxmlsdk-$case_id-task.json"
-result="/tmp/ooxmlsdk-$case_id-result.json"
-
-./target/release/office_pdf_campaign prepare-audit-one \
-  --configuration-id "$case_id" --task "$task"
-jq -e --arg id "$case_id" \
-  '.assignment.configuration_id == $id and
-   .conversion.configuration_id == $id' "$task"
-
-gdb -q -x /tmp/ooxmlsdk-case-release.gdb --args \
-  ./target/release/office_pdf_campaign audit-one \
-  --task "$task" --result "$result" --write-artifacts true
-
-./target/release/office_pdf_campaign audit-one \
-  --task "$task" --result "$result" --write-artifacts true
-jq -e --arg id "$case_id" \
-  '.configuration_id == $id and .verdict == "PASS"' "$result"
-```
-
-`audit-one` can exit successfully while recording `FAIL`; the final
-`jq -e` is mandatory. Inspect the newly written PDF and every page image,
-then audit the coherent feature cluster.
-
-After a broad change, run the complete configured audit:
-
-```sh
-./target/release/office_pdf_campaign audit \
-  --selection full --timeout-seconds 180
-```
-
-Compare verdicts by configuration ID with the calibration report. Record exact
-PASS->FAIL and FAIL->PASS identities, not only counts. Acceptance requires zero
-calibration PASS regressions, at least 2,567 PASS, 5,144 audited references, 226
-`REFERENCE_FAIL`, and zero infrastructure errors.
-
-## Exact Office Minimum Cases
-
-Configured Office conversion has one owner:
-`scripts/probe_office_pdf_options.ps1`. The accepted task stores complete,
-equal `assignment.office` and `conversion.office_options` objects. That exact
-object must drive both Office and candidate conversion. Never hand-write a
-shorter `ExportAsFixedFormat` call or rely on COM defaults.
-
-Generate every minimum-case plan with
-`scripts/prepare_office_pdf_options_probe_plan.ps1`, passing the accepted
-golden task JSON and the list of minimum inputs. The preparer copies the complete
-options object without inference and records the golden configuration ID, task
-hash, options, and input hashes. Pass its plan unchanged to the canonical
-adapter. A missing or mismatched field is a hard error.
-
-The mappings are fixed: Word print/screen -> 0/1, Excel quality -> 0/1, and
-PowerPoint intent -> 2/1. Candidate fixed-output quality must come from the same
-recorded `quality` field. Any adapter/default/order change requires adapter
-tests and a configured identity replay.
-
-PowerShell probes require PowerShell 7, STA, and the full prefix:
+For WSL Office commands, resolve paths with a separate `wslpath -w PATH` call,
+then use literal Windows paths with this prefix:
 
 ```text
-pwsh.exe -NoProfile -NonInteractive -STA -ExecutionPolicy Bypass
+pwsh.exe -NoProfile -NonInteractive -STA -ExecutionPolicy Bypass -File '<script-path>' ...
 ```
 
-Resolve every WSL path first, in a separate command:
+Keep probes under `/tmp`, inputs read-only, macros disabled, and Office process
+ownership/cleanup explicit. An interop or authorization failure is a failed
+measurement, not evidence about rendering.
 
-```sh
-wslpath -w /home/kazeno/git/ooxmlsdk-test-suite/scripts/probe_office_pdf_options.ps1
-wslpath -w /tmp/<probe-root>
-wslpath -w /tmp/<probe-root>/plan.jsonl
-wslpath -w /tmp/<empty-output-root>
-```
+### Debugging reference
 
-Copy those outputs literally into a new command whose first token is
-`pwsh.exe`:
+Use tools to resolve the actual uncertainty, not to satisfy a ritual. Inspect
+missing XML attributes/children and their effective-state consumers as well as
+rendering algorithms. A clear implementation bug need not wait for a large
+experiment; a proposed visual rule needs enough independent evidence to generalize.
+For straightforward, undisputed defects, prefer a focused regression test and
+the affected configured golden checks. Reserve enlarged AB comparisons and larger
+Office experiments for complex visual uncertainty, such as the closed `31166`
+case; do not make every repair repeat that workflow. Acceptance gates stay unchanged.
 
-```sh
-pwsh.exe -NoProfile -NonInteractive -STA -ExecutionPolicy Bypass \
-  -File '<literal-probe-script-UNC-path>' \
-  -CorpusRoot '<literal-probe-root-UNC-path>' \
-  -PlanFile '<literal-plan-UNC-path>' \
-  -OutputRoot '<literal-empty-output-UNC-path>'
-```
+Compare Office/current images on the same physical grid with identical alpha,
+background, crop and zoom operations. Full pages reveal missing content; enlarged
+letters/layers reveal boundaries. Pair visual inspection with quantitative checks.
+Verify coordinates and the measurement pipeline before blaming geometry or color.
+An AB should identify its producers and current artifacts.
 
-Do not put `$(wslpath ...)`, backticks, variable assignments, a loop,
-`bash -lc`, or another command in front of `pwsh.exe`. WSL interop opens an
-AF_VSOCK socket before PowerShell starts, so a sandbox allow-rule miss appears
-as `UtilBindVsockAnyPort: ... socket failed 1` (`EPERM`); it is not evidence
-that PowerShell or Office COM is unavailable. A literal-prefix `-Command
-'$PSVersionTable.PSVersion.ToString()'` success paired with a wrapped-command
-failure pins the cause to authorization matching: rewrite the command instead
-of retrying the wrapper. Only when the fully literal command itself fails
-should the identical literal command be retried as a transient WSL interop
-case. An unsigned-script error means interop worked and
-`-ExecutionPolicy Bypass` was missing.
+Reuse previous controls. When Office experiments are needed, isolate variables,
+including duplicated XML representations; vary content and numeric boundaries as
+appropriate. Complex interactions can justify a factorial round of about 1,100
+cases. Stop when the evidence supports an independent repair; experiments serve
+PASS, not indefinite exploration. Record conclusions, counterexamples and the next
+action in one ledger per case. Revisit conclusions when contrary evidence warrants
+it, retaining the reason and any regression debt.
 
-Keep plans, inputs, outputs, and staging under `/tmp`. The canonical adapter
-requires an existing empty output directory, opens inputs read-only with macros
-disabled, and records Office version/build, exact options, and hashes. A probe
-with different options is only a lead and cannot justify a code change.
-
-## Diagnostics, Images, And GDB
-
-Inspect package state before effective state; keep absent, explicit false,
-inherited, and defaulted values distinct. Diagnose the first failing layer:
-
-| Diagnostic | First owner |
-| --- | --- |
-| identity/open/extraction | manifest, package, parser, feature gate |
-| page count/geometry | sections, breaks, page layout, printable region |
-| text content/order/style | import, cascade, visibility, fields, fallback |
-| line content/bounds/baseline | shaping, metrics, wrapping, bidi, frame owner |
-| font integrity | face, glyph, cluster, embedding, `ToUnicode` |
-| graphics | host geometry, transform, clip, paint order, image/metafile |
-| visible output | display lowering, PDF paint, raster/backend |
-
-Inspect output in this order:
-
-1. full-page count, content, clipping, paint order, and geometry;
-2. normalized text/order, selected fonts, and line reconstruction;
-3. bounds, baselines, ownership, transforms, and clips;
-4. glyph/CID widths, embedding, `ToUnicode`, and `ActualText`;
-5. images, masks, color space, interpolation, and composition;
-6. a crop around the repaired feature and its pixel/alpha differences.
-
-A comparator PASS is not visual proof. Verify artifact timestamps and inspect
-all candidate/Office pages. Keep physical frame edge, print edge, line box,
-baseline, display coordinate, PDF matrix, clip, natural height, flow advance,
-and page-fit boundary as separate quantities.
-
-For unexplained state or ownership, debug the exact prepared task and confirm
-its configuration ID at the breakpoint. Reproduce with release first; use dev
-only when a required value is `<optimized out>`, then reconfirm the branch and
-golden result with release. Trace one value at a time from import through PDF
-lowering and record its authored value, resolved value, owner, selected branch,
-and first divergence.
-
-Builds and GDB sessions are strictly serial. Every debugger invocation starts
-with literal `gdb`; put environment variables in the script with
-`set environment NAME VALUE`. Resolve `rustc --print sysroot` once, substitute
-the literal path, and keep the script and log under `/tmp`:
+For Rust state inspection, dev avoids optimized-out locals; validate the actual
+release result afterwards. Start with literal `gdb`, using a script under `/tmp`:
 
 ```gdb
 set pagination off
 set breakpoint pending on
-source <sysroot>/lib/rustlib/etc/gdb_load_rust_pretty_printers.py
-info pretty-printer
-set logging file /tmp/ooxmlsdk-case-gdb.log
+source <rustc-sysroot>/lib/rustlib/etc/gdb_load_rust_pretty_printers.py
+set logging file /tmp/case-gdb.log
 set logging overwrite on
 set logging enabled on
 # set environment NAME VALUE
@@ -313,40 +256,16 @@ set logging enabled on
 run
 ```
 
-`info pretty-printer` must include the Rust printers such as `StdVec`. Invoke the
-release binary with the same task used by acceptance; if state is optimized out,
-end GDB before this dev-only fallback:
-
 ```sh
-cargo build -p ooxmlsdk-pdf-test --bin office_pdf_campaign
-gdb -q -x /tmp/ooxmlsdk-case-dev.gdb --args \
-  ./target/debug/office_pdf_campaign audit-one \
-  --task "$task" --result /tmp/ooxmlsdk-case-dev-result.json \
-  --write-artifacts true
+gdb -q -x /tmp/case.gdb --args ./target/debug/office_pdf_campaign audit-one \
+  --task /tmp/case-task.json --result /tmp/case-dev-result.json --write-artifacts true
 ```
 
-Dev output and timing are diagnostic only. Keep the exact command, task/result
-JSON, breakpoint, and log together under `/tmp`; use source-line, helper,
-conditional, or temporary breakpoints because GDB's Rust expression support is
-limited.
+Confirm state at its consumer, especially after a debugger intervention.
+Gate hot-loop breakpoints by phase/sample; debugger overhead is not renderer
+performance. Keep Cargo, GDB and other heavy commands serial; independent
+read-only investigation can continue while they run.
 
-For crashes capture all threads, full backtraces, arguments, locals, and
-`$_siginfo`. For an apparent hang, interrupt more than once: changing stacks
-mean slow progress; identical blocked stacks suggest non-progress. Debug timing
-is not performance evidence.
-
-## Regression Gate
-
-For every repair:
-
-1. run focused implementation tests;
-2. run the exact configured golden and inspect its full pages;
-3. run the minimum Office matrix, same-state cluster, opposite-state controls,
-   and all known baseline PASS cases touched by the owner;
-4. after a complex or wide change, run the full release audit immediately;
-5. compare exact identities against calibration and continue until every
-   PASS->FAIL regression is gone.
-
-Retain audit summaries and evidence under `/tmp`; delete temporary scripts,
-instrumentation, images, and build probes after the repair. Never report a
-focused run as the full baseline, and never let a new PASS hide a regression.
+Focused tests, configured goldens, related cases and full audits provide
+complementary evidence. Select checks proportionate to the changed owner; preserve
+the accepted PASS set and do not confuse unverified assumptions with frozen facts.

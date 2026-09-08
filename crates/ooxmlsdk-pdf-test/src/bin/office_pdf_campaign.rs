@@ -5,8 +5,9 @@ use std::process::ExitCode;
 use std::time::Duration;
 
 use ooxmlsdk_pdf_test::{
-    audit_campaign, audit_one_with_artifacts, audit_worker_loop, convert_campaign,
-    generate_campaign_assignments, prepare_audit_one, read_plan, render_one_with_task,
+    CampaignAuditSelection, audit_campaign_selection, audit_one_with_artifacts, audit_worker_loop,
+    convert_campaign, generate_campaign_assignments, prepare_audit_one,
+    read_audit_configuration_ids, read_plan, render_native_one_with_task, render_one_with_task,
     scan_campaign_font_references, scan_local_font_candidates, validate_assignments,
     workspace_root, write_plan,
 };
@@ -132,10 +133,17 @@ fn run() -> Result<(), String> {
                 .unwrap_or_else(|| root.join("corpus_pdf_conv/plan.jsonl"));
             let selection =
                 option_value(&arguments, "--selection")?.unwrap_or_else(|| "pilot-300".to_string());
-            let pilot_only = match selection.as_str() {
-                "pilot-300" => true,
-                "full" => false,
-                value => {
+            let configuration_ids = optional_path(&root, &arguments, "--configuration-ids")?;
+            let selection = match (selection.as_str(), configuration_ids) {
+                ("pilot-300", None) => CampaignAuditSelection::Pilot,
+                ("full", None) => CampaignAuditSelection::Full,
+                ("full", Some(path)) => {
+                    CampaignAuditSelection::ConfigurationIds(read_audit_configuration_ids(&path)?)
+                }
+                ("pilot-300", Some(_)) => {
+                    return Err("--configuration-ids requires --selection full".to_string());
+                }
+                (value, _) => {
                     return Err(format!(
                         "invalid --selection {value:?}; expected pilot-300 or full"
                     ));
@@ -145,15 +153,21 @@ fn run() -> Result<(), String> {
             let timeout_seconds = optional_number(&arguments, "--timeout-seconds")?.unwrap_or(180);
             reject_unknown_options(
                 &arguments,
-                &["--plan", "--selection", "--jobs", "--timeout-seconds"],
+                &[
+                    "--plan",
+                    "--selection",
+                    "--jobs",
+                    "--timeout-seconds",
+                    "--configuration-ids",
+                ],
             )?;
             let executable = env::current_exe()
                 .map_err(|error| format!("could not locate campaign executable: {error}"))?;
-            let summary = audit_campaign(
+            let summary = audit_campaign_selection(
                 &executable,
                 &root,
                 &plan_path,
-                pilot_only,
+                selection,
                 jobs,
                 Duration::from_secs(
                     timeout_seconds
@@ -190,6 +204,15 @@ fn run() -> Result<(), String> {
             let output = required_path(&arguments, "--output")?;
             reject_unknown_options(&arguments, &["--task", "--input", "--output"])?;
             render_one_with_task(&task, &input, &output)?;
+        }
+        "render-native-one" => {
+            let task = required_path(&arguments, "--task")?;
+            let input = required_path(&arguments, "--input")?;
+            let output = required_path(&arguments, "--output-root")?;
+            let dpi = optional_number(&arguments, "--dpi")?.unwrap_or(600);
+            let dpi = u32::try_from(dpi).map_err(|_| "--dpi is too large".to_string())?;
+            reject_unknown_options(&arguments, &["--task", "--input", "--output-root", "--dpi"])?;
+            render_native_one_with_task(&task, &input, &output, dpi)?;
         }
         "audit-worker" => {
             reject_unknown_options(&arguments, &[])?;
@@ -308,7 +331,7 @@ fn reject_unknown_options(arguments: &[String], known: &[&str]) -> Result<(), St
 }
 
 fn usage() -> String {
-    "usage:\n  office_pdf_campaign generate-plan [--plan PATH]\n  office_pdf_campaign validate-plan [--plan PATH]\n  office_pdf_campaign font-scan [--plan PATH] [--output PATH]\n  office_pdf_campaign local-font-candidates [--references PATH] [--output PATH]\n  office_pdf_campaign convert [--plan PATH] [--selection pilot-300|full] [--pwsh PATH] [--jobs N] [--timeout-seconds N] [--max-attempts N]\n  office_pdf_campaign audit [--plan PATH] [--selection pilot-300|full] [--jobs N] [--timeout-seconds N]\n  office_pdf_campaign prepare-audit-one --configuration-id ID --task PATH [--plan PATH]\n  office_pdf_campaign audit-one --task PATH --result PATH [--write-artifacts true|false]\n  office_pdf_campaign render-one --task PATH --input PATH --output PATH\n  office_pdf_campaign audit-worker"
+    "usage:\n  office_pdf_campaign generate-plan [--plan PATH]\n  office_pdf_campaign validate-plan [--plan PATH]\n  office_pdf_campaign font-scan [--plan PATH] [--output PATH]\n  office_pdf_campaign local-font-candidates [--references PATH] [--output PATH]\n  office_pdf_campaign convert [--plan PATH] [--selection pilot-300|full] [--pwsh PATH] [--jobs N] [--timeout-seconds N] [--max-attempts N]\n  office_pdf_campaign audit [--plan PATH] [--selection pilot-300|full] [--configuration-ids PATH] [--jobs N] [--timeout-seconds N]\n  office_pdf_campaign prepare-audit-one --configuration-id ID --task PATH [--plan PATH]\n  office_pdf_campaign audit-one --task PATH --result PATH [--write-artifacts true|false]\n  office_pdf_campaign render-one --task PATH --input PATH --output PATH\n  office_pdf_campaign audit-worker"
         .to_string()
 }
 

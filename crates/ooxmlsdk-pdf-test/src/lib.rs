@@ -28,10 +28,11 @@ pub use office_golden_corpus::{
     OfficeGoldenCorpusReport, OfficeGoldenFormat, run_office_golden_corpus,
 };
 pub use office_pdf_campaign::{
-    CampaignAssignment, CampaignAuditSummary, CampaignConversionSummary, PlanValidationSummary,
-    audit_campaign, audit_campaign_pilot, audit_one, audit_one_with_artifacts, audit_worker_loop,
-    convert_campaign, generate_campaign_assignments, prepare_audit_one, read_plan,
-    render_one_with_task, validate_assignments, write_plan,
+    CampaignAssignment, CampaignAuditSelection, CampaignAuditSummary, CampaignConversionSummary,
+    PlanValidationSummary, audit_campaign, audit_campaign_pilot, audit_campaign_selection,
+    audit_one, audit_one_with_artifacts, audit_worker_loop, convert_campaign,
+    generate_campaign_assignments, prepare_audit_one, read_audit_configuration_ids, read_plan,
+    render_native_one_with_task, render_one_with_task, validate_assignments, write_plan,
 };
 pub use pdf_extract::{
     AnnotationSummary, LinkTargetKind, PathObjectSummary, PdfBounds, PdfFontResourceSummary,

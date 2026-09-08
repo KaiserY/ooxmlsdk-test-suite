@@ -17,6 +17,8 @@ icu_locale_core = { workspace = true }
 icu_time = { workspace = true }
 jiff = { workspace = true }
 lopdf = { workspace = true }
+ooxmlsdk = { workspace = true, features = ["parts", "mce"] }
+ooxmlsdk-layout = { workspace = true }
 ooxmlsdk-fonts = { workspace = true }
 ooxmlsdk-pdf = { workspace = true }
 pdfium-render = { workspace = true }

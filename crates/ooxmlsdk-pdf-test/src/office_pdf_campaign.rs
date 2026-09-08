@@ -2444,30 +2444,133 @@ pub fn audit_campaign(
     jobs: usize,
     timeout: Duration,
 ) -> Result<CampaignAuditSummary, String> {
-    if jobs == 0 {
-        return Err("audit jobs must be positive".to_string());
+    audit_campaign_selection(
+        executable,
+        root,
+        plan_path,
+        if pilot_only {
+            CampaignAuditSelection::Pilot
+        } else {
+            CampaignAuditSelection::Full
+        },
+        jobs,
+        timeout,
+    )
+}
+
+pub enum CampaignAuditSelection {
+    Pilot,
+    Full,
+    ConfigurationIds(BTreeSet<String>),
+}
+
+pub fn read_audit_configuration_ids(path: &Path) -> Result<BTreeSet<String>, String> {
+    let file =
+        File::open(path).map_err(|error| format!("could not open {}: {error}", path.display()))?;
+    parse_audit_configuration_ids(BufReader::new(file))
+}
+
+fn parse_audit_configuration_ids(reader: impl BufRead) -> Result<BTreeSet<String>, String> {
+    #[derive(Deserialize)]
+    struct Identity {
+        configuration_id: String,
     }
-    let assignments = read_plan(plan_path)?;
-    validate_assignments(root, &assignments)?;
+    let mut ids = BTreeSet::new();
+    for (index, line) in reader.lines().enumerate() {
+        let line =
+            line.map_err(|error| format!("could not read selection line {}: {error}", index + 1))?;
+        if line.trim().is_empty() {
+            continue;
+        }
+        let identity: Identity = serde_json::from_str(&line)
+            .map_err(|error| format!("invalid selection line {}: {error}", index + 1))?;
+        let id = identity.configuration_id;
+        if id.len() != 64
+            || !id
+                .bytes()
+                .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+        {
+            return Err(format!(
+                "invalid configuration ID on selection line {}",
+                index + 1
+            ));
+        }
+        if !ids.insert(id) {
+            return Err(format!(
+                "duplicate configuration ID on selection line {}",
+                index + 1
+            ));
+        }
+    }
+    if ids.is_empty() {
+        return Err("audit configuration selection is empty".to_string());
+    }
+    Ok(ids)
+}
+
+fn select_audit_assignments(
+    assignments: Vec<CampaignAssignment>,
+    selection: &CampaignAuditSelection,
+) -> Result<Vec<CampaignAssignment>, String> {
+    let expected = match selection {
+        CampaignAuditSelection::Pilot => PILOT_ASSIGNMENT_COUNT,
+        CampaignAuditSelection::Full => EXPECTED_ASSIGNMENT_COUNT,
+        CampaignAuditSelection::ConfigurationIds(ids) => {
+            if ids.is_empty() {
+                return Err("audit configuration selection is empty".to_string());
+            }
+            let known = assignments
+                .iter()
+                .map(|assignment| &assignment.configuration_id)
+                .collect::<BTreeSet<_>>();
+            if let Some(id) = ids.iter().find(|id| !known.contains(id)) {
+                return Err(format!("unknown audit configuration ID: {id}"));
+            }
+            ids.len()
+        }
+    };
     let selected = assignments
         .into_iter()
-        .filter(|assignment| !pilot_only || assignment.pilot_300)
+        .filter(|assignment| match selection {
+            CampaignAuditSelection::Pilot => assignment.pilot_300,
+            CampaignAuditSelection::Full => true,
+            CampaignAuditSelection::ConfigurationIds(ids) => {
+                ids.contains(&assignment.configuration_id)
+            }
+        })
         .collect::<Vec<_>>();
-    let expected = if pilot_only {
-        PILOT_ASSIGNMENT_COUNT
-    } else {
-        EXPECTED_ASSIGNMENT_COUNT
-    };
     if selected.len() != expected {
         return Err(format!(
             "audit selection contains {} assignments, expected {expected}",
             selected.len()
         ));
     }
+    Ok(selected)
+}
+
+pub fn audit_campaign_selection(
+    executable: &Path,
+    root: &Path,
+    plan_path: &Path,
+    selection: CampaignAuditSelection,
+    jobs: usize,
+    timeout: Duration,
+) -> Result<CampaignAuditSummary, String> {
+    if jobs == 0 {
+        return Err("audit jobs must be positive".to_string());
+    }
+    let assignments = read_plan(plan_path)?;
+    validate_assignments(root, &assignments)?;
+    let selected = select_audit_assignments(assignments, &selection)?;
+    let expected = selected.len();
     let conversions = read_conversion_records(root)?;
     let environment_id = load_environment_id(root)?;
     let work_root = root.join("target/office-pdf-campaign");
-    let selection_name = if pilot_only { "bootstrap" } else { "full" };
+    let selection_name = match selection {
+        CampaignAuditSelection::Pilot => "bootstrap",
+        CampaignAuditSelection::Full => "full",
+        CampaignAuditSelection::ConfigurationIds(_) => "selected",
+    };
     let task_root = work_root.join(format!("{selection_name}-tasks"));
     let result_root = work_root.join(format!("{selection_name}-results"));
     fs::create_dir_all(&task_root)
@@ -3183,6 +3286,147 @@ pub fn render_one_with_task(
     Ok(())
 }
 
+/// Export Word picture assets without invoking PDF encoding.
+pub fn render_native_one_with_task(
+    task_path: &Path,
+    input_path: &Path,
+    output_root: &Path,
+    dpi: u32,
+) -> Result<(), String> {
+    use ooxmlsdk::parts::wordprocessing_document::WordprocessingDocument;
+    use ooxmlsdk::sdk::{
+        FileFormatVersion, MarkupCompatibilityProcessMode, MarkupCompatibilityProcessSettings,
+        OpenSettings,
+    };
+    use ooxmlsdk_layout::common::DisplayItem;
+
+    if !(200..=1200).contains(&dpi) {
+        return Err("native picture density must be between 200 and 1200 DPI".into());
+    }
+    let task_bytes = fs::read(task_path).map_err(|e| e.to_string())?;
+    let task: AuditTask = serde_json::from_slice(&task_bytes).map_err(|e| e.to_string())?;
+    validate_conversion_record(&task.assignment, &task.conversion)?;
+    if task.assignment.family != OfficeFamily::Word || task.conversion.status != "converted" {
+        return Err("native picture realization requires a converted Word task".into());
+    }
+    let mut options = resolve_pdf_options(
+        PdfDocumentKind::Docx,
+        &task.assignment.requested_pdf_options()?,
+    )
+    .map_err(|e| e.to_string())?
+    .into_effective();
+    options.source_file_name = input_path
+        .file_name()
+        .map(|s| s.to_string_lossy().into_owned());
+    let mut layout_options = options.layout_options();
+    layout_options.native_picture_dpi = Some(dpi);
+    let source = File::open(input_path).map_err(|e| e.to_string())?;
+    let package = WordprocessingDocument::new_with_settings(
+        source,
+        OpenSettings {
+            markup_compatibility_process_settings: MarkupCompatibilityProcessSettings {
+                process_mode: MarkupCompatibilityProcessMode::ProcessLoadedPartsOnly,
+                target_file_format_version: FileFormatVersion::Microsoft365,
+            },
+            ..Default::default()
+        },
+    )
+    .map_err(|e| e.to_string())?;
+    // Refuse existing output directories, including partially completed runs.
+    fs::create_dir(output_root).map_err(|e| format!("{}: {e}", output_root.display()))?;
+    let mut pages = ooxmlsdk_layout::docx::layout_document(&package, &layout_options)
+        .map_err(|e| e.to_string())?;
+    drop(package);
+    let mut assets = Vec::new();
+    fn save_assets(
+        items: &mut [DisplayItem<'static>],
+        page: usize,
+        root: &Path,
+        assets: &mut Vec<serde_json::Value>,
+        dpi: u32,
+    ) -> Result<(), String> {
+        for item in items {
+            match item {
+                DisplayItem::Group(group) => {
+                    save_assets(&mut group.items, page, root, assets, dpi)?
+                }
+                DisplayItem::Image(image) if image.bytes.starts_with(b"\x89PNG\r\n\x1a\n") => {
+                    let decoded =
+                        image::load_from_memory(&image.bytes).map_err(|e| e.to_string())?;
+                    let realized_dpi = [
+                        f64::from(decoded.width()) * 72.0 / f64::from(image.bounds.size.width.0),
+                        f64::from(decoded.height()) * 72.0 / f64::from(image.bounds.size.height.0),
+                    ];
+                    if realized_dpi
+                        .iter()
+                        .any(|v| !v.is_finite() || (*v - f64::from(dpi)).abs() > 0.01)
+                    {
+                        return Err(format!(
+                            "native source did not realize requested {dpi} DPI: {realized_dpi:?}"
+                        ));
+                    }
+                    let mut offset: usize = 8;
+                    while offset + 12 <= image.bytes.len() {
+                        let length = u32::from_be_bytes(
+                            image.bytes[offset..offset + 4]
+                                .try_into()
+                                .map_err(|_| "invalid PNG chunk")?,
+                        ) as usize;
+                        let kind = &image.bytes[offset + 4..offset + 8];
+                        if [b"oxPr", b"oxEr", b"oxMr", b"oxSr"]
+                            .iter()
+                            .any(|k| kind == *k)
+                        {
+                            return Err(
+                                "native asset still requires deferred PDF-layer composition".into(),
+                            );
+                        }
+                        offset = offset
+                            .checked_add(length)
+                            .and_then(|v| v.checked_add(12))
+                            .filter(|v| *v <= image.bytes.len())
+                            .ok_or("invalid PNG chunk extent")?;
+                    }
+                    let file = format!("asset-{:03}.png", assets.len());
+                    let path = root.join(&file);
+                    fs::write(&path, &image.bytes).map_err(|e| e.to_string())?;
+                    let reloaded = fs::read(&path).map_err(|e| e.to_string())?;
+                    if reloaded.as_slice() != image.bytes.as_ref() {
+                        return Err("saved native image changed before replay".into());
+                    }
+                    assets.push(serde_json::json!({
+                        "file": file, "page": page, "sha256": sha256_bytes(&reloaded),
+                        "width_px": decoded.width(), "height_px": decoded.height(),
+                        "realized_dpi": realized_dpi,
+                        "content_type": image.content_type,
+                        "bounds_pt": [image.bounds.origin.x.0, image.bounds.origin.y.0,
+                            image.bounds.size.width.0, image.bounds.size.height.0],
+                    }));
+                    image.bytes = reloaded.into();
+                }
+                _ => {}
+            }
+        }
+        Ok(())
+    }
+    for (page, display) in pages.pages.iter_mut().enumerate() {
+        save_assets(&mut display.items, page, output_root, &mut assets, dpi)?;
+    }
+    if assets.is_empty() {
+        return Err("native realization produced no PNG assets".into());
+    }
+    write_json(
+        &output_root.join("manifest.json"),
+        &serde_json::json!({
+            "schema_version": 1, "configuration_id": task.assignment.configuration_id,
+            "task_sha256": sha256_bytes(&task_bytes), "input_sha256": sha256_file(input_path)?,
+            "office_options": task.conversion.office_options,
+            "requested_working_dpi": dpi, "assets": assets,
+            "scope": "Full native PNG assets at verified requested density. No PDF/JPEG encoding, deferred PDF layers, or post-render enlargement. Shared geometry and effect implementations; explicit native output profile.",
+        }),
+    )
+}
+
 fn audit_failure_record(
     assignment: &CampaignAssignment,
     conversion: &CampaignConversionRecord,
@@ -3293,6 +3537,74 @@ fn sha256_bytes(bytes: &[u8]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn audit_selection_rejects_invalid_or_duplicate_identities() {
+        let id = "a".repeat(64);
+        let row = format!(r#"{{"configuration_id":"{id}","family":"word"}}"#);
+        assert_eq!(
+            parse_audit_configuration_ids(row.as_bytes()).unwrap(),
+            BTreeSet::from([id])
+        );
+        for invalid in [
+            String::new(),
+            "{}".into(),
+            "not json".into(),
+            r#"{"configuration_id":"abc"}"#.into(),
+            format!(r#"{{"configuration_id":"{}"}}"#, "A".repeat(64)),
+            format!("{row}\n{row}"),
+        ] {
+            assert!(parse_audit_configuration_ids(invalid.as_bytes()).is_err());
+        }
+    }
+
+    #[test]
+    fn audit_selection_preserves_exact_scope_and_rejects_unknown_ids() {
+        let assignments =
+            read_plan(&crate::workspace_root().join("corpus_pdf_conv/plan.jsonl")).unwrap();
+        let ids = BTreeSet::from([
+            assignments[0].configuration_id.clone(),
+            assignments[10].configuration_id.clone(),
+        ]);
+        let selected = select_audit_assignments(
+            assignments.clone(),
+            &CampaignAuditSelection::ConfigurationIds(ids.clone()),
+        )
+        .unwrap();
+        assert_eq!(
+            selected
+                .into_iter()
+                .map(|assignment| assignment.configuration_id)
+                .collect::<BTreeSet<_>>(),
+            ids
+        );
+        assert!(
+            select_audit_assignments(
+                assignments.clone(),
+                &CampaignAuditSelection::ConfigurationIds(BTreeSet::from(["0".repeat(64)]))
+            )
+            .is_err()
+        );
+        assert!(
+            select_audit_assignments(
+                assignments.clone(),
+                &CampaignAuditSelection::ConfigurationIds(BTreeSet::new())
+            )
+            .is_err()
+        );
+        assert_eq!(
+            select_audit_assignments(assignments.clone(), &CampaignAuditSelection::Pilot)
+                .unwrap()
+                .len(),
+            PILOT_ASSIGNMENT_COUNT
+        );
+        assert_eq!(
+            select_audit_assignments(assignments, &CampaignAuditSelection::Full)
+                .unwrap()
+                .len(),
+            EXPECTED_ASSIGNMENT_COUNT
+        );
+    }
 
     #[test]
     fn generated_campaign_has_exact_round_trip_and_pilot_cardinality() {
