@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "file": "LibreOffice/sw/qa/extras/ooxmlexport/data/tdf134784.docx",
+  "application": "Word",
+  "application_version": "16.0",
+  "application_build": "16.0.20326",
+  "options": {
+    "quality": "screen",
+    "include_document_properties": true,
+    "page_from": 1,
+    "page_to": 1,
+    "tagged_pdf": false,
+    "bookmarks": "headings",
+    "pdf_a_1": false,
+    "bitmap_missing_fonts": false,
+    "print_hidden_slides": false
+  },
+  "source_sha256": "4e8f3c82f136a1e5c4a777a8611c58cfdfe80af3098ab8afbd43a21cae024cd6",
+  "output": "case-000.pdf",
+  "output_bytes": 45324,
+  "output_sha256": "58f8f824c6c7a56a21ffacd1246513229b3097d539672760d1b3efabbb978f7d",
+  "elapsed_ms": 688
+}

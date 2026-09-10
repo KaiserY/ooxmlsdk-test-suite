@@ -944,6 +944,7 @@ impl<'a> OfficeGoldenStageTrace<'a> {
 
 #[derive(Clone, Debug)]
 struct ConversionManifestIdentity {
+    configuration_id: String,
     status: String,
     reference_engine: String,
     source_sha256: String,
@@ -1069,6 +1070,7 @@ fn load_conversion_manifest_identities(
             let source = string("file")?;
             let key = (corpus.to_string(), source.clone());
             let identity = ConversionManifestIdentity {
+                configuration_id: string("configuration_id")?,
                 status: string("status")?,
                 reference_engine: string("reference_engine")?,
                 source_sha256: string("source_sha256")?,
@@ -1101,31 +1103,33 @@ fn load_conversion_manifest_identities(
     Ok(records)
 }
 
-#[derive(Debug)]
-struct ReferenceEnvironmentClock {
-    environment_id: String,
-    culture: String,
-    time_zone: String,
+type ReferenceEnvironmentsResult =
+    std::result::Result<crate::office_reference_environment::ReferenceEnvironments, String>;
+
+static REFERENCE_ENVIRONMENTS: OnceLock<ReferenceEnvironmentsResult> = OnceLock::new();
+
+fn reference_environment(
+    root: &Path,
+    manifest: &ConversionManifestIdentity,
+) -> Result<&'static crate::office_reference_environment::ReferenceEnvironment> {
+    REFERENCE_ENVIRONMENTS
+        .get_or_init(|| crate::office_reference_environment::ReferenceEnvironments::load(root))
+        .as_ref()
+        .map_err(|error| CalibrationError::OfficeGolden(error.clone()))?
+        .get(
+            &manifest.environment_id,
+            &manifest.configuration_id,
+            &manifest.source_sha256,
+            &manifest.output_sha256,
+        )
+        .map_err(CalibrationError::OfficeGolden)
 }
-
-type ReferenceEnvironmentClockResult = std::result::Result<ReferenceEnvironmentClock, String>;
-
-static REFERENCE_ENVIRONMENT_CLOCK: OnceLock<ReferenceEnvironmentClockResult> = OnceLock::new();
 
 fn reference_field_update_datetime(
     root: &Path,
     manifest: &ConversionManifestIdentity,
 ) -> Result<FieldUpdateDateTime> {
-    let environment = REFERENCE_ENVIRONMENT_CLOCK
-        .get_or_init(|| load_reference_environment_clock(root))
-        .as_ref()
-        .map_err(|error| CalibrationError::OfficeGolden(error.clone()))?;
-    if environment.environment_id != manifest.environment_id {
-        return Err(CalibrationError::OfficeGolden(format!(
-            "reference environment mismatch for field update time: manifest={:?}, environment={:?}",
-            manifest.environment_id, environment.environment_id
-        )));
-    }
+    let environment = reference_environment(root, manifest)?;
     if manifest.attempts != 1 {
         return parse_utc_datetime_in_reference_time_zone(
             &manifest.converted_at_utc,
@@ -1170,46 +1174,9 @@ fn reference_field_update_time_zone(
     root: &Path,
     manifest: &ConversionManifestIdentity,
 ) -> Result<String> {
-    let environment = REFERENCE_ENVIRONMENT_CLOCK
-        .get_or_init(|| load_reference_environment_clock(root))
-        .as_ref()
-        .map_err(|error| CalibrationError::OfficeGolden(error.clone()))?;
-    if environment.environment_id != manifest.environment_id {
-        return Err(CalibrationError::OfficeGolden(format!(
-            "reference environment mismatch for field update time zone: manifest={:?}, environment={:?}",
-            manifest.environment_id, environment.environment_id
-        )));
-    }
+    let environment = reference_environment(root, manifest)?;
     reference_iana_time_zone(&environment.time_zone, &environment.culture)
         .map_err(CalibrationError::OfficeGolden)
-}
-
-fn load_reference_environment_clock(root: &Path) -> ReferenceEnvironmentClockResult {
-    let path = root.join("corpus_pdf_conv").join("environment.json");
-    let bytes =
-        fs::read(&path).map_err(|error| format!("could not read {}: {error}", path.display()))?;
-    let record: Value = serde_json::from_slice(&bytes)
-        .map_err(|error| format!("invalid JSON in {}: {error}", path.display()))?;
-    let environment_id = record
-        .get("environment_id")
-        .and_then(Value::as_str)
-        .ok_or_else(|| format!("missing environment_id in {}", path.display()))?
-        .to_string();
-    let culture = record
-        .pointer("/environment/locale/culture")
-        .and_then(Value::as_str)
-        .ok_or_else(|| format!("missing environment.locale.culture in {}", path.display()))?
-        .to_string();
-    let time_zone = record
-        .pointer("/environment/locale/time_zone")
-        .and_then(Value::as_str)
-        .ok_or_else(|| format!("missing environment.locale.time_zone in {}", path.display()))?
-        .to_string();
-    Ok(ReferenceEnvironmentClock {
-        environment_id,
-        culture,
-        time_zone,
-    })
 }
 
 fn parse_utc_datetime_in_reference_time_zone(
@@ -2868,14 +2835,226 @@ fn exact_decoded_image_match(
             raster_width_px,
             raster_height_px,
         );
+    // The cheap PDFium bitmap hash omits /SMask. Equal RGB samples cannot
+    // establish visible identity for two differently shaped black shadows.
+    // An unavailable/budget-limited mask must take the pixel comparison, not
+    // silently fall back to the color-only identity.
+    let identity_alpha = |image: &crate::pdf_extract::RawXObjectSummary| {
+        !image.has_soft_mask
+            || image
+                .semantic_soft_mask_image
+                .as_ref()
+                .is_some_and(|image| {
+                    !image.alpha.is_empty() && image.alpha.iter().all(|&alpha| alpha == u16::MAX)
+                })
+    };
+    let both_opaque = page_object_raw_image(candidate_summary, candidate)
+        .is_some_and(identity_alpha)
+        && page_object_raw_image(golden_summary, golden).is_some_and(identity_alpha);
     same_identity
-        && (decoded_image_samples_match(candidate, golden)
+        && ((both_opaque && decoded_image_samples_match(candidate, golden))
             || semantic_soft_mask_images_match(
                 candidate_summary,
                 golden_summary,
                 candidate,
                 golden,
+            )
+            || affine_decoded_image_match(
+                candidate_summary,
+                golden_summary,
+                candidate,
+                golden,
+                [
+                    f64::from(raster_width_px) / f64::from(page_bounds.width()),
+                    f64::from(raster_height_px) / f64::from(page_bounds.height()),
+                ],
+                both_opaque,
             ))
+}
+
+fn affine_decoded_image_match(
+    candidate_summary: &PdfSummary,
+    golden_summary: &PdfSummary,
+    candidate: &ImageSummary,
+    golden: &ImageSummary,
+    scale: [f64; 2],
+    both_opaque: bool,
+) -> bool {
+    let (Some(candidate_geometry), Some(golden_geometry)) =
+        (&candidate.affine_geometry, &golden.affine_geometry)
+    else {
+        return false;
+    };
+    if !scale.iter().all(|v| v.is_finite() && *v > 0.0) {
+        return false;
+    }
+    let candidate_semantic = page_object_semantic_soft_mask_image(candidate_summary, candidate);
+    let golden_semantic = page_object_semantic_soft_mask_image(golden_summary, golden);
+    let Some(width) = candidate
+        .width
+        .as_deref()
+        .and_then(|v| v.parse::<usize>().ok())
+    else {
+        return false;
+    };
+    let Some(height) = candidate
+        .height
+        .as_deref()
+        .and_then(|v| v.parse::<usize>().ok())
+    else {
+        return false;
+    };
+    let native_match = |flipped| {
+        let raw_match = both_opaque
+            && golden.decoded_pixel_sha256.is_some()
+            && if flipped {
+                candidate.decoded_vertical_flip_sha256 == golden.decoded_pixel_sha256
+            } else {
+                candidate.decoded_pixel_sha256 == golden.decoded_pixel_sha256
+            };
+        raw_match
+            || match (candidate_semantic, golden_semantic) {
+                (Some(c), Some(g)) if flipped => {
+                    vertically_flipped_semantic_soft_mask_samples_match(c, g, width)
+                }
+                (Some(c), Some(g)) => semantic_soft_mask_samples_match(c, g),
+                _ => false,
+            }
+    };
+    [false, true].into_iter().any(|flipped| {
+        native_match(flipped)
+            && affine_image_corners_match(candidate_geometry, golden_geometry, scale, flipped)
+            && affine_image_clip_preserves_samples(
+                candidate_geometry,
+                candidate_semantic,
+                width,
+                height,
+                scale,
+            )
+            && affine_image_clip_preserves_samples(
+                golden_geometry,
+                golden_semantic,
+                width,
+                height,
+                scale,
+            )
+    })
+}
+
+fn affine_image_point(
+    geometry: &crate::pdf_extract::AffineImageGeometry,
+    x: f64,
+    y: f64,
+) -> [f64; 2] {
+    let [a, b, c, d, e, f] = geometry.matrix_bits.map(|v| f64::from(f32::from_bits(v)));
+    [a * x + c * y + e, b * x + d * y + f]
+}
+
+fn affine_image_corners_match(
+    candidate: &crate::pdf_extract::AffineImageGeometry,
+    golden: &crate::pdf_extract::AffineImageGeometry,
+    scale: [f64; 2],
+    flipped: bool,
+) -> bool {
+    let c = candidate.matrix_bits.map(|v| f64::from(f32::from_bits(v)));
+    let g = golden.matrix_bits.map(|v| f64::from(f32::from_bits(v)));
+    let sign = if flipped { -1.0 } else { 1.0 };
+    // Positive corresponding axes and matching handedness prevent a tiny
+    // mirrored/quarter-turned image from exploiting the placement allowance.
+    if c[0] * g[0] + c[1] * g[1] <= 0.0
+        || sign * (c[2] * g[2] + c[3] * g[3]) <= 0.0
+        || sign * (c[0] * c[3] - c[1] * c[2]) * (g[0] * g[3] - g[1] * g[2]) <= 0.0
+    {
+        return false;
+    }
+    [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0], [1.0, 1.0]]
+        .into_iter()
+        .all(|[x, y]| {
+            let cp = affine_image_point(candidate, x, if flipped { 1.0 - y } else { y });
+            let gp = affine_image_point(golden, x, y);
+            (0..2).all(|axis| {
+                (cp[axis] - gp[axis]).abs() * scale[axis]
+                    <= f64::from(EXACT_IMAGE_PLACEMENT_RASTER_PIXELS)
+            })
+        })
+}
+
+fn affine_image_clip_preserves_samples(
+    geometry: &crate::pdf_extract::AffineImageGeometry,
+    semantic: Option<&crate::pdf_extract::SemanticSoftMaskImage>,
+    width: usize,
+    height: usize,
+    scale: [f64; 2],
+) -> bool {
+    if width == 0 || height == 0 {
+        return false;
+    }
+    for polygon in &geometry.clip_polygons {
+        let points: Vec<_> = polygon
+            .iter()
+            .map(|p| {
+                [
+                    f64::from(f32::from_bits(p[0])) * scale[0],
+                    f64::from(f32::from_bits(p[1])) * scale[1],
+                ]
+            })
+            .collect();
+        let cross = |a: [f64; 2], b: [f64; 2], p: [f64; 2]| {
+            (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0])
+        };
+        let area: f64 = (0..points.len())
+            .map(|i| cross([0.0, 0.0], points[i], points[(i + 1) % points.len()]))
+            .sum();
+        if area == 0.0 {
+            return false;
+        }
+        let sign = area.signum();
+        for i in 0..points.len() {
+            let a = points[i];
+            let b = points[(i + 1) % points.len()];
+            // Only convex, single-subpath clips have a half-plane proof.
+            if points.iter().any(|p| sign * cross(a, b, *p) < -1e-9) {
+                return false;
+            }
+            let length = (b[0] - a[0]).hypot(b[1] - a[1]);
+            if length == 0.0 {
+                continue;
+            }
+            let inside = |x, y| {
+                let p = affine_image_point(geometry, x, y);
+                sign * cross(a, b, [p[0] * scale[0], p[1] * scale[1]])
+                    >= -f64::from(EXACT_IMAGE_PLACEMENT_RASTER_PIXELS) * length
+            };
+            if [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0], [1.0, 1.0]]
+                .into_iter()
+                .all(|[x, y]| inside(x, y))
+            {
+                continue;
+            }
+            let Some(semantic) = semantic else {
+                return false;
+            };
+            if width.checked_mul(height) != Some(semantic.alpha.len()) {
+                return false;
+            }
+            for (index, _) in semantic.alpha.iter().enumerate().filter(|(_, a)| **a != 0) {
+                let x = (index % width) as f64 / width as f64;
+                let y = 1.0 - (index / width) as f64 / height as f64;
+                if ![
+                    [x, y],
+                    [x + 1.0 / width as f64, y],
+                    [x, y - 1.0 / height as f64],
+                    [x + 1.0 / width as f64, y - 1.0 / height as f64],
+                ]
+                .into_iter()
+                .all(|[x, y]| inside(x, y))
+                {
+                    return false;
+                }
+            }
+        }
+    }
+    true
 }
 
 fn semantic_soft_mask_images_match(
@@ -2884,6 +3063,9 @@ fn semantic_soft_mask_images_match(
     candidate: &ImageSummary,
     golden: &ImageSummary,
 ) -> bool {
+    if candidate.axis_aligned_orientation.is_none() || golden.axis_aligned_orientation.is_none() {
+        return false;
+    }
     let Some(candidate_image) = page_object_semantic_soft_mask_image(candidate_summary, candidate)
     else {
         return false;
@@ -2916,6 +3098,15 @@ fn page_object_semantic_soft_mask_image<'a>(
     summary: &'a PdfSummary,
     image: &ImageSummary,
 ) -> Option<&'a crate::pdf_extract::SemanticSoftMaskImage> {
+    page_object_raw_image(summary, image)?
+        .semantic_soft_mask_image
+        .as_ref()
+}
+
+fn page_object_raw_image<'a>(
+    summary: &'a PdfSummary,
+    image: &ImageSummary,
+) -> Option<&'a crate::pdf_extract::RawXObjectSummary> {
     let width = image.width.as_deref()?.parse::<u32>().ok()?;
     let height = image.height.as_deref()?.parse::<u32>().ok()?;
     let resource_name = page_object_image_resource_name(summary, image)?;
@@ -2931,7 +3122,6 @@ fn page_object_semantic_soft_mask_image<'a>(
                 && xobject.width_px == Some(width)
                 && xobject.height_px == Some(height)
         })
-        .and_then(|xobject| xobject.semantic_soft_mask_image.as_ref())
 }
 
 fn semantic_soft_mask_samples_match(
@@ -2976,17 +3166,19 @@ fn vertically_flipped_semantic_soft_mask_samples_match(
 }
 
 fn decoded_image_samples_match(candidate: &ImageSummary, golden: &ImageSummary) -> bool {
-    if golden.decoded_pixel_sha256.is_some()
-        && candidate.decoded_pixel_sha256 == golden.decoded_pixel_sha256
-    {
-        return true;
-    }
     let Some((candidate_x, candidate_y)) = candidate.axis_aligned_orientation else {
         return false;
     };
     let Some((golden_x, golden_y)) = golden.axis_aligned_orientation else {
         return false;
     };
+    if candidate_x == golden_x
+        && candidate_y == golden_y
+        && golden.decoded_pixel_sha256.is_some()
+        && candidate.decoded_pixel_sha256 == golden.decoded_pixel_sha256
+    {
+        return true;
+    }
     candidate_x == golden_x
         && candidate_y == -golden_y
         && ((candidate.decoded_pixel_sha256.is_some()
@@ -3077,8 +3269,10 @@ fn visual_diff_metrics(
     {
         let mut text_mask_index = 0usize;
         for (pixel_x, (candidate_pixel, golden_pixel)) in candidate_row
-            .chunks_exact(4)
-            .zip(golden_row.chunks_exact(4))
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .zip(golden_row.as_chunks::<4>().0.iter())
             .enumerate()
         {
             while text_mask_spans
@@ -3746,8 +3940,10 @@ fn write_failure_page_artifacts(
     let comparison_height_px = candidate.height_px.min(golden.height_px);
     let diff = candidate
         .rgba
-        .chunks_exact(4)
-        .zip(golden.rgba.chunks_exact(4))
+        .as_chunks::<4>()
+        .0
+        .iter()
+        .zip(golden.rgba.as_chunks::<4>().0.iter())
         .flat_map(|(candidate_pixel, golden_pixel)| {
             let delta = (0..3)
                 .map(|channel| candidate_pixel[channel].abs_diff(golden_pixel[channel]))
@@ -4306,6 +4502,268 @@ mod tests {
         let mut bytes = Vec::new();
         document.save_to(&mut bytes).unwrap();
         bytes
+    }
+
+    #[test]
+    fn exact_image_identity_does_not_bypass_a_different_or_unknown_soft_mask() {
+        fn summary(alpha: Option<[u8; 4]>) -> crate::PdfSummary {
+            let mut document = Document::load_mem(&blank_pdf()).unwrap();
+            let mut image = dictionary! {
+                "Type" => "XObject", "Subtype" => "Image",
+                "Width" => 2, "Height" => 2,
+                "ColorSpace" => "DeviceRGB", "BitsPerComponent" => 8,
+            };
+            if let Some(alpha) = alpha {
+                let mask = document.add_object(Stream::new(
+                    dictionary! {
+                        "Type" => "XObject", "Subtype" => "Image",
+                        "Width" => 2, "Height" => 2,
+                        "ColorSpace" => "DeviceGray", "BitsPerComponent" => 8,
+                    },
+                    alpha.to_vec(),
+                ));
+                image.set("SMask", mask);
+            }
+            let image = document.add_object(Stream::new(image, vec![0; 12]));
+            let content = document.add_object(Stream::new(
+                dictionary! {},
+                b"q 20 0 0 20 10 10 cm /Im0 Do Q".to_vec(),
+            ));
+            let page_id = document.get_pages()[&1];
+            let page = document
+                .get_object_mut(page_id)
+                .unwrap()
+                .as_dict_mut()
+                .unwrap();
+            page.set("Contents", content);
+            page.set(
+                "Resources",
+                dictionary! { "XObject" => dictionary! { "Im0" => image } },
+            );
+            let mut bytes = Vec::new();
+            document.save_to(&mut bytes).unwrap();
+            crate::PdfSummary::from_bytes_for_golden(&bytes).unwrap()
+        }
+        let reference = summary(Some([0, 64, 128, 255]));
+        let different = summary(Some([255, 128, 64, 0]));
+        let opaque = summary(None);
+        let matches = |candidate: &crate::PdfSummary, golden: &crate::PdfSummary| {
+            super::exact_decoded_image_match(
+                candidate,
+                golden,
+                &candidate.images[0],
+                &golden.images[0],
+                PdfBounds {
+                    left: 0.0,
+                    bottom: 0.0,
+                    right: 200.0,
+                    top: 100.0,
+                },
+                1333,
+                667,
+            )
+        };
+        assert_eq!(
+            reference.images[0].decoded_pixel_sha256,
+            different.images[0].decoded_pixel_sha256
+        );
+        assert!(matches(&reference, &reference));
+        assert!(matches(&opaque, &opaque));
+        let opaque_mask = summary(Some([255; 4]));
+        assert!(matches(&opaque_mask, &opaque));
+        assert!(matches(&opaque, &opaque_mask));
+        assert!(!matches(&different, &reference));
+        assert!(!matches(&opaque, &reference));
+        assert!(!matches(&reference, &opaque));
+        let mut unknown = reference.clone();
+        for page in &mut unknown.raw_pages {
+            for image in &mut page.xobjects {
+                image.semantic_soft_mask_image = None;
+            }
+        }
+        assert!(!matches(&unknown, &reference));
+        let mut non_axis_aligned = reference.clone();
+        non_axis_aligned.images[0].axis_aligned_orientation = None;
+        assert!(!matches(&non_axis_aligned, &non_axis_aligned));
+    }
+
+    #[test]
+    fn affine_image_identity_checks_samples_corners_and_visible_clipping() {
+        fn summary(matrix: &str, clip: &str, alpha: [u8; 4]) -> crate::PdfSummary {
+            let mut document = Document::load_mem(&blank_pdf()).unwrap();
+            let mask = document.add_object(Stream::new(
+                dictionary! {
+                    "Type" => "XObject", "Subtype" => "Image", "Width" => 2, "Height" => 2,
+                    "ColorSpace" => "DeviceGray", "BitsPerComponent" => 8,
+                },
+                alpha.to_vec(),
+            ));
+            let image = document.add_object(Stream::new(
+                dictionary! {
+                    "Type" => "XObject", "Subtype" => "Image", "Width" => 2, "Height" => 2,
+                    "ColorSpace" => "DeviceRGB", "BitsPerComponent" => 8, "SMask" => mask,
+                },
+                vec![0; 12],
+            ));
+            let content = document.add_object(Stream::new(
+                dictionary! {},
+                format!("q {clip} {matrix} cm /Im0 Do Q").into_bytes(),
+            ));
+            let page_id = document.get_pages()[&1];
+            let page = document
+                .get_object_mut(page_id)
+                .unwrap()
+                .as_dict_mut()
+                .unwrap();
+            page.set("Contents", content);
+            page.set(
+                "Resources",
+                dictionary! {"XObject" => dictionary! {"Im0" => image}},
+            );
+            let mut bytes = Vec::new();
+            document.save_to(&mut bytes).unwrap();
+            crate::PdfSummary::from_bytes_for_golden(&bytes).unwrap()
+        }
+        let original = summary("20 20 -20 20 50 50", "", [0, 64, 128, 255]);
+        let matches = |candidate: &crate::PdfSummary| {
+            super::exact_decoded_image_match(
+                candidate,
+                &original,
+                &candidate.images[0],
+                &original.images[0],
+                PdfBounds {
+                    left: 0.0,
+                    bottom: 0.0,
+                    right: 200.0,
+                    top: 100.0,
+                },
+                1333,
+                667,
+            )
+        };
+        assert!(matches(&original));
+        assert!(matches(&summary(
+            "20 20 -20 20 50 50",
+            "0 0 200 100 re W n",
+            [0, 64, 128, 255]
+        )));
+        assert!(matches(&summary(
+            "20 20 -20 20 50 50",
+            "40 0 160 100 re W n",
+            [0, 64, 128, 255]
+        )));
+        assert!(!matches(&summary(
+            "20 20 -20 20 50 50",
+            "50 0 150 100 re W n",
+            [0, 64, 128, 255]
+        )));
+        assert!(!matches(&summary(
+            "-20 20 -20 -20 70 70",
+            "",
+            [0, 64, 128, 255]
+        )));
+        assert!(!matches(&summary(
+            "-20 -20 -20 20 70 70",
+            "",
+            [0, 64, 128, 255]
+        )));
+        assert!(!matches(&summary(
+            "20 20 -20 20 51 50",
+            "",
+            [0, 64, 128, 255]
+        )));
+        assert!(!matches(&summary(
+            "20 20 -20 20 50 50",
+            "",
+            [0, 64, 129, 255]
+        )));
+        assert!(matches(&summary(
+            "20 20 20 -20 30 70",
+            "",
+            [128, 255, 0, 64]
+        )));
+        assert!(!matches(&summary(
+            "20 20 20 -20 30 70",
+            "",
+            [0, 64, 128, 255]
+        )));
+        let mut unknown = original.clone();
+        unknown.images[0].affine_geometry = None;
+        assert!(!matches(&unknown));
+
+        for degrees in [15.0_f64, 45.0, 80.0, 105.0, 135.0, 180.0, 225.0, 315.0] {
+            let (sin, cos) = degrees.to_radians().sin_cos();
+            for shear in [0.0, 0.3] {
+                for reflect in [-1.0, 1.0] {
+                    let matrix = format!(
+                        "{} {} {} {} 100 50",
+                        20.0 * cos,
+                        20.0 * sin,
+                        reflect * 10.0 * (-sin + shear * cos),
+                        reflect * 10.0 * (cos + shear * sin)
+                    );
+                    let reference = summary(&matrix, "", [0, 64, 128, 255]);
+                    let different = summary(&matrix, "", [0, 64, 129, 255]);
+                    let check = |c: &crate::PdfSummary| {
+                        super::exact_decoded_image_match(
+                            c,
+                            &reference,
+                            &c.images[0],
+                            &reference.images[0],
+                            PdfBounds {
+                                left: 0.0,
+                                bottom: 0.0,
+                                right: 200.0,
+                                top: 100.0,
+                            },
+                            1333,
+                            667,
+                        )
+                    };
+                    assert!(check(&reference), "{matrix}");
+                    assert!(!check(&different), "different alpha, {matrix}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn exact_image_identity_preserves_soft_mask_a16_precision() {
+        let first = crate::pdf_extract::SemanticSoftMaskImage {
+            alpha: vec![0, 43981, 65535],
+            black_matte_rgb: vec![0; 9],
+        };
+        let mut different = first.clone();
+        different.alpha[1] += 1;
+        assert!(!super::semantic_soft_mask_samples_match(&first, &different));
+        assert!(!super::vertically_flipped_semantic_soft_mask_samples_match(
+            &first, &different, 3
+        ));
+    }
+
+    #[test]
+    fn exact_image_identity_requires_matching_orientation() {
+        let image = crate::pdf_extract::ImageSummary {
+            page_index: 0,
+            page_image_index: 0,
+            width: Some("2".into()),
+            height: Some("2".into()),
+            bounds: None,
+            decoded_pixel_sha256: Some("original".into()),
+            decoded_vertical_flip_sha256: Some("vertical".into()),
+            axis_aligned_orientation: Some((1, 1)),
+            affine_geometry: None,
+        };
+        assert!(super::decoded_image_samples_match(&image, &image));
+        let mut changed = image.clone();
+        changed.axis_aligned_orientation = Some((-1, 1));
+        assert!(!super::decoded_image_samples_match(&changed, &image));
+        changed.axis_aligned_orientation = None;
+        assert!(!super::decoded_image_samples_match(&changed, &image));
+        changed.axis_aligned_orientation = Some((1, -1));
+        assert!(!super::decoded_image_samples_match(&changed, &image));
+        changed.decoded_pixel_sha256 = Some("vertical".into());
+        assert!(super::decoded_image_samples_match(&changed, &image));
     }
 
     #[test]

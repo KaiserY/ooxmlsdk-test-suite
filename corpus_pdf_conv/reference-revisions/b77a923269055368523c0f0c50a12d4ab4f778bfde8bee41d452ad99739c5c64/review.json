@@ -1,0 +1,375 @@
+{
+  "schema_version": 1,
+  "configuration_id": "b77a923269055368523c0f0c50a12d4ab4f778bfde8bee41d452ad99739c5c64",
+  "reason": "User-approved refresh after exact-source/options, archived/current adapter and independent/batch process controls established changed Gray JPEG interpolation in current Office.",
+  "previous_conversion": {
+    "schema_version": 3,
+    "campaign_id": "office-ooxml-pdf-options-v1",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "file": "sw/qa/extras/ooxmlexport/data/tdf134784.docx",
+    "family": "word",
+    "source_extension": "docx",
+    "source_bytes": 28416,
+    "source_sha256": "4e8f3c82f136a1e5c4a777a8611c58cfdfe80af3098ab8afbd43a21cae024cd6",
+    "configuration_id": "b77a923269055368523c0f0c50a12d4ab4f778bfde8bee41d452ad99739c5c64",
+    "requested": {
+      "standards": [
+        "pdf20"
+      ],
+      "compress_content_streams": false,
+      "ui_language": "ko-KR",
+      "format_locale": "ko-KR",
+      "document_language": "fr-FR",
+      "field_update": {
+        "year": 2026,
+        "month": 8,
+        "day": 18,
+        "hour": 12,
+        "minute": 34,
+        "second": 56,
+        "time_zone": "America/New_York"
+      },
+      "tagged_pdf": false,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": true,
+      "open_bookmark_levels": 2,
+      "page_range": "1",
+      "images": {
+        "use_lossless_compression": true,
+        "jpeg_quality": 90,
+        "reduce_resolution": true,
+        "max_resolution_dpi": 300
+      },
+      "link_action": "uri",
+      "export_form_fields": false,
+      "viewer": {
+        "page_mode": "use_outlines",
+        "page_layout": "single_page",
+        "magnification": "fit_width",
+        "initial_page": 1,
+        "hide_toolbar": false,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": true,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "creator": "ooxmlsdk-pdf",
+        "producer": "ooxmlsdk-pdf configured campaign",
+        "creation_date": null
+      },
+      "embed_campaign_attachment": false
+    },
+    "effective": {
+      "standards": [
+        "pdf20"
+      ],
+      "compress_content_streams": false,
+      "ui_language": "ko-KR",
+      "format_locale": "ko-KR",
+      "document_language": "fr-FR",
+      "field_update": {
+        "year": 2026,
+        "month": 8,
+        "day": 18,
+        "hour": 12,
+        "minute": 34,
+        "second": 56,
+        "time_zone": "America/New_York"
+      },
+      "tagged_pdf": false,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": true,
+      "open_bookmark_levels": 2,
+      "page_range": "1",
+      "images": {
+        "use_lossless_compression": true,
+        "jpeg_quality": null,
+        "reduce_resolution": true,
+        "max_resolution_dpi": 300
+      },
+      "link_action": "uri",
+      "export_form_fields": false,
+      "viewer": {
+        "page_mode": "use_outlines",
+        "page_layout": "single_page",
+        "magnification": "fit_width",
+        "initial_page": 1,
+        "hide_toolbar": false,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": true,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "creator": "ooxmlsdk-pdf",
+        "producer": "ooxmlsdk-pdf configured campaign",
+        "creation_date": null
+      },
+      "embed_campaign_attachment": false
+    },
+    "adjustments": [
+      {
+        "feature": "ui-language",
+        "reason": "application-generated UI strings currently fall back to English outside English and Chinese resource packs"
+      },
+      {
+        "feature": "image-compression",
+        "reason": "lossless image compression makes JPEG quality inapplicable"
+      }
+    ],
+    "office_options": {
+      "quality": "screen",
+      "include_document_properties": true,
+      "page_from": 1,
+      "page_to": 1,
+      "tagged_pdf": false,
+      "bookmarks": "headings",
+      "pdf_a_1": false,
+      "bitmap_missing_fonts": false,
+      "print_hidden_slides": false
+    },
+    "status": "converted",
+    "reference_engine": "Microsoft Office",
+    "environment_id": "26a412e53b5135051ef70c29ccb7c7993a64b96fefdd230a0a19e782f52b521a",
+    "application": "Word",
+    "application_version": "16.0",
+    "application_build": "16.0.20228",
+    "output": "sw/qa/extras/ooxmlexport/data/tdf134784.docx.pdf",
+    "output_bytes": 44975,
+    "output_sha256": "f0fdc01d17281ab0978ca060293c2ff1362d929fa53c846b2eee34afa137a347",
+    "observed_pdf": {
+      "header_version": "1.7",
+      "page_count": 1,
+      "tagged_pdf": false,
+      "has_outlines": false,
+      "pdf_a_part": null,
+      "pdf_a_conformance": null
+    },
+    "converted_at_utc": "2026-08-17T19:42:38.435089842Z",
+    "elapsed_ms": 4965,
+    "attempts": 1,
+    "annotations": [],
+    "failure_class": "",
+    "error_code": "",
+    "error": ""
+  },
+  "revised_conversion": {
+    "schema_version": 3,
+    "campaign_id": "office-ooxml-pdf-options-v1",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "file": "sw/qa/extras/ooxmlexport/data/tdf134784.docx",
+    "family": "word",
+    "source_extension": "docx",
+    "source_bytes": 28416,
+    "source_sha256": "4e8f3c82f136a1e5c4a777a8611c58cfdfe80af3098ab8afbd43a21cae024cd6",
+    "configuration_id": "b77a923269055368523c0f0c50a12d4ab4f778bfde8bee41d452ad99739c5c64",
+    "requested": {
+      "standards": [
+        "pdf20"
+      ],
+      "compress_content_streams": false,
+      "ui_language": "ko-KR",
+      "format_locale": "ko-KR",
+      "document_language": "fr-FR",
+      "field_update": {
+        "year": 2026,
+        "month": 8,
+        "day": 18,
+        "hour": 12,
+        "minute": 34,
+        "second": 56,
+        "time_zone": "America/New_York"
+      },
+      "tagged_pdf": false,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": true,
+      "open_bookmark_levels": 2,
+      "page_range": "1",
+      "images": {
+        "use_lossless_compression": true,
+        "jpeg_quality": 90,
+        "reduce_resolution": true,
+        "max_resolution_dpi": 300
+      },
+      "link_action": "uri",
+      "export_form_fields": false,
+      "viewer": {
+        "page_mode": "use_outlines",
+        "page_layout": "single_page",
+        "magnification": "fit_width",
+        "initial_page": 1,
+        "hide_toolbar": false,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": true,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "creator": "ooxmlsdk-pdf",
+        "producer": "ooxmlsdk-pdf configured campaign",
+        "creation_date": null
+      },
+      "embed_campaign_attachment": false
+    },
+    "effective": {
+      "standards": [
+        "pdf20"
+      ],
+      "compress_content_streams": false,
+      "ui_language": "ko-KR",
+      "format_locale": "ko-KR",
+      "document_language": "fr-FR",
+      "field_update": {
+        "year": 2026,
+        "month": 8,
+        "day": 18,
+        "hour": 12,
+        "minute": 34,
+        "second": 56,
+        "time_zone": "America/New_York"
+      },
+      "tagged_pdf": false,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": true,
+      "open_bookmark_levels": 2,
+      "page_range": "1",
+      "images": {
+        "use_lossless_compression": true,
+        "jpeg_quality": null,
+        "reduce_resolution": true,
+        "max_resolution_dpi": 300
+      },
+      "link_action": "uri",
+      "export_form_fields": false,
+      "viewer": {
+        "page_mode": "use_outlines",
+        "page_layout": "single_page",
+        "magnification": "fit_width",
+        "initial_page": 1,
+        "hide_toolbar": false,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": true,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "creator": "ooxmlsdk-pdf",
+        "producer": "ooxmlsdk-pdf configured campaign",
+        "creation_date": null
+      },
+      "embed_campaign_attachment": false
+    },
+    "adjustments": [
+      {
+        "feature": "ui-language",
+        "reason": "application-generated UI strings currently fall back to English outside English and Chinese resource packs"
+      },
+      {
+        "feature": "image-compression",
+        "reason": "lossless image compression makes JPEG quality inapplicable"
+      }
+    ],
+    "office_options": {
+      "quality": "screen",
+      "include_document_properties": true,
+      "page_from": 1,
+      "page_to": 1,
+      "tagged_pdf": false,
+      "bookmarks": "headings",
+      "pdf_a_1": false,
+      "bitmap_missing_fonts": false,
+      "print_hidden_slides": false
+    },
+    "status": "converted",
+    "reference_engine": "Microsoft Office",
+    "environment_id": "8d0112e76f229f6d337cdf22ed3ebfc0a1a097d22cd7315af1bea2e19e410ad2",
+    "application": "Word",
+    "application_version": "16.0",
+    "application_build": "16.0.20326",
+    "output": "sw/qa/extras/ooxmlexport/data/tdf134784.docx.pdf",
+    "output_bytes": 45324,
+    "output_sha256": "58f8f824c6c7a56a21ffacd1246513229b3097d539672760d1b3efabbb978f7d",
+    "observed_pdf": {
+      "header_version": "1.7",
+      "page_count": 1,
+      "tagged_pdf": false,
+      "has_outlines": false,
+      "pdf_a_part": null,
+      "pdf_a_conformance": null
+    },
+    "converted_at_utc": "2026-09-08T14:20:37.7709052Z",
+    "elapsed_ms": 688,
+    "attempts": 1,
+    "annotations": [
+      {
+        "kind": "reviewed-office-reference-revision",
+        "reason": "User-approved refresh after exact-source/options, archived/current adapter and independent/batch process controls established changed Gray JPEG interpolation in current Office.",
+        "previous_environment_id": "26a412e53b5135051ef70c29ccb7c7993a64b96fefdd230a0a19e782f52b521a",
+        "previous_output_sha256": "f0fdc01d17281ab0978ca060293c2ff1362d929fa53c846b2eee34afa137a347",
+        "evidence": "reference-revisions/b77a923269055368523c0f0c50a12d4ab4f778bfde8bee41d452ad99739c5c64/review.json"
+      }
+    ],
+    "failure_class": "",
+    "error_code": "",
+    "error": ""
+  },
+  "source_unchanged": true,
+  "office_options_unchanged": true,
+  "archived_probe_sha256": "6593c98d883a956d07a9a809499b35f90c89085b11d4eba00597a46b01d39e6a",
+  "old_image": {
+    "size": [
+      2,
+      2
+    ],
+    "color_space": "DeviceRGB",
+    "filter": null,
+    "interpolate": false,
+    "bytes": 12
+  },
+  "new_image": {
+    "size": [
+      2,
+      2
+    ],
+    "color_space": "DeviceGray",
+    "filter": "DCTDecode",
+    "interpolate": true,
+    "bytes": 343
+  },
+  "controls": {
+    "authored_regeneration": 12,
+    "gray_component_size_content_density": 98,
+    "gray_metadata": 129,
+    "additional_authored_tiny_documents": 2
+  },
+  "limitations": "Office build and font fingerprint changed; the precise internal cause is not attributed to the version number alone. Other corpus references are unchanged."
+}

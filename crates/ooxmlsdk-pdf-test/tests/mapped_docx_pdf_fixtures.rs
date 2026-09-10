@@ -1532,7 +1532,9 @@ fn assert_rendered_page_has_non_white_pixels(
         .unwrap_or_else(|error| panic!("failed to render {fixture_name}: {error}"));
     let non_white = image
         .rgba
-        .chunks_exact(4)
+        .as_chunks::<4>()
+        .0
+        .iter()
         .filter(|pixel| pixel[3] != 0 && (pixel[0] < 250 || pixel[1] < 250 || pixel[2] < 250))
         .count();
     assert!(

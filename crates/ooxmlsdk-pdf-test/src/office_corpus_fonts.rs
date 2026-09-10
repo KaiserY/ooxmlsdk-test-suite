@@ -313,7 +313,9 @@ fn decode_utf16_xml(xml: &[u8]) -> Result<Option<Vec<u8>>, String> {
         return Err("UTF-16 XML has an odd byte length".to_string());
     }
     let words = xml[start..]
-        .chunks_exact(2)
+        .as_chunks::<2>()
+        .0
+        .iter()
         .map(|bytes| {
             if little_endian {
                 u16::from_le_bytes([bytes[0], bytes[1]])

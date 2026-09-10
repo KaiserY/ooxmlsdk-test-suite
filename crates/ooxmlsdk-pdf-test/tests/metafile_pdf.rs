@@ -65,7 +65,9 @@ fn xlsx_ole_emf_keeps_excel_grid_placement_and_alpha_blend_content() {
     let rendered = rendered_page_image_for_fixture(&fixture, 0, 1024).unwrap();
     let adobe_red_pixels = rendered
         .rgba
-        .chunks_exact(4)
+        .as_chunks::<4>()
+        .0
+        .iter()
         .filter(|pixel| pixel[0] >= 150 && pixel[1] <= 120 && pixel[2] <= 120 && pixel[3] >= 200)
         .count();
     assert!(

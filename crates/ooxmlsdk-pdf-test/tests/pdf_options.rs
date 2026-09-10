@@ -279,8 +279,10 @@ fn assert_visible_output_close(candidate: &[u8], office: &[u8], label: &str) {
     let mut absolute_channel_delta = 0u64;
     for (candidate_pixel, office_pixel) in candidate_page
         .rgba
-        .chunks_exact(4)
-        .zip(office_page.rgba.chunks_exact(4))
+        .as_chunks::<4>()
+        .0
+        .iter()
+        .zip(office_page.rgba.as_chunks::<4>().0.iter())
     {
         let maximum_delta = candidate_pixel
             .iter()

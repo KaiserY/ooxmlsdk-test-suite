@@ -2564,7 +2564,7 @@ pub fn audit_campaign_selection(
     let selected = select_audit_assignments(assignments, &selection)?;
     let expected = selected.len();
     let conversions = read_conversion_records(root)?;
-    let environment_id = load_environment_id(root)?;
+    let environments = crate::office_reference_environment::ReferenceEnvironments::load(root)?;
     let work_root = root.join("target/office-pdf-campaign");
     let selection_name = match selection {
         CampaignAuditSelection::Pilot => "bootstrap",
@@ -2589,13 +2589,7 @@ pub fn audit_campaign_selection(
             )
         })?;
         validate_conversion_record(&assignment, conversion)?;
-        if conversion.environment_id != environment_id {
-            return Err(format!(
-                "environment drift for {}: manifest={}, campaign={environment_id}",
-                assignment.source_key(),
-                conversion.environment_id
-            ));
-        }
+        validate_audit_reference_environment(&environments, conversion)?;
         if conversion.status == "converted" {
             let golden_path = root
                 .join("corpus_pdf_conv")
@@ -3124,9 +3118,8 @@ pub fn prepare_audit_one(
         )
     })?;
     validate_conversion_record(&assignment, &conversion)?;
-    if conversion.environment_id != load_environment_id(root)? {
-        return Err(format!("environment drift for {}", assignment.source_key()));
-    }
+    let environments = crate::office_reference_environment::ReferenceEnvironments::load(root)?;
+    validate_audit_reference_environment(&environments, &conversion)?;
     if conversion.status != "converted" {
         return Err(format!(
             "configured audit assignment has no Office golden: {} ({})",
@@ -3457,17 +3450,32 @@ fn panic_message(payload: Box<dyn std::any::Any + Send>) -> String {
         .unwrap_or_else(|| "audit worker panicked with a non-string payload".to_string())
 }
 
-fn load_environment_id(root: &Path) -> Result<String, String> {
-    let path = root.join("corpus_pdf_conv/environment.json");
-    let bytes =
-        fs::read(&path).map_err(|error| format!("could not read {}: {error}", path.display()))?;
-    let value: serde_json::Value = serde_json::from_slice(&bytes)
-        .map_err(|error| format!("invalid {}: {error}", path.display()))?;
-    value
-        .get("environment_id")
-        .and_then(serde_json::Value::as_str)
-        .map(ToString::to_string)
-        .ok_or_else(|| format!("missing environment_id in {}", path.display()))
+fn validate_audit_reference_environment(
+    environments: &crate::office_reference_environment::ReferenceEnvironments,
+    conversion: &CampaignConversionRecord,
+) -> Result<(), String> {
+    let environment = environments.get(
+        &conversion.environment_id,
+        &conversion.configuration_id,
+        &conversion.source_sha256,
+        &conversion.output_sha256,
+    )?;
+    let version_components = environment.office_version.split('.').collect::<Vec<_>>();
+    let expected_build = match conversion.family {
+        OfficeFamily::Word => version_components.get(..3).map(|parts| parts.join(".")),
+        OfficeFamily::Excel | OfficeFamily::PowerPoint => {
+            version_components.get(2).map(|part| (*part).to_string())
+        }
+    };
+    if conversion.status == "converted"
+        && expected_build.as_deref() != Some(conversion.application_build.as_str())
+    {
+        return Err(format!(
+            "Office build mismatch for {}: receipt={}, environment={}",
+            conversion.configuration_id, conversion.application_build, environment.office_version
+        ));
+    }
+    Ok(())
 }
 
 fn write_json(path: &Path, value: &impl Serialize) -> Result<(), String> {
@@ -3537,6 +3545,18 @@ fn sha256_bytes(bytes: &[u8]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn registered_environments_match_all_conversion_receipts() {
+        let root = crate::workspace_root();
+        let environments =
+            crate::office_reference_environment::ReferenceEnvironments::load(&root).unwrap();
+        let records = read_conversion_records(&root).unwrap();
+        assert_eq!(records.len(), EXPECTED_ASSIGNMENT_COUNT);
+        for record in records.values() {
+            validate_audit_reference_environment(&environments, record).unwrap();
+        }
+    }
 
     #[test]
     fn audit_selection_rejects_invalid_or_duplicate_identities() {

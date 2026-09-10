@@ -78,6 +78,7 @@ pub struct OfficeGoldenCorpusReport {
 
 #[derive(Debug, Deserialize)]
 struct ConversionRecord {
+    configuration_id: String,
     file: String,
     source_extension: String,
     source_bytes: u64,
@@ -93,16 +94,6 @@ struct ConversionRecord {
 struct CorpusCandidate {
     corpus: String,
     record: ConversionRecord,
-}
-
-#[derive(Debug, Deserialize)]
-struct EnvironmentRecord {
-    environment_id: String,
-    environment: ReferenceEnvironment,
-}
-
-#[derive(Debug, Deserialize)]
-struct ReferenceEnvironment {
     locale: ReferenceLocale,
 }
 
@@ -217,7 +208,6 @@ const fn exact_case_pass_requirement_met(
 type KnownErrors = BTreeMap<String, BTreeMap<String, ParsedKnownError>>;
 
 struct CorpusIndex {
-    environment: EnvironmentRecord,
     candidates: Vec<CorpusCandidate>,
     known_errors: KnownErrors,
 }
@@ -237,7 +227,6 @@ pub fn run_office_golden_corpus(
     if let Some(task_path) = env::var_os("OOXMLSDK_GOLDEN_WORKER_TASK") {
         return run_office_golden_worker(format, &root, index, Path::new(&task_path));
     }
-    let environment = &index.environment;
     let known_errors = &index.known_errors;
     let exact_case = env::var("OOXMLSDK_GOLDEN_CASE").ok();
     let corpus_filter = env::var("OOXMLSDK_GOLDEN_CORPUS").ok();
@@ -385,7 +374,6 @@ pub fn run_office_golden_corpus(
             format,
             pass_target,
             &root,
-            environment,
             known_errors,
             candidates,
             BatchAuditOptions {
@@ -401,7 +389,6 @@ pub fn run_office_golden_corpus(
             format,
             pass_target,
             &root,
-            environment,
             known_errors,
             candidates,
             trace_cases,
@@ -458,8 +445,8 @@ pub fn run_office_golden_corpus(
             source_sha256: &candidate.record.source_sha256,
             golden_sha256: &candidate.record.output_sha256,
             environment_id: &candidate.record.environment_id,
-            ui_language: &environment.environment.locale.ui_culture,
-            format_locale: &environment.environment.locale.culture,
+            ui_language: &candidate.locale.ui_culture,
+            format_locale: &candidate.locale.culture,
         };
         let write_failure_artifacts = exact_case.is_some() || expected_error.is_none();
         let case_key = format!("{}/{}", candidate.corpus, candidate.record.file);
@@ -635,13 +622,11 @@ fn run_normal_ratchet(
     format: OfficeGoldenFormat,
     pass_target: usize,
     root: &Path,
-    environment: &EnvironmentRecord,
     known_errors: &KnownErrors,
     candidates: Vec<&CorpusCandidate>,
     trace_cases: bool,
 ) -> std::result::Result<OfficeGoldenCorpusReport, String> {
     let jobs = batch_audit_jobs()?;
-    let locale = &environment.environment.locale;
     let mut state = AuditState::default();
     let executable_limit = pass_target.saturating_add(UNEXPECTED_FAILURE_LIMIT);
     let mut items = Vec::new();
@@ -665,18 +650,11 @@ fn run_normal_ratchet(
             }
         }
     }
-    let mut results = compare_candidates_in_processes(
-        format,
-        root,
-        &locale.ui_culture,
-        &locale.culture,
-        trace_cases,
-        jobs,
-        &process_cases,
-    )?
-    .into_iter()
-    .map(|result| (result.order, result))
-    .collect::<BTreeMap<_, _>>();
+    let mut results =
+        compare_candidates_in_processes(format, root, trace_cases, jobs, &process_cases)?
+            .into_iter()
+            .map(|result| (result.order, result))
+            .collect::<BTreeMap<_, _>>();
     for (order, item) in items.into_iter().enumerate() {
         if state.passed >= pass_target || state.unexpected_count >= UNEXPECTED_FAILURE_LIMIT {
             break;
@@ -796,7 +774,6 @@ fn run_batch_audit(
     format: OfficeGoldenFormat,
     pass_target: usize,
     root: &Path,
-    environment: &EnvironmentRecord,
     known_errors: &KnownErrors,
     candidates: Vec<&CorpusCandidate>,
     options: BatchAuditOptions,
@@ -818,7 +795,6 @@ fn run_batch_audit(
     }
 
     let jobs = batch_audit_jobs()?;
-    let locale = &environment.environment.locale;
 
     // A paged audit preserves the normal ratchet's deterministic small-file
     // prefix. An explicit `all` audit is a coverage claim, so it must execute
@@ -840,8 +816,6 @@ fn run_batch_audit(
     for result in compare_candidates_in_processes(
         format,
         root,
-        &locale.ui_culture,
-        &locale.culture,
         options.trace_cases,
         jobs,
         &unclassified_cases,
@@ -888,8 +862,6 @@ fn run_batch_audit(
         let results = compare_candidates_in_processes(
             format,
             root,
-            &locale.ui_culture,
-            &locale.culture,
             options.trace_cases,
             jobs,
             &process_cases,
@@ -1088,8 +1060,6 @@ fn batch_audit_jobs() -> std::result::Result<usize, String> {
 fn compare_candidates_in_processes(
     format: OfficeGoldenFormat,
     root: &Path,
-    ui_language: &str,
-    format_locale: &str,
     trace_cases: bool,
     jobs: usize,
     cases: &[ProcessAuditCase<'_>],
@@ -1106,8 +1076,6 @@ fn compare_candidates_in_processes(
                 source: case.candidate.record.file.clone(),
                 failure: compare_candidate(
                     case.candidate,
-                    ui_language,
-                    format_locale,
                     trace_cases,
                     case.write_failure_artifacts,
                 )
@@ -1270,7 +1238,6 @@ fn run_office_golden_worker(
         })
         .collect::<BTreeMap<_, _>>();
     let trace_cases = env::var("OOXMLSDK_GOLDEN_TRACE_CASES").is_ok_and(|value| value == "1");
-    let locale = &index.environment.environment.locale;
     let mut results = Vec::with_capacity(tasks.len());
     for task in tasks {
         let candidate = candidates
@@ -1283,21 +1250,15 @@ fn run_office_golden_worker(
                     task.source
                 )
             })?;
-        let failure = compare_candidate(
-            candidate,
-            &locale.ui_culture,
-            &locale.culture,
-            trace_cases,
-            task.write_failure_artifacts,
-        )
-        .err()
-        .map(|failure| GoldenWorkerFailure {
-            layer: failure.layer.as_str().to_string(),
-            diagnostic_kind: failure.diagnostic_kind.as_str().to_string(),
-            page_index: failure.page_index,
-            line_index: failure.line_index,
-            message: failure.message,
-        });
+        let failure = compare_candidate(candidate, trace_cases, task.write_failure_artifacts)
+            .err()
+            .map(|failure| GoldenWorkerFailure {
+                layer: failure.layer.as_str().to_string(),
+                diagnostic_kind: failure.diagnostic_kind.as_str().to_string(),
+                page_index: failure.page_index,
+                line_index: failure.line_index,
+                message: failure.message,
+            });
         results.push(GoldenWorkerResult {
             order: task.order,
             corpus: task.corpus,
@@ -1346,8 +1307,6 @@ fn golden_worker_result_into_process_result(
 
 fn compare_candidate(
     candidate: &CorpusCandidate,
-    ui_language: &str,
-    format_locale: &str,
     trace_cases: bool,
     write_failure_artifacts: bool,
 ) -> std::result::Result<(), OfficeGoldenFailure> {
@@ -1363,8 +1322,8 @@ fn compare_candidate(
         source_sha256: &candidate.record.source_sha256,
         golden_sha256: &candidate.record.output_sha256,
         environment_id: &candidate.record.environment_id,
-        ui_language,
-        format_locale,
+        ui_language: &candidate.locale.ui_culture,
+        format_locale: &candidate.locale.culture,
     };
     let case_key = format!("{}/{}", candidate.corpus, candidate.record.file);
     if trace_cases {
@@ -1636,7 +1595,6 @@ fn corpus_index(root: &Path) -> std::result::Result<&'static CorpusIndex, String
 }
 
 fn load_corpus_index(root: &Path) -> std::result::Result<CorpusIndex, String> {
-    let environment = load_reference_environment(root)?;
     let mut candidates = load_candidates(root)?;
     for candidate in candidates
         .iter()
@@ -1646,15 +1604,6 @@ fn load_corpus_index(root: &Path) -> std::result::Result<CorpusIndex, String> {
             return Err(format!(
                 "converted record {}/{} has reference engine {:?}",
                 candidate.corpus, candidate.record.file, candidate.record.reference_engine
-            ));
-        }
-        if candidate.record.environment_id != environment.environment_id {
-            return Err(format!(
-                "converted record {}/{} has environment {}, expected {}",
-                candidate.corpus,
-                candidate.record.file,
-                candidate.record.environment_id,
-                environment.environment_id
             ));
         }
     }
@@ -1676,13 +1625,13 @@ fn load_corpus_index(root: &Path) -> std::result::Result<CorpusIndex, String> {
     });
     let known_errors = load_known_errors(root, &candidates)?;
     Ok(CorpusIndex {
-        environment,
         candidates,
         known_errors,
     })
 }
 
 fn load_candidates(root: &Path) -> std::result::Result<Vec<CorpusCandidate>, String> {
+    let environments = crate::office_reference_environment::ReferenceEnvironments::load(root)?;
     let conversion_root = root.join("corpus_pdf_conv");
     let mut manifest_paths = child_manifest_paths(&conversion_root)?;
     manifest_paths.sort();
@@ -1707,9 +1656,19 @@ fn load_candidates(root: &Path) -> std::result::Result<Vec<CorpusCandidate>, Str
                     record.file
                 ));
             }
+            let environment = environments.get(
+                &record.environment_id,
+                &record.configuration_id,
+                &record.source_sha256,
+                &record.output_sha256,
+            )?;
             candidates.push(CorpusCandidate {
                 corpus: corpus.clone(),
                 record,
+                locale: ReferenceLocale {
+                    culture: environment.culture.clone(),
+                    ui_culture: environment.ui_culture.clone(),
+                },
             });
         }
     }
@@ -1875,14 +1834,6 @@ fn corpus_name(manifest_path: &Path) -> std::result::Result<String, String> {
         .and_then(|name| name.to_str())
         .map(ToString::to_string)
         .ok_or_else(|| format!("invalid corpus manifest path {}", manifest_path.display()))
-}
-
-fn load_reference_environment(root: &Path) -> std::result::Result<EnvironmentRecord, String> {
-    let path = root.join("corpus_pdf_conv/environment.json");
-    let contents = fs::read_to_string(&path)
-        .map_err(|error| format!("could not read {}: {error}", path.display()))?;
-    serde_json::from_str(&contents)
-        .map_err(|error| format!("invalid reference environment {}: {error}", path.display()))
 }
 
 fn load_known_errors(
@@ -2064,6 +2015,33 @@ mod tests {
     };
     use std::collections::{BTreeMap, BTreeSet};
     use std::path::Path;
+
+    #[test]
+    fn legacy_corpus_environments_follow_each_registered_reference() {
+        let root = crate::workspace_root();
+        // Environment resolution belongs to candidate loading, before the
+        // optional legacy golden-errors.toml ratchet inventory is consulted.
+        let candidates = super::load_candidates(&root).unwrap();
+        let environments =
+            crate::office_reference_environment::ReferenceEnvironments::load(&root).unwrap();
+        assert_eq!(
+            candidates.len(),
+            crate::office_pdf_campaign::EXPECTED_ASSIGNMENT_COUNT
+        );
+        for candidate in &candidates {
+            let record = &candidate.record;
+            let environment = environments
+                .get(
+                    &record.environment_id,
+                    &record.configuration_id,
+                    &record.source_sha256,
+                    &record.output_sha256,
+                )
+                .unwrap();
+            assert_eq!(candidate.locale.culture, environment.culture);
+            assert_eq!(candidate.locale.ui_culture, environment.ui_culture);
+        }
+    }
 
     #[test]
     fn comparison_layers_use_stable_manifest_names() {

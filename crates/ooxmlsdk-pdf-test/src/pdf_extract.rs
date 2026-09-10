@@ -90,6 +90,15 @@ pub struct ImageSummary {
     pub decoded_pixel_sha256: Option<String>,
     pub(crate) decoded_vertical_flip_sha256: Option<String>,
     pub(crate) axis_aligned_orientation: Option<(i8, i8)>,
+    pub(crate) affine_geometry: Option<AffineImageGeometry>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct AffineImageGeometry {
+    // Retain the original finite PDFium coefficients without decimal-string
+    // rounding, while preserving the summary's exact Eq contract.
+    pub(crate) matrix_bits: [u32; 6],
+    pub(crate) clip_polygons: Vec<Vec<[u32; 2]>>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -170,7 +179,9 @@ pub struct RawXObjectSummary {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct SemanticSoftMaskImage {
-    pub(crate) alpha: Vec<u8>,
+    // All PDF integer sample depths embed exactly in 16 bits. Do not reduce
+    // 16-bit masks to A8 and accidentally prove identity between distinct masks.
+    pub(crate) alpha: Vec<u16>,
     pub(crate) black_matte_rgb: Vec<u8>,
 }
 
@@ -183,8 +194,8 @@ pub(crate) fn semantic_soft_mask_opaque_core_color(
     let mut opaque_colors = image
         .alpha
         .iter()
-        .zip(image.black_matte_rgb.chunks_exact(3))
-        .filter_map(|(&alpha, rgb)| (alpha == u8::MAX).then_some([rgb[0], rgb[1], rgb[2]]));
+        .zip(image.black_matte_rgb.as_chunks::<3>().0.iter())
+        .filter_map(|(&alpha, rgb)| (alpha == u16::MAX).then_some([rgb[0], rgb[1], rgb[2]]));
     let solid_rgb = opaque_colors.next()?;
     opaque_colors
         .all(|rgb| rgb == solid_rgb)
@@ -1263,6 +1274,7 @@ fn pdfium_summary(pdf: &[u8]) -> Result<PdfiumSummary, String> {
                             decoded_vertical_flip_sha256: decoded_hashes
                                 .map(|hashes| hashes.vertical_flip),
                             axis_aligned_orientation: axis_aligned_image_orientation(image),
+                            affine_geometry: non_axis_aligned_image_geometry(&object, image),
                         });
                         page_image_index += 1;
                     }
@@ -1379,6 +1391,66 @@ fn axis_aligned_image_orientation(image: &PdfPageImageObject<'_>) -> Option<(i8,
         if matrix.a().is_sign_positive() { 1 } else { -1 },
         if matrix.d().is_sign_positive() { 1 } else { -1 },
     ))
+}
+
+fn non_axis_aligned_image_geometry(
+    object: &PdfPageObject<'_>,
+    image: &PdfPageImageObject<'_>,
+) -> Option<AffineImageGeometry> {
+    // The existing axis-aligned fast path needs no additional allocations.
+    if axis_aligned_image_orientation(image).is_some() {
+        return None;
+    }
+    let matrix = image.matrix().ok()?;
+    let values = [
+        matrix.a(),
+        matrix.b(),
+        matrix.c(),
+        matrix.d(),
+        matrix.e(),
+        matrix.f(),
+    ];
+    if !values.iter().all(|v| v.is_finite())
+        || f64::from(values[0]) * f64::from(values[3])
+            == f64::from(values[1]) * f64::from(values[2])
+    {
+        return None;
+    }
+    let mut clip_polygons = Vec::new();
+    if let Some(clip) = object.get_clip_path() {
+        if clip.len() > 32 {
+            return None;
+        }
+        for segments in clip.iter() {
+            if segments.len() > 64 {
+                return None;
+            }
+            let mut polygon = Vec::new();
+            for segment in segments.iter() {
+                match segment.segment_type() {
+                    PdfPathSegmentType::MoveTo if polygon.is_empty() => (),
+                    PdfPathSegmentType::LineTo if !polygon.is_empty() => (),
+                    _ => return None,
+                }
+                let point = [segment.x().value, segment.y().value];
+                if !point.iter().all(|v| v.is_finite()) {
+                    return None;
+                }
+                polygon.push(point.map(f32::to_bits));
+            }
+            if polygon.first() == polygon.last() {
+                polygon.pop();
+            }
+            if polygon.len() < 3 {
+                return None;
+            }
+            clip_polygons.push(polygon);
+        }
+    }
+    Some(AffineImageGeometry {
+        matrix_bits: values.map(f32::to_bits),
+        clip_polygons,
+    })
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -1920,26 +1992,7 @@ fn semantic_soft_mask_image(
 
     let mask = image.dict.get(b"SMask").ok()?;
     let mask = lopdf_stream(document, mask, "image soft-mask stream").ok()?;
-    if mask
-        .dict
-        .get(b"Subtype")
-        .ok()
-        .and_then(|value| value.as_name().ok())
-        != Some(b"Image")
-        || mask
-            .dict
-            .get(b"ColorSpace")
-            .ok()
-            .and_then(|value| value.as_name().ok())
-            != Some(b"DeviceGray")
-        || mask
-            .dict
-            .get(b"BitsPerComponent")
-            .ok()
-            .and_then(|value| value.as_i64().ok())
-            != Some(8)
-        || mask.dict.has(b"Decode")
-        || mask.dict.get(b"Width").ok()?.as_i64().ok()? != i64::try_from(width).ok()?
+    if mask.dict.get(b"Width").ok()?.as_i64().ok()? != i64::try_from(width).ok()?
         || mask.dict.get(b"Height").ok()?.as_i64().ok()? != i64::try_from(height).ok()?
     {
         return None;
@@ -1958,7 +2011,7 @@ fn semantic_soft_mask_image(
         return None;
     }
 
-    let alpha = mask.decompressed_content().ok()?;
+    let alpha = decoded_soft_mask_alpha(mask)?;
     let samples = image.decompressed_content().ok()?;
     if alpha.len() != pixel_count || samples.len() != pixel_count.checked_mul(components)? {
         return None;
@@ -1976,7 +2029,7 @@ fn semantic_soft_mask_image(
             .all(|(pixel, alpha)| {
                 pixel
                     .iter()
-                    .all(|component| *component <= alpha.saturating_add(1))
+                    .all(|component| u16::from(*component) * 257 <= alpha.saturating_add(257))
             });
     let mut black_matte_rgb = Vec::with_capacity(pixel_count.checked_mul(3)?);
     for (pixel, alpha) in samples.chunks_exact(components).zip(&alpha) {
@@ -1984,7 +2037,7 @@ fn semantic_soft_mask_image(
             if is_valid_black_matte {
                 component
             } else {
-                ((u16::from(component) * u16::from(*alpha) + 127) / u16::from(u8::MAX)) as u8
+                ((u32::from(component) * u32::from(*alpha) + 32767) / u32::from(u16::MAX)) as u8
             }
         };
         if components == 1 {
@@ -2020,8 +2073,15 @@ fn decoded_soft_mask_has_opaque_core(mask: &lopdf::Stream) -> Option<bool> {
     // A constant-color image plus a soft mask is not necessarily a stencil:
     // Office also emits low-opacity shadows this way. Only classify the
     // composed object as a stencil when the DeviceGray mask has a genuinely
-    // opaque core. Unknown bit depths or non-default Decode arrays remain
-    // ordinary pixel regions.
+    // opaque core. An unsupported representation remains an ordinary pixel region.
+    Some(decoded_soft_mask_alpha(mask)?.contains(&u16::MAX))
+}
+
+fn decoded_soft_mask_alpha(mask: &lopdf::Stream) -> Option<Vec<u16>> {
+    // PDF Reference 1.5, 4.8.2 and 7.5.4: MSB-first samples, independent
+    // byte-padded rows, DeviceGray soft masks with default Decode [0 1].
+    // Support exact identity and inversion; other Decode mappings need the
+    // ordinary pixel comparison rather than a lossy canonicalization.
     if mask
         .dict
         .get(b"Subtype")
@@ -2034,26 +2094,67 @@ fn decoded_soft_mask_has_opaque_core(mask: &lopdf::Stream) -> Option<bool> {
             .ok()
             .and_then(|value| value.as_name().ok())
             != Some(b"DeviceGray")
+        || mask.dict.has(b"Mask")
+        || mask.dict.has(b"SMask")
         || mask
             .dict
-            .get(b"BitsPerComponent")
-            .ok()
-            .and_then(|value| value.as_i64().ok())
-            != Some(8)
-        || mask.dict.has(b"Decode")
+            .get(b"ImageMask")
+            .is_ok_and(|value| value.as_bool().ok() != Some(false))
     {
         return None;
     }
-    let width = mask.dict.get(b"Width").ok()?.as_i64().ok()?;
-    let height = mask.dict.get(b"Height").ok()?.as_i64().ok()?;
-    let expected_len = usize::try_from(width)
-        .ok()?
-        .checked_mul(usize::try_from(height).ok()?)?;
-    if expected_len == 0 || expected_len > MAX_DIAGNOSTIC_DECODED_BYTES {
+    let bits = usize::try_from(mask.dict.get(b"BitsPerComponent").ok()?.as_i64().ok()?).ok()?;
+    if !matches!(bits, 1 | 2 | 4 | 8 | 16) {
         return None;
     }
+    let inverted = match mask.dict.get(b"Decode") {
+        Err(lopdf::Error::DictKey(_)) => false,
+        Ok(value) => {
+            let values = value.as_array().ok()?;
+            let [first, last] = values.as_slice() else {
+                return None;
+            };
+            let is_one = |value: &LopdfObject| {
+                matches!(value, LopdfObject::Integer(1) | LopdfObject::Real(1.0))
+            };
+            if lopdf_number_is_zero(first) && is_one(last) {
+                false
+            } else if is_one(first) && lopdf_number_is_zero(last) {
+                true
+            } else {
+                return None;
+            }
+        }
+        Err(_) => return None,
+    };
+    let width = usize::try_from(mask.dict.get(b"Width").ok()?.as_i64().ok()?).ok()?;
+    let height = usize::try_from(mask.dict.get(b"Height").ok()?.as_i64().ok()?).ok()?;
+    let pixel_count = width.checked_mul(height)?;
+    if pixel_count == 0 || pixel_count > MAX_DIAGNOSTIC_DECODED_BYTES {
+        return None;
+    }
+    let row_bytes = width.checked_mul(bits)?.div_ceil(8);
+    let expected_len = row_bytes.checked_mul(height)?;
     let decoded = mask.decompressed_content().ok()?;
-    (decoded.len() == expected_len).then(|| decoded.contains(&u8::MAX))
+    if decoded.len() != expected_len {
+        return None;
+    }
+    let max_sample = ((1_u32 << bits) - 1) as u16;
+    let scale = u16::MAX / max_sample;
+    let mut alpha = Vec::with_capacity(pixel_count);
+    for row in decoded.chunks_exact(row_bytes) {
+        for x in 0..width {
+            let sample = if bits == 16 {
+                u16::from_be_bytes([row[x * 2], row[x * 2 + 1]])
+            } else {
+                let offset = x * bits;
+                u16::from(row[offset / 8] >> (8 - bits - offset % 8)) & max_sample
+            };
+            let value = sample * scale;
+            alpha.push(if inverted { u16::MAX - value } else { value });
+        }
+    }
+    Some(alpha)
 }
 
 fn solid_rgb_image(
@@ -2098,7 +2199,9 @@ fn solid_rgb_image(
     }
     let first = decoded.first_chunk::<3>()?;
     decoded
-        .chunks_exact(3)
+        .as_chunks::<3>()
+        .0
+        .iter()
         .all(|pixel| pixel == first)
         .then_some(*first)
 }
@@ -2180,7 +2283,9 @@ fn pdf_string_text(value: &[u8]) -> String {
 fn pdf_utf16_string(value: &[u8], bom: &[u8; 2], convert: fn([u8; 2]) -> u16) -> Option<String> {
     let content = value.strip_prefix(bom)?;
     let units = content
-        .chunks_exact(2)
+        .as_chunks::<2>()
+        .0
+        .iter()
         .map(|chunk| convert([chunk[0], chunk[1]]))
         .collect::<Vec<_>>();
     Some(String::from_utf16_lossy(&units))
@@ -2783,6 +2888,140 @@ mod tests {
     }
 
     #[test]
+    fn soft_mask_integer_depths_preserve_rows_padding_and_precision() {
+        let cases = [
+            (
+                1,
+                6,
+                vec![0xec, 0x17],
+                vec![
+                    65535, 65535, 65535, 0, 65535, 65535, 0, 0, 0, 65535, 0, 65535,
+                ],
+            ),
+            (
+                2,
+                3,
+                vec![0x1b, 0xe4],
+                vec![0, 21845, 43690, 65535, 43690, 21845],
+            ),
+            (
+                4,
+                3,
+                vec![0x05, 0xaf, 0xfa, 0x50],
+                vec![0, 21845, 43690, 65535, 43690, 21845],
+            ),
+            (
+                8,
+                3,
+                vec![0, 85, 170, 255, 170, 85],
+                vec![0, 21845, 43690, 65535, 43690, 21845],
+            ),
+            (
+                16,
+                3,
+                vec![
+                    0, 0, 0x55, 0x55, 0xaa, 0xaa, 0xff, 0xff, 0xab, 0xcd, 0xab, 0xce,
+                ],
+                vec![0, 21845, 43690, 65535, 43981, 43982],
+            ),
+        ];
+        for (bits, width, bytes, expected) in cases {
+            let mut dict = lopdf::Dictionary::new();
+            dict.set("Subtype", "Image");
+            dict.set("ColorSpace", "DeviceGray");
+            dict.set("BitsPerComponent", bits);
+            dict.set("Width", width);
+            dict.set("Height", 2);
+            let mask = lopdf::Stream::new(dict, bytes);
+            assert_eq!(
+                decoded_soft_mask_alpha(&mask),
+                Some(expected.clone()),
+                "{bits} bpc"
+            );
+            let mut inverted = mask.clone();
+            inverted.dict.set("Decode", vec![1.into(), 0.into()]);
+            assert_eq!(
+                decoded_soft_mask_alpha(&inverted),
+                Some(expected.iter().map(|v| u16::MAX - v).collect())
+            );
+            let mut explicit_default = mask.clone();
+            explicit_default
+                .dict
+                .set("Decode", vec![0.0.into(), 1.0.into()]);
+            assert_eq!(decoded_soft_mask_alpha(&explicit_default), Some(expected));
+            let mut compressed = mask;
+            compressed.compress().unwrap();
+            assert_eq!(
+                decoded_soft_mask_alpha(&compressed),
+                decoded_soft_mask_alpha(&explicit_default)
+            );
+        }
+    }
+
+    #[test]
+    fn soft_mask_decoder_rejects_unknown_or_malformed_inputs() {
+        let mut dict = lopdf::Dictionary::new();
+        dict.set("Subtype", "Image");
+        dict.set("ColorSpace", "DeviceGray");
+        dict.set("BitsPerComponent", 1);
+        dict.set("Width", 6);
+        dict.set("Height", 1);
+        let mask = lopdf::Stream::new(dict, vec![0xec]);
+        assert!(decoded_soft_mask_alpha(&mask).is_some());
+        for (key, value) in [
+            ("BitsPerComponent", 3.into()),
+            ("Width", 0.into()),
+            ("Width", (-1).into()),
+            ("Height", i64::MAX.into()),
+            ("Decode", LopdfObject::Array(vec![0.into(), 0.5.into()])),
+            ("Decode", LopdfObject::Array(vec![0.into()])),
+            ("ImageMask", true.into()),
+            ("SMask", LopdfObject::Null),
+            ("Mask", LopdfObject::Null),
+            ("ColorSpace", LopdfObject::Name(b"DeviceRGB".to_vec())),
+        ] {
+            let mut invalid = mask.clone();
+            invalid.dict.set(key, value);
+            assert_eq!(decoded_soft_mask_alpha(&invalid), None, "{key}");
+        }
+        for bytes in [vec![], vec![0xec, 0]] {
+            assert_eq!(
+                decoded_soft_mask_alpha(&lopdf::Stream::new(mask.dict.clone(), bytes)),
+                None
+            );
+        }
+    }
+
+    #[test]
+    fn soft_mask_bit_packed_and_a8_images_have_identical_semantics() {
+        let mut document = LopdfDocument::new();
+        let mut mask_dict = lopdf::Dictionary::new();
+        mask_dict.set("Subtype", "Image");
+        mask_dict.set("ColorSpace", "DeviceGray");
+        mask_dict.set("BitsPerComponent", 1);
+        mask_dict.set("Width", 6);
+        mask_dict.set("Height", 1);
+        let packed = document.add_object(lopdf::Stream::new(mask_dict.clone(), vec![0xec]));
+        mask_dict.set("BitsPerComponent", 8);
+        let a8 = document.add_object(lopdf::Stream::new(
+            mask_dict,
+            vec![255, 255, 255, 0, 255, 255],
+        ));
+        let mut image_dict = lopdf::Dictionary::new();
+        image_dict.set("Subtype", "Image");
+        image_dict.set("ColorSpace", "DeviceRGB");
+        image_dict.set("BitsPerComponent", 8);
+        image_dict.set("SMask", packed);
+        let packed_image = lopdf::Stream::new(image_dict.clone(), [19, 107, 241].repeat(6));
+        image_dict.set("SMask", a8);
+        let a8_image = lopdf::Stream::new(image_dict, packed_image.content.clone());
+        let decode =
+            |image| semantic_soft_mask_image(&document, image, Some("Image"), Some(6), Some(1));
+        let decoded = decode(&packed_image).unwrap();
+        assert_eq!(Some(decoded), decode(&a8_image));
+    }
+
+    #[test]
     fn soft_mask_images_normalize_pdf_matte_preblending() {
         let alpha = vec![124];
         let mut document = LopdfDocument::new();
@@ -2855,6 +3094,10 @@ mod tests {
         )
         .unwrap();
 
+        let alpha: Vec<u16> = alpha
+            .into_iter()
+            .map(|value| u16::from(value) * 257)
+            .collect();
         assert_eq!(straight.alpha, alpha);
         assert_eq!(matte.alpha, alpha);
         assert_eq!(gray.alpha, alpha);

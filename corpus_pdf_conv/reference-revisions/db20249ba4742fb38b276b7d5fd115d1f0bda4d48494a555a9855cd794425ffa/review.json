@@ -1,0 +1,415 @@
+{
+  "schema_version": 1,
+  "configuration_id": "db20249ba4742fb38b276b7d5fd115d1f0bda4d48494a555a9855cd794425ffa",
+  "reason": "User-authorized individual refresh after identical source/full options and archived/current adapters reproduced JPEG color instead of the old Flate color; background RGB and both alpha planes remain byte-identical.",
+  "previous_conversion": {
+    "schema_version": 3,
+    "campaign_id": "office-ooxml-pdf-options-v1",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "file": "sd/qa/unit/data/pptx/tdf158512.pptx",
+    "family": "power_point",
+    "source_extension": "pptx",
+    "source_bytes": 54383,
+    "source_sha256": "37d2fc2eb1addfb6492658578a5823f5b7aaa6bd3a3ad62e96bab25e5f2fbd02",
+    "configuration_id": "db20249ba4742fb38b276b7d5fd115d1f0bda4d48494a555a9855cd794425ffa",
+    "requested": {
+      "standards": [
+        "pdf17",
+        "pdf_ua1"
+      ],
+      "compress_content_streams": true,
+      "ui_language": "zh-TW",
+      "format_locale": "fr-FR",
+      "document_language": "es-ES",
+      "field_update": null,
+      "tagged_pdf": true,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": false,
+      "open_bookmark_levels": null,
+      "page_range": "1",
+      "images": {
+        "use_lossless_compression": true,
+        "jpeg_quality": 90,
+        "reduce_resolution": false,
+        "max_resolution_dpi": 600
+      },
+      "link_action": "uri",
+      "export_form_fields": false,
+      "viewer": {
+        "page_mode": "use_outlines",
+        "page_layout": "default",
+        "magnification": "zoom125",
+        "initial_page": 1,
+        "hide_toolbar": false,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": true,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": "OOXMLSDK configured golden: LibreOffice/sd/qa/unit/data/pptx/tdf158512.pptx",
+        "author": "ooxmlsdk-test-suite",
+        "subject": "Configured Office PDF fidelity",
+        "keywords": "ooxmlsdk,office,golden",
+        "creator": null,
+        "producer": null,
+        "creation_date": null
+      },
+      "embed_campaign_attachment": false
+    },
+    "effective": {
+      "standards": [
+        "pdf17",
+        "pdf_ua1"
+      ],
+      "compress_content_streams": true,
+      "ui_language": "zh-TW",
+      "format_locale": "fr-FR",
+      "document_language": "es-ES",
+      "field_update": null,
+      "tagged_pdf": true,
+      "pdf_ua_compliance": true,
+      "export_bookmarks": true,
+      "open_bookmark_levels": null,
+      "page_range": "1",
+      "images": {
+        "use_lossless_compression": true,
+        "jpeg_quality": null,
+        "reduce_resolution": false,
+        "max_resolution_dpi": null
+      },
+      "link_action": "uri",
+      "export_form_fields": false,
+      "viewer": {
+        "page_mode": "use_outlines",
+        "page_layout": "default",
+        "magnification": "zoom125",
+        "initial_page": 1,
+        "hide_toolbar": false,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": true,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": "OOXMLSDK configured golden: LibreOffice/sd/qa/unit/data/pptx/tdf158512.pptx",
+        "author": "ooxmlsdk-test-suite",
+        "subject": "Configured Office PDF fidelity",
+        "keywords": "ooxmlsdk,office,golden",
+        "creator": null,
+        "producer": null,
+        "creation_date": null
+      },
+      "embed_campaign_attachment": false
+    },
+    "adjustments": [
+      {
+        "feature": "pdf-ua",
+        "reason": "PdfUa1 and pdf_ua_compliance are canonicalized to one effective request"
+      },
+      {
+        "feature": "bookmarks",
+        "reason": "PDF/UA export keeps the document outline available"
+      },
+      {
+        "feature": "image-compression",
+        "reason": "lossless image compression makes JPEG quality inapplicable"
+      },
+      {
+        "feature": "image-downsampling",
+        "reason": "maximum image resolution is inactive when downsampling is disabled"
+      }
+    ],
+    "office_options": {
+      "quality": "screen",
+      "include_document_properties": true,
+      "page_from": 1,
+      "page_to": 1,
+      "tagged_pdf": true,
+      "bookmarks": "none",
+      "pdf_a_1": false,
+      "bitmap_missing_fonts": false,
+      "print_hidden_slides": true
+    },
+    "status": "converted",
+    "reference_engine": "Microsoft Office",
+    "environment_id": "26a412e53b5135051ef70c29ccb7c7993a64b96fefdd230a0a19e782f52b521a",
+    "application": "PowerPoint",
+    "application_version": "16.0",
+    "application_build": "20228",
+    "output": "sd/qa/unit/data/pptx/tdf158512.pptx.pdf",
+    "output_bytes": 108649,
+    "output_sha256": "65c2fbb78328528d914119d922fb3bd3eed509c15790a59f3a8b7efa1486eebb",
+    "observed_pdf": {
+      "header_version": "1.7",
+      "page_count": 1,
+      "tagged_pdf": true,
+      "has_outlines": false,
+      "pdf_a_part": null,
+      "pdf_a_conformance": null
+    },
+    "converted_at_utc": "2026-08-17T18:05:41.115839343Z",
+    "elapsed_ms": 3594,
+    "attempts": 1,
+    "annotations": [],
+    "failure_class": "",
+    "error_code": "",
+    "error": ""
+  },
+  "revised_conversion": {
+    "schema_version": 3,
+    "campaign_id": "office-ooxml-pdf-options-v1",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "file": "sd/qa/unit/data/pptx/tdf158512.pptx",
+    "family": "power_point",
+    "source_extension": "pptx",
+    "source_bytes": 54383,
+    "source_sha256": "37d2fc2eb1addfb6492658578a5823f5b7aaa6bd3a3ad62e96bab25e5f2fbd02",
+    "configuration_id": "db20249ba4742fb38b276b7d5fd115d1f0bda4d48494a555a9855cd794425ffa",
+    "requested": {
+      "standards": [
+        "pdf17",
+        "pdf_ua1"
+      ],
+      "compress_content_streams": true,
+      "ui_language": "zh-TW",
+      "format_locale": "fr-FR",
+      "document_language": "es-ES",
+      "field_update": null,
+      "tagged_pdf": true,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": false,
+      "open_bookmark_levels": null,
+      "page_range": "1",
+      "images": {
+        "use_lossless_compression": true,
+        "jpeg_quality": 90,
+        "reduce_resolution": false,
+        "max_resolution_dpi": 600
+      },
+      "link_action": "uri",
+      "export_form_fields": false,
+      "viewer": {
+        "page_mode": "use_outlines",
+        "page_layout": "default",
+        "magnification": "zoom125",
+        "initial_page": 1,
+        "hide_toolbar": false,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": true,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": "OOXMLSDK configured golden: LibreOffice/sd/qa/unit/data/pptx/tdf158512.pptx",
+        "author": "ooxmlsdk-test-suite",
+        "subject": "Configured Office PDF fidelity",
+        "keywords": "ooxmlsdk,office,golden",
+        "creator": null,
+        "producer": null,
+        "creation_date": null
+      },
+      "embed_campaign_attachment": false
+    },
+    "effective": {
+      "standards": [
+        "pdf17",
+        "pdf_ua1"
+      ],
+      "compress_content_streams": true,
+      "ui_language": "zh-TW",
+      "format_locale": "fr-FR",
+      "document_language": "es-ES",
+      "field_update": null,
+      "tagged_pdf": true,
+      "pdf_ua_compliance": true,
+      "export_bookmarks": true,
+      "open_bookmark_levels": null,
+      "page_range": "1",
+      "images": {
+        "use_lossless_compression": true,
+        "jpeg_quality": null,
+        "reduce_resolution": false,
+        "max_resolution_dpi": null
+      },
+      "link_action": "uri",
+      "export_form_fields": false,
+      "viewer": {
+        "page_mode": "use_outlines",
+        "page_layout": "default",
+        "magnification": "zoom125",
+        "initial_page": 1,
+        "hide_toolbar": false,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": true,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": "OOXMLSDK configured golden: LibreOffice/sd/qa/unit/data/pptx/tdf158512.pptx",
+        "author": "ooxmlsdk-test-suite",
+        "subject": "Configured Office PDF fidelity",
+        "keywords": "ooxmlsdk,office,golden",
+        "creator": null,
+        "producer": null,
+        "creation_date": null
+      },
+      "embed_campaign_attachment": false
+    },
+    "adjustments": [
+      {
+        "feature": "pdf-ua",
+        "reason": "PdfUa1 and pdf_ua_compliance are canonicalized to one effective request"
+      },
+      {
+        "feature": "bookmarks",
+        "reason": "PDF/UA export keeps the document outline available"
+      },
+      {
+        "feature": "image-compression",
+        "reason": "lossless image compression makes JPEG quality inapplicable"
+      },
+      {
+        "feature": "image-downsampling",
+        "reason": "maximum image resolution is inactive when downsampling is disabled"
+      }
+    ],
+    "office_options": {
+      "quality": "screen",
+      "include_document_properties": true,
+      "page_from": 1,
+      "page_to": 1,
+      "tagged_pdf": true,
+      "bookmarks": "none",
+      "pdf_a_1": false,
+      "bitmap_missing_fonts": false,
+      "print_hidden_slides": true
+    },
+    "status": "converted",
+    "reference_engine": "Microsoft Office",
+    "environment_id": "8d0112e76f229f6d337cdf22ed3ebfc0a1a097d22cd7315af1bea2e19e410ad2",
+    "application": "PowerPoint",
+    "application_version": "16.0",
+    "application_build": "20326",
+    "output": "sd/qa/unit/data/pptx/tdf158512.pptx.pdf",
+    "output_bytes": 107713,
+    "output_sha256": "b549ec59c5730f34398168ee29bcac5c39e2b9c901cc92c129660fddc955e382",
+    "observed_pdf": {
+      "header_version": "1.7",
+      "page_count": 1,
+      "tagged_pdf": true,
+      "has_outlines": false,
+      "pdf_a_part": null,
+      "pdf_a_conformance": null
+    },
+    "converted_at_utc": "2026-09-09T07:08:03Z",
+    "elapsed_ms": 398,
+    "attempts": 1,
+    "annotations": [
+      {
+        "kind": "reviewed-office-reference-revision",
+        "reason": "User-authorized individual refresh after identical source/full options and archived/current adapters reproduced JPEG color instead of the old Flate color; background RGB and both alpha planes remain byte-identical.",
+        "previous_environment_id": "26a412e53b5135051ef70c29ccb7c7993a64b96fefdd230a0a19e782f52b521a",
+        "previous_output_sha256": "65c2fbb78328528d914119d922fb3bd3eed509c15790a59f3a8b7efa1486eebb",
+        "evidence": "reference-revisions/db20249ba4742fb38b276b7d5fd115d1f0bda4d48494a555a9855cd794425ffa/review.json"
+      }
+    ],
+    "failure_class": "",
+    "error_code": "",
+    "error": ""
+  },
+  "source_unchanged": true,
+  "office_options_unchanged": true,
+  "archived_probe_sha256": "6593c98d883a956d07a9a809499b35f90c89085b11d4eba00597a46b01d39e6a",
+  "evidence": {
+    "configuration_id": "db20249ba4742fb38b276b7d5fd115d1f0bda4d48494a555a9855cd794425ffa",
+    "source_sha256": "37d2fc2eb1addfb6492658578a5823f5b7aaa6bd3a3ad62e96bab25e5f2fbd02",
+    "options": {
+      "quality": "screen",
+      "include_document_properties": true,
+      "page_from": 1,
+      "page_to": 1,
+      "tagged_pdf": true,
+      "bookmarks": "none",
+      "pdf_a_1": false,
+      "bitmap_missing_fonts": false,
+      "print_hidden_slides": true
+    },
+    "environment_id": "8d0112e76f229f6d337cdf22ed3ebfc0a1a097d22cd7315af1bea2e19e410ad2",
+    "old_pdf_sha256": "65c2fbb78328528d914119d922fb3bd3eed509c15790a59f3a8b7efa1486eebb",
+    "new_pdf_sha256": "b549ec59c5730f34398168ee29bcac5c39e2b9c901cc92c129660fddc955e382",
+    "receipts": [
+      {
+        "schema_version": 1,
+        "file": "LibreOffice/sd/qa/unit/data/pptx/tdf158512.pptx",
+        "application": "PowerPoint",
+        "application_version": "16.0",
+        "application_build": "20326",
+        "options": {
+          "quality": "screen",
+          "include_document_properties": true,
+          "page_from": 1,
+          "page_to": 1,
+          "tagged_pdf": true,
+          "bookmarks": "none",
+          "pdf_a_1": false,
+          "bitmap_missing_fonts": false,
+          "print_hidden_slides": true
+        },
+        "source_sha256": "37d2fc2eb1addfb6492658578a5823f5b7aaa6bd3a3ad62e96bab25e5f2fbd02",
+        "output": "case-000.pdf",
+        "output_bytes": 107713,
+        "output_sha256": "378e41509d2122a73681294eb0170e16d3afae3fec8b89741503be8a477d1207",
+        "elapsed_ms": 499
+      },
+      {
+        "schema_version": 1,
+        "file": "LibreOffice/sd/qa/unit/data/pptx/tdf158512.pptx",
+        "application": "PowerPoint",
+        "application_version": "16.0",
+        "application_build": "20326",
+        "options": {
+          "quality": "screen",
+          "include_document_properties": true,
+          "page_from": 1,
+          "page_to": 1,
+          "tagged_pdf": true,
+          "bookmarks": "none",
+          "pdf_a_1": false,
+          "bitmap_missing_fonts": false,
+          "print_hidden_slides": true
+        },
+        "source_sha256": "37d2fc2eb1addfb6492658578a5823f5b7aaa6bd3a3ad62e96bab25e5f2fbd02",
+        "output": "case-000.pdf",
+        "output_bytes": 107713,
+        "output_sha256": "b549ec59c5730f34398168ee29bcac5c39e2b9c901cc92c129660fddc955e382",
+        "elapsed_ms": 398
+      }
+    ],
+    "native_jpeg_identical_between_adapters": true,
+    "background_color_and_both_alpha_planes_unchanged": true,
+    "current_pages_identical": true,
+    "page_mae": 0.2522320580145036,
+    "significant_fraction": 0.006796699174793698,
+    "max": 140,
+    "renderer": "PDFium same 1333x750 RGB, flags1|16, calibrated against canonical old golden PNG",
+    "crop": [
+      865,
+      0,
+      1333,
+      365
+    ]
+  }
+}

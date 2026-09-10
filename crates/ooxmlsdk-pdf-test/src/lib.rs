@@ -9,6 +9,7 @@ pub mod office_corpus_fonts;
 pub mod office_golden;
 pub mod office_golden_corpus;
 pub mod office_pdf_campaign;
+mod office_reference_environment;
 pub mod pdf_extract;
 pub mod pdf_fragment;
 pub mod render;

@@ -958,7 +958,9 @@ fn assert_rendered_page_color_fraction_at_least(
     let tolerance = i16::from(tolerance);
     let matching = rendered
         .rgba
-        .chunks_exact(4)
+        .as_chunks::<4>()
+        .0
+        .iter()
         .filter(|pixel| {
             (i16::from(pixel[0]) - i16::from(expected_rgb[0])).abs() <= tolerance
                 && (i16::from(pixel[1]) - i16::from(expected_rgb[1])).abs() <= tolerance
@@ -1173,7 +1175,9 @@ fn mapped_pptx_tdf89927_preserves_white_text_color() {
         .expect("render tdf89927");
     let visible_white_pixels = rendered
         .rgba
-        .chunks_exact(4)
+        .as_chunks::<4>()
+        .0
+        .iter()
         .enumerate()
         .filter(|(_, pixel)| {
             pixel[0] >= 220 && pixel[1] >= 220 && pixel[2] >= 220 && pixel[3] >= 220
