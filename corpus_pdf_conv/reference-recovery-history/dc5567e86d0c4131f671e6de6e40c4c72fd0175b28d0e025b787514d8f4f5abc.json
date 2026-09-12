@@ -1,0 +1,448 @@
+{
+  "adapter": {
+    "controller_script_sha256": "d0d76bf2dc26b971da6aa3301f5ad8bef7f00ac096076d46e13c09634c70c82d",
+    "environment_helper_sha256": "16f0694a8b9c0c11223263f16c3158fa96d312eaf9affe6dc3d312671eb9dcc2",
+    "probe_script_sha256": "2d9b62f2b707765d4e9dce44fe1144be5b3c6f2fc2cde8087c2c95a6c8ffb1e0"
+  },
+  "environment_path": "/home/kazeno/git/ooxmlsdk-test-suite/corpus_pdf_conv/reference-adapters/896d3a3e77cd3e86922192044a2784d17a253c71a13d3364f48e79cf71053d6b/environment.json",
+  "environment_restoration": {
+    "restored": true
+  },
+  "original_assignment": {
+    "adjustments": [
+      {
+        "feature": "ui-language",
+        "reason": "application-generated UI strings currently fall back to English outside English and Chinese resource packs"
+      }
+    ],
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "dc5567e86d0c4131f671e6de6e40c4c72fd0175b28d0e025b787514d8f4f5abc",
+    "corpus": "Apache-POI",
+    "effective": {
+      "compress_content_streams": false,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 60,
+        "max_resolution_dpi": 150,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": null
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf20"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "de-DE",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": false,
+        "first_page_left": true,
+        "fit_window": true,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "continuous_facing",
+        "page_mode": "default"
+      }
+    },
+    "family": "excel",
+    "file": "test-data/spreadsheet/52575_main.xlsx",
+    "office": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": true
+    },
+    "pilot_300": false,
+    "reference_environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "reference_time_zone": "Asia/Shanghai",
+    "requested": {
+      "compress_content_streams": false,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 60,
+        "max_resolution_dpi": 150,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": null
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf20"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "de-DE",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": false,
+        "first_page_left": true,
+        "fit_window": true,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "continuous_facing",
+        "page_mode": "default"
+      }
+    },
+    "schema_version": 2,
+    "seed": "ooxmlsdk-office-pdf-environments-2026-09-11-v2",
+    "source_bytes": 5377,
+    "source_extension": "xlsx",
+    "source_sha256": "34dabf3b7cb6ab84d5429196259a3b95de77ae3ee46241f074126a8df65c7e4b"
+  },
+  "original_conversion": {
+    "adjustments": [
+      {
+        "feature": "ui-language",
+        "reason": "application-generated UI strings currently fall back to English outside English and Chinese resource packs"
+      }
+    ],
+    "annotations": [],
+    "application": "Excel",
+    "application_build": "",
+    "application_version": "",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "attempts": 2,
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "dc5567e86d0c4131f671e6de6e40c4c72fd0175b28d0e025b787514d8f4f5abc",
+    "converted_at_utc": "2026-09-12T02:08:19.421259506Z",
+    "effective": {
+      "compress_content_streams": false,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 60,
+        "max_resolution_dpi": 150,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": null
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf20"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "de-DE",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": false,
+        "first_page_left": true,
+        "fit_window": true,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "continuous_facing",
+        "page_mode": "default"
+      }
+    },
+    "elapsed_ms": 12021,
+    "environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "error": "stdout=\u001b[31;1mprobe_office_pdf_options.ps1: \u001b[31;1mDie Open-Eigenschaft des Workbooks-Objektes kann nicht zugeordnet werden.\u001b[0m\r\n\r\nOffice worker exit code: 1 stderr=",
+    "error_code": "",
+    "failure_class": "office-conversion-error",
+    "family": "excel",
+    "file": "test-data/spreadsheet/52575_main.xlsx",
+    "observed_pdf": null,
+    "office_options": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": true
+    },
+    "output": "",
+    "output_bytes": 0,
+    "output_sha256": "",
+    "reference_engine": "Microsoft Office",
+    "render_environment": null,
+    "requested": {
+      "compress_content_streams": false,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 60,
+        "max_resolution_dpi": 150,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": null
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf20"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "de-DE",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": false,
+        "first_page_left": true,
+        "fit_window": true,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "continuous_facing",
+        "page_mode": "default"
+      }
+    },
+    "schema_version": 4,
+    "source_bytes": 5377,
+    "source_extension": "xlsx",
+    "source_sha256": "34dabf3b7cb6ab84d5429196259a3b95de77ae3ee46241f074126a8df65c7e4b",
+    "status": "failed"
+  },
+  "probe_receipt": {
+    "application": "Excel",
+    "application_build": "20326",
+    "application_version": "16.0",
+    "elapsed_ms": 461,
+    "environment": {
+      "clock": {
+        "export_completed_at_utc": "2026-09-12T04:08:39.0254129Z",
+        "export_started_at_utc": "2026-09-12T04:08:38.8043509Z",
+        "opened_at_utc": "2026-09-12T04:08:38.6612136Z",
+        "refresh_completed_at_utc": "2026-09-12T04:08:38.7877076Z",
+        "refresh_started_at_utc": "2026-09-12T04:08:38.7819355Z"
+      },
+      "document_language": "zh-CN",
+      "format_locale": "zh-CN",
+      "time_zone": "Asia/Shanghai",
+      "ui_language": "zh-CN",
+      "windows_time_zone": "China Standard Time"
+    },
+    "file": "Apache-POI/test-data/spreadsheet/52575_main.xlsx",
+    "options": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": true
+    },
+    "output": "case-000.pdf",
+    "output_bytes": 74532,
+    "output_sha256": "917f986fc4653ac2ea5246281316356f297e384be2d0addfb4ae1f04d674b513",
+    "schema_version": 2,
+    "source_sha256": "34dabf3b7cb6ab84d5429196259a3b95de77ae3ee46241f074126a8df65c7e4b"
+  },
+  "reason": "Authorized failed-reference recovery: print quality, zh-CN UI, optional export features disabled, repair-mode open on a byte-identical temporary copy; all pages and hidden slides included where applicable.",
+  "recovered_assignment": {
+    "adjustments": [],
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "de04d17a879e254faff04649f43e24dd800dc0e87fb617191416cea6b89f0bc6",
+    "corpus": "Apache-POI",
+    "effective": {
+      "compress_content_streams": false,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 60,
+        "max_resolution_dpi": 150,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": null
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf20"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "zh-CN",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": false,
+        "first_page_left": true,
+        "fit_window": true,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "continuous_facing",
+        "page_mode": "default"
+      }
+    },
+    "family": "excel",
+    "file": "test-data/spreadsheet/52575_main.xlsx",
+    "office": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": true
+    },
+    "pilot_300": false,
+    "reference_environment_id": "896d3a3e77cd3e86922192044a2784d17a253c71a13d3364f48e79cf71053d6b",
+    "reference_time_zone": "Asia/Shanghai",
+    "requested": {
+      "compress_content_streams": false,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 60,
+        "max_resolution_dpi": 150,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": null
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf20"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "zh-CN",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": false,
+        "first_page_left": true,
+        "fit_window": true,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "continuous_facing",
+        "page_mode": "default"
+      }
+    },
+    "schema_version": 2,
+    "seed": "ooxmlsdk-office-pdf-environments-2026-09-11-v2",
+    "source_bytes": 5377,
+    "source_extension": "xlsx",
+    "source_sha256": "34dabf3b7cb6ab84d5429196259a3b95de77ae3ee46241f074126a8df65c7e4b"
+  },
+  "stages": "{\"utc\":\"2026-09-12T04:08:37.9499684Z\",\"stage\":\"application-create\",\"detail\":\"Excel\"}\n{\"utc\":\"2026-09-12T04:08:38.5717384Z\",\"stage\":\"environment-readback\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:08:38.6331641Z\",\"stage\":\"stage-input\",\"detail\":{\"open_and_repair\":true,\"original\":\"52575_main.xlsx\",\"staged\":\"52575_main.xlsx\"}}\n{\"utc\":\"2026-09-12T04:08:38.6617535Z\",\"stage\":\"excel-open\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:08:38.7825318Z\",\"stage\":\"excel-calculate\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:08:38.8048076Z\",\"stage\":\"excel-export\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:08:39.0498672Z\",\"stage\":\"excel-close\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:08:39.0648496Z\",\"stage\":\"copy-pdf\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:08:39.1261768Z\",\"stage\":\"application-quit\",\"detail\":\"Excel\"}\n{\"utc\":\"2026-09-12T04:08:39.1721601Z\",\"stage\":\"archive-stage\",\"detail\":\"C:\\\\Users\\\\kazeno\\\\AppData\\\\Local\\\\Temp\\\\ooxmlsdk-pdf-options-probe-11711af68fa54b2b8602f5c902295dfe\"}\n",
+  "worker_completion": {
+    "completed_utc": "2026-09-12T04:08:39.3761019Z",
+    "elapsed_ms": 2428,
+    "exit_code": 0,
+    "file": "Apache-POI/test-data/spreadsheet/52575_main.xlsx",
+    "restored": true,
+    "tag": "recovery-all"
+  },
+  "worker_root": "/tmp/office-reference-failure-review-20260912/probes/dc5567e86d0c4131f671e6de6e40c4c72fd0175b28d0e025b787514d8f4f5abc-recovery-all"
+}

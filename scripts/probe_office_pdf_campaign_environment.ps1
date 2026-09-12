@@ -5,18 +5,15 @@ param(
 
     [Parameter(Mandatory = $true)]
     [ValidatePattern('^[0-9a-f]{64}$')]
-    [string]$PlanSha256,
-
-    [Parameter(Mandatory = $true)]
-    [ValidatePattern('^[0-9a-f]{64}$')]
     [string]$ProbeScriptSha256
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-$campaignId = "office-ooxml-pdf-options-v1"
-$converterVersion = 1
+$campaignId = "office-ooxml-pdf-options-v2"
+$converterVersion = 2
+. (Join-Path $PSScriptRoot "office_pdf_environment.ps1")
 $utf8NoBom = New-Object Text.UTF8Encoding($false)
 
 function Get-TextSha256 {
@@ -91,12 +88,28 @@ if ($null -ne $printerSettings -and $printerSettings.IsValid) {
     }
 }
 
+if (@(Get-Process WINWORD,EXCEL,POWERPNT -ErrorAction SilentlyContinue).Count) {
+    throw 'Close Office applications before capturing the campaign environment.'
+}
+$applications = @()
+foreach ($family in @('Word','Excel','PowerPoint')) {
+    $app = $null
+    try {
+        $app = New-Object -ComObject "$family.Application"
+        $observed = Get-OfficeRenderEnvironment $app
+        $applications += [ordered]@{name=$family;ui_language=$observed.ui_language;version=[string]$app.Version}
+    } finally {
+        if ($null -ne $app) { $app.Quit(); [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($app) }
+    }
+}
+$uiLanguages = @(Get-OfficeUiLanguages)
 $environment = [ordered]@{
     schema_version = 1
     campaign_id = $campaignId
     converter_version = $converterVersion
-    plan_sha256 = $PlanSha256
     probe_script_sha256 = $ProbeScriptSha256
+    controller_script_sha256 = (Get-FileHash (Join-Path $PSScriptRoot 'invoke_office_pdf_worker.ps1') -Algorithm SHA256).Hash.ToLowerInvariant()
+    environment_helper_sha256 = (Get-FileHash (Join-Path $PSScriptRoot 'office_pdf_environment.ps1') -Algorithm SHA256).Hash.ToLowerInvariant()
     reference_engine = "Microsoft Office"
     windows = [ordered]@{
         product_name = [string]$windows.ProductName
@@ -104,6 +117,8 @@ $environment = [ordered]@{
         full_build = "{0}.{1}" -f $windows.CurrentBuildNumber, $windows.UBR
     }
     office = [ordered]@{
+        ui_languages = $uiLanguages
+        applications = $applications
         platform = if ($null -ne $office) { [string]$office.Platform } else { "" }
         product_release_ids = if ($null -ne $office) {
             [string]$office.ProductReleaseIds
@@ -116,14 +131,16 @@ $environment = [ordered]@{
     }
     locale = [ordered]@{
         culture = [Globalization.CultureInfo]::CurrentCulture.Name
-        ui_culture = [Globalization.CultureInfo]::CurrentUICulture.Name
+        ui_culture = $applications[0].ui_language
+        document_language = Get-OfficeAuthoringLanguage
+        iana_time_zone = $observed.time_zone
         time_zone = [TimeZoneInfo]::Local.Id
     }
     default_paper = $defaultPaper
     fonts = Get-FontFingerprint
     dependencies = @(
-        "campaign-plan",
         "probe-script",
+        "environment-controller",
         "office-build",
         "windows-build",
         "installed-font-files",

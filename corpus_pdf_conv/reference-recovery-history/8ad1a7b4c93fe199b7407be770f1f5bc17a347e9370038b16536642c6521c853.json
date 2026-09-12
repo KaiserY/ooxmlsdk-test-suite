@@ -1,0 +1,461 @@
+{
+  "adapter": {
+    "controller_script_sha256": "d0d76bf2dc26b971da6aa3301f5ad8bef7f00ac096076d46e13c09634c70c82d",
+    "environment_helper_sha256": "16f0694a8b9c0c11223263f16c3158fa96d312eaf9affe6dc3d312671eb9dcc2",
+    "probe_script_sha256": "2d9b62f2b707765d4e9dce44fe1144be5b3c6f2fc2cde8087c2c95a6c8ffb1e0"
+  },
+  "environment_path": "/home/kazeno/git/ooxmlsdk-test-suite/corpus_pdf_conv/reference-adapters/896d3a3e77cd3e86922192044a2784d17a253c71a13d3364f48e79cf71053d6b/environment.json",
+  "environment_restoration": {
+    "restored": true
+  },
+  "original_assignment": {
+    "adjustments": [
+      {
+        "feature": "ui-language",
+        "reason": "application-generated UI strings currently fall back to English outside English and Chinese resource packs"
+      },
+      {
+        "feature": "image-downsampling",
+        "reason": "maximum image resolution is inactive when downsampling is disabled"
+      }
+    ],
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "8ad1a7b4c93fe199b7407be770f1f5bc17a347e9370038b16536642c6521c853",
+    "corpus": "Apache-POI",
+    "effective": {
+      "compress_content_streams": false,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 75,
+        "max_resolution_dpi": null,
+        "reduce_resolution": false,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": null
+      },
+      "open_bookmark_levels": 0,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf15"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "ja-JP",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": true,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "default",
+        "page_layout": "single_page",
+        "page_mode": "use_thumbs"
+      }
+    },
+    "family": "power_point",
+    "file": "test-data/xmldsign/PPT2016withComment.pptx",
+    "office": {
+      "bitmap_missing_fonts": false,
+      "bookmarks": "none",
+      "include_document_properties": true,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "screen",
+      "tagged_pdf": true
+    },
+    "pilot_300": false,
+    "reference_environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "reference_time_zone": "Asia/Shanghai",
+    "requested": {
+      "compress_content_streams": false,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 75,
+        "max_resolution_dpi": 600,
+        "reduce_resolution": false,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": null
+      },
+      "open_bookmark_levels": 0,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf15"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "ja-JP",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": true,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "default",
+        "page_layout": "single_page",
+        "page_mode": "use_thumbs"
+      }
+    },
+    "schema_version": 2,
+    "seed": "ooxmlsdk-office-pdf-environments-2026-09-11-v2",
+    "source_bytes": 36193,
+    "source_extension": "pptx",
+    "source_sha256": "eb9c7e7ab89fb0fd4d7e18c5910228398ebcc0700a3f4b4f5175beac8f4f455d"
+  },
+  "original_conversion": {
+    "adjustments": [
+      {
+        "feature": "ui-language",
+        "reason": "application-generated UI strings currently fall back to English outside English and Chinese resource packs"
+      },
+      {
+        "feature": "image-downsampling",
+        "reason": "maximum image resolution is inactive when downsampling is disabled"
+      }
+    ],
+    "annotations": [],
+    "application": "PowerPoint",
+    "application_build": "",
+    "application_version": "",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "attempts": 2,
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "8ad1a7b4c93fe199b7407be770f1f5bc17a347e9370038b16536642c6521c853",
+    "converted_at_utc": "2026-09-12T02:22:04.181370918Z",
+    "effective": {
+      "compress_content_streams": false,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 75,
+        "max_resolution_dpi": null,
+        "reduce_resolution": false,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": null
+      },
+      "open_bookmark_levels": 0,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf15"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "ja-JP",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": true,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "default",
+        "page_layout": "single_page",
+        "page_mode": "use_thumbs"
+      }
+    },
+    "elapsed_ms": 11166,
+    "environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "error": "stdout=\u001b[31;1mprobe_office_pdf_options.ps1: \u001b[31;1mPrintRanges.Add : �o����Ҫ��Ǥ����ץ쥼��Ʃ`�����ω���Ǥ��ޤ���\u001b[0m\r\n\r\nOffice worker exit code: 1 stderr=",
+    "error_code": "",
+    "failure_class": "office-conversion-error",
+    "family": "power_point",
+    "file": "test-data/xmldsign/PPT2016withComment.pptx",
+    "observed_pdf": null,
+    "office_options": {
+      "bitmap_missing_fonts": false,
+      "bookmarks": "none",
+      "include_document_properties": true,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "screen",
+      "tagged_pdf": true
+    },
+    "output": "",
+    "output_bytes": 0,
+    "output_sha256": "",
+    "reference_engine": "Microsoft Office",
+    "render_environment": null,
+    "requested": {
+      "compress_content_streams": false,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 75,
+        "max_resolution_dpi": 600,
+        "reduce_resolution": false,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": null
+      },
+      "open_bookmark_levels": 0,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf15"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "ja-JP",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": true,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "default",
+        "page_layout": "single_page",
+        "page_mode": "use_thumbs"
+      }
+    },
+    "schema_version": 4,
+    "source_bytes": 36193,
+    "source_extension": "pptx",
+    "source_sha256": "eb9c7e7ab89fb0fd4d7e18c5910228398ebcc0700a3f4b4f5175beac8f4f455d",
+    "status": "failed"
+  },
+  "probe_receipt": {
+    "application": "PowerPoint",
+    "application_build": "20326",
+    "application_version": "16.0",
+    "elapsed_ms": 546,
+    "environment": {
+      "clock": {
+        "export_completed_at_utc": "2026-09-12T04:09:38.0996772Z",
+        "export_started_at_utc": "2026-09-12T04:09:37.8450721Z",
+        "opened_at_utc": "2026-09-12T04:09:37.6797460Z",
+        "refresh_completed_at_utc": "2026-09-12T04:09:37.7884475Z",
+        "refresh_started_at_utc": "2026-09-12T04:09:37.6823341Z"
+      },
+      "document_language": "zh-CN",
+      "format_locale": "zh-CN",
+      "time_zone": "Asia/Shanghai",
+      "ui_language": "zh-CN",
+      "windows_time_zone": "China Standard Time"
+    },
+    "file": "Apache-POI/test-data/xmldsign/PPT2016withComment.pptx",
+    "options": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": true,
+      "quality": "print",
+      "tagged_pdf": false
+    },
+    "output": "case-000.pdf",
+    "output_bytes": 17657,
+    "output_sha256": "8ea2288a0281b31bd9853bbff075238df54ac9dd056a77a3378bb30957472ea3",
+    "schema_version": 2,
+    "source_sha256": "eb9c7e7ab89fb0fd4d7e18c5910228398ebcc0700a3f4b4f5175beac8f4f455d"
+  },
+  "reason": "Authorized failed-reference recovery: print quality, zh-CN UI, optional export features disabled, repair-mode open on a byte-identical temporary copy; all pages and hidden slides included where applicable.",
+  "recovered_assignment": {
+    "adjustments": [
+      {
+        "feature": "image-downsampling",
+        "reason": "maximum image resolution is inactive when downsampling is disabled"
+      }
+    ],
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "510bfc696f468ff5c03ca7bb8dfeb5f35ed309335e9ce73f30ff848c32c97d87",
+    "corpus": "Apache-POI",
+    "effective": {
+      "compress_content_streams": false,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 75,
+        "max_resolution_dpi": null,
+        "reduce_resolution": false,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": null
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf15"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "zh-CN",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": true,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "default",
+        "page_layout": "single_page",
+        "page_mode": "use_thumbs"
+      }
+    },
+    "family": "power_point",
+    "file": "test-data/xmldsign/PPT2016withComment.pptx",
+    "office": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": true,
+      "quality": "print",
+      "tagged_pdf": false
+    },
+    "pilot_300": false,
+    "reference_environment_id": "896d3a3e77cd3e86922192044a2784d17a253c71a13d3364f48e79cf71053d6b",
+    "reference_time_zone": "Asia/Shanghai",
+    "requested": {
+      "compress_content_streams": false,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 75,
+        "max_resolution_dpi": 600,
+        "reduce_resolution": false,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": null
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf15"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "zh-CN",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": true,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "default",
+        "page_layout": "single_page",
+        "page_mode": "use_thumbs"
+      }
+    },
+    "schema_version": 2,
+    "seed": "ooxmlsdk-office-pdf-environments-2026-09-11-v2",
+    "source_bytes": 36193,
+    "source_extension": "pptx",
+    "source_sha256": "eb9c7e7ab89fb0fd4d7e18c5910228398ebcc0700a3f4b4f5175beac8f4f455d"
+  },
+  "stages": "{\"utc\":\"2026-09-12T04:09:37.1300950Z\",\"stage\":\"application-create\",\"detail\":\"PowerPoint\"}\n{\"utc\":\"2026-09-12T04:09:37.5495429Z\",\"stage\":\"environment-readback\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:09:37.6287701Z\",\"stage\":\"stage-input\",\"detail\":{\"staged\":\"PPT2016withComment.pptx\",\"original\":\"PPT2016withComment.pptx\",\"open_and_repair\":true}}\n{\"utc\":\"2026-09-12T04:09:37.6828922Z\",\"stage\":\"powerpoint-open\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:09:37.8397664Z\",\"stage\":\"powerpoint-print-range\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:09:37.8458041Z\",\"stage\":\"powerpoint-export\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:09:38.1450224Z\",\"stage\":\"powerpoint-close\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:09:38.1573634Z\",\"stage\":\"copy-pdf\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:09:38.2276470Z\",\"stage\":\"application-quit\",\"detail\":\"PowerPoint\"}\n{\"utc\":\"2026-09-12T04:09:38.2369195Z\",\"stage\":\"archive-stage\",\"detail\":\"C:\\\\Users\\\\kazeno\\\\AppData\\\\Local\\\\Temp\\\\ooxmlsdk-pdf-options-probe-fbda06d25e024ed2b8a2a609ed7f9050\"}\n",
+  "worker_completion": {
+    "completed_utc": "2026-09-12T04:09:40.8430943Z",
+    "elapsed_ms": 4715,
+    "exit_code": 0,
+    "file": "Apache-POI/test-data/xmldsign/PPT2016withComment.pptx",
+    "restored": true,
+    "tag": "recovery-all"
+  },
+  "worker_root": "/tmp/office-reference-failure-review-20260912/probes/8ad1a7b4c93fe199b7407be770f1f5bc17a347e9370038b16536642c6521c853-recovery-all"
+}

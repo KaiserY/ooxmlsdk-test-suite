@@ -298,16 +298,16 @@ fn mapped_xlsx_image_hyperlink_keeps_visible_image_and_google_link() {
 }
 
 #[test]
-// Source: ../core/sc/qa/unit/subsequent_export_test3.cxx:testHiddenShapeXLSX
+// Excel's configured export and the 2026-09-12 print/all-pages recovery both
+// produce zero pages. The earlier LibreOffice assertion expected a white page.
 fn mapped_xlsx_hidden_shape_omits_hidden_drawing_output() {
-    let summary = render_summary("hiddenShape.xlsx");
-    assert_eq!(summary.page_count, 1);
-    assert_page_image_count(&summary, 0, 0);
-    assert_eq!(
-        normalize_space(&page_text(&summary, 0)),
-        "",
-        "hidden shape page should have no visible text; text={:?}",
-        page_text(&summary, 0)
+    let result = ooxmlsdk_pdf::convert_xlsx(
+        std::fs::File::open(fixture("hiddenShape.xlsx")).unwrap(),
+        ooxmlsdk_pdf::PdfOptions::default(),
+    );
+    assert!(
+        matches!(result, Err(ooxmlsdk_pdf::PdfError::Options(message))
+        if message == "cannot select pages from an empty layout document")
     );
 }
 
@@ -523,7 +523,9 @@ fn mapped_xlsx_chart_hyperlink_keeps_chart_text_and_link_targets() {
     let summary = render_summary("chart_hyperlink.xlsx");
     assert_eq!(summary.page_count, 3);
     assert_page_contains(&summary, 0, "Chart Title");
-    assert_page_contains(&summary, 1, "Row 1");
+    // Office supplies a series label, independently of the source range's
+    // row/column orientation; the old Row label came from LibreOffice.
+    assert_page_contains(&summary, 1, "Series1");
     assert_link_target(&summary, "file:///C:/TEMP/test.xlsx");
     assert_any_link_target(&summary, "#Sheet2!A1");
     assert_link_target(

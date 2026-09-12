@@ -1,0 +1,25 @@
+{
+  "spec": {
+    "schema_version": 2,
+    "file": "Apache-POI/test-data/slideshow/60810.pptx",
+    "options": {
+      "quality": "print",
+      "include_document_properties": true,
+      "page_from": null,
+      "page_to": null,
+      "tagged_pdf": true,
+      "bookmarks": "none",
+      "pdf_a_1": true,
+      "bitmap_missing_fonts": false,
+      "print_hidden_slides": true
+    },
+    "environment": {
+      "ui_language": "de-DE",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "time_zone": "Asia/Shanghai"
+    }
+  },
+  "source_sha256": "61afceb0365523ceba6fc00a525157148c2ddbdb3b5d843992ac3c107e9921bf",
+  "host_environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a"
+}

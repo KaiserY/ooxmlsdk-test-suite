@@ -1,0 +1,25 @@
+{
+  "spec": {
+    "schema_version": 2,
+    "file": "Apache-POI/test-data/slideshow/2411-Performance_Up.pptx",
+    "options": {
+      "quality": "print",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "tagged_pdf": false,
+      "bookmarks": "none",
+      "pdf_a_1": false,
+      "bitmap_missing_fonts": true,
+      "print_hidden_slides": false
+    },
+    "environment": {
+      "ui_language": "zh-TW",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "time_zone": "Asia/Shanghai"
+    }
+  },
+  "source_sha256": "a387861a0066ad11ba85aba9572830c1ec1ab9a24380728ead34d2b5b26662c0",
+  "host_environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a"
+}

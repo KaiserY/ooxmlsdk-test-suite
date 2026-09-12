@@ -12,6 +12,14 @@ use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
 #[test]
+fn empty_xlsx_print_output_returns_no_pdf_instead_of_a_synthetic_blank_page() {
+    let path = libreoffice_fixture("sc/qa/unit/data/xlsx/empty-noconf.xlsx");
+    let result = ooxmlsdk_pdf::convert_xlsx(fs::File::open(path).unwrap(), PdfOptions::default());
+    assert!(matches!(result, Err(PdfError::Options(message))
+        if message == "cannot select pages from an empty layout document"));
+}
+
+#[test]
 fn public_capability_matrix_is_document_kind_aware() {
     for kind in [
         PdfDocumentKind::Docx,
@@ -153,6 +161,47 @@ fn public_docx_conversion_applies_page_range_and_viewer_options_to_pdf_objects()
     let open_action = catalog.get(b"OpenAction").unwrap().as_array().unwrap();
     assert!(matches!(open_action[0], Object::Reference(id) if id == pages[&2]));
     assert_eq!(open_action[1].as_name().unwrap(), b"FitBH");
+}
+
+#[test]
+fn pdf_a3a_exports_webdings_symbols_with_standard_unicode_semantics() {
+    let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(
+        "../../corpus/Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/wordprocessing/Normalize/sdsd.docx",
+    );
+    let mut options = PdfOptions::default();
+    options.standards.push(PdfStandard::PdfA3a);
+    options.default_document_language = Some("en-US".into());
+    options.metadata.creation_date = Some(ooxmlsdk_pdf::PdfDateTime {
+        year: 2026,
+        month: Some(9),
+        day: Some(11),
+        hour: Some(12),
+        minute: Some(0),
+        second: Some(0),
+        utc_offset_hour: Some(8),
+        utc_offset_minute: Some(0),
+    });
+    // Each explicit Webdings selector occurs three times. N4363 identifies
+    // portable Unicode semantics for them; font glyph selection stays intact.
+    // This checks conversion support, not equivalence to Office's PUA text layer.
+    let bytes =
+        ooxmlsdk_pdf_test::render::render_fixture_pdf_with_options(&fixture, options).unwrap();
+    let summary = PdfSummary::from_bytes(&bytes).unwrap();
+    let text = summary.text.expect("PDF text extraction");
+    for symbol in ['\u{1f3dc}', '\u{1f3dd}', '\u{26f1}'] {
+        assert_eq!(
+            text.chars()
+                .filter(|character| *character == symbol)
+                .count(),
+            3,
+            "{text:?}"
+        );
+    }
+    assert!(
+        !text
+            .chars()
+            .any(|character| matches!(character, '\u{f045}' | '\u{f04a}' | '\u{f049}'))
+    );
 }
 
 fn pilot_options(index: usize) -> (&'static str, PdfOptions) {

@@ -1,0 +1,461 @@
+{
+  "adapter": {
+    "controller_script_sha256": "d0d76bf2dc26b971da6aa3301f5ad8bef7f00ac096076d46e13c09634c70c82d",
+    "environment_helper_sha256": "16f0694a8b9c0c11223263f16c3158fa96d312eaf9affe6dc3d312671eb9dcc2",
+    "probe_script_sha256": "2d9b62f2b707765d4e9dce44fe1144be5b3c6f2fc2cde8087c2c95a6c8ffb1e0"
+  },
+  "environment_path": "/home/kazeno/git/ooxmlsdk-test-suite/corpus_pdf_conv/reference-adapters/896d3a3e77cd3e86922192044a2784d17a253c71a13d3364f48e79cf71053d6b/environment.json",
+  "environment_restoration": {
+    "restored": true
+  },
+  "original_assignment": {
+    "adjustments": [
+      {
+        "feature": "ui-language",
+        "reason": "application-generated UI strings currently fall back to English outside English and Chinese resource packs"
+      },
+      {
+        "feature": "image-downsampling",
+        "reason": "maximum image resolution is inactive when downsampling is disabled"
+      }
+    ],
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "cb2e5b73fbfd222052f2ef245fd984dc7525788fc2f670fb3759e8c4ba653d72",
+    "corpus": "Apache-POI",
+    "effective": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": true,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 60,
+        "max_resolution_dpi": null,
+        "reduce_resolution": false,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": "OOXMLSDK configured golden: Apache-POI/test-data/integration/stress009.docx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf14"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "ja-JP",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": true,
+        "initial_page": 1,
+        "magnification": "fit_visible",
+        "page_layout": "continuous",
+        "page_mode": "default"
+      }
+    },
+    "family": "word",
+    "file": "test-data/integration/stress009.docx",
+    "office": {
+      "bitmap_missing_fonts": false,
+      "bookmarks": "word-bookmarks",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": true
+    },
+    "pilot_300": false,
+    "reference_environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "reference_time_zone": "Asia/Shanghai",
+    "requested": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": true,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 60,
+        "max_resolution_dpi": 600,
+        "reduce_resolution": false,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": "OOXMLSDK configured golden: Apache-POI/test-data/integration/stress009.docx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf14"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "ja-JP",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": true,
+        "initial_page": 1,
+        "magnification": "fit_visible",
+        "page_layout": "continuous",
+        "page_mode": "default"
+      }
+    },
+    "schema_version": 2,
+    "seed": "ooxmlsdk-office-pdf-environments-2026-09-11-v2",
+    "source_bytes": 61054,
+    "source_extension": "docx",
+    "source_sha256": "d081c4c6e5ba299e6fca4296dad434408a7c5de3046e4918d6b7abbd4a8b9a98"
+  },
+  "original_conversion": {
+    "adjustments": [
+      {
+        "feature": "ui-language",
+        "reason": "application-generated UI strings currently fall back to English outside English and Chinese resource packs"
+      },
+      {
+        "feature": "image-downsampling",
+        "reason": "maximum image resolution is inactive when downsampling is disabled"
+      }
+    ],
+    "annotations": [],
+    "application": "Word",
+    "application_build": "",
+    "application_version": "",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "attempts": 2,
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "cb2e5b73fbfd222052f2ef245fd984dc7525788fc2f670fb3759e8c4ba653d72",
+    "converted_at_utc": "2026-09-12T01:56:06.339180044Z",
+    "effective": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": true,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 60,
+        "max_resolution_dpi": null,
+        "reduce_resolution": false,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": "OOXMLSDK configured golden: Apache-POI/test-data/integration/stress009.docx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf14"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "ja-JP",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": true,
+        "initial_page": 1,
+        "magnification": "fit_visible",
+        "page_layout": "continuous",
+        "page_mode": "default"
+      }
+    },
+    "elapsed_ms": 13534,
+    "environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "error": "stdout=\u001b[31;1mprobe_office_pdf_options.ps1: \u001b[31;1m�ե����뤬����Ƥ�������Ԥ�����ޤ���\u001b[0m\r\n\r\nOffice worker exit code: 1 stderr=",
+    "error_code": "",
+    "failure_class": "office-conversion-error",
+    "family": "word",
+    "file": "test-data/integration/stress009.docx",
+    "observed_pdf": null,
+    "office_options": {
+      "bitmap_missing_fonts": false,
+      "bookmarks": "word-bookmarks",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": true
+    },
+    "output": "",
+    "output_bytes": 0,
+    "output_sha256": "",
+    "reference_engine": "Microsoft Office",
+    "render_environment": null,
+    "requested": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": true,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 60,
+        "max_resolution_dpi": 600,
+        "reduce_resolution": false,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": "OOXMLSDK configured golden: Apache-POI/test-data/integration/stress009.docx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf14"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "ja-JP",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": true,
+        "initial_page": 1,
+        "magnification": "fit_visible",
+        "page_layout": "continuous",
+        "page_mode": "default"
+      }
+    },
+    "schema_version": 4,
+    "source_bytes": 61054,
+    "source_extension": "docx",
+    "source_sha256": "d081c4c6e5ba299e6fca4296dad434408a7c5de3046e4918d6b7abbd4a8b9a98",
+    "status": "failed"
+  },
+  "probe_receipt": {
+    "application": "Word",
+    "application_build": "16.0.20326",
+    "application_version": "16.0",
+    "elapsed_ms": 1881,
+    "environment": {
+      "clock": {
+        "export_completed_at_utc": "2026-09-12T04:06:43.2487185Z",
+        "export_started_at_utc": "2026-09-12T04:06:42.1390142Z",
+        "opened_at_utc": "2026-09-12T04:06:41.4693948Z",
+        "refresh_completed_at_utc": "2026-09-12T04:06:42.0681401Z",
+        "refresh_started_at_utc": "2026-09-12T04:06:41.8493739Z"
+      },
+      "document_language": "zh-CN",
+      "format_locale": "zh-CN",
+      "time_zone": "Asia/Shanghai",
+      "ui_language": "zh-CN",
+      "windows_time_zone": "China Standard Time"
+    },
+    "file": "Apache-POI/test-data/integration/stress009.docx",
+    "options": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": false
+    },
+    "output": "case-000.pdf",
+    "output_bytes": 202437,
+    "output_sha256": "2fdde65c963fe5eb845fa0f98daa6109a59434b3fbf1b42a472726d0dd83cb8a",
+    "schema_version": 2,
+    "source_sha256": "d081c4c6e5ba299e6fca4296dad434408a7c5de3046e4918d6b7abbd4a8b9a98"
+  },
+  "reason": "Authorized failed-reference recovery: print quality, zh-CN UI, optional export features disabled, repair-mode open on a byte-identical temporary copy; all pages and hidden slides included where applicable.",
+  "recovered_assignment": {
+    "adjustments": [
+      {
+        "feature": "image-downsampling",
+        "reason": "maximum image resolution is inactive when downsampling is disabled"
+      }
+    ],
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "ad13a7520136000eaea9b90a205162c99833e9cf72453577bbd5b8073d883264",
+    "corpus": "Apache-POI",
+    "effective": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": true,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 60,
+        "max_resolution_dpi": null,
+        "reduce_resolution": false,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": "OOXMLSDK configured golden: Apache-POI/test-data/integration/stress009.docx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf14"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "zh-CN",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": true,
+        "initial_page": 1,
+        "magnification": "fit_visible",
+        "page_layout": "continuous",
+        "page_mode": "default"
+      }
+    },
+    "family": "word",
+    "file": "test-data/integration/stress009.docx",
+    "office": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": false
+    },
+    "pilot_300": false,
+    "reference_environment_id": "896d3a3e77cd3e86922192044a2784d17a253c71a13d3364f48e79cf71053d6b",
+    "reference_time_zone": "Asia/Shanghai",
+    "requested": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": true,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 60,
+        "max_resolution_dpi": 600,
+        "reduce_resolution": false,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": "OOXMLSDK configured golden: Apache-POI/test-data/integration/stress009.docx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf14"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "zh-CN",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": true,
+        "initial_page": 1,
+        "magnification": "fit_visible",
+        "page_layout": "continuous",
+        "page_mode": "default"
+      }
+    },
+    "schema_version": 2,
+    "seed": "ooxmlsdk-office-pdf-environments-2026-09-11-v2",
+    "source_bytes": 61054,
+    "source_extension": "docx",
+    "source_sha256": "d081c4c6e5ba299e6fca4296dad434408a7c5de3046e4918d6b7abbd4a8b9a98"
+  },
+  "stages": "{\"utc\":\"2026-09-12T04:06:40.7654355Z\",\"stage\":\"application-create\",\"detail\":\"Word\"}\n{\"utc\":\"2026-09-12T04:06:41.3483910Z\",\"stage\":\"environment-readback\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:06:41.4184321Z\",\"stage\":\"stage-input\",\"detail\":{\"open_and_repair\":true,\"staged\":\"stress009.docx\",\"original\":\"stress009.docx\"}}\n{\"utc\":\"2026-09-12T04:06:41.4700112Z\",\"stage\":\"word-open\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:06:41.4868798Z\",\"stage\":\"word-open-signature\",\"detail\":\"Document Open (Variant FileName, Variant ConfirmConversions, Variant ReadOnly, Variant AddToRecentFiles, Variant PasswordDocument, Variant PasswordTemplate, Variant Revert, Variant WritePasswordDocument, Variant WritePasswordTemplate, Variant Format, Variant Encoding, Variant Visible, Variant OpenAndRepair, Variant DocumentDirection, Variant NoEncodingDialog, Variant XMLTransform)\"}\n{\"utc\":\"2026-09-12T04:06:41.8500349Z\",\"stage\":\"word-refresh\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:06:42.1033796Z\",\"stage\":\"word-page-count\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:06:42.1394912Z\",\"stage\":\"word-export\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:06:43.2499057Z\",\"stage\":\"word-close\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:06:43.2643209Z\",\"stage\":\"copy-pdf\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:06:43.3511594Z\",\"stage\":\"application-quit\",\"detail\":\"Word\"}\n{\"utc\":\"2026-09-12T04:06:43.4794537Z\",\"stage\":\"archive-stage\",\"detail\":\"C:\\\\Users\\\\kazeno\\\\AppData\\\\Local\\\\Temp\\\\ooxmlsdk-pdf-options-probe-9ec74808e0b44b62bc52855ca7ae56ab\"}\n",
+  "worker_completion": {
+    "completed_utc": "2026-09-12T04:06:46.0149838Z",
+    "elapsed_ms": 6230,
+    "exit_code": 0,
+    "file": "Apache-POI/test-data/integration/stress009.docx",
+    "restored": true,
+    "tag": "recovery-all"
+  },
+  "worker_root": "/tmp/office-reference-failure-review-20260912/probes/cb2e5b73fbfd222052f2ef245fd984dc7525788fc2f670fb3759e8c4ba653d72-recovery-all"
+}

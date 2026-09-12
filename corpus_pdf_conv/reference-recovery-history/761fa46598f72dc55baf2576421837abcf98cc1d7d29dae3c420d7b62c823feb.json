@@ -1,0 +1,438 @@
+{
+  "adapter": {
+    "controller_script_sha256": "d0d76bf2dc26b971da6aa3301f5ad8bef7f00ac096076d46e13c09634c70c82d",
+    "environment_helper_sha256": "16f0694a8b9c0c11223263f16c3158fa96d312eaf9affe6dc3d312671eb9dcc2",
+    "probe_script_sha256": "2d9b62f2b707765d4e9dce44fe1144be5b3c6f2fc2cde8087c2c95a6c8ffb1e0"
+  },
+  "environment_path": "/home/kazeno/git/ooxmlsdk-test-suite/corpus_pdf_conv/reference-adapters/896d3a3e77cd3e86922192044a2784d17a253c71a13d3364f48e79cf71053d6b/environment.json",
+  "environment_restoration": {
+    "restored": true
+  },
+  "original_assignment": {
+    "adjustments": [],
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "761fa46598f72dc55baf2576421837abcf98cc1d7d29dae3c420d7b62c823feb",
+    "corpus": "Apache-POI",
+    "effective": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 90,
+        "max_resolution_dpi": 300,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": "ooxmlsdk-test-suite",
+        "creation_date": null,
+        "creator": null,
+        "keywords": "ooxmlsdk,office,golden",
+        "producer": null,
+        "subject": "Configured Office PDF fidelity",
+        "title": "OOXMLSDK configured golden: Apache-POI/test-data/openxml4j/OPCCompliance_CoreProperties_AlternateTimezones.docx"
+      },
+      "open_bookmark_levels": 0,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf15"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "zh-CN",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": true,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": true,
+        "hide_toolbar": false,
+        "hide_window_controls": true,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "continuous",
+        "page_mode": "default"
+      }
+    },
+    "family": "word",
+    "file": "test-data/openxml4j/OPCCompliance_CoreProperties_AlternateTimezones.docx",
+    "office": {
+      "bitmap_missing_fonts": false,
+      "bookmarks": "word-bookmarks",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "screen",
+      "tagged_pdf": true
+    },
+    "pilot_300": false,
+    "reference_environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "reference_time_zone": "Asia/Shanghai",
+    "requested": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 90,
+        "max_resolution_dpi": 300,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": "ooxmlsdk-test-suite",
+        "creation_date": null,
+        "creator": null,
+        "keywords": "ooxmlsdk,office,golden",
+        "producer": null,
+        "subject": "Configured Office PDF fidelity",
+        "title": "OOXMLSDK configured golden: Apache-POI/test-data/openxml4j/OPCCompliance_CoreProperties_AlternateTimezones.docx"
+      },
+      "open_bookmark_levels": 0,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf15"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "zh-CN",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": true,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": true,
+        "hide_toolbar": false,
+        "hide_window_controls": true,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "continuous",
+        "page_mode": "default"
+      }
+    },
+    "schema_version": 2,
+    "seed": "ooxmlsdk-office-pdf-environments-2026-09-11-v2",
+    "source_bytes": 13159,
+    "source_extension": "docx",
+    "source_sha256": "2d1856ab17ee065074572a6d16f7823e5416a69d97863f5d7c91406b0d4628c3"
+  },
+  "original_conversion": {
+    "adjustments": [],
+    "annotations": [],
+    "application": "Word",
+    "application_build": "",
+    "application_version": "",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "attempts": 2,
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "761fa46598f72dc55baf2576421837abcf98cc1d7d29dae3c420d7b62c823feb",
+    "converted_at_utc": "2026-09-12T01:56:20.346630342Z",
+    "effective": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 90,
+        "max_resolution_dpi": 300,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": "ooxmlsdk-test-suite",
+        "creation_date": null,
+        "creator": null,
+        "keywords": "ooxmlsdk,office,golden",
+        "producer": null,
+        "subject": "Configured Office PDF fidelity",
+        "title": "OOXMLSDK configured golden: Apache-POI/test-data/openxml4j/OPCCompliance_CoreProperties_AlternateTimezones.docx"
+      },
+      "open_bookmark_levels": 0,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf15"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "zh-CN",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": true,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": true,
+        "hide_toolbar": false,
+        "hide_window_controls": true,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "continuous",
+        "page_mode": "default"
+      }
+    },
+    "elapsed_ms": 12785,
+    "environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "error": "stdout=\u001b[31;1mprobe_office_pdf_options.ps1: \u001b[31;1m�ļ������Ѿ��𻵡�\u001b[0m\r\n\r\nOffice worker exit code: 1 stderr=",
+    "error_code": "",
+    "failure_class": "office-conversion-error",
+    "family": "word",
+    "file": "test-data/openxml4j/OPCCompliance_CoreProperties_AlternateTimezones.docx",
+    "observed_pdf": null,
+    "office_options": {
+      "bitmap_missing_fonts": false,
+      "bookmarks": "word-bookmarks",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "screen",
+      "tagged_pdf": true
+    },
+    "output": "",
+    "output_bytes": 0,
+    "output_sha256": "",
+    "reference_engine": "Microsoft Office",
+    "render_environment": null,
+    "requested": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 90,
+        "max_resolution_dpi": 300,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": "ooxmlsdk-test-suite",
+        "creation_date": null,
+        "creator": null,
+        "keywords": "ooxmlsdk,office,golden",
+        "producer": null,
+        "subject": "Configured Office PDF fidelity",
+        "title": "OOXMLSDK configured golden: Apache-POI/test-data/openxml4j/OPCCompliance_CoreProperties_AlternateTimezones.docx"
+      },
+      "open_bookmark_levels": 0,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf15"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "zh-CN",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": true,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": true,
+        "hide_toolbar": false,
+        "hide_window_controls": true,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "continuous",
+        "page_mode": "default"
+      }
+    },
+    "schema_version": 4,
+    "source_bytes": 13159,
+    "source_extension": "docx",
+    "source_sha256": "2d1856ab17ee065074572a6d16f7823e5416a69d97863f5d7c91406b0d4628c3",
+    "status": "failed"
+  },
+  "probe_receipt": {
+    "application": "Word",
+    "application_build": "16.0.20326",
+    "application_version": "16.0",
+    "elapsed_ms": 965,
+    "environment": {
+      "clock": {
+        "export_completed_at_utc": "2026-09-12T04:07:13.2850115Z",
+        "export_started_at_utc": "2026-09-12T04:07:12.8730915Z",
+        "opened_at_utc": "2026-09-12T04:07:12.4293155Z",
+        "refresh_completed_at_utc": "2026-09-12T04:07:12.8377433Z",
+        "refresh_started_at_utc": "2026-09-12T04:07:12.6908289Z"
+      },
+      "document_language": "zh-CN",
+      "format_locale": "zh-CN",
+      "time_zone": "Asia/Shanghai",
+      "ui_language": "zh-CN",
+      "windows_time_zone": "China Standard Time"
+    },
+    "file": "Apache-POI/test-data/openxml4j/OPCCompliance_CoreProperties_AlternateTimezones.docx",
+    "options": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": false
+    },
+    "output": "case-000.pdf",
+    "output_bytes": 93994,
+    "output_sha256": "daa623cc2c22f691e28ab65d65e191b0f318c2b32a0356a4df243525c24502ca",
+    "schema_version": 2,
+    "source_sha256": "2d1856ab17ee065074572a6d16f7823e5416a69d97863f5d7c91406b0d4628c3"
+  },
+  "reason": "Authorized failed-reference recovery: print quality, zh-CN UI, optional export features disabled, repair-mode open on a byte-identical temporary copy; all pages and hidden slides included where applicable.",
+  "recovered_assignment": {
+    "adjustments": [],
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "d8095a1bbc81048a800249ec6c4ce0ce2f8625d56352e4eea439385fba2580f4",
+    "corpus": "Apache-POI",
+    "effective": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 90,
+        "max_resolution_dpi": 300,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": "ooxmlsdk-test-suite",
+        "creation_date": null,
+        "creator": null,
+        "keywords": "ooxmlsdk,office,golden",
+        "producer": null,
+        "subject": "Configured Office PDF fidelity",
+        "title": "OOXMLSDK configured golden: Apache-POI/test-data/openxml4j/OPCCompliance_CoreProperties_AlternateTimezones.docx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf15"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "zh-CN",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": true,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": true,
+        "hide_toolbar": false,
+        "hide_window_controls": true,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "continuous",
+        "page_mode": "default"
+      }
+    },
+    "family": "word",
+    "file": "test-data/openxml4j/OPCCompliance_CoreProperties_AlternateTimezones.docx",
+    "office": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": false
+    },
+    "pilot_300": false,
+    "reference_environment_id": "896d3a3e77cd3e86922192044a2784d17a253c71a13d3364f48e79cf71053d6b",
+    "reference_time_zone": "Asia/Shanghai",
+    "requested": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 90,
+        "max_resolution_dpi": 300,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": "ooxmlsdk-test-suite",
+        "creation_date": null,
+        "creator": null,
+        "keywords": "ooxmlsdk,office,golden",
+        "producer": null,
+        "subject": "Configured Office PDF fidelity",
+        "title": "OOXMLSDK configured golden: Apache-POI/test-data/openxml4j/OPCCompliance_CoreProperties_AlternateTimezones.docx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf15"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "zh-CN",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": true,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": true,
+        "hide_toolbar": false,
+        "hide_window_controls": true,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "continuous",
+        "page_mode": "default"
+      }
+    },
+    "schema_version": 2,
+    "seed": "ooxmlsdk-office-pdf-environments-2026-09-11-v2",
+    "source_bytes": 13159,
+    "source_extension": "docx",
+    "source_sha256": "2d1856ab17ee065074572a6d16f7823e5416a69d97863f5d7c91406b0d4628c3"
+  },
+  "stages": "{\"utc\":\"2026-09-12T04:07:11.7122586Z\",\"stage\":\"application-create\",\"detail\":\"Word\"}\n{\"utc\":\"2026-09-12T04:07:12.3279602Z\",\"stage\":\"environment-readback\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:07:12.3891304Z\",\"stage\":\"stage-input\",\"detail\":{\"open_and_repair\":true,\"staged\":\"OPCCompliance_CoreProperties_AlternateTimezones.docx\",\"original\":\"OPCCompliance_CoreProperties_AlternateTimezones.docx\"}}\n{\"utc\":\"2026-09-12T04:07:12.4298715Z\",\"stage\":\"word-open\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:07:12.4432554Z\",\"stage\":\"word-open-signature\",\"detail\":\"Document Open (Variant FileName, Variant ConfirmConversions, Variant ReadOnly, Variant AddToRecentFiles, Variant PasswordDocument, Variant PasswordTemplate, Variant Revert, Variant WritePasswordDocument, Variant WritePasswordTemplate, Variant Format, Variant Encoding, Variant Visible, Variant OpenAndRepair, Variant DocumentDirection, Variant NoEncodingDialog, Variant XMLTransform)\"}\n{\"utc\":\"2026-09-12T04:07:12.6914450Z\",\"stage\":\"word-refresh\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:07:12.8471335Z\",\"stage\":\"word-page-count\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:07:12.8738825Z\",\"stage\":\"word-export\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:07:13.2860623Z\",\"stage\":\"word-close\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:07:13.2992391Z\",\"stage\":\"copy-pdf\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:07:13.3957804Z\",\"stage\":\"application-quit\",\"detail\":\"Word\"}\n{\"utc\":\"2026-09-12T04:07:13.5171391Z\",\"stage\":\"archive-stage\",\"detail\":\"C:\\\\Users\\\\kazeno\\\\AppData\\\\Local\\\\Temp\\\\ooxmlsdk-pdf-options-probe-50f355a2c3fc4f10a4bc730ed0e1ff70\"}\n",
+  "worker_completion": {
+    "completed_utc": "2026-09-12T04:07:26.0282210Z",
+    "elapsed_ms": 15300,
+    "exit_code": 0,
+    "file": "Apache-POI/test-data/openxml4j/OPCCompliance_CoreProperties_AlternateTimezones.docx",
+    "restored": true,
+    "tag": "recovery-all"
+  },
+  "worker_root": "/tmp/office-reference-failure-review-20260912/probes/761fa46598f72dc55baf2576421837abcf98cc1d7d29dae3c420d7b62c823feb-recovery-all"
+}

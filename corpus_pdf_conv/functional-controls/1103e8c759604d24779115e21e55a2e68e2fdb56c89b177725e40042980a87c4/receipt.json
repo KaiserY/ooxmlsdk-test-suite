@@ -1,0 +1,37 @@
+{
+  "schema_version": 2,
+  "file": "Apache-POI/test-data/slideshow/2411-Performance_Up.pptx",
+  "application": "PowerPoint",
+  "application_version": "16.0",
+  "application_build": "20326",
+  "options": {
+    "quality": "print",
+    "include_document_properties": false,
+    "page_from": null,
+    "page_to": null,
+    "tagged_pdf": false,
+    "bookmarks": "none",
+    "pdf_a_1": false,
+    "bitmap_missing_fonts": true,
+    "print_hidden_slides": false
+  },
+  "source_sha256": "a387861a0066ad11ba85aba9572830c1ec1ab9a24380728ead34d2b5b26662c0",
+  "output": "case-000.pdf",
+  "output_bytes": 530579,
+  "output_sha256": "12b74cd6c6e11063289b44fd12f43fca57904b50c745eddcb521eb6a47c152a5",
+  "elapsed_ms": 1602,
+  "environment": {
+    "ui_language": "zh-TW",
+    "format_locale": "zh-CN",
+    "document_language": "zh-CN",
+    "time_zone": "Asia/Shanghai",
+    "windows_time_zone": "China Standard Time",
+    "clock": {
+      "opened_at_utc": "2026-09-11T08:55:49.7338685Z",
+      "refresh_started_at_utc": "2026-09-11T08:55:49.7377782Z",
+      "refresh_completed_at_utc": "2026-09-11T08:55:49.8509956Z",
+      "export_started_at_utc": "2026-09-11T08:55:49.9235416Z",
+      "export_completed_at_utc": "2026-09-11T08:55:50.7964312Z"
+    }
+  }
+}

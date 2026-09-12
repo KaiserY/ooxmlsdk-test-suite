@@ -1,27 +1,57 @@
 {
   "schema_version": 1,
-  "environment_id": "26a412e53b5135051ef70c29ccb7c7993a64b96fefdd230a0a19e782f52b521a",
-  "observed_at_utc": "2026-08-17T17:31:04.7825868Z",
+  "environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+  "observed_at_utc": "2026-09-11T07:51:53.0345494Z",
   "environment": {
     "schema_version": 1,
-    "campaign_id": "office-ooxml-pdf-options-v1",
-    "converter_version": 1,
-    "plan_sha256": "2fb9a5ccfec963575083bc00990c70f2797a394fdda176f1cc444669a279e8dd",
-    "probe_script_sha256": "6593c98d883a956d07a9a809499b35f90c89085b11d4eba00597a46b01d39e6a",
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "converter_version": 2,
+    "probe_script_sha256": "4fcff8c539a0d43b2cf264c26274ccbb31f9fa8d339978d3094332be47674c2b",
+    "controller_script_sha256": "4defe65afeae06fa42170d913c5f5ab768aa11c9714f9bc73975974f87f9e9f0",
+    "environment_helper_sha256": "16f0694a8b9c0c11223263f16c3158fa96d312eaf9affe6dc3d312671eb9dcc2",
     "reference_engine": "Microsoft Office",
     "windows": {
       "product_name": "Windows 10 Pro",
       "display_version": "25H2",
-      "full_build": "26200.9168"
+      "full_build": "26200.9445"
     },
     "office": {
+      "ui_languages": [
+        "de-DE",
+        "en-US",
+        "es-MX",
+        "fr-CA",
+        "ja-JP",
+        "ko-KR",
+        "zh-CN",
+        "zh-TW"
+      ],
+      "applications": [
+        {
+          "name": "Word",
+          "ui_language": "zh-CN",
+          "version": "16.0"
+        },
+        {
+          "name": "Excel",
+          "ui_language": "zh-CN",
+          "version": "16.0"
+        },
+        {
+          "name": "PowerPoint",
+          "ui_language": "zh-CN",
+          "version": "16.0"
+        }
+      ],
       "platform": "x64",
       "product_release_ids": "O365ProPlusRetail",
-      "version_to_report": "16.0.20228.20190"
+      "version_to_report": "16.0.20326.20144"
     },
     "locale": {
       "culture": "zh-CN",
       "ui_culture": "zh-CN",
+      "document_language": "zh-CN",
+      "iana_time_zone": "Asia/Shanghai",
       "time_zone": "China Standard Time"
     },
     "default_paper": {
@@ -31,13 +61,13 @@
       "landscape": false
     },
     "fonts": {
-      "file_count": 916,
+      "file_count": 932,
       "fingerprint_kind": "name-size-mtime",
-      "sha256": "5c07259123fab6e139c55ff6dd25fc468b47cbe1e89be3894a2763a6dba78cd6"
+      "sha256": "2d0d52421c4eaa5d26b73ccea3cb5bd572fe1cc587b0b259724bec3d3648db1b"
     },
     "dependencies": [
-      "campaign-plan",
       "probe-script",
+      "environment-controller",
       "office-build",
       "windows-build",
       "installed-font-files",

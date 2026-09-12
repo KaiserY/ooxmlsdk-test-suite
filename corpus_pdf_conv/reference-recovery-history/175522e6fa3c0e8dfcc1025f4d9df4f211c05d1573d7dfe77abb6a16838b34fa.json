@@ -1,0 +1,453 @@
+{
+  "adapter": {
+    "controller_script_sha256": "d0d76bf2dc26b971da6aa3301f5ad8bef7f00ac096076d46e13c09634c70c82d",
+    "environment_helper_sha256": "16f0694a8b9c0c11223263f16c3158fa96d312eaf9affe6dc3d312671eb9dcc2",
+    "probe_script_sha256": "2d9b62f2b707765d4e9dce44fe1144be5b3c6f2fc2cde8087c2c95a6c8ffb1e0"
+  },
+  "environment_path": "/home/kazeno/git/ooxmlsdk-test-suite/corpus_pdf_conv/reference-adapters/896d3a3e77cd3e86922192044a2784d17a253c71a13d3364f48e79cf71053d6b/environment.json",
+  "environment_restoration": {
+    "restored": true
+  },
+  "original_assignment": {
+    "adjustments": [
+      {
+        "feature": "image-downsampling",
+        "reason": "maximum image resolution is inactive when downsampling is disabled"
+      }
+    ],
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "175522e6fa3c0e8dfcc1025f4d9df4f211c05d1573d7dfe77abb6a16838b34fa",
+    "corpus": "LibreOffice",
+    "effective": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 90,
+        "max_resolution_dpi": null,
+        "reduce_resolution": false,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": "OOXMLSDK configured golden: LibreOffice/xmlsecurity/qa/unit/signing/data/signature-forgery-cdh-lfh.docx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf15"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "en-US",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": true,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "continuous",
+        "page_mode": "use_outlines"
+      }
+    },
+    "family": "word",
+    "file": "xmlsecurity/qa/unit/signing/data/signature-forgery-cdh-lfh.docx",
+    "office": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "screen",
+      "tagged_pdf": true
+    },
+    "pilot_300": false,
+    "reference_environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "reference_time_zone": "Asia/Shanghai",
+    "requested": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 90,
+        "max_resolution_dpi": 600,
+        "reduce_resolution": false,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": "OOXMLSDK configured golden: LibreOffice/xmlsecurity/qa/unit/signing/data/signature-forgery-cdh-lfh.docx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf15"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "en-US",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": true,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "continuous",
+        "page_mode": "use_outlines"
+      }
+    },
+    "schema_version": 2,
+    "seed": "ooxmlsdk-office-pdf-environments-2026-09-11-v2",
+    "source_bytes": 20357,
+    "source_extension": "docx",
+    "source_sha256": "1b2c307f164cc4775c5571826f4dd7830c29646efa5f9084fb4a2183c460b1db"
+  },
+  "original_conversion": {
+    "adjustments": [
+      {
+        "feature": "image-downsampling",
+        "reason": "maximum image resolution is inactive when downsampling is disabled"
+      }
+    ],
+    "annotations": [],
+    "application": "Word",
+    "application_build": "",
+    "application_version": "",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "attempts": 2,
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "175522e6fa3c0e8dfcc1025f4d9df4f211c05d1573d7dfe77abb6a16838b34fa",
+    "converted_at_utc": "2026-09-12T02:06:54.77633557Z",
+    "effective": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 90,
+        "max_resolution_dpi": null,
+        "reduce_resolution": false,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": "OOXMLSDK configured golden: LibreOffice/xmlsecurity/qa/unit/signing/data/signature-forgery-cdh-lfh.docx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf15"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "en-US",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": true,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "continuous",
+        "page_mode": "use_outlines"
+      }
+    },
+    "elapsed_ms": 13517,
+    "environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "error": "stdout=\u001b[31;1mprobe_office_pdf_options.ps1: \u001b[31;1mThe file appears to be corrupted.\u001b[0m\r\n\r\nOffice worker exit code: 1 stderr=",
+    "error_code": "",
+    "failure_class": "office-conversion-error",
+    "family": "word",
+    "file": "xmlsecurity/qa/unit/signing/data/signature-forgery-cdh-lfh.docx",
+    "observed_pdf": null,
+    "office_options": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "screen",
+      "tagged_pdf": true
+    },
+    "output": "",
+    "output_bytes": 0,
+    "output_sha256": "",
+    "reference_engine": "Microsoft Office",
+    "render_environment": null,
+    "requested": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 90,
+        "max_resolution_dpi": 600,
+        "reduce_resolution": false,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": "OOXMLSDK configured golden: LibreOffice/xmlsecurity/qa/unit/signing/data/signature-forgery-cdh-lfh.docx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf15"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "en-US",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": true,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "continuous",
+        "page_mode": "use_outlines"
+      }
+    },
+    "schema_version": 4,
+    "source_bytes": 20357,
+    "source_extension": "docx",
+    "source_sha256": "1b2c307f164cc4775c5571826f4dd7830c29646efa5f9084fb4a2183c460b1db",
+    "status": "failed"
+  },
+  "probe_receipt": {
+    "application": "Word",
+    "application_build": "16.0.20326",
+    "application_version": "16.0",
+    "elapsed_ms": 1587,
+    "environment": {
+      "clock": {
+        "export_completed_at_utc": "2026-09-12T04:27:43.6472320Z",
+        "export_started_at_utc": "2026-09-12T04:27:43.1948112Z",
+        "opened_at_utc": "2026-09-12T04:27:42.7931787Z",
+        "refresh_completed_at_utc": "2026-09-12T04:27:43.1670688Z",
+        "refresh_started_at_utc": "2026-09-12T04:27:43.0169569Z"
+      },
+      "document_language": "zh-CN",
+      "format_locale": "zh-CN",
+      "time_zone": "Asia/Shanghai",
+      "ui_language": "zh-CN",
+      "windows_time_zone": "China Standard Time"
+    },
+    "file": "LibreOffice/xmlsecurity/qa/unit/signing/data/signature-forgery-cdh-lfh.docx",
+    "options": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": false
+    },
+    "output": "case-000.pdf",
+    "output_bytes": 145245,
+    "output_sha256": "c8bff10b8524cebab49bf0de0818a52ffe4d39f04cd36995c89689edc6be220f",
+    "schema_version": 2,
+    "source_sha256": "1b2c307f164cc4775c5571826f4dd7830c29646efa5f9084fb4a2183c460b1db"
+  },
+  "reason": "Authorized failed-reference recovery: print quality, zh-CN UI, optional export features disabled, repair-mode open on a byte-identical temporary copy; all pages and hidden slides included where applicable.",
+  "recovered_assignment": {
+    "adjustments": [
+      {
+        "feature": "image-downsampling",
+        "reason": "maximum image resolution is inactive when downsampling is disabled"
+      }
+    ],
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "8a573f9e3581a45221b21e2b95e6e4add42a4e8f9e71b5a63915cb184c3640db",
+    "corpus": "LibreOffice",
+    "effective": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 90,
+        "max_resolution_dpi": null,
+        "reduce_resolution": false,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": "OOXMLSDK configured golden: LibreOffice/xmlsecurity/qa/unit/signing/data/signature-forgery-cdh-lfh.docx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf15"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "zh-CN",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": true,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "continuous",
+        "page_mode": "use_outlines"
+      }
+    },
+    "family": "word",
+    "file": "xmlsecurity/qa/unit/signing/data/signature-forgery-cdh-lfh.docx",
+    "office": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": false
+    },
+    "pilot_300": false,
+    "reference_environment_id": "896d3a3e77cd3e86922192044a2784d17a253c71a13d3364f48e79cf71053d6b",
+    "reference_time_zone": "Asia/Shanghai",
+    "requested": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 90,
+        "max_resolution_dpi": 600,
+        "reduce_resolution": false,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": "OOXMLSDK configured golden: LibreOffice/xmlsecurity/qa/unit/signing/data/signature-forgery-cdh-lfh.docx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf15"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "zh-CN",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": true,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "continuous",
+        "page_mode": "use_outlines"
+      }
+    },
+    "schema_version": 2,
+    "seed": "ooxmlsdk-office-pdf-environments-2026-09-11-v2",
+    "source_bytes": 20357,
+    "source_extension": "docx",
+    "source_sha256": "1b2c307f164cc4775c5571826f4dd7830c29646efa5f9084fb4a2183c460b1db"
+  },
+  "stages": "{\"utc\":\"2026-09-12T04:27:42.1030796Z\",\"stage\":\"application-create\",\"detail\":\"Word\"}\n{\"utc\":\"2026-09-12T04:27:42.6804182Z\",\"stage\":\"environment-readback\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:27:42.7430339Z\",\"stage\":\"stage-input\",\"detail\":{\"original\":\"signature-forgery-cdh-lfh.docx\",\"open_and_repair\":true,\"staged\":\"signature-forgery-cdh-lfh.docx\"}}\n{\"utc\":\"2026-09-12T04:27:42.7937352Z\",\"stage\":\"word-open\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:27:42.8094920Z\",\"stage\":\"word-open-signature\",\"detail\":\"Document Open (Variant FileName, Variant ConfirmConversions, Variant ReadOnly, Variant AddToRecentFiles, Variant PasswordDocument, Variant PasswordTemplate, Variant Revert, Variant WritePasswordDocument, Variant WritePasswordTemplate, Variant Format, Variant Encoding, Variant Visible, Variant OpenAndRepair, Variant DocumentDirection, Variant NoEncodingDialog, Variant XMLTransform)\"}\n{\"utc\":\"2026-09-12T04:27:43.0174774Z\",\"stage\":\"word-refresh\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:27:43.1709020Z\",\"stage\":\"word-page-count\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:27:43.1953525Z\",\"stage\":\"word-export\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:27:43.6482512Z\",\"stage\":\"word-close\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:27:44.2714188Z\",\"stage\":\"copy-pdf\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:27:44.3849480Z\",\"stage\":\"application-quit\",\"detail\":\"Word\"}\n{\"utc\":\"2026-09-12T04:27:44.5070724Z\",\"stage\":\"archive-stage\",\"detail\":\"C:\\\\Users\\\\kazeno\\\\AppData\\\\Local\\\\Temp\\\\ooxmlsdk-pdf-options-probe-8637d3c1268143baac0d3d85983a66f9\"}\n",
+  "worker_completion": {
+    "completed_utc": "2026-09-12T04:27:47.0154358Z",
+    "elapsed_ms": 5912,
+    "exit_code": 0,
+    "file": "LibreOffice/xmlsecurity/qa/unit/signing/data/signature-forgery-cdh-lfh.docx",
+    "restored": true,
+    "tag": "recovery-all"
+  },
+  "worker_root": "/tmp/office-reference-failure-review-20260912/probes/175522e6fa3c0e8dfcc1025f4d9df4f211c05d1573d7dfe77abb6a16838b34fa-recovery-all"
+}

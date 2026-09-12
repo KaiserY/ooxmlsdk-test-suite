@@ -1,0 +1,481 @@
+{
+  "adapter": {
+    "controller_script_sha256": "d0d76bf2dc26b971da6aa3301f5ad8bef7f00ac096076d46e13c09634c70c82d",
+    "environment_helper_sha256": "16f0694a8b9c0c11223263f16c3158fa96d312eaf9affe6dc3d312671eb9dcc2",
+    "probe_script_sha256": "2d9b62f2b707765d4e9dce44fe1144be5b3c6f2fc2cde8087c2c95a6c8ffb1e0"
+  },
+  "environment_path": "/home/kazeno/git/ooxmlsdk-test-suite/corpus_pdf_conv/reference-adapters/896d3a3e77cd3e86922192044a2784d17a253c71a13d3364f48e79cf71053d6b/environment.json",
+  "environment_restoration": {
+    "restored": true
+  },
+  "original_assignment": {
+    "adjustments": [
+      {
+        "feature": "pdf-ua",
+        "reason": "PdfUa1 and pdf_ua_compliance are canonicalized to one effective request"
+      },
+      {
+        "feature": "tagged-pdf",
+        "reason": "PDF/UA requires tagged PDF"
+      },
+      {
+        "feature": "viewer-preferences",
+        "reason": "PDF/UA requires the viewer to display the document title"
+      },
+      {
+        "feature": "image-downsampling",
+        "reason": "maximum image resolution is inactive when downsampling is disabled"
+      }
+    ],
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "40b8c80e2652a5d17617a2b4bd7ecb33369c2b12dd08df809240a0ea2302b575",
+    "corpus": "LibreOffice",
+    "effective": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": true,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 75,
+        "max_resolution_dpi": null,
+        "reduce_resolution": false,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": "ooxmlsdk-pdf",
+        "keywords": null,
+        "producer": "ooxmlsdk-pdf configured campaign",
+        "subject": null,
+        "title": null
+      },
+      "open_bookmark_levels": 2,
+      "page_range": null,
+      "pdf_ua_compliance": true,
+      "standards": [
+        "pdf17",
+        "pdf_ua1"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "zh-TW",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": true,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": true,
+        "initial_page": 1,
+        "magnification": "default",
+        "page_layout": "continuous",
+        "page_mode": "default"
+      }
+    },
+    "family": "word",
+    "file": "sw/qa/extras/ooxmlexport/data/bnc891663.docx",
+    "office": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "headings",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": true
+    },
+    "pilot_300": false,
+    "reference_environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "reference_time_zone": "Asia/Shanghai",
+    "requested": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": true,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 75,
+        "max_resolution_dpi": 600,
+        "reduce_resolution": false,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": "ooxmlsdk-pdf",
+        "keywords": null,
+        "producer": "ooxmlsdk-pdf configured campaign",
+        "subject": null,
+        "title": null
+      },
+      "open_bookmark_levels": 2,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf17",
+        "pdf_ua1"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "zh-TW",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": true,
+        "initial_page": 1,
+        "magnification": "default",
+        "page_layout": "continuous",
+        "page_mode": "default"
+      }
+    },
+    "schema_version": 2,
+    "seed": "ooxmlsdk-office-pdf-environments-2026-09-11-v2",
+    "source_bytes": 7911,
+    "source_extension": "docx",
+    "source_sha256": "8bf43d4b2ff3bb817049590a5819c17aee113c38163d4586094d6831b2e977b2"
+  },
+  "original_conversion": {
+    "adjustments": [
+      {
+        "feature": "pdf-ua",
+        "reason": "PdfUa1 and pdf_ua_compliance are canonicalized to one effective request"
+      },
+      {
+        "feature": "tagged-pdf",
+        "reason": "PDF/UA requires tagged PDF"
+      },
+      {
+        "feature": "viewer-preferences",
+        "reason": "PDF/UA requires the viewer to display the document title"
+      },
+      {
+        "feature": "image-downsampling",
+        "reason": "maximum image resolution is inactive when downsampling is disabled"
+      }
+    ],
+    "annotations": [],
+    "application": "Word",
+    "application_build": "",
+    "application_version": "",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "attempts": 2,
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "40b8c80e2652a5d17617a2b4bd7ecb33369c2b12dd08df809240a0ea2302b575",
+    "converted_at_utc": "2026-09-12T01:58:50.575986533Z",
+    "effective": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": true,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 75,
+        "max_resolution_dpi": null,
+        "reduce_resolution": false,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": "ooxmlsdk-pdf",
+        "keywords": null,
+        "producer": "ooxmlsdk-pdf configured campaign",
+        "subject": null,
+        "title": null
+      },
+      "open_bookmark_levels": 2,
+      "page_range": null,
+      "pdf_ua_compliance": true,
+      "standards": [
+        "pdf17",
+        "pdf_ua1"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "zh-TW",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": true,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": true,
+        "initial_page": 1,
+        "magnification": "default",
+        "page_layout": "continuous",
+        "page_mode": "default"
+      }
+    },
+    "elapsed_ms": 13679,
+    "environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "error": "stdout=\u001b[31;1mprobe_office_pdf_options.ps1: \u001b[31;1m�n���ƺ��њ��p��\u001b[0m\r\n\r\nOffice worker exit code: 1 stderr=",
+    "error_code": "",
+    "failure_class": "office-conversion-error",
+    "family": "word",
+    "file": "sw/qa/extras/ooxmlexport/data/bnc891663.docx",
+    "observed_pdf": null,
+    "office_options": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "headings",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": true
+    },
+    "output": "",
+    "output_bytes": 0,
+    "output_sha256": "",
+    "reference_engine": "Microsoft Office",
+    "render_environment": null,
+    "requested": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": true,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 75,
+        "max_resolution_dpi": 600,
+        "reduce_resolution": false,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": "ooxmlsdk-pdf",
+        "keywords": null,
+        "producer": "ooxmlsdk-pdf configured campaign",
+        "subject": null,
+        "title": null
+      },
+      "open_bookmark_levels": 2,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf17",
+        "pdf_ua1"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "zh-TW",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": true,
+        "initial_page": 1,
+        "magnification": "default",
+        "page_layout": "continuous",
+        "page_mode": "default"
+      }
+    },
+    "schema_version": 4,
+    "source_bytes": 7911,
+    "source_extension": "docx",
+    "source_sha256": "8bf43d4b2ff3bb817049590a5819c17aee113c38163d4586094d6831b2e977b2",
+    "status": "failed"
+  },
+  "probe_receipt": {
+    "application": "Word",
+    "application_build": "16.0.20326",
+    "application_version": "16.0",
+    "elapsed_ms": 906,
+    "environment": {
+      "clock": {
+        "export_completed_at_utc": "2026-09-12T04:17:21.9641162Z",
+        "export_started_at_utc": "2026-09-12T04:17:21.5896453Z",
+        "opened_at_utc": "2026-09-12T04:17:21.1580495Z",
+        "refresh_completed_at_utc": "2026-09-12T04:17:21.5550566Z",
+        "refresh_started_at_utc": "2026-09-12T04:17:21.4111687Z"
+      },
+      "document_language": "zh-CN",
+      "format_locale": "zh-CN",
+      "time_zone": "Asia/Shanghai",
+      "ui_language": "zh-CN",
+      "windows_time_zone": "China Standard Time"
+    },
+    "file": "LibreOffice/sw/qa/extras/ooxmlexport/data/bnc891663.docx",
+    "options": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": false
+    },
+    "output": "case-000.pdf",
+    "output_bytes": 60721,
+    "output_sha256": "dc55d6450dcfcbb04a77743c2037ce024ecbbafefc692776173ba8a5983100a2",
+    "schema_version": 2,
+    "source_sha256": "8bf43d4b2ff3bb817049590a5819c17aee113c38163d4586094d6831b2e977b2"
+  },
+  "reason": "Authorized failed-reference recovery: print quality, zh-CN UI, optional export features disabled, repair-mode open on a byte-identical temporary copy; all pages and hidden slides included where applicable.",
+  "recovered_assignment": {
+    "adjustments": [
+      {
+        "feature": "image-downsampling",
+        "reason": "maximum image resolution is inactive when downsampling is disabled"
+      }
+    ],
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "d95df71b416d5204596026f510d4cb68334bcd370242d5246e54a6ec855167c1",
+    "corpus": "LibreOffice",
+    "effective": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": true,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 75,
+        "max_resolution_dpi": null,
+        "reduce_resolution": false,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": "ooxmlsdk-pdf",
+        "keywords": null,
+        "producer": "ooxmlsdk-pdf configured campaign",
+        "subject": null,
+        "title": null
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf17"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "zh-CN",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": true,
+        "initial_page": 1,
+        "magnification": "default",
+        "page_layout": "continuous",
+        "page_mode": "default"
+      }
+    },
+    "family": "word",
+    "file": "sw/qa/extras/ooxmlexport/data/bnc891663.docx",
+    "office": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": false
+    },
+    "pilot_300": false,
+    "reference_environment_id": "896d3a3e77cd3e86922192044a2784d17a253c71a13d3364f48e79cf71053d6b",
+    "reference_time_zone": "Asia/Shanghai",
+    "requested": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": true,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 75,
+        "max_resolution_dpi": 600,
+        "reduce_resolution": false,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": "ooxmlsdk-pdf",
+        "keywords": null,
+        "producer": "ooxmlsdk-pdf configured campaign",
+        "subject": null,
+        "title": null
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf17"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "zh-CN",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": true,
+        "initial_page": 1,
+        "magnification": "default",
+        "page_layout": "continuous",
+        "page_mode": "default"
+      }
+    },
+    "schema_version": 2,
+    "seed": "ooxmlsdk-office-pdf-environments-2026-09-11-v2",
+    "source_bytes": 7911,
+    "source_extension": "docx",
+    "source_sha256": "8bf43d4b2ff3bb817049590a5819c17aee113c38163d4586094d6831b2e977b2"
+  },
+  "stages": "{\"utc\":\"2026-09-12T04:17:20.4923522Z\",\"stage\":\"application-create\",\"detail\":\"Word\"}\n{\"utc\":\"2026-09-12T04:17:21.0623459Z\",\"stage\":\"environment-readback\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:17:21.1252900Z\",\"stage\":\"stage-input\",\"detail\":{\"staged\":\"bnc891663.docx\",\"original\":\"bnc891663.docx\",\"open_and_repair\":true}}\n{\"utc\":\"2026-09-12T04:17:21.1585951Z\",\"stage\":\"word-open\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:17:21.1745870Z\",\"stage\":\"word-open-signature\",\"detail\":\"Document Open (Variant FileName, Variant ConfirmConversions, Variant ReadOnly, Variant AddToRecentFiles, Variant PasswordDocument, Variant PasswordTemplate, Variant Revert, Variant WritePasswordDocument, Variant WritePasswordTemplate, Variant Format, Variant Encoding, Variant Visible, Variant OpenAndRepair, Variant DocumentDirection, Variant NoEncodingDialog, Variant XMLTransform)\"}\n{\"utc\":\"2026-09-12T04:17:21.4117786Z\",\"stage\":\"word-refresh\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:17:21.5646417Z\",\"stage\":\"word-page-count\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:17:21.5901529Z\",\"stage\":\"word-export\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:17:21.9651364Z\",\"stage\":\"word-close\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:17:21.9787590Z\",\"stage\":\"copy-pdf\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:17:22.0670154Z\",\"stage\":\"application-quit\",\"detail\":\"Word\"}\n{\"utc\":\"2026-09-12T04:17:22.1912933Z\",\"stage\":\"archive-stage\",\"detail\":\"C:\\\\Users\\\\kazeno\\\\AppData\\\\Local\\\\Temp\\\\ooxmlsdk-pdf-options-probe-186d6a0ab74340a0b6e35a9e67f4f604\"}\n",
+  "worker_completion": {
+    "completed_utc": "2026-09-12T04:17:24.7184738Z",
+    "elapsed_ms": 5221,
+    "exit_code": 0,
+    "file": "LibreOffice/sw/qa/extras/ooxmlexport/data/bnc891663.docx",
+    "restored": true,
+    "tag": "recovery-all"
+  },
+  "worker_root": "/tmp/office-reference-failure-review-20260912/probes/40b8c80e2652a5d17617a2b4bd7ecb33369c2b12dd08df809240a0ea2302b575-recovery-all"
+}

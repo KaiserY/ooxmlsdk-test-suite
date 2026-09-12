@@ -9,6 +9,72 @@ use ooxmlsdk_formula::{
 
 const SHEET: SheetId = SheetId(1);
 
+#[test]
+fn text_search_propagates_referenced_and_array_errors_before_coercion() {
+    let book = evaluation_book(&[
+        ("A1", FormulaValue::Error(FormulaErrorValue::NA)),
+        ("A2", string("#N/A")),
+        ("B1", FormulaValue::Error(FormulaErrorValue::Div0)),
+    ]);
+    for function in ["SEARCH", "FIND", "SEARCHB", "FINDB"] {
+        assert_error(
+            &book,
+            &format!("{function}(\"N\",A1)"),
+            FormulaErrorValue::NA,
+        );
+        assert_error(
+            &book,
+            &format!("{function}(A1,\"#N/A\")"),
+            FormulaErrorValue::NA,
+        );
+        assert_error(&book, &format!("{function}(A1,B1)"), FormulaErrorValue::NA);
+        assert_number(&book, &format!("{function}(\"N\",A2)"), 2.0);
+        assert_eq!(
+            raw_formula_value(
+                &book,
+                SHEET,
+                None,
+                &format!("{function}(\"N\",A1:A2)"),
+                FormulaGrammar::ExcelA1,
+                true
+            ),
+            Some(FormulaValue::Matrix(vec![
+                vec![FormulaValue::Error(FormulaErrorValue::NA)],
+                vec![FormulaValue::Number(2.0)],
+            ])),
+        );
+    }
+}
+
+#[test]
+fn trim_preserves_non_space_characters_and_propagates_errors() {
+    let book = evaluation_book(&[
+        ("A1", string("  a\tb\n  c  ")),
+        ("A2", FormulaValue::Error(FormulaErrorValue::NA)),
+        ("A3", string(" \u{a0}  \u{3000} ")),
+    ]);
+    assert_text(&book, "TRIM(A1)", "a\tb\n c");
+    assert_text(&book, "TRIM(A3)", "\u{a0} \u{3000}");
+    assert_text(&book, "TRIM(\"   \" )", "");
+    assert_error(&book, "TRIM(A2)", FormulaErrorValue::NA);
+    assert_error(&book, "TRIM(#DIV/0!)", FormulaErrorValue::Div0);
+    assert_eq!(
+        raw_formula_value(
+            &book,
+            SHEET,
+            None,
+            "TRIM(A1:A3)",
+            FormulaGrammar::ExcelA1,
+            true
+        ),
+        Some(FormulaValue::Matrix(vec![
+            vec![string("a\tb\n c")],
+            vec![FormulaValue::Error(FormulaErrorValue::NA)],
+            vec![string("\u{a0} \u{3000}")],
+        ])),
+    );
+}
+
 fn address(reference: &str) -> CellAddress {
     CellAddress::parse_a1(reference).unwrap()
 }

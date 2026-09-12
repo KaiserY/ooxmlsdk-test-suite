@@ -1,0 +1,448 @@
+{
+  "adapter": {
+    "controller_script_sha256": "d0d76bf2dc26b971da6aa3301f5ad8bef7f00ac096076d46e13c09634c70c82d",
+    "environment_helper_sha256": "16f0694a8b9c0c11223263f16c3158fa96d312eaf9affe6dc3d312671eb9dcc2",
+    "probe_script_sha256": "2d9b62f2b707765d4e9dce44fe1144be5b3c6f2fc2cde8087c2c95a6c8ffb1e0"
+  },
+  "environment_path": "/home/kazeno/git/ooxmlsdk-test-suite/corpus_pdf_conv/reference-adapters/896d3a3e77cd3e86922192044a2784d17a253c71a13d3364f48e79cf71053d6b/environment.json",
+  "environment_restoration": {
+    "restored": true
+  },
+  "original_assignment": {
+    "adjustments": [
+      {
+        "feature": "ui-language",
+        "reason": "application-generated UI strings currently fall back to English outside English and Chinese resource packs"
+      }
+    ],
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "deab92364c64a8a132e39dadd2549d7cae47827bdcc67b4b800d22a14dd1a033",
+    "corpus": "LibreOffice",
+    "effective": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 90,
+        "max_resolution_dpi": 96,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": "OOXMLSDK configured golden: LibreOffice/sw/qa/extras/ooxmlexport/data/n779642.docx"
+      },
+      "open_bookmark_levels": 0,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf17"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "ja-JP",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": true,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "zoom125",
+        "page_layout": "continuous",
+        "page_mode": "default"
+      }
+    },
+    "family": "word",
+    "file": "sw/qa/extras/ooxmlexport/data/n779642.docx",
+    "office": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "word-bookmarks",
+      "include_document_properties": true,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": true
+    },
+    "pilot_300": false,
+    "reference_environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "reference_time_zone": "Asia/Shanghai",
+    "requested": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 90,
+        "max_resolution_dpi": 96,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": "OOXMLSDK configured golden: LibreOffice/sw/qa/extras/ooxmlexport/data/n779642.docx"
+      },
+      "open_bookmark_levels": 0,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf17"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "ja-JP",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": true,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "zoom125",
+        "page_layout": "continuous",
+        "page_mode": "default"
+      }
+    },
+    "schema_version": 2,
+    "seed": "ooxmlsdk-office-pdf-environments-2026-09-11-v2",
+    "source_bytes": 85485,
+    "source_extension": "docx",
+    "source_sha256": "a43588d5aa50e259c376edac7021db341dbf20168d87d48a45c4de397e521c61"
+  },
+  "original_conversion": {
+    "adjustments": [
+      {
+        "feature": "ui-language",
+        "reason": "application-generated UI strings currently fall back to English outside English and Chinese resource packs"
+      }
+    ],
+    "annotations": [],
+    "application": "Word",
+    "application_build": "",
+    "application_version": "",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "attempts": 2,
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "deab92364c64a8a132e39dadd2549d7cae47827bdcc67b4b800d22a14dd1a033",
+    "converted_at_utc": "2026-09-12T01:59:25.560246128Z",
+    "effective": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 90,
+        "max_resolution_dpi": 96,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": "OOXMLSDK configured golden: LibreOffice/sw/qa/extras/ooxmlexport/data/n779642.docx"
+      },
+      "open_bookmark_levels": 0,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf17"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "ja-JP",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": true,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "zoom125",
+        "page_layout": "continuous",
+        "page_mode": "default"
+      }
+    },
+    "elapsed_ms": 13555,
+    "environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "error": "stdout=\u001b[31;1mprobe_office_pdf_options.ps1: \u001b[31;1m�����ĕ����i��ȡ�뤳�Ȥ��Ǥ��ޤ���Ǥ������ե����뤬����Ƥ���褦�Ǥ���\u001b[0m\r\n\u001b[31;1m\u001b[31;1m�Τβ������ФäƤ�������:\u001b[0m\r\n\u001b[31;1m\u001b[31;1m* �ե�������_���ơ��ޏͤ��Ƥ���������\u001b[0m\r\n\u001b[31;1m\u001b[31;1m* �ƥ����Ȼ؏ͥ���Щ`���`�ǥե�������_���Ƥ��������� (C:\\Users\\kazeno\\AppData\\...\\n779642.docx)\u001b[0m\r\n\r\nOffice worker exit code: 1 stderr=",
+    "error_code": "",
+    "failure_class": "office-conversion-error",
+    "family": "word",
+    "file": "sw/qa/extras/ooxmlexport/data/n779642.docx",
+    "observed_pdf": null,
+    "office_options": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "word-bookmarks",
+      "include_document_properties": true,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": true
+    },
+    "output": "",
+    "output_bytes": 0,
+    "output_sha256": "",
+    "reference_engine": "Microsoft Office",
+    "render_environment": null,
+    "requested": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 90,
+        "max_resolution_dpi": 96,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": "OOXMLSDK configured golden: LibreOffice/sw/qa/extras/ooxmlexport/data/n779642.docx"
+      },
+      "open_bookmark_levels": 0,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf17"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "ja-JP",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": true,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "zoom125",
+        "page_layout": "continuous",
+        "page_mode": "default"
+      }
+    },
+    "schema_version": 4,
+    "source_bytes": 85485,
+    "source_extension": "docx",
+    "source_sha256": "a43588d5aa50e259c376edac7021db341dbf20168d87d48a45c4de397e521c61",
+    "status": "failed"
+  },
+  "probe_receipt": {
+    "application": "Word",
+    "application_build": "16.0.20326",
+    "application_version": "16.0",
+    "elapsed_ms": 957,
+    "environment": {
+      "clock": {
+        "export_completed_at_utc": "2026-09-12T04:17:50.7033978Z",
+        "export_started_at_utc": "2026-09-12T04:17:50.3121053Z",
+        "opened_at_utc": "2026-09-12T04:17:49.8575323Z",
+        "refresh_completed_at_utc": "2026-09-12T04:17:50.2748330Z",
+        "refresh_started_at_utc": "2026-09-12T04:17:50.1194078Z"
+      },
+      "document_language": "zh-CN",
+      "format_locale": "zh-CN",
+      "time_zone": "Asia/Shanghai",
+      "ui_language": "zh-CN",
+      "windows_time_zone": "China Standard Time"
+    },
+    "file": "LibreOffice/sw/qa/extras/ooxmlexport/data/n779642.docx",
+    "options": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": false
+    },
+    "output": "case-000.pdf",
+    "output_bytes": 17670,
+    "output_sha256": "26396acbd0c62f69b9286d29d73b6feb43d8d0f6641ee513e61b85443a2c45f6",
+    "schema_version": 2,
+    "source_sha256": "a43588d5aa50e259c376edac7021db341dbf20168d87d48a45c4de397e521c61"
+  },
+  "reason": "Authorized failed-reference recovery: print quality, zh-CN UI, optional export features disabled, repair-mode open on a byte-identical temporary copy; all pages and hidden slides included where applicable.",
+  "recovered_assignment": {
+    "adjustments": [],
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "16420a37f34b15a8321d11c8636e82eb4fe94521593a7ece06fa4061d17bf470",
+    "corpus": "LibreOffice",
+    "effective": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 90,
+        "max_resolution_dpi": 96,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": "OOXMLSDK configured golden: LibreOffice/sw/qa/extras/ooxmlexport/data/n779642.docx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf17"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "zh-CN",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": true,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "zoom125",
+        "page_layout": "continuous",
+        "page_mode": "default"
+      }
+    },
+    "family": "word",
+    "file": "sw/qa/extras/ooxmlexport/data/n779642.docx",
+    "office": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": false
+    },
+    "pilot_300": false,
+    "reference_environment_id": "896d3a3e77cd3e86922192044a2784d17a253c71a13d3364f48e79cf71053d6b",
+    "reference_time_zone": "Asia/Shanghai",
+    "requested": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 90,
+        "max_resolution_dpi": 96,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": "OOXMLSDK configured golden: LibreOffice/sw/qa/extras/ooxmlexport/data/n779642.docx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf17"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "zh-CN",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": true,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "zoom125",
+        "page_layout": "continuous",
+        "page_mode": "default"
+      }
+    },
+    "schema_version": 2,
+    "seed": "ooxmlsdk-office-pdf-environments-2026-09-11-v2",
+    "source_bytes": 85485,
+    "source_extension": "docx",
+    "source_sha256": "a43588d5aa50e259c376edac7021db341dbf20168d87d48a45c4de397e521c61"
+  },
+  "stages": "{\"utc\":\"2026-09-12T04:17:49.1830146Z\",\"stage\":\"application-create\",\"detail\":\"Word\"}\n{\"utc\":\"2026-09-12T04:17:49.7357470Z\",\"stage\":\"environment-readback\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:17:49.8018107Z\",\"stage\":\"stage-input\",\"detail\":{\"staged\":\"n779642.dotx\",\"open_and_repair\":true,\"original\":\"n779642.docx\"}}\n{\"utc\":\"2026-09-12T04:17:49.8581141Z\",\"stage\":\"word-open\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:17:49.8752768Z\",\"stage\":\"word-open-signature\",\"detail\":\"Document Open (Variant FileName, Variant ConfirmConversions, Variant ReadOnly, Variant AddToRecentFiles, Variant PasswordDocument, Variant PasswordTemplate, Variant Revert, Variant WritePasswordDocument, Variant WritePasswordTemplate, Variant Format, Variant Encoding, Variant Visible, Variant OpenAndRepair, Variant DocumentDirection, Variant NoEncodingDialog, Variant XMLTransform)\"}\n{\"utc\":\"2026-09-12T04:17:50.1199139Z\",\"stage\":\"word-refresh\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:17:50.2877770Z\",\"stage\":\"word-page-count\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:17:50.3125495Z\",\"stage\":\"word-export\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:17:50.7045316Z\",\"stage\":\"word-close\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:17:50.7404043Z\",\"stage\":\"copy-pdf\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:17:50.8148439Z\",\"stage\":\"application-quit\",\"detail\":\"Word\"}\n{\"utc\":\"2026-09-12T04:17:50.9405316Z\",\"stage\":\"archive-stage\",\"detail\":\"C:\\\\Users\\\\kazeno\\\\AppData\\\\Local\\\\Temp\\\\ooxmlsdk-pdf-options-probe-a4bd7b515dca462a881a9e1a7e66644e\"}\n",
+  "worker_completion": {
+    "completed_utc": "2026-09-12T04:17:53.4406824Z",
+    "elapsed_ms": 5259,
+    "exit_code": 0,
+    "file": "LibreOffice/sw/qa/extras/ooxmlexport/data/n779642.docx",
+    "restored": true,
+    "tag": "recovery-all"
+  },
+  "worker_root": "/tmp/office-reference-failure-review-20260912/probes/deab92364c64a8a132e39dadd2549d7cae47827bdcc67b4b800d22a14dd1a033-recovery-all"
+}

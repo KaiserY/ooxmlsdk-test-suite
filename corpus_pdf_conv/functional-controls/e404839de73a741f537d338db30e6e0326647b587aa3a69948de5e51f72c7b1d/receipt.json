@@ -1,0 +1,37 @@
+{
+  "schema_version": 2,
+  "file": "Apache-POI/test-data/spreadsheet/48703.xlsx",
+  "application": "Excel",
+  "application_version": "16.0",
+  "application_build": "20326",
+  "options": {
+    "quality": "screen",
+    "include_document_properties": true,
+    "page_from": null,
+    "page_to": null,
+    "tagged_pdf": true,
+    "bookmarks": "none",
+    "pdf_a_1": false,
+    "bitmap_missing_fonts": true,
+    "print_hidden_slides": false
+  },
+  "source_sha256": "10af0c1b25c30c09112f61f9e52980c8946f5379d85e7e3bf9daa5b02712c999",
+  "output": "case-000.pdf",
+  "output_bytes": 19086,
+  "output_sha256": "98cf440cc47e0e87d38a02d6476277bd5c7510ac17b91a9ed7cba1b859ae2ba3",
+  "elapsed_ms": 836,
+  "environment": {
+    "ui_language": "zh-CN",
+    "format_locale": "zh-CN",
+    "document_language": "zh-CN",
+    "time_zone": "Asia/Shanghai",
+    "windows_time_zone": "China Standard Time",
+    "clock": {
+      "opened_at_utc": "2026-09-11T08:56:50.8444182Z",
+      "refresh_started_at_utc": "2026-09-11T08:56:51.2884234Z",
+      "refresh_completed_at_utc": "2026-09-11T08:56:51.2947616Z",
+      "export_started_at_utc": "2026-09-11T08:56:51.3099060Z",
+      "export_completed_at_utc": "2026-09-11T08:56:51.5977968Z"
+    }
+  }
+}

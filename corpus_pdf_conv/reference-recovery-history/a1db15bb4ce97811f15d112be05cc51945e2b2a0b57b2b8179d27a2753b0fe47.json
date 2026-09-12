@@ -1,0 +1,468 @@
+{
+  "adapter": {
+    "controller_script_sha256": "d0d76bf2dc26b971da6aa3301f5ad8bef7f00ac096076d46e13c09634c70c82d",
+    "environment_helper_sha256": "16f0694a8b9c0c11223263f16c3158fa96d312eaf9affe6dc3d312671eb9dcc2",
+    "probe_script_sha256": "2d9b62f2b707765d4e9dce44fe1144be5b3c6f2fc2cde8087c2c95a6c8ffb1e0"
+  },
+  "environment_path": "/home/kazeno/git/ooxmlsdk-test-suite/corpus_pdf_conv/reference-adapters/896d3a3e77cd3e86922192044a2784d17a253c71a13d3364f48e79cf71053d6b/environment.json",
+  "environment_restoration": {
+    "restored": true
+  },
+  "original_assignment": {
+    "adjustments": [
+      {
+        "feature": "pdf-ua",
+        "reason": "PdfUa1 and pdf_ua_compliance are canonicalized to one effective request"
+      },
+      {
+        "feature": "bookmarks",
+        "reason": "PDF/UA export keeps the document outline available"
+      },
+      {
+        "feature": "viewer-preferences",
+        "reason": "PDF/UA requires the viewer to display the document title"
+      }
+    ],
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "a1db15bb4ce97811f15d112be05cc51945e2b2a0b57b2b8179d27a2753b0fe47",
+    "corpus": "Apache-POI",
+    "effective": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": false,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 60,
+        "max_resolution_dpi": 96,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": "ooxmlsdk-test-suite",
+        "creation_date": null,
+        "creator": null,
+        "keywords": "ooxmlsdk,office,golden",
+        "producer": null,
+        "subject": "Configured Office PDF fidelity",
+        "title": "OOXMLSDK configured golden: Apache-POI/test-data/openxml4j/OPCCompliance_CoreProperties_LimitedXSITypeAttribute_NotPresentFAIL.docx"
+      },
+      "open_bookmark_levels": 0,
+      "page_range": null,
+      "pdf_ua_compliance": true,
+      "standards": [
+        "pdf17",
+        "pdf_ua1"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "en-US",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": true,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": true,
+        "initial_page": 1,
+        "magnification": "zoom125",
+        "page_layout": "continuous",
+        "page_mode": "use_thumbs"
+      }
+    },
+    "family": "word",
+    "file": "test-data/openxml4j/OPCCompliance_CoreProperties_LimitedXSITypeAttribute_NotPresentFAIL.docx",
+    "office": {
+      "bitmap_missing_fonts": false,
+      "bookmarks": "word-bookmarks",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "screen",
+      "tagged_pdf": true
+    },
+    "pilot_300": false,
+    "reference_environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "reference_time_zone": "Asia/Shanghai",
+    "requested": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": false,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 60,
+        "max_resolution_dpi": 96,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": "ooxmlsdk-test-suite",
+        "creation_date": null,
+        "creator": null,
+        "keywords": "ooxmlsdk,office,golden",
+        "producer": null,
+        "subject": "Configured Office PDF fidelity",
+        "title": "OOXMLSDK configured golden: Apache-POI/test-data/openxml4j/OPCCompliance_CoreProperties_LimitedXSITypeAttribute_NotPresentFAIL.docx"
+      },
+      "open_bookmark_levels": 0,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf17",
+        "pdf_ua1"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "en-US",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": true,
+        "initial_page": 1,
+        "magnification": "zoom125",
+        "page_layout": "continuous",
+        "page_mode": "use_thumbs"
+      }
+    },
+    "schema_version": 2,
+    "seed": "ooxmlsdk-office-pdf-environments-2026-09-11-v2",
+    "source_bytes": 9786,
+    "source_extension": "docx",
+    "source_sha256": "dc1b3ecc6bb5ee8b02762bad477a7a5dbcc2b56776f7d82b7b5f405438095fd0"
+  },
+  "original_conversion": {
+    "adjustments": [
+      {
+        "feature": "pdf-ua",
+        "reason": "PdfUa1 and pdf_ua_compliance are canonicalized to one effective request"
+      },
+      {
+        "feature": "bookmarks",
+        "reason": "PDF/UA export keeps the document outline available"
+      },
+      {
+        "feature": "viewer-preferences",
+        "reason": "PDF/UA requires the viewer to display the document title"
+      }
+    ],
+    "annotations": [],
+    "application": "Word",
+    "application_build": "",
+    "application_version": "",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "attempts": 2,
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "a1db15bb4ce97811f15d112be05cc51945e2b2a0b57b2b8179d27a2753b0fe47",
+    "converted_at_utc": "2026-09-12T01:56:32.7252237Z",
+    "effective": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": false,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 60,
+        "max_resolution_dpi": 96,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": "ooxmlsdk-test-suite",
+        "creation_date": null,
+        "creator": null,
+        "keywords": "ooxmlsdk,office,golden",
+        "producer": null,
+        "subject": "Configured Office PDF fidelity",
+        "title": "OOXMLSDK configured golden: Apache-POI/test-data/openxml4j/OPCCompliance_CoreProperties_LimitedXSITypeAttribute_NotPresentFAIL.docx"
+      },
+      "open_bookmark_levels": 0,
+      "page_range": null,
+      "pdf_ua_compliance": true,
+      "standards": [
+        "pdf17",
+        "pdf_ua1"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "en-US",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": true,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": true,
+        "initial_page": 1,
+        "magnification": "zoom125",
+        "page_layout": "continuous",
+        "page_mode": "use_thumbs"
+      }
+    },
+    "elapsed_ms": 11466,
+    "environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "error": "stdout=\u001b[31;1mprobe_office_pdf_options.ps1: \u001b[31;1mThe file appears to be corrupted.\u001b[0m\r\n\r\nOffice worker exit code: 1 stderr=",
+    "error_code": "",
+    "failure_class": "office-conversion-error",
+    "family": "word",
+    "file": "test-data/openxml4j/OPCCompliance_CoreProperties_LimitedXSITypeAttribute_NotPresentFAIL.docx",
+    "observed_pdf": null,
+    "office_options": {
+      "bitmap_missing_fonts": false,
+      "bookmarks": "word-bookmarks",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "screen",
+      "tagged_pdf": true
+    },
+    "output": "",
+    "output_bytes": 0,
+    "output_sha256": "",
+    "reference_engine": "Microsoft Office",
+    "render_environment": null,
+    "requested": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": false,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 60,
+        "max_resolution_dpi": 96,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": "ooxmlsdk-test-suite",
+        "creation_date": null,
+        "creator": null,
+        "keywords": "ooxmlsdk,office,golden",
+        "producer": null,
+        "subject": "Configured Office PDF fidelity",
+        "title": "OOXMLSDK configured golden: Apache-POI/test-data/openxml4j/OPCCompliance_CoreProperties_LimitedXSITypeAttribute_NotPresentFAIL.docx"
+      },
+      "open_bookmark_levels": 0,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf17",
+        "pdf_ua1"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "en-US",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": true,
+        "initial_page": 1,
+        "magnification": "zoom125",
+        "page_layout": "continuous",
+        "page_mode": "use_thumbs"
+      }
+    },
+    "schema_version": 4,
+    "source_bytes": 9786,
+    "source_extension": "docx",
+    "source_sha256": "dc1b3ecc6bb5ee8b02762bad477a7a5dbcc2b56776f7d82b7b5f405438095fd0",
+    "status": "failed"
+  },
+  "probe_receipt": {
+    "application": "Word",
+    "application_build": "16.0.20326",
+    "application_version": "16.0",
+    "elapsed_ms": 761,
+    "environment": {
+      "clock": {
+        "export_completed_at_utc": "2026-09-12T04:07:34.9674361Z",
+        "export_started_at_utc": "2026-09-12T04:07:34.7134351Z",
+        "opened_at_utc": "2026-09-12T04:07:34.3047822Z",
+        "refresh_completed_at_utc": "2026-09-12T04:07:34.6833212Z",
+        "refresh_started_at_utc": "2026-09-12T04:07:34.5356470Z"
+      },
+      "document_language": "zh-CN",
+      "format_locale": "zh-CN",
+      "time_zone": "Asia/Shanghai",
+      "ui_language": "zh-CN",
+      "windows_time_zone": "China Standard Time"
+    },
+    "file": "Apache-POI/test-data/openxml4j/OPCCompliance_CoreProperties_LimitedXSITypeAttribute_NotPresentFAIL.docx",
+    "options": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": false
+    },
+    "output": "case-000.pdf",
+    "output_bytes": 68818,
+    "output_sha256": "c78dd29a1defad8543e53a02d4119f643c766ec8342c8bffb95b280d304ff7c9",
+    "schema_version": 2,
+    "source_sha256": "dc1b3ecc6bb5ee8b02762bad477a7a5dbcc2b56776f7d82b7b5f405438095fd0"
+  },
+  "reason": "Authorized failed-reference recovery: print quality, zh-CN UI, optional export features disabled, repair-mode open on a byte-identical temporary copy; all pages and hidden slides included where applicable.",
+  "recovered_assignment": {
+    "adjustments": [],
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "991fd7921dcc19289ea329281fb9a913382b1d5665c905f45f1916dd5ab6f60d",
+    "corpus": "Apache-POI",
+    "effective": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": false,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 60,
+        "max_resolution_dpi": 96,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": "ooxmlsdk-test-suite",
+        "creation_date": null,
+        "creator": null,
+        "keywords": "ooxmlsdk,office,golden",
+        "producer": null,
+        "subject": "Configured Office PDF fidelity",
+        "title": "OOXMLSDK configured golden: Apache-POI/test-data/openxml4j/OPCCompliance_CoreProperties_LimitedXSITypeAttribute_NotPresentFAIL.docx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf17"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "zh-CN",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": true,
+        "initial_page": 1,
+        "magnification": "zoom125",
+        "page_layout": "continuous",
+        "page_mode": "use_thumbs"
+      }
+    },
+    "family": "word",
+    "file": "test-data/openxml4j/OPCCompliance_CoreProperties_LimitedXSITypeAttribute_NotPresentFAIL.docx",
+    "office": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": false
+    },
+    "pilot_300": false,
+    "reference_environment_id": "896d3a3e77cd3e86922192044a2784d17a253c71a13d3364f48e79cf71053d6b",
+    "reference_time_zone": "Asia/Shanghai",
+    "requested": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": false,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 60,
+        "max_resolution_dpi": 96,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": "ooxmlsdk-test-suite",
+        "creation_date": null,
+        "creator": null,
+        "keywords": "ooxmlsdk,office,golden",
+        "producer": null,
+        "subject": "Configured Office PDF fidelity",
+        "title": "OOXMLSDK configured golden: Apache-POI/test-data/openxml4j/OPCCompliance_CoreProperties_LimitedXSITypeAttribute_NotPresentFAIL.docx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf17"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "zh-CN",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": false,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": true,
+        "initial_page": 1,
+        "magnification": "zoom125",
+        "page_layout": "continuous",
+        "page_mode": "use_thumbs"
+      }
+    },
+    "schema_version": 2,
+    "seed": "ooxmlsdk-office-pdf-environments-2026-09-11-v2",
+    "source_bytes": 9786,
+    "source_extension": "docx",
+    "source_sha256": "dc1b3ecc6bb5ee8b02762bad477a7a5dbcc2b56776f7d82b7b5f405438095fd0"
+  },
+  "stages": "{\"utc\":\"2026-09-12T04:07:33.6112230Z\",\"stage\":\"application-create\",\"detail\":\"Word\"}\n{\"utc\":\"2026-09-12T04:07:34.1903109Z\",\"stage\":\"environment-readback\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:07:34.2556213Z\",\"stage\":\"stage-input\",\"detail\":{\"original\":\"OPCCompliance_CoreProperties_LimitedXSITypeAttribute_NotPresentFAIL.docx\",\"staged\":\"OPCCompliance_CoreProperties_LimitedXSITypeAttribute_NotPresentFAIL.docx\",\"open_and_repair\":true}}\n{\"utc\":\"2026-09-12T04:07:34.3052902Z\",\"stage\":\"word-open\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:07:34.3198802Z\",\"stage\":\"word-open-signature\",\"detail\":\"Document Open (Variant FileName, Variant ConfirmConversions, Variant ReadOnly, Variant AddToRecentFiles, Variant PasswordDocument, Variant PasswordTemplate, Variant Revert, Variant WritePasswordDocument, Variant WritePasswordTemplate, Variant Format, Variant Encoding, Variant Visible, Variant OpenAndRepair, Variant DocumentDirection, Variant NoEncodingDialog, Variant XMLTransform)\"}\n{\"utc\":\"2026-09-12T04:07:34.5364911Z\",\"stage\":\"word-refresh\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:07:34.6922364Z\",\"stage\":\"word-page-count\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:07:34.7140465Z\",\"stage\":\"word-export\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:07:34.9683435Z\",\"stage\":\"word-close\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:07:34.9806079Z\",\"stage\":\"copy-pdf\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:07:35.0664551Z\",\"stage\":\"application-quit\",\"detail\":\"Word\"}\n{\"utc\":\"2026-09-12T04:07:35.1976420Z\",\"stage\":\"archive-stage\",\"detail\":\"C:\\\\Users\\\\kazeno\\\\AppData\\\\Local\\\\Temp\\\\ooxmlsdk-pdf-options-probe-3edf259cac394147b486cc0cf40621f8\"}\n",
+  "worker_completion": {
+    "completed_utc": "2026-09-12T04:07:37.7314587Z",
+    "elapsed_ms": 5128,
+    "exit_code": 0,
+    "file": "Apache-POI/test-data/openxml4j/OPCCompliance_CoreProperties_LimitedXSITypeAttribute_NotPresentFAIL.docx",
+    "restored": true,
+    "tag": "recovery-all"
+  },
+  "worker_root": "/tmp/office-reference-failure-review-20260912/probes/a1db15bb4ce97811f15d112be05cc51945e2b2a0b57b2b8179d27a2753b0fe47-recovery-all"
+}

@@ -1179,7 +1179,7 @@ fn reference_field_update_time_zone(
         .map_err(CalibrationError::OfficeGolden)
 }
 
-fn parse_utc_datetime_in_reference_time_zone(
+pub(crate) fn parse_utc_datetime_in_reference_time_zone(
     value: &str,
     time_zone: &str,
     culture: &str,

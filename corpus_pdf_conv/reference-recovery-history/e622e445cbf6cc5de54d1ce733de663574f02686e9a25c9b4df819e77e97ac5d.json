@@ -1,0 +1,475 @@
+{
+  "adapter": {
+    "controller_script_sha256": "d0d76bf2dc26b971da6aa3301f5ad8bef7f00ac096076d46e13c09634c70c82d",
+    "environment_helper_sha256": "16f0694a8b9c0c11223263f16c3158fa96d312eaf9affe6dc3d312671eb9dcc2",
+    "probe_script_sha256": "2d9b62f2b707765d4e9dce44fe1144be5b3c6f2fc2cde8087c2c95a6c8ffb1e0"
+  },
+  "environment_path": "/home/kazeno/git/ooxmlsdk-test-suite/corpus_pdf_conv/reference-adapters/896d3a3e77cd3e86922192044a2784d17a253c71a13d3364f48e79cf71053d6b/environment.json",
+  "environment_restoration": {
+    "restored": true
+  },
+  "original_assignment": {
+    "adjustments": [
+      {
+        "feature": "pdf-ua",
+        "reason": "PdfUa1 and pdf_ua_compliance are canonicalized to one effective request"
+      },
+      {
+        "feature": "viewer-preferences",
+        "reason": "PDF/UA requires the viewer to display the document title"
+      }
+    ],
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "e622e445cbf6cc5de54d1ce733de663574f02686e9a25c9b4df819e77e97ac5d",
+    "corpus": "Apache-POI",
+    "effective": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 90,
+        "max_resolution_dpi": 300,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": "ooxmlsdk-test-suite",
+        "creation_date": null,
+        "creator": null,
+        "keywords": "ooxmlsdk,office,golden",
+        "producer": null,
+        "subject": "Configured Office PDF fidelity",
+        "title": "OOXMLSDK configured golden: Apache-POI/test-data/integration/stress024.xlsx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": true,
+      "standards": [
+        "pdf17",
+        "pdf_ua1"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "en-US",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": true,
+        "first_page_left": true,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": true,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "continuous_facing",
+        "page_mode": "default"
+      }
+    },
+    "family": "excel",
+    "file": "test-data/integration/stress024.xlsx",
+    "office": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": true
+    },
+    "pilot_300": false,
+    "reference_environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "reference_time_zone": "Asia/Shanghai",
+    "requested": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 90,
+        "max_resolution_dpi": 300,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": "ooxmlsdk-test-suite",
+        "creation_date": null,
+        "creator": null,
+        "keywords": "ooxmlsdk,office,golden",
+        "producer": null,
+        "subject": "Configured Office PDF fidelity",
+        "title": "OOXMLSDK configured golden: Apache-POI/test-data/integration/stress024.xlsx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf17",
+        "pdf_ua1"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "en-US",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": false,
+        "first_page_left": true,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": true,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "continuous_facing",
+        "page_mode": "default"
+      }
+    },
+    "schema_version": 2,
+    "seed": "ooxmlsdk-office-pdf-environments-2026-09-11-v2",
+    "source_bytes": 773960,
+    "source_extension": "xlsx",
+    "source_sha256": "1426b310329954a89df61a05668d25911c4b0e438974cb99e2a08818eb25b3a4"
+  },
+  "original_conversion": {
+    "adjustments": [
+      {
+        "feature": "pdf-ua",
+        "reason": "PdfUa1 and pdf_ua_compliance are canonicalized to one effective request"
+      },
+      {
+        "feature": "viewer-preferences",
+        "reason": "PDF/UA requires the viewer to display the document title"
+      }
+    ],
+    "annotations": [],
+    "application": "Excel",
+    "application_build": "",
+    "application_version": "",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "attempts": 2,
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "e622e445cbf6cc5de54d1ce733de663574f02686e9a25c9b4df819e77e97ac5d",
+    "converted_at_utc": "2026-09-12T02:07:48.960557214Z",
+    "effective": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 90,
+        "max_resolution_dpi": 300,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": "ooxmlsdk-test-suite",
+        "creation_date": null,
+        "creator": null,
+        "keywords": "ooxmlsdk,office,golden",
+        "producer": null,
+        "subject": "Configured Office PDF fidelity",
+        "title": "OOXMLSDK configured golden: Apache-POI/test-data/integration/stress024.xlsx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": true,
+      "standards": [
+        "pdf17",
+        "pdf_ua1"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "en-US",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": true,
+        "first_page_left": true,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": true,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "continuous_facing",
+        "page_mode": "default"
+      }
+    },
+    "elapsed_ms": 12225,
+    "environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "error": "stdout=\u001b[31;1mprobe_office_pdf_options.ps1: \u001b[31;1mExcel cannot open the file 'stress024.xlsx' because the file format or file extension is not valid. Verify that the file has not been corrupted and that the file extension matches the format of the file.\u001b[0m\r\n\r\nOffice worker exit code: 1 stderr=",
+    "error_code": "",
+    "failure_class": "office-conversion-error",
+    "family": "excel",
+    "file": "test-data/integration/stress024.xlsx",
+    "observed_pdf": null,
+    "office_options": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": true
+    },
+    "output": "",
+    "output_bytes": 0,
+    "output_sha256": "",
+    "reference_engine": "Microsoft Office",
+    "render_environment": null,
+    "requested": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 90,
+        "max_resolution_dpi": 300,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": "ooxmlsdk-test-suite",
+        "creation_date": null,
+        "creator": null,
+        "keywords": "ooxmlsdk,office,golden",
+        "producer": null,
+        "subject": "Configured Office PDF fidelity",
+        "title": "OOXMLSDK configured golden: Apache-POI/test-data/integration/stress024.xlsx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf17",
+        "pdf_ua1"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "en-US",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": false,
+        "first_page_left": true,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": true,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "continuous_facing",
+        "page_mode": "default"
+      }
+    },
+    "schema_version": 4,
+    "source_bytes": 773960,
+    "source_extension": "xlsx",
+    "source_sha256": "1426b310329954a89df61a05668d25911c4b0e438974cb99e2a08818eb25b3a4",
+    "status": "failed"
+  },
+  "probe_receipt": {
+    "application": "Excel",
+    "application_build": "20326",
+    "application_version": "16.0",
+    "elapsed_ms": 5433,
+    "environment": {
+      "clock": {
+        "export_completed_at_utc": "2026-09-12T04:07:10.0715000Z",
+        "export_started_at_utc": "2026-09-12T04:07:05.6179155Z",
+        "opened_at_utc": "2026-09-12T04:07:04.9961322Z",
+        "refresh_completed_at_utc": "2026-09-12T04:07:05.5985724Z",
+        "refresh_started_at_utc": "2026-09-12T04:07:05.5926616Z"
+      },
+      "document_language": "zh-CN",
+      "format_locale": "zh-CN",
+      "time_zone": "Asia/Shanghai",
+      "ui_language": "zh-CN",
+      "windows_time_zone": "China Standard Time"
+    },
+    "file": "Apache-POI/test-data/integration/stress024.xlsx",
+    "options": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": true
+    },
+    "output": "case-000.pdf",
+    "output_bytes": 381131,
+    "output_sha256": "0cd416fac9b55d85df0b6d2e0d73a3e2176ce057f046a427c2b1e4628d632516",
+    "schema_version": 2,
+    "source_sha256": "1426b310329954a89df61a05668d25911c4b0e438974cb99e2a08818eb25b3a4"
+  },
+  "reason": "Authorized failed-reference recovery: print quality, zh-CN UI, optional export features disabled, repair-mode open on a byte-identical temporary copy; all pages and hidden slides included where applicable.",
+  "recovered_assignment": {
+    "adjustments": [
+      {
+        "feature": "pdf-ua",
+        "reason": "PdfUa1 and pdf_ua_compliance are canonicalized to one effective request"
+      },
+      {
+        "feature": "bookmarks",
+        "reason": "PDF/UA export keeps the document outline available"
+      },
+      {
+        "feature": "viewer-preferences",
+        "reason": "PDF/UA requires the viewer to display the document title"
+      }
+    ],
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "921a2fccf041fd4af6485bb2fbaeb588b3a38df7fd21ddd58c81387215d3d38e",
+    "corpus": "Apache-POI",
+    "effective": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 90,
+        "max_resolution_dpi": 300,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": "ooxmlsdk-test-suite",
+        "creation_date": null,
+        "creator": null,
+        "keywords": "ooxmlsdk,office,golden",
+        "producer": null,
+        "subject": "Configured Office PDF fidelity",
+        "title": "OOXMLSDK configured golden: Apache-POI/test-data/integration/stress024.xlsx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": true,
+      "standards": [
+        "pdf17",
+        "pdf_ua1"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "zh-CN",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": true,
+        "first_page_left": true,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": true,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "continuous_facing",
+        "page_mode": "default"
+      }
+    },
+    "family": "excel",
+    "file": "test-data/integration/stress024.xlsx",
+    "office": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": true
+    },
+    "pilot_300": false,
+    "reference_environment_id": "896d3a3e77cd3e86922192044a2784d17a253c71a13d3364f48e79cf71053d6b",
+    "reference_time_zone": "Asia/Shanghai",
+    "requested": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 90,
+        "max_resolution_dpi": 300,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": "ooxmlsdk-test-suite",
+        "creation_date": null,
+        "creator": null,
+        "keywords": "ooxmlsdk,office,golden",
+        "producer": null,
+        "subject": "Configured Office PDF fidelity",
+        "title": "OOXMLSDK configured golden: Apache-POI/test-data/integration/stress024.xlsx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf17",
+        "pdf_ua1"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "zh-CN",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": false,
+        "first_page_left": true,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": false,
+        "hide_window_controls": true,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "continuous_facing",
+        "page_mode": "default"
+      }
+    },
+    "schema_version": 2,
+    "seed": "ooxmlsdk-office-pdf-environments-2026-09-11-v2",
+    "source_bytes": 773960,
+    "source_extension": "xlsx",
+    "source_sha256": "1426b310329954a89df61a05668d25911c4b0e438974cb99e2a08818eb25b3a4"
+  },
+  "stages": "{\"utc\":\"2026-09-12T04:07:04.2557244Z\",\"stage\":\"application-create\",\"detail\":\"Excel\"}\n{\"utc\":\"2026-09-12T04:07:04.8905380Z\",\"stage\":\"environment-readback\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:07:04.9516968Z\",\"stage\":\"stage-input\",\"detail\":{\"open_and_repair\":true,\"original\":\"stress024.xlsx\",\"staged\":\"stress024.xlsm\"}}\n{\"utc\":\"2026-09-12T04:07:04.9966180Z\",\"stage\":\"excel-open\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:07:05.5933176Z\",\"stage\":\"excel-calculate\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:07:05.6186158Z\",\"stage\":\"excel-export\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:07:10.2907812Z\",\"stage\":\"excel-close\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:07:10.3164612Z\",\"stage\":\"copy-pdf\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:07:10.4492073Z\",\"stage\":\"application-quit\",\"detail\":\"Excel\"}\n{\"utc\":\"2026-09-12T04:07:10.4745668Z\",\"stage\":\"archive-stage\",\"detail\":\"C:\\\\Users\\\\kazeno\\\\AppData\\\\Local\\\\Temp\\\\ooxmlsdk-pdf-options-probe-0e4fc12d1548498d80ad6d87a86fc0bc\"}\n",
+  "worker_completion": {
+    "completed_utc": "2026-09-12T04:07:10.6880763Z",
+    "elapsed_ms": 7455,
+    "exit_code": 0,
+    "file": "Apache-POI/test-data/integration/stress024.xlsx",
+    "restored": true,
+    "tag": "recovery-all"
+  },
+  "worker_root": "/tmp/office-reference-failure-review-20260912/probes/e622e445cbf6cc5de54d1ce733de663574f02686e9a25c9b4df819e77e97ac5d-recovery-all"
+}

@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+  "coverage_manifest_sha256": "4351636804d058c7870a84973f177465e4f7ae2cb26439661763478579e899a4",
+  "checks": [
+    {
+      "source": "Apache-POI/test-data/slideshow/2411-Performance_Up.pptx",
+      "feature": "hidden-slide-membership",
+      "quality": "print",
+      "with_hidden": 48,
+      "without_hidden": 46
+    },
+    {
+      "source": "Apache-POI/test-data/slideshow/2411-Performance_Up.pptx",
+      "feature": "hidden-slide-membership",
+      "quality": "screen",
+      "with_hidden": 48,
+      "without_hidden": 46
+    },
+    {
+      "source": "Apache-POI/test-data/slideshow/60810.pptx",
+      "feature": "hidden-slide-membership",
+      "quality": "print",
+      "with_hidden": 28,
+      "without_hidden": 25
+    },
+    {
+      "source": "Apache-POI/test-data/slideshow/60810.pptx",
+      "feature": "hidden-slide-membership",
+      "quality": "screen",
+      "with_hidden": 28,
+      "without_hidden": 25
+    },
+    {
+      "source": "Apache-POI/test-data/document/Headers.docx",
+      "feature": "middle-page",
+      "from": 2,
+      "to": 2,
+      "full_pages": 3,
+      "selected_pages": 1
+    },
+    {
+      "source": "LibreOffice/sw/qa/extras/ooxmlexport/data/tdf131203.docx",
+      "feature": "last-page",
+      "from": 3,
+      "to": 3,
+      "full_pages": 3,
+      "selected_pages": 1
+    },
+    {
+      "source": "LibreOffice/sw/qa/extras/ooxmlexport/data/fdo55381.docx",
+      "feature": "non-first-page-interval",
+      "from": 2,
+      "to": 3,
+      "full_pages": 4,
+      "selected_pages": 2
+    },
+    {
+      "source": "Apache-POI/test-data/spreadsheet/49273.xlsx",
+      "feature": "middle-page",
+      "from": 2,
+      "to": 2,
+      "full_pages": 4,
+      "selected_pages": 1
+    },
+    {
+      "source": "Apache-POI/test-data/spreadsheet/ForShifting.xlsx",
+      "feature": "last-page",
+      "from": 3,
+      "to": 3,
+      "full_pages": 3,
+      "selected_pages": 1
+    },
+    {
+      "source": "Apache-POI/test-data/spreadsheet/48703.xlsx",
+      "feature": "non-first-page-interval",
+      "from": 2,
+      "to": 3,
+      "full_pages": 4,
+      "selected_pages": 2
+    },
+    {
+      "source": "LibreOffice/sd/qa/unit/data/pptx/tdf144918.pptx",
+      "feature": "middle-page",
+      "from": 2,
+      "to": 2,
+      "full_pages": 3,
+      "selected_pages": 1
+    },
+    {
+      "source": "Pandoc/test/pptx/code/output.pptx",
+      "feature": "last-page",
+      "from": 3,
+      "to": 3,
+      "full_pages": 3,
+      "selected_pages": 1
+    },
+    {
+      "source": "LibreOffice/sd/qa/unit/data/pptx/tdf119187.pptx",
+      "feature": "non-first-page-interval",
+      "from": 2,
+      "to": 3,
+      "full_pages": 3,
+      "selected_pages": 2
+    }
+  ]
+}

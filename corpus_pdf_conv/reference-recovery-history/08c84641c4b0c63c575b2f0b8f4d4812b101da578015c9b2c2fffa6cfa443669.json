@@ -1,0 +1,448 @@
+{
+  "adapter": {
+    "controller_script_sha256": "d0d76bf2dc26b971da6aa3301f5ad8bef7f00ac096076d46e13c09634c70c82d",
+    "environment_helper_sha256": "16f0694a8b9c0c11223263f16c3158fa96d312eaf9affe6dc3d312671eb9dcc2",
+    "probe_script_sha256": "2d9b62f2b707765d4e9dce44fe1144be5b3c6f2fc2cde8087c2c95a6c8ffb1e0"
+  },
+  "environment_path": "/home/kazeno/git/ooxmlsdk-test-suite/corpus_pdf_conv/reference-adapters/896d3a3e77cd3e86922192044a2784d17a253c71a13d3364f48e79cf71053d6b/environment.json",
+  "environment_restoration": {
+    "restored": true
+  },
+  "original_assignment": {
+    "adjustments": [
+      {
+        "feature": "ui-language",
+        "reason": "application-generated UI strings currently fall back to English outside English and Chinese resource packs"
+      }
+    ],
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "08c84641c4b0c63c575b2f0b8f4d4812b101da578015c9b2c2fffa6cfa443669",
+    "corpus": "LibreOffice",
+    "effective": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 90,
+        "max_resolution_dpi": 300,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": "ooxmlsdk-pdf",
+        "keywords": null,
+        "producer": "ooxmlsdk-pdf configured campaign",
+        "subject": null,
+        "title": null
+      },
+      "open_bookmark_levels": 2,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf16"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "ja-JP",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": true,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": true,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "continuous",
+        "page_mode": "use_outlines"
+      }
+    },
+    "family": "word",
+    "file": "sw/qa/extras/ooxmlexport/data/tdf143583_emptyParaAtEndOfFootnote.docx",
+    "office": {
+      "bitmap_missing_fonts": false,
+      "bookmarks": "headings",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": true
+    },
+    "pilot_300": false,
+    "reference_environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "reference_time_zone": "Asia/Shanghai",
+    "requested": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 90,
+        "max_resolution_dpi": 300,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": "ooxmlsdk-pdf",
+        "keywords": null,
+        "producer": "ooxmlsdk-pdf configured campaign",
+        "subject": null,
+        "title": null
+      },
+      "open_bookmark_levels": 2,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf16"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "ja-JP",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": true,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": true,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "continuous",
+        "page_mode": "use_outlines"
+      }
+    },
+    "schema_version": 2,
+    "seed": "ooxmlsdk-office-pdf-environments-2026-09-11-v2",
+    "source_bytes": 8777,
+    "source_extension": "docx",
+    "source_sha256": "07f48f9b92163859dbea2efc2ff097459163e1f12aa2965896f49f235cc30176"
+  },
+  "original_conversion": {
+    "adjustments": [
+      {
+        "feature": "ui-language",
+        "reason": "application-generated UI strings currently fall back to English outside English and Chinese resource packs"
+      }
+    ],
+    "annotations": [],
+    "application": "Word",
+    "application_build": "",
+    "application_version": "",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "attempts": 2,
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "08c84641c4b0c63c575b2f0b8f4d4812b101da578015c9b2c2fffa6cfa443669",
+    "converted_at_utc": "2026-09-12T02:02:39.696517494Z",
+    "effective": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 90,
+        "max_resolution_dpi": 300,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": "ooxmlsdk-pdf",
+        "keywords": null,
+        "producer": "ooxmlsdk-pdf configured campaign",
+        "subject": null,
+        "title": null
+      },
+      "open_bookmark_levels": 2,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf16"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "ja-JP",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": true,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": true,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "continuous",
+        "page_mode": "use_outlines"
+      }
+    },
+    "elapsed_ms": 13213,
+    "environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "error": "stdout=\u001b[31;1mprobe_office_pdf_options.ps1: \u001b[31;1m�ե����뤬����Ƥ�������Ԥ�����ޤ���\u001b[0m\r\n\r\nOffice worker exit code: 1 stderr=",
+    "error_code": "",
+    "failure_class": "office-conversion-error",
+    "family": "word",
+    "file": "sw/qa/extras/ooxmlexport/data/tdf143583_emptyParaAtEndOfFootnote.docx",
+    "observed_pdf": null,
+    "office_options": {
+      "bitmap_missing_fonts": false,
+      "bookmarks": "headings",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": true
+    },
+    "output": "",
+    "output_bytes": 0,
+    "output_sha256": "",
+    "reference_engine": "Microsoft Office",
+    "render_environment": null,
+    "requested": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 90,
+        "max_resolution_dpi": 300,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": "ooxmlsdk-pdf",
+        "keywords": null,
+        "producer": "ooxmlsdk-pdf configured campaign",
+        "subject": null,
+        "title": null
+      },
+      "open_bookmark_levels": 2,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf16"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "ja-JP",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": true,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": true,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "continuous",
+        "page_mode": "use_outlines"
+      }
+    },
+    "schema_version": 4,
+    "source_bytes": 8777,
+    "source_extension": "docx",
+    "source_sha256": "07f48f9b92163859dbea2efc2ff097459163e1f12aa2965896f49f235cc30176",
+    "status": "failed"
+  },
+  "probe_receipt": {
+    "application": "Word",
+    "application_build": "16.0.20326",
+    "application_version": "16.0",
+    "elapsed_ms": 958,
+    "environment": {
+      "clock": {
+        "export_completed_at_utc": "2026-09-12T04:20:16.9066446Z",
+        "export_started_at_utc": "2026-09-12T04:20:16.4926250Z",
+        "opened_at_utc": "2026-09-12T04:20:16.0496840Z",
+        "refresh_completed_at_utc": "2026-09-12T04:20:16.4577869Z",
+        "refresh_started_at_utc": "2026-09-12T04:20:16.2930277Z"
+      },
+      "document_language": "zh-CN",
+      "format_locale": "zh-CN",
+      "time_zone": "Asia/Shanghai",
+      "ui_language": "zh-CN",
+      "windows_time_zone": "China Standard Time"
+    },
+    "file": "LibreOffice/sw/qa/extras/ooxmlexport/data/tdf143583_emptyParaAtEndOfFootnote.docx",
+    "options": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": false
+    },
+    "output": "case-000.pdf",
+    "output_bytes": 16656,
+    "output_sha256": "e6b85f6dea2926829e92dacae672c1ed4811f58a1201831d22b916731e31ae32",
+    "schema_version": 2,
+    "source_sha256": "07f48f9b92163859dbea2efc2ff097459163e1f12aa2965896f49f235cc30176"
+  },
+  "reason": "Authorized failed-reference recovery: print quality, zh-CN UI, optional export features disabled, repair-mode open on a byte-identical temporary copy; all pages and hidden slides included where applicable.",
+  "recovered_assignment": {
+    "adjustments": [],
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "d2d17f2b87b616f49d7f47a635c7cc8116b97515520a8c5c8e93dcb5cc158a2e",
+    "corpus": "LibreOffice",
+    "effective": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 90,
+        "max_resolution_dpi": 300,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": "ooxmlsdk-pdf",
+        "keywords": null,
+        "producer": "ooxmlsdk-pdf configured campaign",
+        "subject": null,
+        "title": null
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf16"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "zh-CN",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": true,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": true,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "continuous",
+        "page_mode": "use_outlines"
+      }
+    },
+    "family": "word",
+    "file": "sw/qa/extras/ooxmlexport/data/tdf143583_emptyParaAtEndOfFootnote.docx",
+    "office": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": false
+    },
+    "pilot_300": false,
+    "reference_environment_id": "896d3a3e77cd3e86922192044a2784d17a253c71a13d3364f48e79cf71053d6b",
+    "reference_time_zone": "Asia/Shanghai",
+    "requested": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 90,
+        "max_resolution_dpi": 300,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "remove_external_links",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": "ooxmlsdk-pdf",
+        "keywords": null,
+        "producer": "ooxmlsdk-pdf configured campaign",
+        "subject": null,
+        "title": null
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf16"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "zh-CN",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": true,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": true,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "continuous",
+        "page_mode": "use_outlines"
+      }
+    },
+    "schema_version": 2,
+    "seed": "ooxmlsdk-office-pdf-environments-2026-09-11-v2",
+    "source_bytes": 8777,
+    "source_extension": "docx",
+    "source_sha256": "07f48f9b92163859dbea2efc2ff097459163e1f12aa2965896f49f235cc30176"
+  },
+  "stages": "{\"utc\":\"2026-09-12T04:20:15.3758199Z\",\"stage\":\"application-create\",\"detail\":\"Word\"}\n{\"utc\":\"2026-09-12T04:20:15.9408545Z\",\"stage\":\"environment-readback\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:20:16.0046668Z\",\"stage\":\"stage-input\",\"detail\":{\"open_and_repair\":true,\"staged\":\"tdf143583_emptyParaAtEndOfFootnote.docx\",\"original\":\"tdf143583_emptyParaAtEndOfFootnote.docx\"}}\n{\"utc\":\"2026-09-12T04:20:16.0502952Z\",\"stage\":\"word-open\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:20:16.0686853Z\",\"stage\":\"word-open-signature\",\"detail\":\"Document Open (Variant FileName, Variant ConfirmConversions, Variant ReadOnly, Variant AddToRecentFiles, Variant PasswordDocument, Variant PasswordTemplate, Variant Revert, Variant WritePasswordDocument, Variant WritePasswordTemplate, Variant Format, Variant Encoding, Variant Visible, Variant OpenAndRepair, Variant DocumentDirection, Variant NoEncodingDialog, Variant XMLTransform)\"}\n{\"utc\":\"2026-09-12T04:20:16.2935646Z\",\"stage\":\"word-refresh\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:20:16.4690933Z\",\"stage\":\"word-page-count\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:20:16.4932316Z\",\"stage\":\"word-export\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:20:16.9076381Z\",\"stage\":\"word-close\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:20:16.9218660Z\",\"stage\":\"copy-pdf\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:20:17.0079717Z\",\"stage\":\"application-quit\",\"detail\":\"Word\"}\n{\"utc\":\"2026-09-12T04:20:17.1422302Z\",\"stage\":\"archive-stage\",\"detail\":\"C:\\\\Users\\\\kazeno\\\\AppData\\\\Local\\\\Temp\\\\ooxmlsdk-pdf-options-probe-ff2a06bc2ea9465eadd4cd3b3ed3cf44\"}\n",
+  "worker_completion": {
+    "completed_utc": "2026-09-12T04:20:19.8030673Z",
+    "elapsed_ms": 5438,
+    "exit_code": 0,
+    "file": "LibreOffice/sw/qa/extras/ooxmlexport/data/tdf143583_emptyParaAtEndOfFootnote.docx",
+    "restored": true,
+    "tag": "recovery-all"
+  },
+  "worker_root": "/tmp/office-reference-failure-review-20260912/probes/08c84641c4b0c63c575b2f0b8f4d4812b101da578015c9b2c2fffa6cfa443669-recovery-all"
+}

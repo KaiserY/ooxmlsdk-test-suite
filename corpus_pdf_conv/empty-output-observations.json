@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "observations": [
+    {
+      "source": "Apache-POI/test-data/spreadsheet/SheetTabColors.xlsx",
+      "source_sha256": "1e0bc29719430c8e221465ce026e78063587516ef5037acafc466ce835356930",
+      "office_options": {
+        "quality": "print",
+        "include_document_properties": false,
+        "page_from": null,
+        "page_to": null,
+        "tagged_pdf": true,
+        "bookmarks": "none",
+        "pdf_a_1": false,
+        "bitmap_missing_fonts": true,
+        "print_hidden_slides": false
+      },
+      "render_environment": {
+        "ui_language": "zh-CN",
+        "format_locale": "zh-CN",
+        "document_language": "zh-CN",
+        "time_zone": "Asia/Shanghai",
+        "windows_time_zone": "China Standard Time",
+        "clock": {
+          "opened_at_utc": "2026-09-12T04:09:02.1510718Z",
+          "refresh_started_at_utc": "2026-09-12T04:09:02.2666847Z",
+          "refresh_completed_at_utc": "2026-09-12T04:09:02.2725099Z",
+          "export_started_at_utc": "2026-09-12T04:09:02.2889999Z",
+          "export_completed_at_utc": "2026-09-12T04:09:02.5687952Z"
+        }
+      },
+      "observed_page_count": 0,
+      "qpdf_exit": 2,
+      "qpdf_check": "checking /tmp/office-reference-failure-review-20260912/probes/31e53bd4dee9afdf9c7e1fa500feb824588812b6df6e6668c983a7f5e72dce6f-recovery-all/output/case-000.pdf\nPDF Version: 1.7\nFile is not encrypted\nFile is not linearized\nERROR: vector::_M_range_check: __n (which is 0) >= this->size() (which is 0)\nqpdf: errors detected\n",
+      "output_sha256": "cb57de98012cee12435222d35ec1d87371a5ef331847fe9b8480cf2eaf51a019",
+      "output_bytes": 4859,
+      "adapter_environment_id": "896d3a3e77cd3e86922192044a2784d17a253c71a13d3364f48e79cf71053d6b"
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/Examples/Misc/WorkbookProperties.xlsx",
+      "source_sha256": "f3d8615ae384ff9cdf81fcb29bfa386eab473a20a5e1bea90b7cab294a107da9",
+      "office_options": {
+        "quality": "print",
+        "include_document_properties": false,
+        "page_from": null,
+        "page_to": null,
+        "tagged_pdf": true,
+        "bookmarks": "none",
+        "pdf_a_1": false,
+        "bitmap_missing_fonts": true,
+        "print_hidden_slides": false
+      },
+      "render_environment": {
+        "ui_language": "zh-CN",
+        "format_locale": "zh-CN",
+        "document_language": "zh-CN",
+        "time_zone": "Asia/Shanghai",
+        "windows_time_zone": "China Standard Time",
+        "clock": {
+          "opened_at_utc": "2026-09-12T04:10:24.1247944Z",
+          "refresh_started_at_utc": "2026-09-12T04:10:24.2425006Z",
+          "refresh_completed_at_utc": "2026-09-12T04:10:24.2486387Z",
+          "export_started_at_utc": "2026-09-12T04:10:24.2653190Z",
+          "export_completed_at_utc": "2026-09-12T04:10:24.5936969Z"
+        }
+      },
+      "observed_page_count": 0,
+      "qpdf_exit": 2,
+      "qpdf_check": "checking /tmp/office-reference-failure-review-20260912/probes/139f6ecde69088779ac6d0de51396d4d9d70dd109ccf40e58bdbbb40503b73aa-recovery-all/output/case-000.pdf\nPDF Version: 1.7\nFile is not encrypted\nFile is not linearized\nERROR: vector::_M_range_check: __n (which is 0) >= this->size() (which is 0)\nqpdf: errors detected\n",
+      "output_sha256": "bcbc43eb1ed39842bc10212e28d86ce03c3ad37f44537a59245ea37ddd1dd44f",
+      "output_bytes": 4859,
+      "adapter_environment_id": "896d3a3e77cd3e86922192044a2784d17a253c71a13d3364f48e79cf71053d6b"
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/empty-noconf.xlsx",
+      "source_sha256": "556489821a2d6c42aaff824c8165c652a402ffa73ca45c65758302a893d5d785",
+      "office_options": {
+        "quality": "print",
+        "include_document_properties": false,
+        "page_from": null,
+        "page_to": null,
+        "tagged_pdf": true,
+        "bookmarks": "none",
+        "pdf_a_1": false,
+        "bitmap_missing_fonts": true,
+        "print_hidden_slides": false
+      },
+      "render_environment": {
+        "ui_language": "zh-CN",
+        "format_locale": "zh-CN",
+        "document_language": "zh-CN",
+        "time_zone": "Asia/Shanghai",
+        "windows_time_zone": "China Standard Time",
+        "clock": {
+          "opened_at_utc": "2026-09-12T04:12:53.0517160Z",
+          "refresh_started_at_utc": "2026-09-12T04:12:53.1603332Z",
+          "refresh_completed_at_utc": "2026-09-12T04:12:53.1654508Z",
+          "export_started_at_utc": "2026-09-12T04:12:53.1815042Z",
+          "export_completed_at_utc": "2026-09-12T04:12:53.3416413Z"
+        }
+      },
+      "observed_page_count": 0,
+      "qpdf_exit": 2,
+      "qpdf_check": "checking /tmp/office-reference-failure-review-20260912/probes/a8961fc6bd7d568e31909ea5b80d2d6276763292fb05f284f1f04ca788fe3018-recovery-all/output/case-000.pdf\nPDF Version: 1.7\nFile is not encrypted\nFile is not linearized\nERROR: vector::_M_range_check: __n (which is 0) >= this->size() (which is 0)\nqpdf: errors detected\n",
+      "output_sha256": "ff5668963ea7a7b93e54f183d025967318b4c2932f7cc1cc1994895d235db58f",
+      "output_bytes": 4859,
+      "adapter_environment_id": "896d3a3e77cd3e86922192044a2784d17a253c71a13d3364f48e79cf71053d6b"
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/hiddenShape.xlsx",
+      "source_sha256": "fec6fd8b086774cbbe77988b5b3ab605372ade820be41b4a152bb94d226f730b",
+      "office_options": {
+        "quality": "print",
+        "include_document_properties": false,
+        "page_from": null,
+        "page_to": null,
+        "tagged_pdf": true,
+        "bookmarks": "none",
+        "pdf_a_1": false,
+        "bitmap_missing_fonts": true,
+        "print_hidden_slides": false
+      },
+      "render_environment": {
+        "ui_language": "zh-CN",
+        "format_locale": "zh-CN",
+        "document_language": "zh-CN",
+        "time_zone": "Asia/Shanghai",
+        "windows_time_zone": "China Standard Time",
+        "clock": {
+          "opened_at_utc": "2026-09-12T04:13:03.3282331Z",
+          "refresh_started_at_utc": "2026-09-12T04:13:03.4606472Z",
+          "refresh_completed_at_utc": "2026-09-12T04:13:03.4660257Z",
+          "export_started_at_utc": "2026-09-12T04:13:03.4821540Z",
+          "export_completed_at_utc": "2026-09-12T04:13:03.7157905Z"
+        }
+      },
+      "observed_page_count": 0,
+      "qpdf_exit": 2,
+      "qpdf_check": "checking /tmp/office-reference-failure-review-20260912/probes/ade24f6998c21ceae06bbe2bb93a967f46b6d3613ba2d3a57622deaf7405dd75-recovery-all/output/case-000.pdf\nPDF Version: 1.7\nFile is not encrypted\nFile is not linearized\nERROR: vector::_M_range_check: __n (which is 0) >= this->size() (which is 0)\nqpdf: errors detected\n",
+      "output_sha256": "2bcd338a79356762fc3db05a6b98ff6975e54a56383d30661f00a3d27e7129bf",
+      "output_bytes": 4859,
+      "adapter_environment_id": "896d3a3e77cd3e86922192044a2784d17a253c71a13d3364f48e79cf71053d6b"
+    }
+  ]
+}

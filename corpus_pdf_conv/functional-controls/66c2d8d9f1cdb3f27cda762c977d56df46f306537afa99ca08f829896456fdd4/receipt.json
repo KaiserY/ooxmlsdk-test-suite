@@ -1,0 +1,37 @@
+{
+  "schema_version": 2,
+  "file": "Apache-POI/test-data/slideshow/60810.pptx",
+  "application": "PowerPoint",
+  "application_version": "16.0",
+  "application_build": "20326",
+  "options": {
+    "quality": "print",
+    "include_document_properties": true,
+    "page_from": null,
+    "page_to": null,
+    "tagged_pdf": true,
+    "bookmarks": "none",
+    "pdf_a_1": true,
+    "bitmap_missing_fonts": false,
+    "print_hidden_slides": false
+  },
+  "source_sha256": "61afceb0365523ceba6fc00a525157148c2ddbdb3b5d843992ac3c107e9921bf",
+  "output": "case-000.pdf",
+  "output_bytes": 1156124,
+  "output_sha256": "b455ab26ad967e685445997509533528f4aa810dbb63ddcabf5748603eb9ef38",
+  "elapsed_ms": 2237,
+  "environment": {
+    "ui_language": "de-DE",
+    "format_locale": "zh-CN",
+    "document_language": "zh-CN",
+    "time_zone": "Asia/Shanghai",
+    "windows_time_zone": "China Standard Time",
+    "clock": {
+      "opened_at_utc": "2026-09-11T08:56:06.5035693Z",
+      "refresh_started_at_utc": "2026-09-11T08:56:06.5073692Z",
+      "refresh_completed_at_utc": "2026-09-11T08:56:06.7470036Z",
+      "export_started_at_utc": "2026-09-11T08:56:06.8433155Z",
+      "export_completed_at_utc": "2026-09-11T08:56:08.5917346Z"
+    }
+  }
+}

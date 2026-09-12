@@ -1,0 +1,708 @@
+{
+  "schema_version": 1,
+  "closed_date": "2026-09-12",
+  "reason": "User requested closing recovery without forcing problematic conversions.",
+  "before": {
+    "converted": 5145,
+    "failed": 221,
+    "timeout": 4
+  },
+  "after": {
+    "converted": 5239,
+    "failed": 131
+  },
+  "recovered": 94,
+  "retry_outcomes": {
+    "error": 32,
+    "valid_pdf": 94,
+    "timeout": 7,
+    "zero_pdf": 92
+  },
+  "worker_environment_restorations": 225,
+  "protection": {
+    "assignments": 5370,
+    "sources_verified": 5370,
+    "source_drift": [],
+    "protected_successes": 5145,
+    "protected_drift": [],
+    "converted_hash_drift": [],
+    "counts": {
+      "converted": 5239,
+      "failed": 131
+    },
+    "plan_sha256": "2670c58cf0c6f9f86b9f65207d747b773c33424042ac145ae5aa719bc587cd80"
+  },
+  "generated_plan_matches": true,
+  "candidate_passes_added": 0,
+  "unresolved": [
+    {
+      "source": "LibreOffice/sw/qa/core/data/docm/testModernVBADelete.docm",
+      "retry_outcome": "error",
+      "error": "被调用的对象已与其客户端断开连接。 (0x80010108 (RPC_E_DISCONNECTED))"
+    },
+    {
+      "source": "Apache-POI/poi-ooxml/src/main/resources/org/apache/poi/xslf/usermodel/empty.pptx",
+      "retry_outcome": "error",
+      "error": "Presentation.ExportAsFixedFormat : 您所选的要打印的幻灯片不存在，请选另一个。"
+    },
+    {
+      "source": "Apache-POI/test-data/document/deep-table-cell.docx",
+      "retry_outcome": "timeout",
+      "error": ""
+    },
+    {
+      "source": "Apache-POI/test-data/spreadsheet/45430.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "Apache-POI/test-data/spreadsheet/45431.xlsm",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "Apache-POI/test-data/spreadsheet/47090.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "Apache-POI/test-data/spreadsheet/51470.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "Apache-POI/test-data/spreadsheet/52425.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "Apache-POI/test-data/spreadsheet/55640.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "Apache-POI/test-data/spreadsheet/56017.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "Apache-POI/test-data/spreadsheet/58760.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "Apache-POI/test-data/spreadsheet/60825.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "Apache-POI/test-data/spreadsheet/65016.xlsx",
+      "retry_outcome": "error",
+      "error": "不能取得类 Workbooks 的 Open 属性"
+    },
+    {
+      "source": "Apache-POI/test-data/spreadsheet/AmpersandHeader.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "Apache-POI/test-data/spreadsheet/BrNotClosed.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "Apache-POI/test-data/spreadsheet/HeaderFooterComplexFormats.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "Apache-POI/test-data/spreadsheet/SheetTabColors.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "Apache-POI/test-data/spreadsheet/duplicate-filename-case-insensitive.xlsx",
+      "retry_outcome": "error",
+      "error": "不能取得类 Workbooks 的 Open 属性"
+    },
+    {
+      "source": "Apache-POI/test-data/spreadsheet/duplicate-filename.xlsx",
+      "retry_outcome": "error",
+      "error": "不能取得类 Workbooks 的 Open 属性"
+    },
+    {
+      "source": "Apache-POI/test-data/spreadsheet/poc-shared-strings.xlsx",
+      "retry_outcome": "error",
+      "error": "远程过程调用失败。 (0x800706BE)"
+    },
+    {
+      "source": "Apache-POI/test-data/spreadsheet/resize_compare.xlsx",
+      "retry_outcome": "error",
+      "error": "不能取得类 Workbooks 的 Open 属性"
+    },
+    {
+      "source": "Apache-POI/test-data/spreadsheet/sheetProtection_allLocked.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "Apache-POI/test-data/spreadsheet/workbookProtection_workbook_revision_protected.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "Apache-POI/test-data/spreadsheet/xlmmacro.xlsm",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "Apache-POI/test-data/xmldsign/signed.docx",
+      "retry_outcome": "error",
+      "error": "由于出现意外错误，导出失败。"
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/Examples/Columns/ColumnSettings.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/Examples/ConditionalFormatting/CFDatesOccurring.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/Examples/ConditionalFormatting/CFMultipleConditions.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/Examples/Delete/DeleteFewWorksheets.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/Examples/Misc/BlankCells.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/Examples/Misc/FreezePanes.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/Examples/Misc/HideSheets.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/Examples/Misc/HideUnhide.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/Examples/Misc/Outline.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/Examples/Misc/TabColors.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/Examples/Misc/WorkbookProperties.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/Examples/Misc/WorkbookProtection.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/Examples/PageSetup/HeaderFooters.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/Examples/PageSetup/Margins.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/Examples/PageSetup/Page.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/Examples/Ranges/SelectingRanges.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/Examples/Rows/RowSettings.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/Examples/Styles/DefaultStyles.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/Examples/Styles/PurpleWorksheet.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/Other/Comments/InsetsUnitConversion.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/Other/Drawings/NoDrawings/outputfile.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/Other/NoActiveSheet/noactive_noselected.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/Other/NoActiveSheet/noactive_twoselected.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/Other/PageSetup/Negative_first_page_number.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/Other/Parts/MultiplePartsHaveNonUniqueRelId-input.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/Other/Parts/MultiplePartsHaveNonUniqueRelId-output.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/Other/PivotTableReferenceFiles/PivotTableWithoutSourceData-output.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/Other/SelectedRanges/InvalidSelectedRange.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/Other/StyleReferenceFiles/RowColors/output.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/TryToLoad/CommentAndButton.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/TryToLoad/DefaultColumnWidth.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/TryToLoad/EmptyStyles.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/TryToLoad/FilterPrivacyEnabledWorkbook.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/TryToLoad/InvalidPrintTitles2.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/TryToLoad/NamedRangeWithInvalidCharacter.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/TryToLoad/PrintAreaRefersToExternalWorksheet.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/TryToLoad/SheetDefaultColumnWidth.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "ClosedXML/ClosedXML.Tests/Resource/TryToLoad/TemplateWithTableSourcePivotTables.xlsx",
+      "retry_outcome": "error",
+      "error": "被呼叫方拒绝接收呼叫。 (0x80010001 (RPC_E_CALL_REJECTED))"
+    },
+    {
+      "source": "LibreOffice/chart2/qa/extras/data/xlsx/chart_pie2007.xlsx",
+      "retry_outcome": "error",
+      "error": "不能取得类 Workbooks 的 Open 属性"
+    },
+    {
+      "source": "LibreOffice/sc/qa/extras/testdocuments/KeyShortcut.xlsm",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sc/qa/extras/testdocuments/macro-button-form-control.xlsm",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sc/qa/extras/testdocuments/tdf75263.xlsm",
+      "retry_outcome": "error",
+      "error": "不能取得类 Workbooks 的 Open 属性"
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsm/tdf117266_macroButton.xlsm",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/RowImportCellStyleIssue.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/button-form-control.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/column-style.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/column_style.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/condformat_databar.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/different-column-width-excel2010.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/empty-noconf.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/formats.xlsx",
+      "retry_outcome": "error",
+      "error": "不能取得类 Workbooks 的 Open 属性"
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/hiddenShape.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/hidden_sheets.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/page_scale.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/sheet-names.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/sheet-tab-color.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/tdf100709.xlsx",
+      "retry_outcome": "error",
+      "error": "不能取得类 Workbooks 的 Open 属性"
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/tdf104310-2.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/tdf105840_allRowsHidden.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/tdf112567.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/tdf133595.xlsx",
+      "retry_outcome": "error",
+      "error": "不能取得类 Workbooks 的 Open 属性"
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/tdf134459_HeaderFooterColor.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/tdf134817_HeaderFooterTextWith2Section.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/tdf134826.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/tdf138741_externalLinkSkipUnusedsCrash.xlsx",
+      "retry_outcome": "error",
+      "error": "不能取得类 Workbooks 的 Open 属性"
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/tdf164417.xlsx",
+      "retry_outcome": "error",
+      "error": "不能取得类 Workbooks 的 Open 属性"
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/tdf166712.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/tdf169072_illegalDates.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/tdf66377.xlsx",
+      "retry_outcome": "error",
+      "error": "不能取得类 Workbooks 的 Open 属性"
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/tdf90104.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/tdfSheetProts.xlsx",
+      "retry_outcome": "error",
+      "error": "不能取得类 Workbooks 的 Open 属性"
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/threadedComment.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/data/xlsx/too-many-cols-rows.xlsx",
+      "retry_outcome": "error",
+      "error": "不能取得类 Workbooks 的 Open 属性"
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/tiledrendering/data/split-panes.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sc/qa/unit/uicalc/data/tdf148669.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sd/qa/uitest/data/tdf144943.pptx",
+      "retry_outcome": "error",
+      "error": "Presentation.ExportAsFixedFormat : 该文件为只读文件，无法导出。"
+    },
+    {
+      "source": "LibreOffice/sw/qa/core/data/ooxml/pass/tdf92157-1-minimized.docx",
+      "retry_outcome": "timeout",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sw/qa/core/text/data/tdf153040.docx",
+      "retry_outcome": "error",
+      "error": "Exception calling \"InvokeMember\" with \"8\" argument(s): \"Word 在试图打开文件时遇到错误。\n请尝试下列方法:\n* 检查文档或驱动器的文件权限。\n* 确保有足够的内存和磁盘空间。\n* 用文本恢复转换器打开文件。\r (C:\\Users\\kazeno\\...\\tdf153040.docx)\""
+    },
+    {
+      "source": "LibreOffice/sw/qa/extras/globalfilter/data/skipimages.docx",
+      "retry_outcome": "error",
+      "error": "由于出现意外错误，导出失败。"
+    },
+    {
+      "source": "LibreOffice/sw/qa/extras/ooxmlexport/data/mathtype.docx",
+      "retry_outcome": "error",
+      "error": "由于出现意外错误，导出失败。"
+    },
+    {
+      "source": "LibreOffice/sw/qa/extras/ooxmlexport/data/n816593.docx",
+      "retry_outcome": "timeout",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sw/qa/extras/ooxmlexport/data/tdf143269_zeroSizeEmbeddings.docx",
+      "retry_outcome": "error",
+      "error": "Exception calling \"InvokeMember\" with \"8\" argument(s): \"Word 在试图打开文件时遇到错误。\n请尝试下列方法:\n* 检查文档或驱动器的文件权限。\n* 确保有足够的内存和磁盘空间。\n* 用文本恢复转换器打开文件。\r (C:\\...\\tdf143269_zeroSizeEmbeddings.docx)\""
+    },
+    {
+      "source": "LibreOffice/sw/qa/extras/ooxmlexport/data/tdf153255.docx",
+      "retry_outcome": "timeout",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sw/qa/extras/ooxmlimport/data/ole-anchor.docx",
+      "retry_outcome": "error",
+      "error": "由于出现意外错误，导出失败。"
+    },
+    {
+      "source": "LibreOffice/sw/qa/extras/ooxmlimport/data/tdf165348_broken_package.docx",
+      "retry_outcome": "error",
+      "error": "Exception calling \"InvokeMember\" with \"8\" argument(s): \"Word 在试图打开文件时遇到错误。\n请尝试下列方法:\n* 检查文档或驱动器的文件权限。\n* 确保有足够的内存和磁盘空间。\n* 用文本恢复转换器打开文件。\r (C:\\...\\tdf165348_broken_package.docx)\""
+    },
+    {
+      "source": "LibreOffice/sw/qa/extras/tiledrendering/data/fieldmark.docx",
+      "retry_outcome": "timeout",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sw/qa/extras/uiwriter/data/tdf155685.docx",
+      "retry_outcome": "error",
+      "error": "Exception calling \"InvokeMember\" with \"8\" argument(s): \"Word 在试图打开文件时遇到错误。\n请尝试下列方法:\n* 检查文档或驱动器的文件权限。\n* 确保有足够的内存和磁盘空间。\n* 用文本恢复转换器打开文件。\r (C:\\Users\\kazeno\\...\\tdf155685.docx)\""
+    },
+    {
+      "source": "LibreOffice/sw/qa/extras/ww8export/data/clearing-break-with-fly.docx",
+      "retry_outcome": "timeout",
+      "error": ""
+    },
+    {
+      "source": "LibreOffice/sw/qa/uitest/data/tdf135413.docx",
+      "retry_outcome": "error",
+      "error": "导出失败。无法准备用于导出的文档。"
+    },
+    {
+      "source": "LibreOffice/sw/qa/uitest/data/tdf168070_2.docx",
+      "retry_outcome": "timeout",
+      "error": ""
+    },
+    {
+      "source": "Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/asSources/spreadsheet/SheetViewsFSB.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/bugregression/537826.vmlpart.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/Blank.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/Comments.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/O12 templates/FitnessChartMenMetric_TP10219909.xltx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/O12 templates/FitnessChartWomenMetric_TP10219908.xltx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/O12 templates/ProjectStatusReport_TP10094814.xltx",
+      "retry_outcome": "error",
+      "error": "不能取得类 Workbooks 的 Open 属性"
+    },
+    {
+      "source": "Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/SheetViewsFSB.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/Workbook.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/smallset/SheetViewsFSB.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/Comments.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/Of16-09-UnknownElement.docx",
+      "retry_outcome": "error",
+      "error": "Exception calling \"InvokeMember\" with \"8\" argument(s): \"Word 在试图打开文件时遇到错误。\n请尝试下列方法:\n* 检查文档或驱动器的文件权限。\n* 确保有足够的内存和磁盘空间。\n* 用文本恢复转换器打开文件。\r (C:\\Users\\...\\Of16-09-UnknownElement.docx)\""
+    },
+    {
+      "source": "Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/Revision_NameCommentChange.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/UnknownElement.docx",
+      "retry_outcome": "error",
+      "error": "Exception calling \"InvokeMember\" with \"8\" argument(s): \"Word 在试图打开文件时遇到错误。\n请尝试下列方法:\n* 检查文档或驱动器的文件权限。\n* 确保有足够的内存和磁盘空间。\n* 用文本恢复转换器打开文件。\r (C:\\Users\\kazeno\\...\\UnknownElement.docx)\""
+    },
+    {
+      "source": "Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/vmldrawingroot.xlsx",
+      "retry_outcome": "zero_pdf",
+      "error": ""
+    },
+    {
+      "source": "Pandoc/test/pptx/reference-no-slides.pptx",
+      "retry_outcome": "error",
+      "error": "Presentation.ExportAsFixedFormat : 您所选的要打印的幻灯片不存在，请选另一个。"
+    }
+  ],
+  "final_no_office_processes": true,
+  "windows_timezone": "China Standard Time",
+  "filter_by_cf_content_verified": true,
+  "verification": {
+    "campaign_unit_tests_passed": 11,
+    "empty_layout_fixture_checks": 4,
+    "empty_pdf_api_tests_passed": 2,
+    "comment_print_control_passed": true,
+    "successful_reference_overwrite_rejected": true,
+    "known_failure": "singlecontrol.xlsx: legacy LibreOffice assertion 3 pages, current default SDK layout 11; current configured Office reference 12. Separate pagination gap.",
+    "earlier_45_repairs": "Remaining focused runtime tests and configured comparisons remain pending.",
+    "clippy_run": false,
+    "full_candidate_audit_run": false
+  }
+}

@@ -1,0 +1,448 @@
+{
+  "adapter": {
+    "controller_script_sha256": "d0d76bf2dc26b971da6aa3301f5ad8bef7f00ac096076d46e13c09634c70c82d",
+    "environment_helper_sha256": "16f0694a8b9c0c11223263f16c3158fa96d312eaf9affe6dc3d312671eb9dcc2",
+    "probe_script_sha256": "2d9b62f2b707765d4e9dce44fe1144be5b3c6f2fc2cde8087c2c95a6c8ffb1e0"
+  },
+  "environment_path": "/home/kazeno/git/ooxmlsdk-test-suite/corpus_pdf_conv/reference-adapters/896d3a3e77cd3e86922192044a2784d17a253c71a13d3364f48e79cf71053d6b/environment.json",
+  "environment_restoration": {
+    "restored": true
+  },
+  "original_assignment": {
+    "adjustments": [
+      {
+        "feature": "ui-language",
+        "reason": "application-generated UI strings currently fall back to English outside English and Chinese resource packs"
+      }
+    ],
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "86ab184ebedb3ae2981614fd240c19d1cbc50314fe4edf38969fab5d09132874",
+    "corpus": "Apache-POI",
+    "effective": {
+      "compress_content_streams": false,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 60,
+        "max_resolution_dpi": 150,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": null
+      },
+      "open_bookmark_levels": 2,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf16"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "ko-KR",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": true,
+        "first_page_left": true,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": true,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_in_window",
+        "page_layout": "continuous_facing",
+        "page_mode": "use_thumbs"
+      }
+    },
+    "family": "power_point",
+    "file": "test-data/integration/stress022.pptx",
+    "office": {
+      "bitmap_missing_fonts": false,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "screen",
+      "tagged_pdf": true
+    },
+    "pilot_300": false,
+    "reference_environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "reference_time_zone": "Asia/Shanghai",
+    "requested": {
+      "compress_content_streams": false,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 60,
+        "max_resolution_dpi": 150,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": null
+      },
+      "open_bookmark_levels": 2,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf16"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "ko-KR",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": true,
+        "first_page_left": true,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": true,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_in_window",
+        "page_layout": "continuous_facing",
+        "page_mode": "use_thumbs"
+      }
+    },
+    "schema_version": 2,
+    "seed": "ooxmlsdk-office-pdf-environments-2026-09-11-v2",
+    "source_bytes": 866381,
+    "source_extension": "pptx",
+    "source_sha256": "0bd000a429c378fe2ac933665527407f9b5d2155e3bf110911c8985f20e32c36"
+  },
+  "original_conversion": {
+    "adjustments": [
+      {
+        "feature": "ui-language",
+        "reason": "application-generated UI strings currently fall back to English outside English and Chinese resource packs"
+      }
+    ],
+    "annotations": [],
+    "application": "PowerPoint",
+    "application_build": "",
+    "application_version": "",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "attempts": 2,
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "86ab184ebedb3ae2981614fd240c19d1cbc50314fe4edf38969fab5d09132874",
+    "converted_at_utc": "2026-09-12T02:21:33.107536695Z",
+    "effective": {
+      "compress_content_streams": false,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 60,
+        "max_resolution_dpi": 150,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": null
+      },
+      "open_bookmark_levels": 2,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf16"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "ko-KR",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": true,
+        "first_page_left": true,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": true,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_in_window",
+        "page_layout": "continuous_facing",
+        "page_mode": "use_thumbs"
+      }
+    },
+    "elapsed_ms": 11779,
+    "environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "error": "stdout=\u001b[31;1mprobe_office_pdf_options.ps1: \u001b[31;1mPresentations.Open : ?? ???? ???? PowerPoint?? ? ??? ? ? ????. ?? ??? ?? ???? ????? ?????.\u001b[0m\r\n\r\nOffice worker exit code: 1 stderr=",
+    "error_code": "",
+    "failure_class": "office-conversion-error",
+    "family": "power_point",
+    "file": "test-data/integration/stress022.pptx",
+    "observed_pdf": null,
+    "office_options": {
+      "bitmap_missing_fonts": false,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "screen",
+      "tagged_pdf": true
+    },
+    "output": "",
+    "output_bytes": 0,
+    "output_sha256": "",
+    "reference_engine": "Microsoft Office",
+    "render_environment": null,
+    "requested": {
+      "compress_content_streams": false,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 60,
+        "max_resolution_dpi": 150,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": null
+      },
+      "open_bookmark_levels": 2,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf16"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "ko-KR",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": true,
+        "first_page_left": true,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": true,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_in_window",
+        "page_layout": "continuous_facing",
+        "page_mode": "use_thumbs"
+      }
+    },
+    "schema_version": 4,
+    "source_bytes": 866381,
+    "source_extension": "pptx",
+    "source_sha256": "0bd000a429c378fe2ac933665527407f9b5d2155e3bf110911c8985f20e32c36",
+    "status": "failed"
+  },
+  "probe_receipt": {
+    "application": "PowerPoint",
+    "application_build": "20326",
+    "application_version": "16.0",
+    "elapsed_ms": 7291,
+    "environment": {
+      "clock": {
+        "export_completed_at_utc": "2026-09-12T04:07:00.5349366Z",
+        "export_started_at_utc": "2026-09-12T04:06:53.9843544Z",
+        "opened_at_utc": "2026-09-12T04:06:53.4380996Z",
+        "refresh_completed_at_utc": "2026-09-12T04:06:53.8885773Z",
+        "refresh_started_at_utc": "2026-09-12T04:06:53.4410505Z"
+      },
+      "document_language": "zh-CN",
+      "format_locale": "zh-CN",
+      "time_zone": "Asia/Shanghai",
+      "ui_language": "zh-CN",
+      "windows_time_zone": "China Standard Time"
+    },
+    "file": "Apache-POI/test-data/integration/stress022.pptx",
+    "options": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": true,
+      "quality": "print",
+      "tagged_pdf": false
+    },
+    "output": "case-000.pdf",
+    "output_bytes": 1989705,
+    "output_sha256": "a9f35d51b7847dabcd8401c19c9ec5f90db42969dd67e9add02477bbf1a4aa4e",
+    "schema_version": 2,
+    "source_sha256": "0bd000a429c378fe2ac933665527407f9b5d2155e3bf110911c8985f20e32c36"
+  },
+  "reason": "Authorized failed-reference recovery: print quality, zh-CN UI, optional export features disabled, repair-mode open on a byte-identical temporary copy; all pages and hidden slides included where applicable.",
+  "recovered_assignment": {
+    "adjustments": [],
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "fd095c20e867e8f686a2ce9b396dac6ddb829ff382d4347311c6b16d7a05b3ee",
+    "corpus": "Apache-POI",
+    "effective": {
+      "compress_content_streams": false,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 60,
+        "max_resolution_dpi": 150,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": null
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf16"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "zh-CN",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": true,
+        "first_page_left": true,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": true,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_in_window",
+        "page_layout": "continuous_facing",
+        "page_mode": "use_thumbs"
+      }
+    },
+    "family": "power_point",
+    "file": "test-data/integration/stress022.pptx",
+    "office": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": true,
+      "quality": "print",
+      "tagged_pdf": false
+    },
+    "pilot_300": false,
+    "reference_environment_id": "896d3a3e77cd3e86922192044a2784d17a253c71a13d3364f48e79cf71053d6b",
+    "reference_time_zone": "Asia/Shanghai",
+    "requested": {
+      "compress_content_streams": false,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 60,
+        "max_resolution_dpi": 150,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": null
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf16"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "zh-CN",
+      "viewer": {
+        "center_window": false,
+        "display_document_title": true,
+        "first_page_left": true,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": true,
+        "hide_toolbar": false,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_in_window",
+        "page_layout": "continuous_facing",
+        "page_mode": "use_thumbs"
+      }
+    },
+    "schema_version": 2,
+    "seed": "ooxmlsdk-office-pdf-environments-2026-09-11-v2",
+    "source_bytes": 866381,
+    "source_extension": "pptx",
+    "source_sha256": "0bd000a429c378fe2ac933665527407f9b5d2155e3bf110911c8985f20e32c36"
+  },
+  "stages": "{\"utc\":\"2026-09-12T04:06:52.8741947Z\",\"stage\":\"application-create\",\"detail\":\"PowerPoint\"}\n{\"utc\":\"2026-09-12T04:06:53.3009140Z\",\"stage\":\"environment-readback\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:06:53.3845729Z\",\"stage\":\"stage-input\",\"detail\":{\"original\":\"stress022.pptx\",\"staged\":\"stress022.ppsx\",\"open_and_repair\":true}}\n{\"utc\":\"2026-09-12T04:06:53.4418452Z\",\"stage\":\"powerpoint-open\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:06:53.9795713Z\",\"stage\":\"powerpoint-print-range\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:06:53.9848206Z\",\"stage\":\"powerpoint-export\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:07:00.5377006Z\",\"stage\":\"powerpoint-close\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:07:00.5595852Z\",\"stage\":\"copy-pdf\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:07:00.7322957Z\",\"stage\":\"application-quit\",\"detail\":\"PowerPoint\"}\n{\"utc\":\"2026-09-12T04:07:02.9501778Z\",\"stage\":\"archive-stage\",\"detail\":\"C:\\\\Users\\\\kazeno\\\\AppData\\\\Local\\\\Temp\\\\ooxmlsdk-pdf-options-probe-36b69bbec4574307b9b658e503dc4521\"}\n",
+  "worker_completion": {
+    "completed_utc": "2026-09-12T04:07:03.1939074Z",
+    "elapsed_ms": 11316,
+    "exit_code": 0,
+    "file": "Apache-POI/test-data/integration/stress022.pptx",
+    "restored": true,
+    "tag": "recovery-all"
+  },
+  "worker_root": "/tmp/office-reference-failure-review-20260912/probes/86ab184ebedb3ae2981614fd240c19d1cbc50314fe4edf38969fab5d09132874-recovery-all"
+}

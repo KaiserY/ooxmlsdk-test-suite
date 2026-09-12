@@ -20,20 +20,19 @@ use walkdir::WalkDir;
 use crate::office_golden::compare_office_golden_detailed_with_prevalidated_options;
 use crate::{OfficeGoldenCase, VisualTolerance};
 
-pub const CAMPAIGN_SCHEMA_VERSION: u32 = 1;
-pub const CONVERSION_SCHEMA_VERSION: u32 = 3;
-pub const CAMPAIGN_ID: &str = "office-ooxml-pdf-options-v1";
+mod recovery;
+pub use recovery::import_reference_recoveries;
+
+pub const CAMPAIGN_SCHEMA_VERSION: u32 = 2;
+pub const CONVERSION_SCHEMA_VERSION: u32 = 4;
+pub const CAMPAIGN_ID: &str = "office-ooxml-pdf-options-v2";
 pub const ASSIGNMENT_ALGORITHM: &str = "sha256-balanced-marginals-v1";
-pub const CAMPAIGN_SEED: &str = "ooxmlsdk-office-pdf-options-2026-08-18-v1";
+pub const CAMPAIGN_SEED: &str = "ooxmlsdk-office-pdf-environments-2026-09-11-v2";
 pub const EXPECTED_ASSIGNMENT_COUNT: usize = 5_370;
 pub const PILOT_PER_FAMILY: usize = 100;
 pub const PILOT_ASSIGNMENT_COUNT: usize = 300;
 
 const AUDIT_WORKER_POLL_INTERVAL: Duration = Duration::from_millis(10);
-
-const LOCALES: [&str; 8] = [
-    "zh-CN", "zh-TW", "ja-JP", "ko-KR", "en-US", "de-DE", "fr-FR", "es-ES",
-];
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -557,6 +556,8 @@ pub struct CampaignAssignment {
     pub source_bytes: u64,
     pub source_sha256: String,
     pub configuration_id: String,
+    pub reference_environment_id: String,
+    pub reference_time_zone: String,
     pub pilot_300: bool,
     pub requested: CampaignPdfOptions,
     pub effective: CampaignPdfOptions,
@@ -593,6 +594,151 @@ impl CampaignAssignment {
             });
         Ok(options)
     }
+
+    fn environment_request(&self) -> OfficeEnvironmentRequest {
+        OfficeEnvironmentRequest {
+            ui_language: self.requested.ui_language.clone(),
+            format_locale: self.requested.format_locale.clone(),
+            document_language: self.requested.document_language.clone(),
+            time_zone: self.reference_time_zone.clone(),
+        }
+    }
+
+    fn reference_pdf_options(
+        &self,
+        record: &CampaignConversionRecord,
+    ) -> Result<PdfOptions, String> {
+        let observed = record.render_environment.as_ref().ok_or_else(|| {
+            "converted reference has no observed rendering environment".to_string()
+        })?;
+        observed.validate(&self.environment_request())?;
+        let mut options = self.requested_pdf_options()?;
+        options.field_update_datetime = Some(
+            crate::office_golden::parse_utc_datetime_in_reference_time_zone(
+                &observed.clock.refresh_started_at_utc,
+                &observed.time_zone,
+                &observed.format_locale,
+            )?,
+        );
+        options.field_update_time_zone = Some(observed.time_zone.clone());
+        options.include_hidden_slides = self.office.print_hidden_slides;
+        Ok(options)
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+struct OfficeEnvironmentRequest {
+    ui_language: String,
+    format_locale: String,
+    document_language: String,
+    time_zone: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct OfficeReferenceClock {
+    opened_at_utc: String,
+    refresh_started_at_utc: String,
+    refresh_completed_at_utc: String,
+    export_started_at_utc: String,
+    export_completed_at_utc: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct OfficeRenderEnvironment {
+    ui_language: String,
+    format_locale: String,
+    document_language: String,
+    time_zone: String,
+    windows_time_zone: String,
+    clock: OfficeReferenceClock,
+}
+
+impl OfficeRenderEnvironment {
+    fn validate(&self, request: &OfficeEnvironmentRequest) -> Result<(), String> {
+        if self.ui_language != request.ui_language
+            || self.format_locale != request.format_locale
+            || self.document_language != request.document_language
+            || self.time_zone != request.time_zone
+            || self.windows_time_zone.is_empty()
+        {
+            return Err("Office did not apply the requested rendering environment".into());
+        }
+        let times = [
+            &self.clock.opened_at_utc,
+            &self.clock.refresh_started_at_utc,
+            &self.clock.refresh_completed_at_utc,
+            &self.clock.export_started_at_utc,
+            &self.clock.export_completed_at_utc,
+        ]
+        .into_iter()
+        .map(|s| s.parse::<jiff::Timestamp>().map_err(|e| e.to_string()))
+        .collect::<Result<Vec<_>, _>>()?;
+        if times.windows(2).any(|pair| pair[0] > pair[1]) {
+            return Err("Office reference clock boundaries are out of order".into());
+        }
+        crate::office_golden::parse_utc_datetime_in_reference_time_zone(
+            &self.clock.refresh_started_at_utc,
+            &self.time_zone,
+            &self.format_locale,
+        )?;
+        Ok(())
+    }
+}
+
+struct CampaignHostProfile {
+    id: String,
+    ui_languages: Vec<String>,
+    format_locale: String,
+    document_language: String,
+    time_zone: String,
+}
+
+impl CampaignHostProfile {
+    fn load(root: &Path) -> Result<Self, String> {
+        let path = root.join("corpus_pdf_conv/environment.json");
+        let value: serde_json::Value = serde_json::from_slice(&fs::read(&path).map_err(|e| {
+            format!("capture the Office environment before generating a plan: {e}")
+        })?)
+        .map_err(|e| e.to_string())?;
+        let string = |pointer: &str| {
+            value
+                .pointer(pointer)
+                .and_then(|v| v.as_str())
+                .filter(|s| !s.is_empty())
+                .map(str::to_owned)
+                .ok_or_else(|| format!("missing captured Office environment property {pointer}"))
+        };
+        if value
+            .pointer("/environment/converter_version")
+            .and_then(|v| v.as_u64())
+            != Some(2)
+        {
+            return Err("the plan requires a version-2 Office environment capture".into());
+        }
+        let ui_languages: Vec<String> = serde_json::from_value(
+            value
+                .pointer("/environment/office/ui_languages")
+                .cloned()
+                .unwrap_or_default(),
+        )
+        .map_err(|e| format!("invalid captured Office UI languages: {e}"))?;
+        if ui_languages.is_empty()
+            || ui_languages.iter().any(|s| s.is_empty())
+            || ui_languages.iter().collect::<BTreeSet<_>>().len() != ui_languages.len()
+        {
+            return Err("captured Office UI languages must be nonempty and unique".into());
+        }
+        Ok(Self {
+            id: string("/environment_id")?,
+            ui_languages,
+            format_locale: string("/environment/locale/culture")?,
+            document_language: string("/environment/locale/document_language")?,
+            time_zone: string("/environment/locale/iana_time_zone")?,
+        })
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -620,7 +766,87 @@ struct AssignmentDraft {
     pilot_300: bool,
 }
 
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct FunctionalCoverage {
+    source: String,
+    source_sha256: String,
+    expected_source_pages: u32,
+    feature: String,
+    page_range: Option<String>,
+    quality: Option<String>,
+    print_hidden_slides: Option<bool>,
+}
+
+fn functional_coverage() -> Result<Vec<FunctionalCoverage>, String> {
+    serde_json::from_str(include_str!("../data/office-functional-coverage.json"))
+        .map_err(|error| format!("invalid functional coverage manifest: {error}"))
+}
+
+fn apply_functional_coverage(drafts: &mut [AssignmentDraft]) -> Result<(), String> {
+    let mut seen = BTreeSet::new();
+    for case in functional_coverage()? {
+        if !seen.insert(case.source.clone())
+            || case.feature.is_empty()
+            || case.expected_source_pages < 2
+        {
+            return Err(format!(
+                "invalid functional coverage identity: {}",
+                case.source
+            ));
+        }
+        let draft = drafts
+            .iter_mut()
+            .find(|draft| draft.source.key() == case.source)
+            .ok_or_else(|| {
+                format!(
+                    "functional source is outside the round-trip set: {}",
+                    case.source
+                )
+            })?;
+        if draft.source.source_sha256 != case.source_sha256 || draft.pilot_300 {
+            return Err(format!(
+                "functional source changed or overlaps the frozen pilot: {}",
+                case.source
+            ));
+        }
+        let (_, to) = office_page_range(case.page_range.as_deref())?;
+        if to.is_some_and(|to| to > case.expected_source_pages) {
+            return Err(format!(
+                "functional range exceeds verified source pages: {}",
+                case.source
+            ));
+        }
+        draft.requested.page_range = case.page_range;
+        if let Some(quality) = case.quality {
+            draft.office.quality = quality;
+        }
+        if let Some(include) = case.print_hidden_slides {
+            draft.office.print_hidden_slides = include;
+        }
+    }
+    Ok(())
+}
+
+fn office_page_range(range: Option<&str>) -> Result<(Option<u32>, Option<u32>), String> {
+    let Some(range) = range else {
+        return Ok((None, None));
+    };
+    let (from, to) = range.split_once('-').unwrap_or((range, range));
+    let parse = |value: &str| {
+        value
+            .parse::<u32>()
+            .map_err(|_| format!("Office requires a contiguous page range: {range}"))
+    };
+    let (from, to) = (parse(from)?, parse(to)?);
+    if from == 0 || to < from {
+        return Err(format!("invalid Office page range: {range}"));
+    }
+    Ok((Some(from), Some(to)))
+}
+
 pub fn generate_campaign_assignments(root: &Path) -> Result<Vec<CampaignAssignment>, String> {
+    let host = CampaignHostProfile::load(root)?;
     let sources = collect_round_trip_sources(root)?;
     if sources.len() != EXPECTED_ASSIGNMENT_COUNT {
         return Err(format!(
@@ -668,35 +894,20 @@ pub fn generate_campaign_assignments(root: &Path) -> Result<Vec<CampaignAssignme
     assign_balanced(&mut drafts, "content-compression", 2, |draft, value| {
         draft.requested.compress_content_streams = value == 0;
     });
-    assign_balanced(&mut drafts, "ui-language", LOCALES.len(), |draft, value| {
-        draft.requested.ui_language = LOCALES[value].to_string();
-    });
     assign_balanced(
         &mut drafts,
-        "format-locale",
-        LOCALES.len(),
+        "ui-language",
+        host.ui_languages.len(),
         |draft, value| {
-            draft.requested.format_locale = LOCALES[value].to_string();
+            draft.requested.ui_language = host.ui_languages[value].clone();
         },
     );
-    assign_balanced(
-        &mut drafts,
-        "document-language",
-        LOCALES.len(),
-        |draft, value| {
-            draft.requested.document_language = LOCALES[value].to_string();
-        },
-    );
-    assign_balanced(&mut drafts, "field-update", 5, |draft, value| {
-        draft.requested.field_update = match value {
-            0 => None,
-            1 => Some(field_update("Asia/Shanghai")),
-            2 => Some(field_update("Asia/Tokyo")),
-            3 => Some(field_update("Europe/Berlin")),
-            4 => Some(field_update("America/New_York")),
-            _ => unreachable!(),
-        };
-    });
+    for draft in &mut drafts {
+        draft.requested.format_locale = host.format_locale.clone();
+        draft.requested.document_language = host.document_language.clone();
+        // The successful Office receipt supplies the live clock, not a fictional date.
+        draft.requested.field_update = None;
+    }
     assign_balanced(&mut drafts, "tagged-pdf", 2, |draft, value| {
         draft.requested.tagged_pdf = value == 0;
     });
@@ -860,6 +1071,16 @@ pub fn generate_campaign_assignments(root: &Path) -> Result<Vec<CampaignAssignme
         }
     }
 
+    // Target rare content after random pilot selection so the completed pilot
+    // remains unchanged. The rest of the campaign retains balanced assignment.
+    // Render full documents outside the frozen pilot. Page selection is a small
+    // directed feature lane, not a reason to omit half the corpus's later pages.
+    for draft in &mut drafts {
+        if !draft.pilot_300 {
+            draft.requested.page_range = None;
+        }
+    }
+    apply_functional_coverage(&mut drafts)?;
     let mut assignments = Vec::with_capacity(drafts.len());
     for mut draft in drafts {
         if draft
@@ -889,8 +1110,8 @@ pub fn generate_campaign_assignments(root: &Path) -> Result<Vec<CampaignAssignme
             })
             .collect::<Vec<_>>();
 
-        draft.office.page_from = effective.page_range.as_ref().map(|_| 1);
-        draft.office.page_to = effective.page_range.as_ref().map(|_| 1);
+        (draft.office.page_from, draft.office.page_to) =
+            office_page_range(effective.page_range.as_deref())?;
         draft.office.tagged_pdf = match draft.source.family {
             OfficeFamily::Excel => true,
             _ => effective.tagged_pdf,
@@ -918,6 +1139,8 @@ pub fn generate_campaign_assignments(root: &Path) -> Result<Vec<CampaignAssignme
             &effective,
             &adjustments,
             &draft.office,
+            &host.id,
+            &host.time_zone,
         )?;
         assignments.push(CampaignAssignment {
             schema_version: CAMPAIGN_SCHEMA_VERSION,
@@ -931,6 +1154,8 @@ pub fn generate_campaign_assignments(root: &Path) -> Result<Vec<CampaignAssignme
             source_bytes: draft.source.source_bytes,
             source_sha256: draft.source.source_sha256,
             configuration_id,
+            reference_environment_id: host.id.clone(),
+            reference_time_zone: host.time_zone.clone(),
             pilot_300: draft.pilot_300,
             requested: draft.requested,
             effective,
@@ -938,23 +1163,12 @@ pub fn generate_campaign_assignments(root: &Path) -> Result<Vec<CampaignAssignme
             office: draft.office,
         });
     }
+    recovery::apply_overrides(root, &mut assignments)?;
     assignments.sort_by(|left, right| {
         (&left.family, &left.corpus, &left.file).cmp(&(&right.family, &right.corpus, &right.file))
     });
     validate_assignments(root, &assignments)?;
     Ok(assignments)
-}
-
-fn field_update(time_zone: &str) -> CampaignFieldUpdate {
-    CampaignFieldUpdate {
-        year: 2026,
-        month: 8,
-        day: 18,
-        hour: 12,
-        minute: 34,
-        second: 56,
-        time_zone: time_zone.to_string(),
-    }
 }
 
 fn fixed_creation_date() -> CampaignDateTime {
@@ -1025,6 +1239,8 @@ fn configuration_id(
     effective: &CampaignPdfOptions,
     adjustments: &[CampaignAdjustment],
     office: &OfficeExportOptions,
+    reference_environment_id: &str,
+    reference_time_zone: &str,
 ) -> Result<String, String> {
     #[derive(Serialize)]
     struct ConfigurationIdentity<'a> {
@@ -1035,6 +1251,8 @@ fn configuration_id(
         effective: &'a CampaignPdfOptions,
         adjustments: &'a [CampaignAdjustment],
         office: &'a OfficeExportOptions,
+        reference_environment_id: &'a str,
+        reference_time_zone: &'a str,
     }
     let source_key = source.key();
     let json = serde_json::to_vec(&ConfigurationIdentity {
@@ -1045,6 +1263,8 @@ fn configuration_id(
         effective,
         adjustments,
         office,
+        reference_environment_id,
+        reference_time_zone,
     })
     .map_err(|error| format!("could not serialize configuration identity: {error}"))?;
     Ok(sha256_bytes(&json))
@@ -1225,6 +1445,7 @@ pub fn validate_assignments(
             assignments.len()
         ));
     }
+    let host = CampaignHostProfile::load(root)?;
     let mut sources = BTreeSet::new();
     let mut configurations = BTreeSet::new();
     let mut family_assignments = BTreeMap::new();
@@ -1240,6 +1461,19 @@ pub fn validate_assignments(
                 "campaign metadata drift for {}",
                 assignment.source_key()
             ));
+        }
+        recovery::validate_assignment_environment(root, assignment, &host.id)?;
+        if assignment.reference_time_zone != host.time_zone
+            || assignment.requested.format_locale != host.format_locale
+            || assignment.requested.document_language != host.document_language
+            || !host
+                .ui_languages
+                .contains(&assignment.requested.ui_language)
+            || assignment.requested.field_update.is_some()
+        {
+            return Err(
+                "assignment requests an environment not represented by the captured host".into(),
+            );
         }
         let key = assignment.source_key();
         if !sources.insert(key.clone()) {
@@ -1303,6 +1537,8 @@ pub fn validate_assignments(
             &assignment.effective,
             &assignment.adjustments,
             &assignment.office,
+            &assignment.reference_environment_id,
+            &assignment.reference_time_zone,
         )?;
         if expected_configuration != assignment.configuration_id {
             return Err(format!("configuration identity drift for {key}"));
@@ -1342,6 +1578,14 @@ pub fn validate_assignments(
 
 fn validate_office_options(assignment: &CampaignAssignment) -> Result<(), String> {
     let options = &assignment.office;
+    if (options.page_from, options.page_to)
+        != office_page_range(assignment.effective.page_range.as_deref())?
+    {
+        return Err(format!(
+            "Office/candidate page range mismatch for {}",
+            assignment.source_key()
+        ));
+    }
     if options.candidate_optimize_for().is_none() {
         return Err(format!(
             "invalid Office quality for {}",
@@ -1432,6 +1676,7 @@ pub struct CampaignConversionRecord {
     pub output_bytes: u64,
     pub output_sha256: String,
     pub observed_pdf: Option<ObservedPdfFacts>,
+    pub render_environment: Option<OfficeRenderEnvironment>,
     pub converted_at_utc: String,
     pub elapsed_ms: u64,
     pub attempts: u32,
@@ -1463,6 +1708,7 @@ struct ProbeResult {
     application_version: String,
     application_build: String,
     options: OfficeExportOptions,
+    environment: OfficeRenderEnvironment,
     source_sha256: String,
     output: String,
     output_bytes: u64,
@@ -1475,6 +1721,7 @@ struct ProbePlanRecord<'a> {
     schema_version: u32,
     file: String,
     options: &'a OfficeExportOptions,
+    environment: OfficeEnvironmentRequest,
 }
 
 #[derive(Deserialize)]
@@ -1508,31 +1755,19 @@ pub fn convert_campaign(
     root: &Path,
     plan_path: &Path,
     pwsh: &str,
-    pilot_only: bool,
+    selection: &CampaignAuditSelection,
     jobs: usize,
     timeout: Duration,
     max_attempts: u32,
 ) -> Result<CampaignConversionSummary, String> {
-    if jobs == 0 || max_attempts == 0 {
-        return Err("conversion jobs and max attempts must be positive".to_string());
+    if jobs != 1 || max_attempts == 0 {
+        return Err(
+            "Office environment conversion requires --jobs 1 and positive max attempts".to_string(),
+        );
     }
     let assignments = read_plan(plan_path)?;
     validate_assignments(root, &assignments)?;
-    let selected = assignments
-        .into_iter()
-        .filter(|assignment| !pilot_only || assignment.pilot_300)
-        .collect::<Vec<_>>();
-    let expected = if pilot_only {
-        PILOT_ASSIGNMENT_COUNT
-    } else {
-        EXPECTED_ASSIGNMENT_COUNT
-    };
-    if selected.len() != expected {
-        return Err(format!(
-            "conversion selection contains {} assignments, expected {expected}",
-            selected.len()
-        ));
-    }
+    let selected = select_audit_assignments(assignments, selection)?;
 
     let conversion_root = root.join("corpus_pdf_conv");
     fs::create_dir_all(&conversion_root).map_err(|error| {
@@ -1541,7 +1776,6 @@ pub fn convert_campaign(
             conversion_root.display()
         )
     })?;
-    let plan_sha256 = sha256_file(plan_path)?;
     let probe_script = root.join("scripts/probe_office_pdf_options.ps1");
     let environment_script = root.join("scripts/probe_office_pdf_campaign_environment.ps1");
     let probe_sha256 = sha256_file(&probe_script)?;
@@ -1567,13 +1801,7 @@ pub fn convert_campaign(
         .map_err(|error| format!("could not create {}: {error}", work_root.display()))?;
 
     let environment_path = work_root.join("environment.json");
-    probe_reference_environment(
-        pwsh,
-        &environment_script,
-        &environment_path,
-        &plan_sha256,
-        &probe_sha256,
-    )?;
+    probe_reference_environment(pwsh, &environment_script, &environment_path, &probe_sha256)?;
     let environment_bytes = fs::read(&environment_path)
         .map_err(|error| format!("could not read {}: {error}", environment_path.display()))?;
     let environment: EnvironmentDocument = serde_json::from_slice(&environment_bytes)
@@ -1583,17 +1811,8 @@ pub fn convert_campaign(
     }
 
     let mut records = read_conversion_records(root)?;
-    if let Some(existing_environment_id) = records
-        .values()
-        .map(|record| record.environment_id.as_str())
-        .next()
-        && existing_environment_id != environment.environment_id
-    {
-        return Err(format!(
-            "refusing to mix reference environments: existing={existing_environment_id}, current={}",
-            environment.environment_id
-        ));
-    }
+    let registered_environments =
+        crate::office_reference_environment::ReferenceEnvironments::load(root)?;
     let promoted_environment_path = conversion_root.join("environment.json");
     if promoted_environment_path.exists() {
         let promoted_environment_bytes = fs::read(&promoted_environment_path).map_err(|error| {
@@ -1625,9 +1844,7 @@ pub fn convert_campaign(
         let key = (assignment.corpus.clone(), assignment.file.clone());
         if let Some(record) = records.get(&key) {
             validate_conversion_record(&assignment, record)?;
-            if record.environment_id != environment.environment_id {
-                return Err(format!("environment drift for {}", assignment.source_key()));
-            }
+            validate_audit_reference_environment(&registered_environments, record)?;
             if record.status == "converted" {
                 let output = conversion_root
                     .join(&assignment.corpus)
@@ -1650,6 +1867,9 @@ pub fn convert_campaign(
             skipped += 1;
             continue;
         }
+        if assignment.reference_environment_id != environment.environment_id {
+            return Err("pending assignment requires its registered recovery adapter".into());
+        }
         pending.push_back(PendingConversion {
             assignment,
             attempt: 1,
@@ -1658,7 +1878,7 @@ pub fn convert_campaign(
     }
 
     let corpus_path = windows_path(&root.join("corpus"))?;
-    let probe_script_path = windows_path(&probe_script)?;
+    let probe_script_path = windows_path(&root.join("scripts/invoke_office_pdf_worker.ps1"))?;
     let mut running = Vec::<RunningConversion>::new();
     let mut attempts = 0;
     while !pending.is_empty() || !running.is_empty() {
@@ -1681,6 +1901,7 @@ pub fn convert_campaign(
                 &corpus_path,
                 &work_root,
                 task,
+                timeout,
             )?);
         }
         pending.extend(deferred);
@@ -1699,13 +1920,17 @@ pub fn convert_campaign(
                 let success = status.success();
                 if !success {
                     stop_office_process(pwsh, &worker.process_id_path);
+                    restore_worker_environment(pwsh, &probe_script_path, &worker.worker_root)?;
                 }
-                finish_conversion_worker(worker, success, false)?
-            } else if running[index].started.elapsed() >= timeout {
+                finish_conversion_worker(worker, success, status.code() == Some(124))?
+            } else if running[index].started.elapsed() >= timeout + Duration::from_secs(30) {
                 let mut worker = running.swap_remove(index);
                 let _ = worker.child.kill();
                 let _ = worker.child.wait();
                 stop_office_process(pwsh, &worker.process_id_path);
+                let child_id = worker.worker_root.join("controller-child-process-id.txt");
+                stop_office_process(pwsh, &child_id);
+                restore_worker_environment(pwsh, &probe_script_path, &worker.worker_root)?;
                 finish_conversion_worker(worker, false, true)?
             } else {
                 index += 1;
@@ -1803,18 +2028,55 @@ pub fn convert_campaign(
     summarize_conversions(
         root,
         plan_path,
-        pilot_only,
+        selection,
         skipped,
         attempts,
         environment.environment_id,
     )
 }
 
+pub fn capture_campaign_environment(root: &Path, pwsh: &str) -> Result<(), String> {
+    let directory = root.join("corpus_pdf_conv");
+    fs::create_dir_all(&directory).map_err(|e| e.to_string())?;
+    if !read_conversion_records(root)?.is_empty() {
+        return Err("cannot replace a host capture after conversion receipts exist".into());
+    }
+    probe_reference_environment(
+        pwsh,
+        &root.join("scripts/probe_office_pdf_campaign_environment.ps1"),
+        &directory.join("environment.json"),
+        &sha256_file(&root.join("scripts/probe_office_pdf_options.ps1"))?,
+    )
+}
+
+fn restore_worker_environment(pwsh: &str, script: &str, worker_root: &Path) -> Result<(), String> {
+    let snapshot = windows_path(&worker_root.join("office-language-snapshot.json"))?;
+    let output = Command::new(pwsh)
+        .args([
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            script,
+            "-RestoreSnapshot",
+            &snapshot,
+        ])
+        .output()
+        .map_err(|e| e.to_string())?;
+    if !output.status.success() {
+        return Err(format!(
+            "Office environment restoration failed: {}",
+            command_output_message(&output.stdout, &output.stderr)
+        ));
+    }
+    Ok(())
+}
+
 fn probe_reference_environment(
     pwsh: &str,
     script: &Path,
     output_path: &Path,
-    plan_sha256: &str,
     probe_script_sha256: &str,
 ) -> Result<(), String> {
     let script = windows_path(script)?;
@@ -1830,8 +2092,6 @@ fn probe_reference_environment(
             &script,
             "-OutputPath",
             &output_path,
-            "-PlanSha256",
-            plan_sha256,
             "-ProbeScriptSha256",
             probe_script_sha256,
         ])
@@ -1852,6 +2112,7 @@ fn spawn_conversion_worker(
     corpus_path: &str,
     work_root: &Path,
     pending: PendingConversion,
+    timeout: Duration,
 ) -> Result<RunningConversion, String> {
     let worker_root = work_root.join(format!(
         "{}-attempt-{}",
@@ -1865,9 +2126,10 @@ fn spawn_conversion_worker(
     write_json_lines(
         &plan_path,
         &[ProbePlanRecord {
-            schema_version: 1,
+            schema_version: 2,
             file: pending.assignment.source_key(),
             options: &pending.assignment.office,
+            environment: pending.assignment.environment_request(),
         }],
     )?;
     let plan_path = windows_path(&plan_path)?;
@@ -1890,6 +2152,8 @@ fn spawn_conversion_worker(
             &output_root_path,
             "-ProcessIdFile",
             &process_id_file,
+            "-TimeoutSeconds",
+            &timeout.as_secs().to_string(),
         ])
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -1968,7 +2232,7 @@ fn converted_record(
     pdf: &[u8],
 ) -> Result<CampaignConversionRecord, String> {
     let source_key = assignment.source_key();
-    if result.schema_version != 1
+    if result.schema_version != 2
         || result.file != source_key
         || result.application != office_application(assignment.family)
         || result.options != assignment.office
@@ -1980,6 +2244,9 @@ fn converted_record(
     {
         return Err(format!("Office probe result drift for {source_key}"));
     }
+    result
+        .environment
+        .validate(&assignment.environment_request())?;
     let observed_pdf = observe_pdf(pdf)?;
     let output = format!("{}.pdf", assignment.file);
     let destination = root
@@ -2011,6 +2278,7 @@ fn converted_record(
         output_bytes: pdf.len() as u64,
         output_sha256: sha256_bytes(pdf),
         observed_pdf: Some(observed_pdf),
+        render_environment: Some(result.environment),
         converted_at_utc: jiff::Timestamp::now().to_string(),
         elapsed_ms,
         attempts,
@@ -2054,6 +2322,7 @@ fn failed_record(
         output_bytes: 0,
         output_sha256: String::new(),
         observed_pdf: None,
+        render_environment: None,
         converted_at_utc: jiff::Timestamp::now().to_string(),
         elapsed_ms,
         attempts,
@@ -2120,16 +2389,13 @@ fn xmp_value(text: &str, name: &str) -> Option<String> {
 fn summarize_conversions(
     root: &Path,
     plan_path: &Path,
-    pilot_only: bool,
+    selection: &CampaignAuditSelection,
     skipped: usize,
     attempts: usize,
     environment_id: String,
 ) -> Result<CampaignConversionSummary, String> {
     let assignments = read_plan(plan_path)?;
-    let selected = assignments
-        .iter()
-        .filter(|assignment| !pilot_only || assignment.pilot_300)
-        .collect::<Vec<_>>();
+    let selected = select_audit_assignments(assignments, selection)?;
     let records = read_conversion_records(root)?;
     let mut converted = 0;
     let mut failed = 0;
@@ -2141,9 +2407,6 @@ fn summarize_conversions(
             .get(&key)
             .ok_or_else(|| format!("missing conversion record for {}", assignment.source_key()))?;
         validate_conversion_record(assignment, record)?;
-        if record.environment_id != environment_id {
-            return Err(format!("environment drift for {}", assignment.source_key()));
-        }
         match record.status.as_str() {
             "converted" => converted += 1,
             "failed" => failed += 1,
@@ -2355,6 +2618,16 @@ fn validate_conversion_record(
         ));
     }
     if record.status == "converted" {
+        if record.environment_id != assignment.reference_environment_id {
+            return Err("conversion host environment differs from its assignment".into());
+        }
+        record
+            .render_environment
+            .as_ref()
+            .ok_or_else(|| {
+                "converted reference lacks actual environment/clock evidence".to_string()
+            })?
+            .validate(&assignment.environment_request())?;
         if record.output != format!("{}.pdf", assignment.file)
             || record.output_bytes == 0
             || record.output_sha256.len() != 64
@@ -3183,7 +3456,7 @@ pub fn audit_one_with_artifacts(
         ui_language: &assignment.effective.ui_language,
         format_locale: &assignment.effective.format_locale,
     };
-    let candidate_options = assignment.requested_pdf_options()?;
+    let candidate_options = assignment.reference_pdf_options(&conversion)?;
     let comparison = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         compare_office_golden_detailed_with_prevalidated_options(
             case,
@@ -3260,7 +3533,7 @@ pub fn render_one_with_task(
             task.assignment.family
         ));
     }
-    let options = task.assignment.requested_pdf_options()?;
+    let options = task.assignment.reference_pdf_options(&task.conversion)?;
     let pdf =
         crate::render::render_fixture_pdf_with_options(input_path, options).map_err(|error| {
             format!(
@@ -3304,7 +3577,7 @@ pub fn render_native_one_with_task(
     }
     let mut options = resolve_pdf_options(
         PdfDocumentKind::Docx,
-        &task.assignment.requested_pdf_options()?,
+        &task.assignment.reference_pdf_options(&task.conversion)?,
     )
     .map_err(|e| e.to_string())?
     .into_effective();
@@ -3545,6 +3818,116 @@ fn sha256_bytes(bytes: &[u8]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn functional_coverage_preserves_existing_receipts_and_maps_page_intervals() {
+        let root = crate::workspace_root();
+        let assignments = generate_campaign_assignments(&root).unwrap();
+        assert_eq!(
+            assignments
+                .iter()
+                .filter(|a| !a.pilot_300 && a.office.page_from.is_some())
+                .count(),
+            9
+        );
+        let indexed = assignments
+            .iter()
+            .map(|a| (a.source_key(), a))
+            .collect::<BTreeMap<_, _>>();
+        for ((corpus, file), record) in read_conversion_records(&root).unwrap() {
+            validate_conversion_record(indexed[&format!("{corpus}/{file}")], &record).unwrap();
+        }
+        for case in functional_coverage().unwrap() {
+            let assignment = indexed[&case.source];
+            assert!(!assignment.pilot_300);
+            assert_eq!(
+                assignment
+                    .requested_pdf_options()
+                    .unwrap()
+                    .general
+                    .page_range,
+                case.page_range
+            );
+            match case.feature.as_str() {
+                "middle-page" => {
+                    let from = assignment.office.page_from.unwrap();
+                    assert!(from > 1 && from < case.expected_source_pages);
+                    assert_eq!(assignment.office.page_to, Some(from));
+                }
+                "last-page" => {
+                    assert_eq!(
+                        assignment.office.page_from,
+                        Some(case.expected_source_pages)
+                    );
+                    assert_eq!(assignment.office.page_to, Some(case.expected_source_pages));
+                }
+                "non-first-page-interval" => {
+                    assert_eq!(
+                        (assignment.office.page_from, assignment.office.page_to),
+                        (Some(2), Some(3))
+                    );
+                }
+                "hidden-slides-included" | "hidden-slides-excluded" => {
+                    assert_eq!(
+                        (assignment.office.page_from, assignment.office.page_to),
+                        (None, None)
+                    );
+                    assert_eq!(
+                        assignment.office.print_hidden_slides,
+                        case.feature == "hidden-slides-included"
+                    );
+                }
+                other => panic!("unknown functional coverage feature: {other}"),
+            }
+            let mut mismatched = assignment.clone();
+            mismatched.office.page_from = Some(1);
+            mismatched.office.page_to = Some(1);
+            assert!(validate_office_options(&mismatched).is_err());
+        }
+    }
+
+    #[test]
+    fn observed_environment_rejects_fallback_and_invalid_clock() {
+        let request = OfficeEnvironmentRequest {
+            ui_language: "ja-JP".into(),
+            format_locale: "zh-CN".into(),
+            document_language: "zh-CN".into(),
+            time_zone: "Asia/Shanghai".into(),
+        };
+        let observed = OfficeRenderEnvironment {
+            ui_language: request.ui_language.clone(),
+            format_locale: request.format_locale.clone(),
+            document_language: request.document_language.clone(),
+            time_zone: request.time_zone.clone(),
+            windows_time_zone: "China Standard Time".into(),
+            clock: OfficeReferenceClock {
+                opened_at_utc: "2026-09-11T06:54:54Z".into(),
+                refresh_started_at_utc: "2026-09-11T06:54:55Z".into(),
+                refresh_completed_at_utc: "2026-09-11T06:54:56Z".into(),
+                export_started_at_utc: "2026-09-11T06:54:57Z".into(),
+                export_completed_at_utc: "2026-09-11T06:54:58Z".into(),
+            },
+        };
+        observed.validate(&request).unwrap();
+        let mut fallback = observed.clone();
+        fallback.ui_language = "zh-CN".into();
+        assert!(fallback.validate(&request).is_err());
+        let mut wrong_region = observed.clone();
+        wrong_region.format_locale = "en-US".into();
+        assert!(wrong_region.validate(&request).is_err());
+        let mut wrong_zone = observed.clone();
+        wrong_zone.time_zone = "UTC".into();
+        assert!(wrong_zone.validate(&request).is_err());
+        let mut backwards = observed.clone();
+        backwards.clock.export_completed_at_utc = observed.clock.opened_at_utc.clone();
+        assert!(backwards.validate(&request).is_err());
+        let mut missing = serde_json::to_value(&observed).unwrap();
+        missing["clock"]
+            .as_object_mut()
+            .unwrap()
+            .remove("refresh_started_at_utc");
+        assert!(serde_json::from_value::<OfficeRenderEnvironment>(missing).is_err());
+    }
 
     #[test]
     fn registered_environments_match_all_conversion_receipts() {

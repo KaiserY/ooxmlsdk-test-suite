@@ -1,0 +1,476 @@
+{
+  "adapter": {
+    "controller_script_sha256": "d0d76bf2dc26b971da6aa3301f5ad8bef7f00ac096076d46e13c09634c70c82d",
+    "environment_helper_sha256": "16f0694a8b9c0c11223263f16c3158fa96d312eaf9affe6dc3d312671eb9dcc2",
+    "probe_script_sha256": "2d9b62f2b707765d4e9dce44fe1144be5b3c6f2fc2cde8087c2c95a6c8ffb1e0"
+  },
+  "environment_path": "/home/kazeno/git/ooxmlsdk-test-suite/corpus_pdf_conv/reference-adapters/896d3a3e77cd3e86922192044a2784d17a253c71a13d3364f48e79cf71053d6b/environment.json",
+  "environment_restoration": {
+    "restored": true
+  },
+  "original_assignment": {
+    "adjustments": [
+      {
+        "feature": "ui-language",
+        "reason": "application-generated UI strings currently fall back to English outside English and Chinese resource packs"
+      },
+      {
+        "feature": "pdf-ua",
+        "reason": "PdfUa1 and pdf_ua_compliance are canonicalized to one effective request"
+      },
+      {
+        "feature": "tagged-pdf",
+        "reason": "PDF/UA requires tagged PDF"
+      },
+      {
+        "feature": "bookmarks",
+        "reason": "PDF/UA export keeps the document outline available"
+      }
+    ],
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "1f43964ad3e7de135355c384986b8f4ca2b2e73e2044f6cf5ad3924be52eec87",
+    "corpus": "Open-XML-SDK",
+    "effective": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 75,
+        "max_resolution_dpi": 96,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": "OOXMLSDK configured golden: Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/mcppt.pptx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": true,
+      "standards": [
+        "pdf17",
+        "pdf_ua1"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "fr-CA",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": true,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": true,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "default",
+        "page_mode": "use_outlines"
+      }
+    },
+    "family": "power_point",
+    "file": "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/mcppt.pptx",
+    "office": {
+      "bitmap_missing_fonts": false,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": true,
+      "quality": "print",
+      "tagged_pdf": true
+    },
+    "pilot_300": false,
+    "reference_environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "reference_time_zone": "Asia/Shanghai",
+    "requested": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 75,
+        "max_resolution_dpi": 96,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": "OOXMLSDK configured golden: Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/mcppt.pptx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf17",
+        "pdf_ua1"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "fr-CA",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": true,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": true,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "default",
+        "page_mode": "use_outlines"
+      }
+    },
+    "schema_version": 2,
+    "seed": "ooxmlsdk-office-pdf-environments-2026-09-11-v2",
+    "source_bytes": 30807,
+    "source_extension": "pptx",
+    "source_sha256": "a2f6471c8eb640ad15044315aa31f88dc9cffedea7722f3265f586c544f190d6"
+  },
+  "original_conversion": {
+    "adjustments": [
+      {
+        "feature": "ui-language",
+        "reason": "application-generated UI strings currently fall back to English outside English and Chinese resource packs"
+      },
+      {
+        "feature": "pdf-ua",
+        "reason": "PdfUa1 and pdf_ua_compliance are canonicalized to one effective request"
+      },
+      {
+        "feature": "tagged-pdf",
+        "reason": "PDF/UA requires tagged PDF"
+      },
+      {
+        "feature": "bookmarks",
+        "reason": "PDF/UA export keeps the document outline available"
+      }
+    ],
+    "annotations": [],
+    "application": "PowerPoint",
+    "application_build": "",
+    "application_version": "",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "attempts": 2,
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "1f43964ad3e7de135355c384986b8f4ca2b2e73e2044f6cf5ad3924be52eec87",
+    "converted_at_utc": "2026-09-12T02:23:19.366378753Z",
+    "effective": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 75,
+        "max_resolution_dpi": 96,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": "OOXMLSDK configured golden: Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/mcppt.pptx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": true,
+      "standards": [
+        "pdf17",
+        "pdf_ua1"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "fr-CA",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": true,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": true,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "default",
+        "page_mode": "use_outlines"
+      }
+    },
+    "elapsed_ms": 13824,
+    "environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "error": "stdout=\u001b[31;1mprobe_office_pdf_options.ps1: \u001b[31;1m�ļ���Ŀ¼�����޷���ȡ�� (0x80070570)\u001b[0m\r\n\r\nOffice worker exit code: 1 stderr=",
+    "error_code": "",
+    "failure_class": "office-conversion-error",
+    "family": "power_point",
+    "file": "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/mcppt.pptx",
+    "observed_pdf": null,
+    "office_options": {
+      "bitmap_missing_fonts": false,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": true,
+      "quality": "print",
+      "tagged_pdf": true
+    },
+    "output": "",
+    "output_bytes": 0,
+    "output_sha256": "",
+    "reference_engine": "Microsoft Office",
+    "render_environment": null,
+    "requested": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 75,
+        "max_resolution_dpi": 96,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": "OOXMLSDK configured golden: Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/mcppt.pptx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf17",
+        "pdf_ua1"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "fr-CA",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": true,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": true,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "default",
+        "page_mode": "use_outlines"
+      }
+    },
+    "schema_version": 4,
+    "source_bytes": 30807,
+    "source_extension": "pptx",
+    "source_sha256": "a2f6471c8eb640ad15044315aa31f88dc9cffedea7722f3265f586c544f190d6",
+    "status": "failed"
+  },
+  "probe_receipt": {
+    "application": "PowerPoint",
+    "application_build": "20326",
+    "application_version": "16.0",
+    "elapsed_ms": 572,
+    "environment": {
+      "clock": {
+        "export_completed_at_utc": "2026-09-12T04:28:49.5832398Z",
+        "export_started_at_utc": "2026-09-12T04:28:49.3042371Z",
+        "opened_at_utc": "2026-09-12T04:28:49.1377847Z",
+        "refresh_completed_at_utc": "2026-09-12T04:28:49.2474538Z",
+        "refresh_started_at_utc": "2026-09-12T04:28:49.1404916Z"
+      },
+      "document_language": "zh-CN",
+      "format_locale": "zh-CN",
+      "time_zone": "Asia/Shanghai",
+      "ui_language": "zh-CN",
+      "windows_time_zone": "China Standard Time"
+    },
+    "file": "Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/mcppt.pptx",
+    "options": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": true,
+      "quality": "print",
+      "tagged_pdf": false
+    },
+    "output": "case-000.pdf",
+    "output_bytes": 72470,
+    "output_sha256": "fb10af0b6eae53ba3158e51c03a05142b509f7c8183a03b8d876c8111750f610",
+    "schema_version": 2,
+    "source_sha256": "a2f6471c8eb640ad15044315aa31f88dc9cffedea7722f3265f586c544f190d6"
+  },
+  "reason": "Authorized failed-reference recovery: print quality, zh-CN UI, optional export features disabled, repair-mode open on a byte-identical temporary copy; all pages and hidden slides included where applicable.",
+  "recovered_assignment": {
+    "adjustments": [],
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "dc720641b6049d180f846d1c8b6a87ef35c576d5f69836a53a21d4f3ac62f714",
+    "corpus": "Open-XML-SDK",
+    "effective": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 75,
+        "max_resolution_dpi": 96,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": "OOXMLSDK configured golden: Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/mcppt.pptx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf17"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "zh-CN",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": true,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": true,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "default",
+        "page_mode": "use_outlines"
+      }
+    },
+    "family": "power_point",
+    "file": "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/mcppt.pptx",
+    "office": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": true,
+      "quality": "print",
+      "tagged_pdf": false
+    },
+    "pilot_300": false,
+    "reference_environment_id": "896d3a3e77cd3e86922192044a2784d17a253c71a13d3364f48e79cf71053d6b",
+    "reference_time_zone": "Asia/Shanghai",
+    "requested": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 75,
+        "max_resolution_dpi": 96,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": null,
+        "creation_date": null,
+        "creator": null,
+        "keywords": null,
+        "producer": null,
+        "subject": null,
+        "title": "OOXMLSDK configured golden: Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/mcppt.pptx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf17"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "zh-CN",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": true,
+        "first_page_left": false,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": true,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_width",
+        "page_layout": "default",
+        "page_mode": "use_outlines"
+      }
+    },
+    "schema_version": 2,
+    "seed": "ooxmlsdk-office-pdf-environments-2026-09-11-v2",
+    "source_bytes": 30807,
+    "source_extension": "pptx",
+    "source_sha256": "a2f6471c8eb640ad15044315aa31f88dc9cffedea7722f3265f586c544f190d6"
+  },
+  "stages": "{\"utc\":\"2026-09-12T04:28:48.5912616Z\",\"stage\":\"application-create\",\"detail\":\"PowerPoint\"}\n{\"utc\":\"2026-09-12T04:28:49.0179733Z\",\"stage\":\"environment-readback\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:28:49.0881428Z\",\"stage\":\"stage-input\",\"detail\":{\"staged\":\"mcppt.pptx\",\"open_and_repair\":true,\"original\":\"mcppt.pptx\"}}\n{\"utc\":\"2026-09-12T04:28:49.1411279Z\",\"stage\":\"powerpoint-open\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:28:49.2986548Z\",\"stage\":\"powerpoint-print-range\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:28:49.3051374Z\",\"stage\":\"powerpoint-export\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:28:49.6281365Z\",\"stage\":\"powerpoint-close\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:28:49.6409687Z\",\"stage\":\"copy-pdf\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:28:49.7111700Z\",\"stage\":\"application-quit\",\"detail\":\"PowerPoint\"}\n{\"utc\":\"2026-09-12T04:28:49.7210770Z\",\"stage\":\"archive-stage\",\"detail\":\"C:\\\\Users\\\\kazeno\\\\AppData\\\\Local\\\\Temp\\\\ooxmlsdk-pdf-options-probe-a15b171e932843ee9e3f2a69ff52df04\"}\n",
+  "worker_completion": {
+    "completed_utc": "2026-09-12T04:28:52.4036595Z",
+    "elapsed_ms": 4854,
+    "exit_code": 0,
+    "file": "Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/mcppt.pptx",
+    "restored": true,
+    "tag": "recovery-all"
+  },
+  "worker_root": "/tmp/office-reference-failure-review-20260912/probes/1f43964ad3e7de135355c384986b8f4ca2b2e73e2044f6cf5ad3924be52eec87-recovery-all"
+}

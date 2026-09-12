@@ -1,0 +1,448 @@
+{
+  "adapter": {
+    "controller_script_sha256": "d0d76bf2dc26b971da6aa3301f5ad8bef7f00ac096076d46e13c09634c70c82d",
+    "environment_helper_sha256": "16f0694a8b9c0c11223263f16c3158fa96d312eaf9affe6dc3d312671eb9dcc2",
+    "probe_script_sha256": "2d9b62f2b707765d4e9dce44fe1144be5b3c6f2fc2cde8087c2c95a6c8ffb1e0"
+  },
+  "environment_path": "/home/kazeno/git/ooxmlsdk-test-suite/corpus_pdf_conv/reference-adapters/896d3a3e77cd3e86922192044a2784d17a253c71a13d3364f48e79cf71053d6b/environment.json",
+  "environment_restoration": {
+    "restored": true
+  },
+  "original_assignment": {
+    "adjustments": [
+      {
+        "feature": "ui-language",
+        "reason": "application-generated UI strings currently fall back to English outside English and Chinese resource packs"
+      }
+    ],
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "55a947a2eb292a2db2a164d032862bdbd80b52b1e57d62d7b54cc122083c8ebc",
+    "corpus": "ClosedXML",
+    "effective": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 75,
+        "max_resolution_dpi": 96,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": "ooxmlsdk-test-suite",
+        "creation_date": null,
+        "creator": null,
+        "keywords": "ooxmlsdk,office,golden",
+        "producer": null,
+        "subject": "Configured Office PDF fidelity",
+        "title": "OOXMLSDK configured golden: ClosedXML/ClosedXML.Tests/Resource/TryToLoad/DrawingSizeInPx.xlsx"
+      },
+      "open_bookmark_levels": 0,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf20"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "fr-CA",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": true,
+        "first_page_left": true,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": true,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_visible",
+        "page_layout": "continuous_facing",
+        "page_mode": "default"
+      }
+    },
+    "family": "excel",
+    "file": "ClosedXML.Tests/Resource/TryToLoad/DrawingSizeInPx.xlsx",
+    "office": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": true,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": true
+    },
+    "pilot_300": false,
+    "reference_environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "reference_time_zone": "Asia/Shanghai",
+    "requested": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 75,
+        "max_resolution_dpi": 96,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": "ooxmlsdk-test-suite",
+        "creation_date": null,
+        "creator": null,
+        "keywords": "ooxmlsdk,office,golden",
+        "producer": null,
+        "subject": "Configured Office PDF fidelity",
+        "title": "OOXMLSDK configured golden: ClosedXML/ClosedXML.Tests/Resource/TryToLoad/DrawingSizeInPx.xlsx"
+      },
+      "open_bookmark_levels": 0,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf20"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "fr-CA",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": true,
+        "first_page_left": true,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": true,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_visible",
+        "page_layout": "continuous_facing",
+        "page_mode": "default"
+      }
+    },
+    "schema_version": 2,
+    "seed": "ooxmlsdk-office-pdf-environments-2026-09-11-v2",
+    "source_bytes": 981840,
+    "source_extension": "xlsx",
+    "source_sha256": "8d384026913cf12612700cc235fbbb8feb37d2b965216245027d7f6e6ff36e81"
+  },
+  "original_conversion": {
+    "adjustments": [
+      {
+        "feature": "ui-language",
+        "reason": "application-generated UI strings currently fall back to English outside English and Chinese resource packs"
+      }
+    ],
+    "annotations": [],
+    "application": "Excel",
+    "application_build": "",
+    "application_version": "",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "attempts": 2,
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "55a947a2eb292a2db2a164d032862bdbd80b52b1e57d62d7b54cc122083c8ebc",
+    "converted_at_utc": "2026-09-12T02:12:37.098338725Z",
+    "effective": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 75,
+        "max_resolution_dpi": 96,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": "ooxmlsdk-test-suite",
+        "creation_date": null,
+        "creator": null,
+        "keywords": "ooxmlsdk,office,golden",
+        "producer": null,
+        "subject": "Configured Office PDF fidelity",
+        "title": "OOXMLSDK configured golden: ClosedXML/ClosedXML.Tests/Resource/TryToLoad/DrawingSizeInPx.xlsx"
+      },
+      "open_bookmark_levels": 0,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf20"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "fr-CA",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": true,
+        "first_page_left": true,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": true,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_visible",
+        "page_layout": "continuous_facing",
+        "page_mode": "default"
+      }
+    },
+    "elapsed_ms": 12032,
+    "environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "error": "stdout=\u001b[31;1mprobe_office_pdf_options.ps1: \u001b[31;1mImpossible d'ouvrir le fichier ??DrawingSizeInPx.xlsx?? car son format ou son extension n'est pas valide. V��rifiez que le fichier n'est pas endommag�� et que son extension correspond bien au format du fichier.\u001b[0m\r\n\r\nOffice worker exit code: 1 stderr=",
+    "error_code": "",
+    "failure_class": "office-conversion-error",
+    "family": "excel",
+    "file": "ClosedXML.Tests/Resource/TryToLoad/DrawingSizeInPx.xlsx",
+    "observed_pdf": null,
+    "office_options": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": true,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": true
+    },
+    "output": "",
+    "output_bytes": 0,
+    "output_sha256": "",
+    "reference_engine": "Microsoft Office",
+    "render_environment": null,
+    "requested": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": true,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 75,
+        "max_resolution_dpi": 96,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": "ooxmlsdk-test-suite",
+        "creation_date": null,
+        "creator": null,
+        "keywords": "ooxmlsdk,office,golden",
+        "producer": null,
+        "subject": "Configured Office PDF fidelity",
+        "title": "OOXMLSDK configured golden: ClosedXML/ClosedXML.Tests/Resource/TryToLoad/DrawingSizeInPx.xlsx"
+      },
+      "open_bookmark_levels": 0,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf20"
+      ],
+      "tagged_pdf": false,
+      "ui_language": "fr-CA",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": true,
+        "first_page_left": true,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": true,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_visible",
+        "page_layout": "continuous_facing",
+        "page_mode": "default"
+      }
+    },
+    "schema_version": 4,
+    "source_bytes": 981840,
+    "source_extension": "xlsx",
+    "source_sha256": "8d384026913cf12612700cc235fbbb8feb37d2b965216245027d7f6e6ff36e81",
+    "status": "failed"
+  },
+  "probe_receipt": {
+    "application": "Excel",
+    "application_build": "20326",
+    "application_version": "16.0",
+    "elapsed_ms": 11407,
+    "environment": {
+      "clock": {
+        "export_completed_at_utc": "2026-09-12T04:11:30.6456478Z",
+        "export_started_at_utc": "2026-09-12T04:11:20.6503914Z",
+        "opened_at_utc": "2026-09-12T04:11:20.0297180Z",
+        "refresh_completed_at_utc": "2026-09-12T04:11:20.6332016Z",
+        "refresh_started_at_utc": "2026-09-12T04:11:20.6259036Z"
+      },
+      "document_language": "zh-CN",
+      "format_locale": "zh-CN",
+      "time_zone": "Asia/Shanghai",
+      "ui_language": "zh-CN",
+      "windows_time_zone": "China Standard Time"
+    },
+    "file": "ClosedXML/ClosedXML.Tests/Resource/TryToLoad/DrawingSizeInPx.xlsx",
+    "options": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": true
+    },
+    "output": "case-000.pdf",
+    "output_bytes": 3101763,
+    "output_sha256": "ea922cfc54e997cc813b8087f724c6d7c757514dbf18ba629396d8ddf8e506b4",
+    "schema_version": 2,
+    "source_sha256": "8d384026913cf12612700cc235fbbb8feb37d2b965216245027d7f6e6ff36e81"
+  },
+  "reason": "Authorized failed-reference recovery: print quality, zh-CN UI, optional export features disabled, repair-mode open on a byte-identical temporary copy; all pages and hidden slides included where applicable.",
+  "recovered_assignment": {
+    "adjustments": [],
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "configuration_id": "aabb5fba63ead069751eb40ac7736aca0c75473ba73d872cd5ad0fdd89452093",
+    "corpus": "ClosedXML",
+    "effective": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 75,
+        "max_resolution_dpi": 96,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": "ooxmlsdk-test-suite",
+        "creation_date": null,
+        "creator": null,
+        "keywords": "ooxmlsdk,office,golden",
+        "producer": null,
+        "subject": "Configured Office PDF fidelity",
+        "title": "OOXMLSDK configured golden: ClosedXML/ClosedXML.Tests/Resource/TryToLoad/DrawingSizeInPx.xlsx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf20"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "zh-CN",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": true,
+        "first_page_left": true,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": true,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_visible",
+        "page_layout": "continuous_facing",
+        "page_mode": "default"
+      }
+    },
+    "family": "excel",
+    "file": "ClosedXML.Tests/Resource/TryToLoad/DrawingSizeInPx.xlsx",
+    "office": {
+      "bitmap_missing_fonts": true,
+      "bookmarks": "none",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "pdf_a_1": false,
+      "print_hidden_slides": false,
+      "quality": "print",
+      "tagged_pdf": true
+    },
+    "pilot_300": false,
+    "reference_environment_id": "896d3a3e77cd3e86922192044a2784d17a253c71a13d3364f48e79cf71053d6b",
+    "reference_time_zone": "Asia/Shanghai",
+    "requested": {
+      "compress_content_streams": true,
+      "document_language": "zh-CN",
+      "embed_campaign_attachment": true,
+      "export_bookmarks": false,
+      "export_form_fields": false,
+      "field_update": null,
+      "format_locale": "zh-CN",
+      "images": {
+        "jpeg_quality": 75,
+        "max_resolution_dpi": 96,
+        "reduce_resolution": true,
+        "use_lossless_compression": false
+      },
+      "link_action": "uri",
+      "metadata": {
+        "author": "ooxmlsdk-test-suite",
+        "creation_date": null,
+        "creator": null,
+        "keywords": "ooxmlsdk,office,golden",
+        "producer": null,
+        "subject": "Configured Office PDF fidelity",
+        "title": "OOXMLSDK configured golden: ClosedXML/ClosedXML.Tests/Resource/TryToLoad/DrawingSizeInPx.xlsx"
+      },
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "pdf_ua_compliance": false,
+      "standards": [
+        "pdf20"
+      ],
+      "tagged_pdf": true,
+      "ui_language": "zh-CN",
+      "viewer": {
+        "center_window": true,
+        "display_document_title": true,
+        "first_page_left": true,
+        "fit_window": false,
+        "full_screen": false,
+        "hide_menubar": false,
+        "hide_toolbar": true,
+        "hide_window_controls": false,
+        "initial_page": 1,
+        "magnification": "fit_visible",
+        "page_layout": "continuous_facing",
+        "page_mode": "default"
+      }
+    },
+    "schema_version": 2,
+    "seed": "ooxmlsdk-office-pdf-environments-2026-09-11-v2",
+    "source_bytes": 981840,
+    "source_extension": "xlsx",
+    "source_sha256": "8d384026913cf12612700cc235fbbb8feb37d2b965216245027d7f6e6ff36e81"
+  },
+  "stages": "{\"utc\":\"2026-09-12T04:11:19.3463053Z\",\"stage\":\"application-create\",\"detail\":\"Excel\"}\n{\"utc\":\"2026-09-12T04:11:19.9269336Z\",\"stage\":\"environment-readback\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:11:19.9867819Z\",\"stage\":\"stage-input\",\"detail\":{\"staged\":\"DrawingSizeInPx.xlsm\",\"original\":\"DrawingSizeInPx.xlsx\",\"open_and_repair\":true}}\n{\"utc\":\"2026-09-12T04:11:20.0303686Z\",\"stage\":\"excel-open\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:11:20.6265838Z\",\"stage\":\"excel-calculate\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:11:20.6508229Z\",\"stage\":\"excel-export\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:11:31.1555739Z\",\"stage\":\"excel-close\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:11:31.1750677Z\",\"stage\":\"copy-pdf\",\"detail\":null}\n{\"utc\":\"2026-09-12T04:11:31.4570771Z\",\"stage\":\"application-quit\",\"detail\":\"Excel\"}\n{\"utc\":\"2026-09-12T04:11:31.4898599Z\",\"stage\":\"archive-stage\",\"detail\":\"C:\\\\Users\\\\kazeno\\\\AppData\\\\Local\\\\Temp\\\\ooxmlsdk-pdf-options-probe-9d350495812a4c1fa5847307d13a6b41\"}\n",
+  "worker_completion": {
+    "completed_utc": "2026-09-12T04:11:31.6525931Z",
+    "elapsed_ms": 13279,
+    "exit_code": 0,
+    "file": "ClosedXML/ClosedXML.Tests/Resource/TryToLoad/DrawingSizeInPx.xlsx",
+    "restored": true,
+    "tag": "recovery-all"
+  },
+  "worker_root": "/tmp/office-reference-failure-review-20260912/probes/55a947a2eb292a2db2a164d032862bdbd80b52b1e57d62d7b54cc122083c8ebc-recovery-all"
+}

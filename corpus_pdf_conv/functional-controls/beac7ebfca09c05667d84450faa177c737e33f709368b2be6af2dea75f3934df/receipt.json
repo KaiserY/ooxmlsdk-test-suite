@@ -1,0 +1,37 @@
+{
+  "schema_version": 2,
+  "file": "Apache-POI/test-data/spreadsheet/ForShifting.xlsx",
+  "application": "Excel",
+  "application_version": "16.0",
+  "application_build": "20326",
+  "options": {
+    "quality": "screen",
+    "include_document_properties": false,
+    "page_from": null,
+    "page_to": null,
+    "tagged_pdf": true,
+    "bookmarks": "none",
+    "pdf_a_1": false,
+    "bitmap_missing_fonts": true,
+    "print_hidden_slides": false
+  },
+  "source_sha256": "acdee44e5923153f3d2edb1130d9a37bd9ff0674a61115924782c9a0fde2e1e5",
+  "output": "case-000.pdf",
+  "output_bytes": 16826,
+  "output_sha256": "17384ee73206421535e391e7d354279ab2afc86d846911338c7760ec3903cf2f",
+  "elapsed_ms": 784,
+  "environment": {
+    "ui_language": "fr-CA",
+    "format_locale": "zh-CN",
+    "document_language": "zh-CN",
+    "time_zone": "Asia/Shanghai",
+    "windows_time_zone": "China Standard Time",
+    "clock": {
+      "opened_at_utc": "2026-09-11T08:56:46.2026740Z",
+      "refresh_started_at_utc": "2026-09-11T08:56:46.5683374Z",
+      "refresh_completed_at_utc": "2026-09-11T08:56:46.5723567Z",
+      "export_started_at_utc": "2026-09-11T08:56:46.5878273Z",
+      "export_completed_at_utc": "2026-09-11T08:56:46.8904155Z"
+    }
+  }
+}

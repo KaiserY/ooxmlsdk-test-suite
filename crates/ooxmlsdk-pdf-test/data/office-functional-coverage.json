@@ -1,0 +1,101 @@
+[
+  {
+    "source": "Apache-POI/test-data/slideshow/2411-Performance_Up.pptx",
+    "source_sha256": "a387861a0066ad11ba85aba9572830c1ec1ab9a24380728ead34d2b5b26662c0",
+    "expected_source_pages": 48,
+    "feature": "hidden-slides-included",
+    "page_range": null,
+    "quality": "print",
+    "print_hidden_slides": true
+  },
+  {
+    "source": "Apache-POI/test-data/slideshow/60810.pptx",
+    "source_sha256": "61afceb0365523ceba6fc00a525157148c2ddbdb3b5d843992ac3c107e9921bf",
+    "expected_source_pages": 28,
+    "feature": "hidden-slides-excluded",
+    "page_range": null,
+    "quality": "screen",
+    "print_hidden_slides": false
+  },
+  {
+    "source": "Apache-POI/test-data/document/Headers.docx",
+    "source_sha256": "bdf91038f9a5454355e6393b7b74fd819a4adc480b4a7011a86e878403952b5b",
+    "expected_source_pages": 3,
+    "feature": "middle-page",
+    "page_range": "2",
+    "quality": null,
+    "print_hidden_slides": null
+  },
+  {
+    "source": "LibreOffice/sw/qa/extras/ooxmlexport/data/tdf131203.docx",
+    "source_sha256": "325a8d49e684cde606035d54df4c51f15c718b2043f5ac7158fd5e27bcb641f1",
+    "expected_source_pages": 3,
+    "feature": "last-page",
+    "page_range": "3",
+    "quality": null,
+    "print_hidden_slides": null
+  },
+  {
+    "source": "LibreOffice/sw/qa/extras/ooxmlexport/data/fdo55381.docx",
+    "source_sha256": "41f726efe22d6340bb71c101f945751deb0fb59e724b19f1878fb4f5eee2959c",
+    "expected_source_pages": 4,
+    "feature": "non-first-page-interval",
+    "page_range": "2-3",
+    "quality": null,
+    "print_hidden_slides": null
+  },
+  {
+    "source": "Apache-POI/test-data/spreadsheet/49273.xlsx",
+    "source_sha256": "f99d52971bc5bed1b18fb23743c330611a5d011504d7f0991a4f2b9426ab8041",
+    "expected_source_pages": 4,
+    "feature": "middle-page",
+    "page_range": "2",
+    "quality": null,
+    "print_hidden_slides": null
+  },
+  {
+    "source": "Apache-POI/test-data/spreadsheet/ForShifting.xlsx",
+    "source_sha256": "acdee44e5923153f3d2edb1130d9a37bd9ff0674a61115924782c9a0fde2e1e5",
+    "expected_source_pages": 3,
+    "feature": "last-page",
+    "page_range": "3",
+    "quality": null,
+    "print_hidden_slides": null
+  },
+  {
+    "source": "Apache-POI/test-data/spreadsheet/48703.xlsx",
+    "source_sha256": "10af0c1b25c30c09112f61f9e52980c8946f5379d85e7e3bf9daa5b02712c999",
+    "expected_source_pages": 4,
+    "feature": "non-first-page-interval",
+    "page_range": "2-3",
+    "quality": null,
+    "print_hidden_slides": null
+  },
+  {
+    "source": "LibreOffice/sd/qa/unit/data/pptx/tdf144918.pptx",
+    "source_sha256": "ce391e0a2bec5e623796a7c8c9f630c5a5dfb3b3de8f604f9b4ee6476d2b8565",
+    "expected_source_pages": 3,
+    "feature": "middle-page",
+    "page_range": "2",
+    "quality": null,
+    "print_hidden_slides": null
+  },
+  {
+    "source": "Pandoc/test/pptx/code/output.pptx",
+    "source_sha256": "4c18656fc8c8e91a8a6b20660f4266365e3338ebf5e8d1dbcafebfc44fb4bff7",
+    "expected_source_pages": 3,
+    "feature": "last-page",
+    "page_range": "3",
+    "quality": null,
+    "print_hidden_slides": null
+  },
+  {
+    "source": "LibreOffice/sd/qa/unit/data/pptx/tdf119187.pptx",
+    "source_sha256": "a96cc1c23725968dd920275d58cecb8bc0a245a7ae2700c898465cae9bdcebd1",
+    "expected_source_pages": 3,
+    "feature": "non-first-page-interval",
+    "page_range": "2-3",
+    "quality": null,
+    "print_hidden_slides": null
+  }
+]

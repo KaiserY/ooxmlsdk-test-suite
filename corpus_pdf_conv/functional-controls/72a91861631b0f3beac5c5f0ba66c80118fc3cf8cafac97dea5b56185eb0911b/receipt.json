@@ -1,0 +1,37 @@
+{
+  "schema_version": 2,
+  "file": "Apache-POI/test-data/document/Headers.docx",
+  "application": "Word",
+  "application_version": "16.0",
+  "application_build": "16.0.20326",
+  "options": {
+    "quality": "print",
+    "include_document_properties": true,
+    "page_from": null,
+    "page_to": null,
+    "tagged_pdf": true,
+    "bookmarks": "none",
+    "pdf_a_1": true,
+    "bitmap_missing_fonts": true,
+    "print_hidden_slides": false
+  },
+  "source_sha256": "bdf91038f9a5454355e6393b7b74fd819a4adc480b4a7011a86e878403952b5b",
+  "output": "case-000.pdf",
+  "output_bytes": 86458,
+  "output_sha256": "e8c033e9d0a39ad0aa84b22d1f2b7bd2093efaa779eb71fad2c4af7f3312126a",
+  "elapsed_ms": 611,
+  "environment": {
+    "ui_language": "ja-JP",
+    "format_locale": "zh-CN",
+    "document_language": "zh-CN",
+    "time_zone": "Asia/Shanghai",
+    "windows_time_zone": "China Standard Time",
+    "clock": {
+      "opened_at_utc": "2026-09-11T08:56:26.2903075Z",
+      "refresh_started_at_utc": "2026-09-11T08:56:26.4053977Z",
+      "refresh_completed_at_utc": "2026-09-11T08:56:26.5907136Z",
+      "export_started_at_utc": "2026-09-11T08:56:26.6093916Z",
+      "export_completed_at_utc": "2026-09-11T08:56:26.8347700Z"
+    }
+  }
+}

@@ -4,12 +4,13 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::Duration;
 
+use ooxmlsdk_pdf_test::office_pdf_campaign::import_reference_recoveries;
 use ooxmlsdk_pdf_test::{
     CampaignAuditSelection, audit_campaign_selection, audit_one_with_artifacts, audit_worker_loop,
-    convert_campaign, generate_campaign_assignments, prepare_audit_one,
-    read_audit_configuration_ids, read_plan, render_native_one_with_task, render_one_with_task,
-    scan_campaign_font_references, scan_local_font_candidates, validate_assignments,
-    workspace_root, write_plan,
+    capture_campaign_environment, convert_campaign, generate_campaign_assignments,
+    prepare_audit_one, read_audit_configuration_ids, read_plan, render_native_one_with_task,
+    render_one_with_task, scan_campaign_font_references, scan_local_font_candidates,
+    validate_assignments, workspace_root, write_plan,
 };
 
 fn main() -> ExitCode {
@@ -28,6 +29,20 @@ fn run() -> Result<(), String> {
     let arguments = arguments.collect::<Vec<_>>();
     let root = workspace_root();
     match command.as_str() {
+        "import-recoveries" => {
+            reject_unknown_options(&arguments, &["--requests"])?;
+            let path = required_path(&arguments, "--requests")?;
+            println!("recovered={}", import_reference_recoveries(&root, &path)?);
+        }
+        "capture-environment" => {
+            reject_unknown_options(&arguments, &["--pwsh"])?;
+            let pwsh = option_value(&arguments, "--pwsh")?.unwrap_or_else(|| "pwsh.exe".into());
+            capture_campaign_environment(&root, &pwsh)?;
+            println!(
+                "environment={}",
+                root.join("corpus_pdf_conv/environment.json").display()
+            );
+        }
         "generate-plan" => {
             let plan_path = plan_path(&root, &arguments)?;
             let assignments = generate_campaign_assignments(&root)?;
@@ -55,10 +70,17 @@ fn run() -> Result<(), String> {
                 .unwrap_or_else(|| root.join("corpus_pdf_conv/plan.jsonl"));
             let selection =
                 option_value(&arguments, "--selection")?.unwrap_or_else(|| "pilot-300".to_string());
-            let pilot_only = match selection.as_str() {
-                "pilot-300" => true,
-                "full" => false,
-                value => {
+            let configuration_ids = optional_path(&root, &arguments, "--configuration-ids")?;
+            let selection = match (selection.as_str(), configuration_ids) {
+                ("pilot-300", None) => CampaignAuditSelection::Pilot,
+                ("full", None) => CampaignAuditSelection::Full,
+                ("full", Some(path)) => {
+                    CampaignAuditSelection::ConfigurationIds(read_audit_configuration_ids(&path)?)
+                }
+                ("pilot-300", Some(_)) => {
+                    return Err("--configuration-ids requires --selection full".into());
+                }
+                (value, _) => {
                     return Err(format!(
                         "invalid --selection {value:?}; expected pilot-300 or full"
                     ));
@@ -66,7 +88,7 @@ fn run() -> Result<(), String> {
             };
             let pwsh =
                 option_value(&arguments, "--pwsh")?.unwrap_or_else(|| "pwsh.exe".to_string());
-            let jobs = optional_number(&arguments, "--jobs")?.unwrap_or(3);
+            let jobs = optional_number(&arguments, "--jobs")?.unwrap_or(1);
             let timeout_seconds = optional_number(&arguments, "--timeout-seconds")?.unwrap_or(120);
             let max_attempts = optional_number(&arguments, "--max-attempts")?.unwrap_or(2);
             reject_unknown_options(
@@ -74,6 +96,7 @@ fn run() -> Result<(), String> {
                 &[
                     "--plan",
                     "--selection",
+                    "--configuration-ids",
                     "--pwsh",
                     "--jobs",
                     "--timeout-seconds",
@@ -84,7 +107,7 @@ fn run() -> Result<(), String> {
                 &root,
                 &plan_path,
                 &pwsh,
-                pilot_only,
+                &selection,
                 jobs,
                 Duration::from_secs(
                     timeout_seconds
@@ -331,7 +354,7 @@ fn reject_unknown_options(arguments: &[String], known: &[&str]) -> Result<(), St
 }
 
 fn usage() -> String {
-    "usage:\n  office_pdf_campaign generate-plan [--plan PATH]\n  office_pdf_campaign validate-plan [--plan PATH]\n  office_pdf_campaign font-scan [--plan PATH] [--output PATH]\n  office_pdf_campaign local-font-candidates [--references PATH] [--output PATH]\n  office_pdf_campaign convert [--plan PATH] [--selection pilot-300|full] [--pwsh PATH] [--jobs N] [--timeout-seconds N] [--max-attempts N]\n  office_pdf_campaign audit [--plan PATH] [--selection pilot-300|full] [--configuration-ids PATH] [--jobs N] [--timeout-seconds N]\n  office_pdf_campaign prepare-audit-one --configuration-id ID --task PATH [--plan PATH]\n  office_pdf_campaign audit-one --task PATH --result PATH [--write-artifacts true|false]\n  office_pdf_campaign render-one --task PATH --input PATH --output PATH\n  office_pdf_campaign audit-worker"
+    "usage:\n  office_pdf_campaign capture-environment [--pwsh PATH]\n  office_pdf_campaign generate-plan [--plan PATH]\n  office_pdf_campaign validate-plan [--plan PATH]\n  office_pdf_campaign font-scan [--plan PATH] [--output PATH]\n  office_pdf_campaign local-font-candidates [--references PATH] [--output PATH]\n  office_pdf_campaign convert [--plan PATH] [--selection pilot-300|full] [--configuration-ids PATH] [--pwsh PATH] [--jobs N] [--timeout-seconds N] [--max-attempts N]\n  office_pdf_campaign import-recoveries --requests PATH\n  office_pdf_campaign audit [--plan PATH] [--selection pilot-300|full] [--configuration-ids PATH] [--jobs N] [--timeout-seconds N]\n  office_pdf_campaign prepare-audit-one --configuration-id ID --task PATH [--plan PATH]\n  office_pdf_campaign audit-one --task PATH --result PATH [--write-artifacts true|false]\n  office_pdf_campaign render-one --task PATH --input PATH --output PATH\n  office_pdf_campaign audit-worker"
         .to_string()
 }
 

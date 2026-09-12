@@ -18,6 +18,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "office_pdf_environment.ps1")
 
 function Test-WslPath {
     param([string]$Path)
@@ -185,11 +186,17 @@ function Export-WordContentEmf {
 
 function Export-WithWord {
     param($Application, [string]$InputPath, [string]$OutputPath, $Options,
-        [switch]$IncludeDiagnosticXps, [switch]$IncludeDiagnosticEmf)
+        [switch]$IncludeDiagnosticXps, [switch]$IncludeDiagnosticEmf, $RenderEnvironment)
 
     $document = $null
     try {
+        if ($null -ne $RenderEnvironment) { $RenderEnvironment.clock = Start-OfficeExportClock }
         $document = $Application.Documents.Open($InputPath, $false, $true, $false)
+        if ($null -ne $RenderEnvironment) {
+            $RenderEnvironment.clock.refresh_started_at_utc = [DateTime]::UtcNow.ToString('o')
+            Update-OfficeWordClockFields $document
+            $RenderEnvironment.clock.refresh_completed_at_utc = [DateTime]::UtcNow.ToString('o')
+        }
         Assert-ProbeOptions $Options "Word" ([int]$document.ComputeStatistics(2))
         $range = if ($null -eq $Options.page_from) { 0 } else { 3 }
         $from = if ($null -eq $Options.page_from) { 1 } else { [int]$Options.page_from }
@@ -208,6 +215,7 @@ function Export-WithWord {
             $formatPath = if ($format -eq 17) { $OutputPath } else {
                 [IO.Path]::ChangeExtension($OutputPath, ".xps")
             }
+            if ($null -ne $RenderEnvironment) { $RenderEnvironment.clock.export_started_at_utc = [DateTime]::UtcNow.ToString('o') }
             $document.ExportAsFixedFormat(
                 $formatPath,
                 $format,
@@ -224,6 +232,7 @@ function Export-WithWord {
                 [bool]$Options.bitmap_missing_fonts,
                 [bool]$Options.pdf_a_1
             )
+            if ($null -ne $RenderEnvironment) { $RenderEnvironment.clock.export_completed_at_utc = [DateTime]::UtcNow.ToString('o') }
         }
         if ($IncludeDiagnosticEmf) {
             Export-WordContentEmf $document ([IO.Path]::ChangeExtension($OutputPath, ".emf"))
@@ -238,16 +247,23 @@ function Export-WithWord {
 }
 
 function Export-WithExcel {
-    param($Application, [string]$InputPath, [string]$OutputPath, $Options)
+    param($Application, [string]$InputPath, [string]$OutputPath, $Options, $RenderEnvironment)
 
     $workbook = $null
     try {
+        if ($null -ne $RenderEnvironment) { $RenderEnvironment.clock = Start-OfficeExportClock }
         $workbook = $Application.Workbooks.Open($InputPath, 0, $true)
+        if ($null -ne $RenderEnvironment) {
+            $RenderEnvironment.clock.refresh_started_at_utc = [DateTime]::UtcNow.ToString('o')
+            $Application.CalculateFull()
+            $RenderEnvironment.clock.refresh_completed_at_utc = [DateTime]::UtcNow.ToString('o')
+        }
         $missing = [Type]::Missing
         Assert-ProbeOptions $Options "Excel" ([int]::MaxValue)
         $from = if ($null -eq $Options.page_from) { $missing } else { [int]$Options.page_from }
         $to = if ($null -eq $Options.page_to) { $missing } else { [int]$Options.page_to }
         $quality = Get-FixedFormatQualityValue "Excel" ([string]$Options.quality)
+        if ($null -ne $RenderEnvironment) { $RenderEnvironment.clock.export_started_at_utc = [DateTime]::UtcNow.ToString('o') }
         $workbook.ExportAsFixedFormat(
             0,
             $OutputPath,
@@ -258,6 +274,7 @@ function Export-WithExcel {
             $to,
             $false
         )
+        if ($null -ne $RenderEnvironment) { $RenderEnvironment.clock.export_completed_at_utc = [DateTime]::UtcNow.ToString('o') }
     }
     finally {
         if ($null -ne $workbook) {
@@ -268,18 +285,26 @@ function Export-WithExcel {
 }
 
 function Export-WithPowerPoint {
-    param($Application, [string]$InputPath, [string]$OutputPath, $Options)
+    param($Application, [string]$InputPath, [string]$OutputPath, $Options, $RenderEnvironment)
 
     $presentation = $null
     $printRange = $null
     try {
+        if ($null -ne $RenderEnvironment) {
+            $RenderEnvironment.clock = Start-OfficeExportClock
+            $RenderEnvironment.clock.refresh_started_at_utc = [DateTime]::UtcNow.ToString('o')
+        }
         $presentation = $Application.Presentations.Open($InputPath, -1, 0, 0)
+        if ($null -ne $RenderEnvironment) {
+            $RenderEnvironment.clock.refresh_completed_at_utc = [DateTime]::UtcNow.ToString('o')
+        }
         $slideCount = [int]$presentation.Slides.Count
         Assert-ProbeOptions $Options "PowerPoint" $slideCount
         $from = if ($null -eq $Options.page_from) { 1 } else { [int]$Options.page_from }
         $to = if ($null -eq $Options.page_to) { $slideCount } else { [int]$Options.page_to }
         $printRange = $presentation.PrintOptions.Ranges.Add($from, $to)
         $quality = Get-FixedFormatQualityValue "PowerPoint" ([string]$Options.quality)
+        if ($null -ne $RenderEnvironment) { $RenderEnvironment.clock.export_started_at_utc = [DateTime]::UtcNow.ToString('o') }
         $presentation.ExportAsFixedFormat(
             $OutputPath,
             2,
@@ -287,7 +312,7 @@ function Export-WithPowerPoint {
             0,
             1,
             1,
-            $(if ($Options.print_hidden_slides) { -1 } else { 0 }),
+            $(if ($Options.print_hidden_slides) { 1 } else { 0 }),
             $printRange,
             4,
             "",
@@ -297,6 +322,7 @@ function Export-WithPowerPoint {
             [bool]$Options.bitmap_missing_fonts,
             [bool]$Options.pdf_a_1
         )
+        if ($null -ne $RenderEnvironment) { $RenderEnvironment.clock.export_completed_at_utc = [DateTime]::UtcNow.ToString('o') }
     }
     finally {
         if ($null -ne $printRange) {
@@ -405,10 +431,15 @@ foreach ($line in Get-Content -LiteralPath $plan.FullName -Encoding UTF8) {
         continue
     }
     $record = $line | ConvertFrom-Json
-    Assert-ExactProperties $record @("file", "options", "schema_version") "plan record"
+    if ($record.schema_version -eq 2) {
+        Assert-ExactProperties $record @('file','options','schema_version','environment') 'plan record'
+        Assert-ExactProperties $record.environment @('ui_language','format_locale','document_language','time_zone') 'environment'
+    } else {
+        Assert-ExactProperties $record @('file','options','schema_version') 'plan record'
+    }
     Assert-Integer $record.schema_version "plan record schema_version"
     Assert-String $record.file "plan record file"
-    if ([long]$record.schema_version -ne 1) {
+    if ([long]$record.schema_version -notin @(1,2)) {
         throw "Unsupported plan schema_version: $($record.schema_version)"
     }
     $rawRelative = [string]$record.file
@@ -464,6 +495,11 @@ try {
             Write-OfficeProcessId $family $processIdsBefore
         }
         $application = $applications[$family]
+        $actualEnvironment = $null
+        if ($record.schema_version -eq 2) {
+            $actualEnvironment = Get-OfficeRenderEnvironment $application
+            Assert-OfficeRenderEnvironment $actualEnvironment $record.environment
+        }
 
         $stageDirectory = Join-Path $stageRoot ("case-{0:D3}" -f $index)
         New-Item -ItemType Directory -Path $stageDirectory | Out-Null
@@ -476,11 +512,11 @@ try {
             "Word" {
                 Export-WithWord $application $stageInput $stageOutput $record.options `
                     -IncludeDiagnosticXps:$DiagnosticWordXps `
-                    -IncludeDiagnosticEmf:$DiagnosticWordEmf
+                    -IncludeDiagnosticEmf:$DiagnosticWordEmf -RenderEnvironment $actualEnvironment
             }
-            "Excel" { Export-WithExcel $application $stageInput $stageOutput $record.options }
+            "Excel" { Export-WithExcel $application $stageInput $stageOutput $record.options -RenderEnvironment $actualEnvironment }
             "PowerPoint" {
-                Export-WithPowerPoint $application $stageInput $stageOutput $record.options
+                Export-WithPowerPoint $application $stageInput $stageOutput $record.options -RenderEnvironment $actualEnvironment
             }
         }
         $destination = Join-Path $output.FullName ("case-{0:D3}.pdf" -f $index)
@@ -491,7 +527,7 @@ try {
         }
         catch {}
         $result = [ordered]@{
-            schema_version = 1
+            schema_version = [int]$record.schema_version
             file = ([string]$record.file).Replace("\", "/")
             application = $family
             application_version = [string]$application.Version
@@ -502,6 +538,11 @@ try {
             output_bytes = (Get-Item -LiteralPath $destination).Length
             output_sha256 = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash.ToLowerInvariant()
             elapsed_ms = $started.ElapsedMilliseconds
+        }
+        if ($record.schema_version -eq 2) {
+            $result.environment = $actualEnvironment
+            $afterEnvironment = Get-OfficeRenderEnvironment $application
+            Assert-OfficeRenderEnvironment $afterEnvironment $record.environment
         }
         if ($DiagnosticWordXps) {
             $xpsDestination = [IO.Path]::ChangeExtension($destination, ".xps")

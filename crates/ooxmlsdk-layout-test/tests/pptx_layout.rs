@@ -14,6 +14,366 @@ fn pptx_debug(path: &str) -> LayoutDocument<'static> {
     pptx_layout(path).unwrap()
 }
 
+#[test]
+fn wrapped_overlong_latin_text_breaks_even_when_latin_line_break_is_disabled() {
+    let document = pptx_layout("sd/qa/unit/data/pptx/font-scale.pptx").unwrap();
+    let items = page_display_items(&document, 0);
+    // Current Office PDF uses 3 A-lines, 4 B-lines and 3 C-lines. The master
+    // explicitly has latinLnBrk=0; bodyPr has wrapping and normal autofit.
+    for (letter, expected_lines) in [('A', 3), ('B', 4), ('C', 3)] {
+        let mut origins = items
+            .iter()
+            .filter_map(|item| match item {
+                DisplayItem::Text(text) if text.text.contains(letter) => {
+                    Some(text.origin.y.0.round() as i32)
+                }
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        origins.sort_unstable();
+        origins.dedup();
+        assert_eq!(
+            origins.len(),
+            expected_lines,
+            "wrong line count for {letter}"
+        );
+    }
+}
+
+#[test]
+fn unbulleted_hanging_indent_stays_within_the_text_body_inset() {
+    let document = pptx_layout("sd/qa/unit/data/pptx/paraMarginAndIndentation.pptx").unwrap();
+    let items = page_display_items(&document, 0);
+    let run = items
+        .iter()
+        .find_map(|item| match item {
+            DisplayItem::Text(run) if run.text == "priyanka" => Some(run),
+            _ => None,
+        })
+        .expect("missing paragraph text");
+    // Office starts at shape x + body inset, despite marL + indent < 0.
+    assert!(
+        (run.origin.x.0 - 151.78).abs() < 0.5,
+        "unexpected origin: {:?}",
+        run.origin
+    );
+}
+
+#[test]
+fn smartart_counter_rotated_text_remains_inside_its_frame() {
+    let document = pptx_layout("sd/qa/unit/data/pptx/n862510_2.pptx").unwrap();
+    let text = all_page_text(&document, 0);
+    assert!(
+        text.contains("List 1"),
+        "missing SmartArt child text: {text}"
+    );
+    let runs = page_display_items(&document, 0);
+    let run = runs
+        .iter()
+        .find_map(|item| match item {
+            DisplayItem::Text(run) if run.text == "List 1" => Some(run),
+            _ => None,
+        })
+        .expect("missing List 1 text run");
+    assert!(
+        run.style.rotation_degrees.abs() < 0.01,
+        "counter-rotation did not cancel"
+    );
+    // Current Office origin is about x=319 pt. This broad frame check catches
+    // the extra rotation that moved the cached child text outside the slide.
+    assert!(
+        run.origin.x.0 > 250.0 && run.origin.x.0 < 400.0,
+        "unexpected origin: {:?}",
+        run.origin
+    );
+}
+
+#[test]
+fn japanese_automatic_chart_title_uses_the_office_ui_language() {
+    let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../corpus/Apache-POI/test-data/slideshow/chart-texture-bg.pptx");
+    let package = PresentationDocument::new_from_file(fixture).unwrap();
+    let document = ooxmlsdk_layout::pptx::layout_document(
+        &package,
+        &LayoutOptions {
+            ui_language: Some("ja-JP".into()),
+            format_locale: Some("en-US".into()),
+            default_document_language: Some("zh-CN".into()),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    // The chart's c:title has no authored c:tx. Its current Office PDF uses
+    // the Japanese UI title while keeping the authored English categories.
+    let text = all_page_text(&document, 0);
+    assert!(text.contains("グラフ タイトル"), "{text:?}");
+    assert!(!text.contains("Chart Title"), "{text:?}");
+}
+
+#[test]
+fn automatic_numbering_uses_text_font_and_preserves_character_bullet_fonts() {
+    use ooxmlsdk::schemas::schemas_openxmlformats_org_drawingml_2006_main as a;
+    use ooxmlsdk::schemas::schemas_openxmlformats_org_presentationml_2006_main as p;
+
+    let fixture = ooxmlsdk_layout_test::corpus_file("sd/qa/unit/data/pptx/n83889.pptx");
+    for bullet_font in ["Arial", "Courier New", "Wingdings"] {
+        let mut package = PresentationDocument::new_from_file(&fixture).unwrap();
+        let presentation = package.presentation_part().unwrap();
+        let slide = presentation.slide_parts(&package).next().unwrap();
+        let root = slide.root_element_mut(&mut package).unwrap();
+        let body = root
+            .common_slide_data
+            .shape_tree
+            .shape_tree_choice
+            .iter_mut()
+            .find_map(|shape| match shape {
+                p::ShapeTreeChoice::Shape(shape) => shape.text_body.as_mut(),
+                _ => None,
+            })
+            .expect("numbered text body");
+        let properties = body.paragraph[0].paragraph_properties.as_mut().unwrap();
+        let Some(a::ParagraphPropertiesChoice3::BulletFont(font)) =
+            properties.paragraph_properties_choice3.as_mut()
+        else {
+            panic!("bullet font")
+        };
+        font.typeface = bullet_font.into();
+
+        let document =
+            ooxmlsdk_layout::pptx::layout_document(&package, &LayoutOptions::default()).unwrap();
+        let items = page_display_items(&document, 0);
+        let number = items
+            .iter()
+            .find_map(|item| match item {
+                DisplayItem::Text(text) if text.text == "B." => Some(text),
+                _ => None,
+            })
+            .expect("startAt=2 alphabetic number, not a symbol-font selector");
+        // Current Office PDF uses Calibri for B., despite buFont="Arial".
+        assert_eq!(
+            number.style.font_family.as_deref(),
+            Some("Calibri"),
+            "{bullet_font}"
+        );
+        let character_bullets = items
+            .iter()
+            .filter(|item| {
+                matches!(
+                    item, DisplayItem::Text(text)
+                        if text.style.font_family.as_deref() == Some("Wingdings")
+                            && text.text == "\u{f0a7}"
+                )
+            })
+            .count();
+        assert_eq!(
+            character_bullets, 2,
+            "explicit character bullets retain Wingdings"
+        );
+    }
+}
+
+#[test]
+fn existing_table_requires_an_explicit_style_reference() {
+    use ooxmlsdk::schemas::schemas_openxmlformats_org_drawingml_2006_main as a;
+    use ooxmlsdk::schemas::schemas_openxmlformats_org_presentationml_2006_main as p;
+
+    // Office renders the original table's abc in regular black, even though
+    // tableStyles.xml defines a bold white first row for newly inserted tables.
+    // ECMA-376 §20.1.4.2.27 and [MS-OI29500] §21.1.3.12.
+    let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../corpus/Apache-POI/test-data/slideshow/table-with-no-theme.pptx");
+    let black = Color {
+        r: 0,
+        g: 0,
+        b: 0,
+        a: 255,
+    };
+    let white = Color {
+        r: 255,
+        g: 255,
+        b: 255,
+        a: 255,
+    };
+    for (style_id, styled) in [
+        (None, false),
+        (Some("{00000000-0000-0000-0000-000000000000}"), false),
+        (Some("{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}"), true),
+    ] {
+        let mut package = PresentationDocument::new_from_file(&fixture).unwrap();
+        let presentation = package.presentation_part().unwrap();
+        let slide = presentation.slide_parts(&package).next().unwrap();
+        let root = slide.root_element_mut(&mut package).unwrap();
+        let table = root
+            .common_slide_data
+            .shape_tree
+            .shape_tree_choice
+            .iter_mut()
+            .filter_map(|shape| match shape {
+                p::ShapeTreeChoice::GraphicFrame(frame) => Some(frame),
+                _ => None,
+            })
+            .flat_map(|frame| frame.graphic.graphic_data.graphic_data_choice.iter_mut())
+            .find_map(|data| match data {
+                a::GraphicDataChoice::Table(table) => Some(table),
+                _ => None,
+            })
+            .expect("fixture table");
+        table
+            .table_properties
+            .as_mut()
+            .unwrap()
+            .table_properties_choice3 =
+            style_id.map(|id| a::TablePropertiesChoice3::TableStyleId(id.into()));
+        let document =
+            ooxmlsdk_layout::pptx::layout_document(&package, &LayoutOptions::default()).unwrap();
+        let items = page_display_items(&document, 0);
+        for (value, bold, italic, color) in [
+            ("abc", styled, false, if styled { white } else { black }),
+            ("def", true, false, black),
+            ("hij", false, true, black),
+        ] {
+            let text = items
+                .iter()
+                .find_map(|item| match item {
+                    DisplayItem::Text(text) if text.text == value => Some(text),
+                    _ => None,
+                })
+                .expect(value);
+            assert_eq!(text.color, color, "{style_id:?}: {value}");
+            assert_eq!(text.style.bold, bold, "{style_id:?}: {value}");
+            assert_eq!(text.style.italic, italic, "{style_id:?}: {value}");
+        }
+    }
+}
+
+#[test]
+fn hidden_slides_follow_explicit_export_option() {
+    let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../corpus/Apache-POI/test-data/slideshow/60810.pptx");
+    let package = PresentationDocument::new_from_file(fixture).unwrap();
+    for (include_hidden_slides, expected_pages) in [(false, 25), (true, 28)] {
+        let document = ooxmlsdk_layout::pptx::layout_document(
+            &package,
+            &LayoutOptions {
+                include_hidden_slides,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(document.pages.len(), expected_pages);
+    }
+}
+
+#[test]
+fn unwrapped_right_aligned_title_preserves_its_right_edge_when_it_overflows() {
+    let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../corpus/Pandoc/test/pptx/document-properties/templated.pptx");
+    let package = PresentationDocument::new_from_file(fixture).unwrap();
+    let document =
+        ooxmlsdk_layout::pptx::layout_document(&package, &LayoutOptions::default()).unwrap();
+    let items = page_display_items(&document, 0);
+    let title = items
+        .iter()
+        .find_map(|item| match item {
+            DisplayItem::Text(text) if text.text == "Testing custom properties" => Some(text),
+            _ => None,
+        })
+        .expect("title text");
+    // The layout supplies wrap=none and algn=r. Office starts the 96pt
+    // title at -70.20pt, outside the slide, retaining its right alignment.
+    // Clamping the alignment offset used to place it at +181.20pt.
+    assert!(
+        (title.origin.x.0 + 70.20).abs() < 5.0,
+        "overflowing title origin: {:?}",
+        title.origin
+    );
+}
+
+#[test]
+fn text_paragraph_continues_in_the_next_column_before_a_line_overflows() {
+    let document = open_xml_sdk_pptx_debug(
+        "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/main_bodyPr_rtlCol.pptx",
+    );
+    // The configured Office PDF has eight lines in the first column, then
+    // three continuation lines in the second. The later paragraph starts in
+    // the third column after the authored empty paragraphs consume the gap.
+    let mut columns: [String; 3] = Default::default();
+    let mut line_positions: [Vec<f32>; 3] = Default::default();
+    for item in page_display_items(&document, 0) {
+        let DisplayItem::Text(text) = item else {
+            continue;
+        };
+        if text.text.trim().is_empty() {
+            continue;
+        }
+        let column = if text.origin.x.0 < 260.4 {
+            0
+        } else if text.origin.x.0 < 393.6 {
+            1
+        } else {
+            2
+        };
+        columns[column].extend(text.text.chars().filter(|ch| !ch.is_whitespace()));
+        if !line_positions[column]
+            .iter()
+            .any(|y| (y - text.origin.y.0).abs() < 0.1)
+        {
+            line_positions[column].push(text.origin.y.0);
+        }
+    }
+    assert_eq!(
+        columns,
+        [
+            "rtlCol–specficieswhethercolumnsareusedinarighttoleftorlefttorightorder.Setsthecolumnorderusedtodeterminewhich",
+            "columnoverflowtextshouldgotonext.",
+            "InsertTextbox|DrawingTools|Home|Paragraph|Columns",
+        ]
+    );
+    assert_eq!(line_positions.map(|lines| lines.len()), [8, 3, 5]);
+}
+
+#[test]
+fn chart_background_images_resolve_stretch_and_tile_resources() {
+    for (name, tiled) in [
+        ("chart-picture-bg.pptx", false),
+        ("chart-texture-bg.pptx", true),
+    ] {
+        let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../corpus/Apache-POI/test-data/slideshow")
+            .join(name);
+        let package = PresentationDocument::new_from_file(fixture).unwrap();
+        let document =
+            ooxmlsdk_layout::pptx::layout_document(&package, &LayoutOptions::default()).unwrap();
+        let items = page_display_items(&document, 0);
+        let images = items
+            .iter()
+            .filter_map(|item| match item {
+                DisplayItem::Image(image) => Some(image),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        assert!(!images.is_empty(), "{name}: chart background resource");
+        assert_eq!(images.len() > 1, tiled, "{name}: authored bitmap mode");
+        assert!(
+            items.iter().all(|item| !matches!(item,
+                DisplayItem::Path(path) if matches!(path.fill, Fill::Image { .. })
+            )),
+            "{name}: unresolved chart fill"
+        );
+        assert!(images.iter().all(|image| !image.bytes.is_empty()));
+        let left = images
+            .iter()
+            .map(|image| image.bounds.origin.x.0)
+            .fold(f32::INFINITY, f32::min);
+        let right = images
+            .iter()
+            .map(|image| image.bounds.origin.x.0 + image.bounds.size.width.0)
+            .fold(f32::NEG_INFINITY, f32::max);
+        assert!((left - 160.0).abs() < 0.01, "{name}: chart left edge");
+        assert!((right - 800.0).abs() < 0.01, "{name}: chart right edge");
+    }
+}
+
 fn open_xml_sdk_pptx_debug(path: &str) -> LayoutDocument<'static> {
     let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../corpus/Open-XML-SDK")

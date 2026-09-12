@@ -1,0 +1,25 @@
+{
+  "spec": {
+    "schema_version": 2,
+    "file": "LibreOffice/sw/qa/extras/ooxmlexport/data/fdo55381.docx",
+    "options": {
+      "quality": "print",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "tagged_pdf": false,
+      "bookmarks": "none",
+      "pdf_a_1": false,
+      "bitmap_missing_fonts": false,
+      "print_hidden_slides": false
+    },
+    "environment": {
+      "ui_language": "ko-KR",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "time_zone": "Asia/Shanghai"
+    }
+  },
+  "source_sha256": "41f726efe22d6340bb71c101f945751deb0fb59e724b19f1878fb4f5eee2959c",
+  "host_environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a"
+}

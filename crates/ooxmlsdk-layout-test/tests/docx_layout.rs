@@ -10,6 +10,429 @@ use ooxmlsdk_layout_test::{
 use std::path::Path;
 
 #[test]
+fn missing_bookmark_fields_use_the_german_and_japanese_office_resources() {
+    for (file, language, page, message, count) in [
+        (
+            "../Pandoc/test/docx/golden/image.docx",
+            "de-DE",
+            1,
+            "Fehler! Verweisquelle konnte nicht gefunden werden.",
+            2,
+        ),
+        (
+            "sw/qa/extras/ooxmlexport/data/fdo78910.docx",
+            "ja-JP",
+            0,
+            "エラー! ブックマークが定義されていません。",
+            1,
+        ),
+        (
+            "sw/qa/extras/ooxmlexport/data/tdf171299_tableInField.docx",
+            "ja-JP",
+            0,
+            "エラー! 参照元が見つかりません。",
+            1,
+        ),
+    ] {
+        let document = docx_layout_with_options(
+            file,
+            &LayoutOptions {
+                ui_language: Some(language.into()),
+                format_locale: Some("zh-CN".into()),
+                default_document_language: Some("en-US".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        ooxmlsdk_layout_test::assert_page_text_occurrences(&document, page, message, count);
+        assert!(!page_text_contains(
+            &document,
+            page,
+            "Error! Reference source not found."
+        ));
+        assert!(!page_text_contains(
+            &document,
+            page,
+            "Error! Bookmark not defined."
+        ));
+    }
+}
+
+#[test]
+fn spanish_waterfall_uses_office_axis_and_legend_resources() {
+    let file =
+        "../Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/Of16-06.docx";
+    let document = docx_layout_with_options(
+        file,
+        &LayoutOptions {
+            ui_language: Some("es-MX".into()),
+            format_locale: Some("en-US".into()),
+            default_document_language: Some("zh-CN".into()),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    for text in [
+        "Título del gráfico",
+        "Título del eje",
+        "Aumento",
+        "Disminución",
+        "Total",
+    ] {
+        assert_page_contains(&document, 0, text);
+    }
+    for text in ["Axis Title", "Increase", "Decrease"] {
+        assert!(
+            !page_text_contains(&document, 0, text),
+            "stale English resource: {text}"
+        );
+    }
+}
+
+#[test]
+fn german_automatic_chart_title_preserves_authored_captions() {
+    use ooxmlsdk::schemas::schemas_openxmlformats_org_drawingml_2006_chart as c;
+    use ooxmlsdk::sdk::SdkType;
+
+    let file = "chart2/qa/extras/data/docx/tdf121744.docx";
+    let options = LayoutOptions {
+        ui_language: Some("de-DE".into()),
+        format_locale: Some("en-US".into()),
+        default_document_language: Some("zh-CN".into()),
+        ..Default::default()
+    };
+    let document = docx_layout_with_options(file, &options).unwrap();
+    assert_page_contains(&document, 0, "Diagrammtitel");
+    assert_page_contains(&document, 0, "Kategória 1");
+    assert!(!page_text_contains(&document, 0, "Chart Title"));
+
+    // Only automatic titles are UI resources. An authored English title
+    // stays English even while the application UI is German.
+    let path = ooxmlsdk_layout_test::corpus_file(file);
+    let mut package = WordprocessingDocument::new_from_file(&path).unwrap();
+    let main = package.main_document_part().unwrap();
+    let chart = main.chart_parts(&package).next().unwrap();
+    chart.root_element_mut(&mut package).unwrap().chart.title = Some(Box::new(
+        c::Title::from_bytes(br#"<c:title xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>Authored Chart Title</a:t></a:r></a:p></c:rich></c:tx></c:title>"#).unwrap(),
+    ));
+    let document = docx::layout_document(&package, &options).unwrap();
+    assert_page_contains(&document, 0, "Authored Chart Title");
+    assert!(!page_text_contains(&document, 0, "Diagrammtitel"));
+}
+
+#[test]
+fn korean_style_ref_diagnostic_replaces_stale_english_heading_results() {
+    let file = "sw/qa/core/fields/data/suppress-non-numerical.docx";
+    let document = docx_layout_with_options(
+        file,
+        &LayoutOptions {
+            ui_language: Some("ko-KR".into()),
+            format_locale: Some("en-US".into()),
+            default_document_language: Some("zh-CN".into()),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    // One complex and three simple STYLEREF fields. Current Korean Office
+    // rejects the named English built-ins while retaining the style names in
+    // the diagnostic; the original numbered paragraphs remain visible.
+    for heading in ["Heading 1", "Heading 2"] {
+        let message =
+            format!("오류! 여기에 표시할 텍스트에 {heading} 을(를) 적용하려면 홈 탭을 사용하세요.");
+        ooxmlsdk_layout_test::assert_page_text_occurrences(&document, 0, &message, 2);
+    }
+    assert_page_contains(&document, 0, "List items");
+    assert_page_contains(&document, 0, "Baz");
+
+    let english = docx_layout_with_options(
+        file,
+        &LayoutOptions {
+            ui_language: Some("en-US".into()),
+            format_locale: Some("ko-KR".into()),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert!(!page_text_contains(&english, 0, "오류!"));
+    assert!(!page_text_contains(&english, 0, "Error! Use the Home tab"));
+}
+
+#[test]
+fn invalid_citation_diagnostic_uses_ui_language_instead_of_field_language() {
+    let file = "sw/qa/extras/ooxmlexport/data/sdt-citation-run.docx";
+    for (ui_language, format_locale, expected, absent) in [
+        (
+            "ja-JP",
+            "en-US",
+            "無効な資料文献が指定されました。",
+            "Invalid source specified.",
+        ),
+        (
+            "en-US",
+            "ja-JP",
+            "Invalid source specified.",
+            "無効な資料文献が指定されました。",
+        ),
+    ] {
+        let document = docx_layout_with_options(
+            file,
+            &LayoutOptions {
+                ui_language: Some(ui_language.into()),
+                format_locale: Some(format_locale.into()),
+                default_document_language: Some("zh-CN".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        // CITATION BBC11 \\l 1033 selects the bibliography language, while
+        // the unresolved-field diagnostic is an Office UI resource.
+        assert_page_contains(&document, 0, expected);
+        assert_page_contains(&document, 0, "Before sdt.");
+        assert_page_contains(&document, 0, "After sdt.");
+        assert!(!page_text_contains(&document, 0, absent));
+        assert!(!page_text_contains(&document, 0, "BBC News 2011"));
+    }
+}
+
+#[test]
+fn paragraph_frame_default_anchor_and_explicit_y_follow_office() {
+    let frame_y = |fixture: &str| {
+        let document =
+            docx_layout(&format!("sw/qa/extras/ooxmlexport/data/{fixture}.docx")).unwrap();
+        page_display_items(&document, 0)
+            .iter()
+            .find_map(|item| match item {
+                DisplayItem::Text(text) if text.text.starts_with("Text") => Some(text.origin.y.0),
+                _ => None,
+            })
+            .expect("frame text")
+    };
+    let text_relative_y = frame_y("tdf112287B");
+    // Current Office PDFs differ only by the frame's vertical placement:
+    // omitted vAnchor + bottom aligns to the bottom text margin; explicit
+    // y=0 stays at the paragraph; nonzero y overrides yAlign. Explicit text
+    // anchors keep their paragraph-relative position despite yAlign.
+    for (fixture, expected_delta) in [
+        ("tdf112287", 142.01),
+        ("tdf157572_defaultVAnchor", -22.08),
+        ("tdf157572_insidiousCombination", -0.60),
+        ("tdf157572_noVAlignAsText", 0.0),
+    ] {
+        assert_close(
+            frame_y(fixture) - text_relative_y,
+            expected_delta,
+            2.0,
+            fixture,
+        );
+    }
+}
+
+#[test]
+fn author_refresh_reads_creator_instead_of_the_hand_edited_field_cache() {
+    let file = "sw/qa/extras/ooxmlexport/data/tdf148380_createField.docx";
+    let cached = docx_layout(file).unwrap();
+    assert_page_contains(&cached, 0, "Myself - that's who");
+    let refreshed = docx_layout_with_options(
+        file,
+        &LayoutOptions {
+            field_update_datetime: Some(ooxmlsdk_layout::options::FieldUpdateDateTime {
+                year: 2026,
+                month: 9,
+                day: 11,
+                hour: 15,
+                minute: 57,
+                second: 0,
+            }),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    // The current Office PDF refreshes the AUTHOR field to dc:creator.
+    assert_page_contains(&refreshed, 0, "Lorenzo Chavez");
+    assert!(!page_text_contains(&refreshed, 0, "Myself - that's who"));
+}
+
+#[test]
+fn last_saved_by_refresh_reads_core_properties_and_preserves_the_default_cache() {
+    let file = "sw/qa/extras/ooxmlexport/data/tdf148380_modifiedField.docx";
+    let cached = docx_layout(file).unwrap();
+    assert_page_contains(&cached, 0, "Charlie Brown");
+    let refreshed = docx_layout_with_options(
+        file,
+        &LayoutOptions {
+            field_update_datetime: Some(ooxmlsdk_layout::options::FieldUpdateDateTime {
+                year: 2026,
+                month: 9,
+                day: 11,
+                hour: 15,
+                minute: 57,
+                second: 0,
+            }),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    // cp:lastModifiedBy contains Charles; the authored LASTSAVEDBY cache
+    // contains Charlie. Office's refreshed PDF uses the core property.
+    assert_page_contains(&refreshed, 0, "Charles Brown");
+    assert!(!page_text_contains(&refreshed, 0, "Charlie Brown"));
+}
+
+#[test]
+fn docx_chart_plot_images_resolve_stretch_and_tile_resources() {
+    use ooxmlsdk::schemas::schemas_openxmlformats_org_drawingml_2006_chart as c;
+    use ooxmlsdk::schemas::schemas_openxmlformats_org_drawingml_2006_main as a;
+    let file = ooxmlsdk_layout_test::corpus_file(
+        "chart2/qa/extras/data/docx/fdo74115_WallBitmapFill.docx",
+    );
+    for tiled in [false, true] {
+        let mut package = WordprocessingDocument::new_from_file(&file).unwrap();
+        if tiled {
+            let chart = package
+                .main_document_part()
+                .unwrap()
+                .chart_parts(&package)
+                .next()
+                .unwrap();
+            let space = chart.root_element_mut(&mut package).unwrap();
+            let properties = space.chart.plot_area.shape_properties.as_mut().unwrap();
+            let c::ShapePropertiesChoice2::BlipFill(fill) =
+                properties.shape_properties_choice2.as_mut().unwrap()
+            else {
+                panic!("fixture must retain its plot image fill");
+            };
+            fill.blip_fill_choice = Some(a::BlipFillChoice::Tile(Box::default()));
+        }
+        let document = docx::layout_document(&package, &LayoutOptions::default()).unwrap();
+        let items = page_display_items(&document, 0);
+        assert!(!items.iter().any(|item| matches!(item, DisplayItem::Path(path) if matches!(path.fill, Fill::Image { .. }))));
+        let images = items
+            .iter()
+            .filter_map(|item| match item {
+                DisplayItem::Image(image) => Some(image),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        if tiled {
+            assert!(images.len() > 1);
+        } else {
+            assert_eq!(images.len(), 1);
+        }
+        for image in images {
+            assert!(!image.bytes.is_empty());
+            assert!(
+                !image.clip_path.is_empty(),
+                "plot image must retain its clipping boundary"
+            );
+            assert!(image.bounds.size.width.0 > 0.0 && image.bounds.size.height.0 > 0.0);
+        }
+    }
+}
+
+#[test]
+fn docx_inline_activex_caption_moves_with_its_centered_picture() {
+    let document =
+        docx_layout("sw/qa/extras/ooxmlexport/data/tdf151548_activeContentDemo.docm").unwrap();
+    let items = page_display_items(&document, 0);
+    let caption = items
+        .iter()
+        .find_map(|item| match item {
+            DisplayItem::Text(run) if run.text == "Synchronize form" => Some(run),
+            _ => None,
+        })
+        .unwrap();
+    let picture = items
+        .iter()
+        .find_map(|item| match item {
+            DisplayItem::Image(image) if image.content_type.as_ref() == "image/x-wmf" => {
+                Some(image)
+            }
+            _ => None,
+        })
+        .unwrap();
+    // The WMF TextOut starts at x=57 in a 201-unit frame; the inline
+    // picture is 150.75pt wide. Paragraph centering must preserve that
+    // 42.75pt relative position (also present in the Office PDF).
+    assert!((caption.origin.x.0 - picture.bounds.origin.x.0 - 42.75).abs() < 0.1);
+}
+
+#[test]
+fn docx_hidden_table_paragraph_mark_keeps_caption_on_one_baseline() {
+    // Office joins the caption and the following framed paragraph across
+    // the caption's hidden paragraph mark in tdf164901's second table row.
+    let document = docx_layout("sw/qa/extras/ooxmlexport/data/tdf164901.docx").unwrap();
+    let items = page_display_items(&document, 0);
+    let text = items
+        .iter()
+        .filter_map(|item| match item {
+            DisplayItem::Text(run) => Some(run),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    let caption = text.iter().find(|run| run.text.contains("Grund")).unwrap();
+    let following = text
+        .iter()
+        .find(|run| run.text.contains("Test 1-2-3"))
+        .unwrap();
+    assert!((caption.origin.y.0 - following.origin.y.0).abs() < 0.01);
+    // The picture paragraph inherits 1.5-line spacing. Its top remains at
+    // the cell print edge, independently of the text-only baseline offset.
+    let picture = items
+        .iter()
+        .find_map(|item| match item {
+            DisplayItem::Image(image) => Some(image),
+            _ => None,
+        })
+        .unwrap();
+    assert!((picture.bounds.origin.y.0 - 73.25).abs() < 0.1);
+}
+
+#[test]
+fn docx_pie_label_paragraphs_have_separate_baselines() {
+    // The configured Office PDF for tdf134866 paints the custom label on
+    // one line and its resolved PERCENTAGE field on the following line.
+    let document =
+        docx_layout("sw/qa/extras/layout/data/tdf134866.docx").expect("multiline pie-label layout");
+    let items = page_display_items(&document, 0);
+    let texts = items
+        .iter()
+        .filter_map(|item| match item {
+            DisplayItem::Text(run) => Some(run),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    assert!(texts.iter().all(|run| !run.text.contains('\n')));
+    let label = texts.iter().find(|run| run.text.contains("Cusom")).unwrap();
+    let percentage = texts.iter().find(|run| run.text == "100%").unwrap();
+    assert!(percentage.origin.y.0 > label.origin.y.0);
+
+    // The Office circle is 198.5pt across inside a 432x252pt chart frame.
+    // Adding paragraph layout must retain the Word host's plot geometry.
+    let pie = items
+        .iter()
+        .find_map(|item| match item {
+            DisplayItem::Path(path) if !path.points.is_empty() => Some(path),
+            _ => None,
+        })
+        .expect("pie outline");
+    let left = pie
+        .points
+        .iter()
+        .map(|point| point.x.0)
+        .fold(f32::INFINITY, f32::min);
+    let right = pie
+        .points
+        .iter()
+        .map(|point| point.x.0)
+        .fold(f32::NEG_INFINITY, f32::max);
+    assert!(
+        (right - left - 198.5).abs() < 0.5,
+        "unexpected pie diameter: {}",
+        right - left
+    );
+}
+
+#[test]
 // Sources:
 // - immutable Microsoft Office fixed-format output for floattable-hidemark.docx;
 // - LibreOffice commit 25ab6816990b (tdf#162730), which treats a splittable
