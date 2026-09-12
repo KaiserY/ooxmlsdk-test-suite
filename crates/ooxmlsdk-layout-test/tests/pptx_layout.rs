@@ -89,6 +89,460 @@ fn smartart_counter_rotated_text_remains_inside_its_frame() {
 }
 
 #[test]
+fn smartart_snake_rows_keep_six_distinct_child_bullets() {
+    let document = pptx_layout("sd/qa/unit/data/pptx/smartart-snake-rows.pptx").unwrap();
+    let items = page_display_items(&document, 0);
+    let text = items
+        .iter()
+        .filter_map(|item| match item {
+            DisplayItem::Text(run) => Some(run),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    let bullets = text
+        .iter()
+        .copied()
+        .filter(|run| run.text == "•")
+        .collect::<Vec<_>>();
+    assert_eq!(bullets.len(), 6);
+    // The current Office PDF has three columns and two rows, with every
+    // child bullet above its own gray parent label. Overlapping bullet text
+    // is merged by PDFium even when all six display items were emitted.
+    for index in 1..=6 {
+        let child = text
+            .iter()
+            .find(|run| run.text == format!("Child {index}"))
+            .unwrap();
+        let parent = text
+            .iter()
+            .find(|run| run.text == format!("Parent {index}"))
+            .unwrap();
+        assert!(
+            parent.origin.y.0 - child.origin.y.0 > 40.0,
+            "child/parent overlap: {index}"
+        );
+        assert_eq!(
+            bullets
+                .iter()
+                .filter(|bullet| {
+                    (bullet.origin.y.0 - child.origin.y.0).abs() < 0.1
+                        && bullet.origin.x.0 < child.origin.x.0
+                        && child.origin.x.0 - bullet.origin.x.0 < 30.0
+                })
+                .count(),
+            1,
+            "distinct bullet for Child {index}"
+        );
+        if index <= 3 {
+            let below = text
+                .iter()
+                .find(|run| run.text == format!("Child {}", index + 3))
+                .unwrap();
+            assert!((below.origin.x.0 - child.origin.x.0).abs() < 0.1);
+            assert!((below.origin.y.0 - child.origin.y.0 - 196.2).abs() < 5.0);
+        }
+    }
+}
+
+#[test]
+fn smartart_color_lists_preserve_fill_and_line_alpha() {
+    use ooxmlsdk::schemas::schemas_openxmlformats_org_drawingml_2006_diagram as dgm;
+    use ooxmlsdk::schemas::schemas_openxmlformats_org_drawingml_2006_main as a;
+
+    let fixture =
+        ooxmlsdk_layout_test::corpus_file("sd/qa/unit/data/pptx/smartart-snake-rows.pptx");
+    // The authored 90% circles overlap opaque parent panels in the current
+    // Office PDF. Change fill and line independently to protect both paths.
+    for (fill_alpha, line_alpha) in [(90_000, 90_000), (45_000, 30_000), (100_000, 100_000)] {
+        let mut package = PresentationDocument::new_from_file(&fixture).unwrap();
+        let presentation = package.presentation_part().unwrap();
+        let slide = presentation.slide_parts(&package).next().unwrap();
+        let colors_part = slide.diagram_colors_parts(&package).next().unwrap();
+        let colors = colors_part.root_element_mut(&mut package).unwrap();
+        let label = colors
+            .color_transform_style_label
+            .iter_mut()
+            .find(|label| label.name == "fgAccFollowNode1")
+            .unwrap();
+        let dgm::FillColorListChoice::SchemeColor(fill) = &mut label
+            .fill_color_list
+            .as_mut()
+            .unwrap()
+            .fill_color_list_choice[0]
+        else {
+            panic!("scheme fill");
+        };
+        let alpha = fill
+            .scheme_color_choice
+            .iter_mut()
+            .find_map(|choice| match choice {
+                a::SchemeColorChoice::Alpha(alpha) => Some(alpha),
+                _ => None,
+            })
+            .unwrap();
+        alpha.val = ooxmlsdk::units::DrawingmlPercentageValue::Decimal(fill_alpha);
+        let dgm::LineColorListChoice::SchemeColor(line) = &mut label
+            .line_color_list
+            .as_mut()
+            .unwrap()
+            .line_color_list_choice[0]
+        else {
+            panic!("scheme line");
+        };
+        let alpha = line
+            .scheme_color_choice
+            .iter_mut()
+            .find_map(|choice| match choice {
+                a::SchemeColorChoice::Alpha(alpha) => Some(alpha),
+                _ => None,
+            })
+            .unwrap();
+        alpha.val = ooxmlsdk::units::DrawingmlPercentageValue::Decimal(line_alpha);
+        let document =
+            ooxmlsdk_layout::pptx::layout_document(&package, &LayoutOptions::default()).unwrap();
+        let items = page_display_items(&document, 0);
+        let circles = items
+            .iter()
+            .filter_map(|item| match item {
+                DisplayItem::Path(path)
+                    if (path.bounds.size.width.0 - path.bounds.size.height.0).abs() < 0.1
+                        && path.bounds.size.width.0 > 45.0
+                        && path.bounds.size.width.0 < 60.0 =>
+                {
+                    Some(path)
+                }
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(circles.len(), 6, "six visible circles");
+        let expected_fill_alpha = (fill_alpha as f32 / 100_000.0 * 255.0).round() as u8;
+        let expected_line_alpha = (line_alpha as f32 / 100_000.0 * 255.0).round() as u8;
+        for circle in circles {
+            let Fill::Solid(fill) = &circle.fill else {
+                panic!("solid circle fill");
+            };
+            assert_eq!(fill.a, expected_fill_alpha);
+            assert_eq!(circle.stroke.as_ref().unwrap().color.a, expected_line_alpha);
+        }
+        let parents = items
+            .iter()
+            .filter_map(|item| match item {
+                DisplayItem::Path(path)
+                    if path.bounds.size.width.0 > 140.0
+                        && path.bounds.size.width.0 < 155.0
+                        && path.bounds.size.height.0 > 40.0
+                        && path.bounds.size.height.0 < 60.0 =>
+                {
+                    Some(path)
+                }
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(parents.len(), 6, "six opaque parent panels");
+        for parent in parents {
+            let Fill::Solid(fill) = &parent.fill else {
+                panic!("solid parent fill");
+            };
+            assert_eq!(fill.a, 255);
+            assert_eq!(parent.stroke.as_ref().unwrap().color.a, 255);
+        }
+    }
+}
+
+#[test]
+fn smartart_snake_rows_scale_child_basis_and_keep_transition_spacing() {
+    use ooxmlsdk::schemas::schemas_openxmlformats_org_drawingml_2006_diagram as dgm;
+    use ooxmlsdk::schemas::schemas_openxmlformats_org_drawingml_2006_main as a;
+    use ooxmlsdk_layout::render::diagram::{DiagramBounds, layout_shapes};
+
+    let fixture =
+        ooxmlsdk_layout_test::corpus_file("sd/qa/unit/data/pptx/smartart-snake-rows.pptx");
+    let package = PresentationDocument::new_from_file(fixture).unwrap();
+    let presentation = package.presentation_part().unwrap();
+    let slide = presentation.slide_parts(&package).next().unwrap();
+    let data_part = slide.diagram_data_parts(&package).next().unwrap();
+    let layout_part = slide
+        .diagram_layout_definition_parts(&package)
+        .next()
+        .unwrap();
+    let data = data_part.root_element(&package).unwrap();
+    let layout = layout_part.root_element(&package).unwrap();
+    for (scale, transition_factor, child_anchor, spacing_reference) in [
+        (1.0, 0.08, None, dgm::ConstraintValues::Width),
+        (2.0, 0.08, None, dgm::ConstraintValues::Width),
+        (1.0, 0.20, None, dgm::ConstraintValues::Width),
+        (1.0, 0.08, Some("b"), dgm::ConstraintValues::Width),
+        (1.0, 0.08, None, dgm::ConstraintValues::Height),
+    ] {
+        let mut layout = layout.clone();
+        if let Some(anchor) = child_anchor {
+            let each = layout
+                .layout_node
+                .layout_node_choice
+                .iter_mut()
+                .find_map(|choice| {
+                    if let dgm::LayoutNodeChoice::ForEach(each) = choice {
+                        Some(each)
+                    } else {
+                        None
+                    }
+                })
+                .unwrap();
+            let composite = each
+                .for_each_choice
+                .iter_mut()
+                .find_map(|choice| {
+                    if let dgm::ForEachChoice::LayoutNode(node) = choice {
+                        Some(node)
+                    } else {
+                        None
+                    }
+                })
+                .unwrap();
+            let child = composite
+                .layout_node_choice
+                .iter_mut()
+                .find_map(|choice| {
+                    if let dgm::LayoutNodeChoice::LayoutNode(node) = choice {
+                        (node.name.as_deref() == Some("childRect")).then_some(node)
+                    } else {
+                        None
+                    }
+                })
+                .unwrap();
+            let algorithm = child
+                .layout_node_choice
+                .iter_mut()
+                .find_map(|choice| {
+                    if let dgm::LayoutNodeChoice::Algorithm(algorithm) = choice {
+                        Some(algorithm)
+                    } else {
+                        None
+                    }
+                })
+                .unwrap();
+            algorithm.parameter.push(dgm::Parameter {
+                r#type: dgm::ParameterIdValues::TextAnchorVerticalWithChildren,
+                val: Some(anchor.into()),
+            });
+        }
+        let transition = layout
+            .layout_node
+            .layout_node_choice
+            .iter_mut()
+            .find_map(|choice| {
+                let dgm::LayoutNodeChoice::Constraints(constraints) = choice else {
+                    return None;
+                };
+                constraints.constraint.iter_mut().find(|constraint| {
+                    constraint.r#type == dgm::ConstraintValues::Width
+                        && constraint.point_type == Some(dgm::ElementValues::SiblingTransition)
+                })
+            })
+            .unwrap();
+        transition.fact = Some(transition_factor);
+        let spacing = layout
+            .layout_node
+            .layout_node_choice
+            .iter_mut()
+            .find_map(|choice| {
+                let dgm::LayoutNodeChoice::Constraints(constraints) = choice else {
+                    return None;
+                };
+                constraints
+                    .constraint
+                    .iter_mut()
+                    .find(|constraint| constraint.r#type == dgm::ConstraintValues::Spacing)
+            })
+            .unwrap();
+        spacing.reference_type = Some(spacing_reference);
+        let shapes = layout_shapes(
+            data,
+            Some(&layout),
+            None,
+            None,
+            DiagramBounds {
+                x: 0.0,
+                y: 0.0,
+                width: 647.7453 * scale,
+                height: 363.3333 * scale,
+            },
+            Default::default(),
+        );
+        let children = (1..=6)
+            .map(|index| {
+                shapes
+                    .iter()
+                    .find(|shape| {
+                        shape.text_body.paragraphs.iter().any(|paragraph| {
+                            paragraph
+                                .runs
+                                .iter()
+                                .any(|run| run.text == format!("Child {index}"))
+                        })
+                    })
+                    .unwrap()
+            })
+            .collect::<Vec<_>>();
+        for (index, child) in children.iter().enumerate() {
+            assert_eq!(
+                child.text_body.body_properties.as_ref().unwrap().anchor,
+                Some(if child_anchor.is_some() {
+                    a::TextAnchoringTypeValues::Bottom
+                } else {
+                    a::TextAnchoringTypeValues::Top
+                }),
+                "descendant text uses the child anchor, including a single list level"
+            );
+            // Office child panels are approximately 147 x 110 points. The
+            // composite's w=1 is a basis for these slots, not a final extent.
+            assert!((child.width / scale - 147.0).abs() < 3.0, "{child:?}");
+            assert!((child.height / scale - 110.0).abs() < 3.0, "{child:?}");
+            if index >= 3 {
+                assert!((child.x - children[index - 3].x).abs() < 0.1);
+                let above = children[index - 3];
+                let composite_width = child.width / 0.923;
+                let composite_height = child.height / 0.65;
+                let reference_extent = if spacing_reference == dgm::ConstraintValues::Width {
+                    composite_width
+                } else {
+                    composite_height
+                };
+                let row_gap = child.y - above.y - composite_height;
+                assert!(
+                    (row_gap / reference_extent - 0.16).abs() < 0.001,
+                    "row spacing retains its authored reference: {row_gap} / {reference_extent}"
+                );
+            }
+            if index % 3 != 2 {
+                let composite_width = child.width / 0.923;
+                let gap_factor = (children[index + 1].x - child.x) / composite_width - 1.0;
+                assert!(
+                    (gap_factor - transition_factor as f32).abs() < 0.001,
+                    "authored sibling transition spacing: {gap_factor}"
+                );
+            }
+        }
+        let parent = shapes
+            .iter()
+            .find(|shape| {
+                shape
+                    .text_body
+                    .paragraphs
+                    .iter()
+                    .any(|paragraph| paragraph.runs.iter().any(|run| run.text == "Parent 1"))
+            })
+            .unwrap();
+        assert_eq!(
+            parent.text_body.body_properties.as_ref().unwrap().anchor,
+            Some(a::TextAnchoringTypeValues::Center),
+            "parent text retains its independent default"
+        );
+    }
+}
+
+#[test]
+fn waterfall_resource_legend_uses_ui_font_and_preserves_authored_fonts() {
+    use ooxmlsdk::schemas::schemas_microsoft_com_office_drawing_2014_chartex as cx;
+    use ooxmlsdk::schemas::schemas_openxmlformats_org_drawingml_2006_main as a;
+    let fixture =
+        ooxmlsdk_layout_test::corpus_file("sd/qa/unit/data/pptx/forum-mso-de-138303.pptx");
+    // theme1.xml declares Hant=新細明體 (PMingLiU), Hans=等线 (DengXian).
+    // Display styles preserve those source names; PDF font names use aliases.
+    for explicit_face in [None, Some("SimSun")] {
+        // The source stores ChartEx in a Microsoft 365 AlternateContent branch.
+        // Use the same MCE target as the suite helper and configured converter.
+        let mut package = PresentationDocument::new_with_settings(
+            std::fs::File::open(&fixture).unwrap(),
+            ooxmlsdk::sdk::OpenSettings {
+                markup_compatibility_process_settings:
+                    ooxmlsdk::sdk::MarkupCompatibilityProcessSettings {
+                        process_mode:
+                            ooxmlsdk::sdk::MarkupCompatibilityProcessMode::ProcessLoadedPartsOnly,
+                        target_file_format_version: ooxmlsdk::sdk::FileFormatVersion::Microsoft365,
+                    },
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        if let Some(face) = explicit_face {
+            let presentation = package.presentation_part().unwrap();
+            let slide = presentation.slide_parts(&package).next().unwrap();
+            let chart = slide.extended_chart_parts(&package).next().unwrap();
+            let chart = chart.root_element_mut(&mut package).unwrap();
+            let properties = a::DefaultRunProperties {
+                east_asian_font: Some(a::EastAsianFont {
+                    typeface: Some(face.into()),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            };
+            chart.chart.legend.as_mut().unwrap().tx_pr_text_body =
+                Some(Box::new(cx::TxPrTextBody {
+                    paragraph: vec![a::Paragraph {
+                        paragraph_properties: Some(Box::new(a::ParagraphProperties {
+                            default_run_properties: Some(Box::new(properties)),
+                            ..Default::default()
+                        })),
+                        ..Default::default()
+                    }],
+                    ..Default::default()
+                }));
+        }
+        let document = ooxmlsdk_layout::pptx::layout_document(
+            &package,
+            &LayoutOptions {
+                ui_language: Some("zh-TW".into()),
+                default_document_language: Some("zh-CN".into()),
+                format_locale: Some("de-DE".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let items = page_display_items(&document, 0);
+        for name in ["增加", "減少", "合計"] {
+            let run = items
+                .iter()
+                .find_map(|item| match item {
+                    DisplayItem::Text(text) if text.text == name => Some(text),
+                    _ => None,
+                })
+                .unwrap_or_else(|| {
+                    panic!("missing {name}; text={:?}", all_page_text(&document, 0))
+                });
+            assert_eq!(
+                run.style.east_asia_font_family.as_deref(),
+                Some(explicit_face.unwrap_or("新細明體"))
+            );
+            assert!((run.style.font_size.0 - 9.0).abs() < 0.01);
+        }
+        let category = items
+            .iter()
+            .find_map(|item| match item {
+                DisplayItem::Text(text) if text.text == "Kategorie 1" => Some(text),
+                _ => None,
+            })
+            .unwrap();
+        assert_eq!(category.style.font_family.as_deref(), Some("Calibri"));
+        assert_eq!(
+            category.style.east_asia_font_family.as_deref(),
+            Some("等线")
+        );
+        let title = items
+            .iter()
+            .find_map(|item| match item {
+                DisplayItem::Text(text) if text.text == "圖表標題" => Some(text),
+                _ => None,
+            })
+            .unwrap();
+        assert_eq!(
+            title.style.east_asia_font_family.as_deref(),
+            Some("新細明體")
+        );
+    }
+}
+
+#[test]
 fn japanese_automatic_chart_title_uses_the_office_ui_language() {
     let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../corpus/Apache-POI/test-data/slideshow/chart-texture-bg.pptx");
@@ -137,7 +591,7 @@ fn automatic_numbering_uses_text_font_and_preserves_character_bullet_fonts() {
         else {
             panic!("bullet font")
         };
-        font.typeface = bullet_font.into();
+        font.typeface = Some(bullet_font.into());
 
         let document =
             ooxmlsdk_layout::pptx::layout_document(&package, &LayoutOptions::default()).unwrap();
@@ -247,6 +701,269 @@ fn existing_table_requires_an_explicit_style_reference() {
 }
 
 #[test]
+fn predefined_medium_table_style_bolds_enabled_edges_and_preserves_direct_formatting() {
+    use ooxmlsdk::schemas::schemas_openxmlformats_org_drawingml_2006_main as a;
+    use ooxmlsdk::schemas::schemas_openxmlformats_org_presentationml_2006_main as p;
+
+    // The configured Office PDF renders this fixture's header in Calibri Bold.
+    // MS-OE376 §2.1.1343(b) defines the same bold edge regions for Medium Style 2
+    // and each accent variant. The package omits the built-in style definition.
+    let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../corpus/Pandoc/test/pptx/tables/output.pptx");
+    for style_id in [
+        "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}",
+        "{073A0DAA-6AF3-43AB-8588-CEC1D06C72B9}",
+        "{93296810-A885-4BE3-A3E7-6D5BEEA58F35}",
+    ] {
+        for (first_row, last_row, first_column, last_column) in [
+            (true, false, false, false),
+            (false, true, false, false),
+            (false, false, true, false),
+            (false, false, false, true),
+            (false, false, false, false),
+            (true, true, true, true),
+        ] {
+            let mut package = PresentationDocument::new_from_file(&fixture).unwrap();
+            let presentation = package.presentation_part().unwrap();
+            let slide = presentation.slide_parts(&package).next().unwrap();
+            let root = slide.root_element_mut(&mut package).unwrap();
+            let table = root
+                .common_slide_data
+                .shape_tree
+                .shape_tree_choice
+                .iter_mut()
+                .filter_map(|shape| match shape {
+                    p::ShapeTreeChoice::GraphicFrame(frame) => Some(frame),
+                    _ => None,
+                })
+                .flat_map(|frame| frame.graphic.graphic_data.graphic_data_choice.iter_mut())
+                .find_map(|data| match data {
+                    a::GraphicDataChoice::Table(table) => Some(table),
+                    _ => None,
+                })
+                .unwrap();
+            let properties = table.table_properties.as_mut().unwrap();
+            properties.first_row = Some(first_row.into());
+            properties.last_row = Some(last_row.into());
+            properties.first_column = Some(first_column.into());
+            properties.last_column = Some(last_column.into());
+            properties.table_properties_choice3 =
+                Some(a::TablePropertiesChoice3::TableStyleId(style_id.into()));
+            let mut expected = Vec::new();
+            for (row_index, row) in table.table_row.iter_mut().enumerate() {
+                for (column_index, cell) in row.table_cell.iter_mut().enumerate() {
+                    let a::ParagraphChoice::Run(run) =
+                        &mut cell.text_body.as_mut().unwrap().paragraph[0].paragraph_choice[0]
+                    else {
+                        panic!("fixture cell run");
+                    };
+                    let label = format!("R{row_index}C{column_index}");
+                    run.text = label.clone();
+                    let direct_bold = match (row_index, column_index) {
+                        (0, 0) => Some(false),
+                        (1, 1) => Some(true),
+                        _ => None,
+                    };
+                    run.run_properties.get_or_insert_with(Default::default).bold =
+                        direct_bold.map(Into::into);
+                    let edge = (first_row && row_index == 0)
+                        || (last_row && row_index == 3)
+                        || (first_column && column_index == 0)
+                        || (last_column && column_index == 3);
+                    expected.push((label, direct_bold.unwrap_or(edge), edge));
+                }
+            }
+            let document =
+                ooxmlsdk_layout::pptx::layout_document(&package, &LayoutOptions::default())
+                    .unwrap();
+            let items = page_display_items(&document, 0);
+            let border_widths = items
+                .iter()
+                .filter_map(|item| match item {
+                    DisplayItem::Line(line) => Some(line.stroke.width.0),
+                    _ => None,
+                })
+                .collect::<Vec<_>>();
+            assert!(!border_widths.is_empty());
+            // Office's built-in XML and this fixture's native PDF use 1pt
+            // grid lines and 3pt separators on the selected edge rows.
+            assert!(
+                border_widths
+                    .iter()
+                    .all(|width| (*width - 1.0).abs() < 0.001 || (*width - 3.0).abs() < 0.001),
+                "{border_widths:?}"
+            );
+            assert_eq!(
+                border_widths
+                    .iter()
+                    .filter(|width| (**width - 3.0).abs() < 0.001)
+                    .count(),
+                4 * (usize::from(first_row) + usize::from(last_row)),
+                "only first/last row separators use the thick pen"
+            );
+            for (label, bold, edge) in expected {
+                let text = items
+                    .iter()
+                    .find_map(|item| match item {
+                        DisplayItem::Text(text) if text.text == label => Some(text),
+                        _ => None,
+                    })
+                    .expect(&label);
+                assert_eq!(text.style.bold, bold, "{style_id}: {label}");
+                assert!(!text.style.italic, "{style_id}: {label}");
+                assert_eq!(
+                    text.color,
+                    Color {
+                        r: if edge { 255 } else { 0 },
+                        g: if edge { 255 } else { 0 },
+                        b: if edge { 255 } else { 0 },
+                        a: 255,
+                    },
+                    "{style_id}: {label}"
+                );
+                assert!((text.style.font_size.0 - 13.5).abs() < 0.1, "{text:?}");
+            }
+        }
+    }
+}
+
+#[test]
+fn zero_height_table_rows_render_text_using_the_master_other_style() {
+    let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../corpus/Pandoc/test/pptx/slide-level-0/h1-with-table/output.pptx");
+    let package = PresentationDocument::new_from_file(fixture).unwrap();
+    let document =
+        ooxmlsdk_layout::pptx::layout_document(&package, &LayoutOptions::default()).unwrap();
+    let items = page_display_items(&document, 0);
+    let cell = items
+        .iter()
+        .find_map(|item| match item {
+            DisplayItem::Text(text) if text.text == "1" => Some(text),
+            _ => None,
+        })
+        .expect("Office renders the h=0 table row");
+    // The current configured Office PDF has a short row at y=94 pt, not
+    // the 267 pt graphic-frame height. Its cell inherits otherStyle sz=1350.
+    assert!((cell.style.font_size.0 - 13.5).abs() < 0.1, "{cell:?}");
+    assert!((cell.origin.x.0 - 43.2).abs() < 0.2, "{cell:?}");
+    assert!(
+        cell.origin.y.0 > 94.0 && cell.origin.y.0 < 105.0,
+        "{cell:?}"
+    );
+    assert!(
+        items.iter().any(|item| matches!(item,
+            DisplayItem::Rect(rect) if (rect.bounds.origin.y.0 - 94.0).abs() < 0.1
+                && rect.bounds.size.width.0 > 640.0
+                && rect.bounds.size.height.0 > 18.0 && rect.bounds.size.height.0 < 28.0
+        )),
+        "automatic row is measured from its content and insets"
+    );
+}
+
+#[test]
+fn zero_height_table_rows_measure_content_and_preserve_fixed_and_merged_rows() {
+    use ooxmlsdk::schemas::schemas_openxmlformats_org_drawingml_2006_main as a;
+    use ooxmlsdk::schemas::schemas_openxmlformats_org_presentationml_2006_main as p;
+    use ooxmlsdk::simple_type::CoordinateValue;
+    let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../corpus/Pandoc/test/pptx/slide-level-0/h1-with-table/output.pptx");
+    for (large_font, fixed_height, merged) in [
+        (false, 0, false),
+        (true, 0, false),
+        (false, 70, false),
+        (false, 0, true),
+    ] {
+        let mut package = PresentationDocument::new_from_file(&fixture).unwrap();
+        let presentation = package.presentation_part().unwrap();
+        let slide = presentation.slide_parts(&package).next().unwrap();
+        let root = slide.root_element_mut(&mut package).unwrap();
+        let table = root
+            .common_slide_data
+            .shape_tree
+            .shape_tree_choice
+            .iter_mut()
+            .filter_map(|shape| match shape {
+                p::ShapeTreeChoice::GraphicFrame(frame) => Some(frame),
+                _ => None,
+            })
+            .flat_map(|frame| frame.graphic.graphic_data.graphic_data_choice.iter_mut())
+            .find_map(|data| match data {
+                a::GraphicDataChoice::Table(table) => Some(table),
+                _ => None,
+            })
+            .unwrap();
+        let mut second_row = table.table_row[0].clone();
+        let a::ParagraphChoice::Run(run) = &mut second_row.table_cell[0]
+            .text_body
+            .as_mut()
+            .unwrap()
+            .paragraph[0]
+            .paragraph_choice[0]
+        else {
+            panic!("cell run");
+        };
+        run.text = "2".into();
+        table.table_row[0].height = CoordinateValue::Emu(fixed_height * 12_700);
+        if large_font {
+            let a::ParagraphChoice::Run(run) = &mut table.table_row[0].table_cell[0]
+                .text_body
+                .as_mut()
+                .unwrap()
+                .paragraph[0]
+                .paragraph_choice[0]
+            else {
+                panic!("cell run");
+            };
+            run.run_properties
+                .get_or_insert_with(Default::default)
+                .font_size = Some(2700);
+        }
+        if merged {
+            table.table_row[0].table_cell[0].row_span = Some(2);
+            second_row.table_cell[0].vertical_merge = Some(true.into());
+        }
+        table.table_row.push(second_row);
+        let document =
+            ooxmlsdk_layout::pptx::layout_document(&package, &LayoutOptions::default()).unwrap();
+        let items = page_display_items(&document, 0);
+        let runs = items
+            .iter()
+            .filter_map(|item| match item {
+                DisplayItem::Text(text) => Some(text),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        let first = runs.iter().find(|text| text.text == "1").unwrap();
+        assert_eq!(runs.iter().filter(|text| text.text == "1").count(), 1);
+        let second = runs.iter().find(|text| text.text == "2");
+        if merged {
+            assert!(
+                second.is_none(),
+                "merged continuation must not emit another cell"
+            );
+        } else {
+            let separation = second.unwrap().origin.y.0 - first.origin.y.0;
+            if fixed_height > 0 {
+                assert!(
+                    (separation - fixed_height as f32).abs() < 0.1,
+                    "{separation}"
+                );
+            } else if large_font {
+                assert!(
+                    separation > 30.0 && separation < 45.0,
+                    "large font: {separation}"
+                );
+            } else {
+                assert!(
+                    separation > 18.0 && separation < 28.0,
+                    "automatic height: {separation}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
 fn hidden_slides_follow_explicit_export_option() {
     let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../corpus/Apache-POI/test-data/slideshow/60810.pptx");
@@ -290,6 +1007,285 @@ fn unwrapped_right_aligned_title_preserves_its_right_edge_when_it_overflows() {
 }
 
 #[test]
+fn drawingml_baseline_scales_script_fonts_before_measuring_text() {
+    // These current Office PDFs use identity text matrices and script sizes
+    // equal to two-thirds of the nominal font, quantized on the print grid.
+    for (file, script, script_size, baseline) in [
+        (
+            "Pandoc/test/pptx/inline-formatting/output.pptx",
+            "script",
+            15.96,
+            7.2,
+        ),
+        (
+            "Pandoc/test/pptx/inline-formatting/templated.pptx",
+            "script",
+            18.72,
+            8.4,
+        ),
+        (
+            "LibreOffice/sd/qa/unit/data/pptx/n828390.pptx",
+            "R",
+            13.32,
+            -5.0,
+        ),
+    ] {
+        let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../corpus")
+            .join(file);
+        let package = PresentationDocument::new_from_file(fixture).unwrap();
+        let document =
+            ooxmlsdk_layout::pptx::layout_document(&package, &LayoutOptions::default()).unwrap();
+        let items = page_display_items(&document, 0);
+        let text = items
+            .iter()
+            .find_map(|item| match item {
+                DisplayItem::Text(text) if text.text == script => Some(text),
+                _ => None,
+            })
+            .expect(script);
+        assert!(
+            (text.style.font_size.0 - script_size).abs() < 0.06,
+            "{file}: {text:?}"
+        );
+        assert!(
+            (text.style.baseline_shift.0 - baseline).abs() < 0.06,
+            "{file}: {text:?}"
+        );
+        if file.ends_with("inline-formatting/output.pptx") {
+            let subscript = items
+                .iter()
+                .find_map(|item| match item {
+                    DisplayItem::Text(text) if text.text == "2" => Some(text),
+                    _ => None,
+                })
+                .unwrap();
+            assert!((subscript.style.font_size.0 - 15.96).abs() < 0.06);
+            assert!((subscript.style.baseline_shift.0 + 6.0).abs() < 0.06);
+            let following = items
+                .iter()
+                .find_map(|item| match item {
+                    DisplayItem::Text(text) if text.text.starts_with("0)") => Some(text),
+                    _ => None,
+                })
+                .unwrap();
+            assert!((following.style.font_size.0 - 24.0).abs() < 0.06);
+            assert_eq!(following.style.baseline_shift.0, 0.0);
+        }
+    }
+}
+
+#[test]
+fn drawingml_baseline_inheritance_uses_run_size_and_zero_restores_normal_text() {
+    use ooxmlsdk::schemas::schemas_openxmlformats_org_drawingml_2006_main as a;
+    use ooxmlsdk::schemas::schemas_openxmlformats_org_presentationml_2006_main as p;
+    use ooxmlsdk::units::DrawingmlPercentageValue;
+    let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../corpus/Pandoc/test/pptx/inline-formatting/output.pptx");
+    // Repeating the same baseline in rPr after defRPr must not apply the
+    // script-size factor a second time.
+    for repeat_baseline in [false, true] {
+        let mut package = PresentationDocument::new_from_file(&fixture).unwrap();
+        let presentation = package.presentation_part().unwrap();
+        let slide = presentation.slide_parts(&package).next().unwrap();
+        let root = slide.root_element_mut(&mut package).unwrap();
+        let paragraph = root
+            .common_slide_data
+            .shape_tree
+            .shape_tree_choice
+            .iter_mut()
+            .filter_map(|shape| match shape {
+                p::ShapeTreeChoice::Shape(shape) => shape.text_body.as_mut(),
+                _ => None,
+            })
+            .flat_map(|body| body.paragraph.iter_mut())
+            .find(|paragraph| {
+                paragraph.paragraph_choice.iter().any(
+                    |choice| matches!(choice, a::ParagraphChoice::Run(run) if run.text == "script"),
+                )
+            })
+            .unwrap();
+        let defaults = paragraph
+            .paragraph_properties
+            .get_or_insert_with(Default::default)
+            .default_run_properties
+            .get_or_insert_with(Default::default);
+        defaults.font_size = Some(3000);
+        defaults.baseline = Some(DrawingmlPercentageValue::Decimal(30000));
+        for choice in &mut paragraph.paragraph_choice {
+            let a::ParagraphChoice::Run(run) = choice else {
+                continue;
+            };
+            let properties = run.run_properties.get_or_insert_with(Default::default);
+            properties.baseline = if run.text == "script" && repeat_baseline {
+                Some(DrawingmlPercentageValue::Decimal(30000))
+            } else if run.text == "script" || run.text == "2" {
+                None
+            } else {
+                Some(DrawingmlPercentageValue::Decimal(0))
+            };
+            properties.font_size = if run.text == "script" {
+                Some(4800)
+            } else {
+                None
+            };
+        }
+        let document =
+            ooxmlsdk_layout::pptx::layout_document(&package, &LayoutOptions::default()).unwrap();
+        let items = page_display_items(&document, 0);
+        for (value, size, baseline) in [("script", 32.04, 14.4), ("2", 20.04, 9.0)] {
+            let text = items
+                .iter()
+                .find_map(|item| match item {
+                    DisplayItem::Text(text) if text.text == value => Some(text),
+                    _ => None,
+                })
+                .expect(value);
+            assert!((text.style.font_size.0 - size).abs() < 0.06, "{text:?}");
+            assert!(
+                (text.style.baseline_shift.0 - baseline).abs() < 0.06,
+                "{text:?}"
+            );
+        }
+        let normal = items
+            .iter()
+            .find_map(|item| match item {
+                DisplayItem::Text(text) if text.text.starts_with("0)") => Some(text),
+                _ => None,
+            })
+            .unwrap();
+        assert!((normal.style.font_size.0 - 30.0).abs() < 0.06, "{normal:?}");
+        assert_eq!(normal.style.baseline_shift.0, 0.0);
+    }
+}
+
+#[test]
+fn hyperlink_bullets_keep_character_color_and_honor_explicit_overrides() {
+    use ooxmlsdk::schemas::schemas_openxmlformats_org_drawingml_2006_main as a;
+    use ooxmlsdk::schemas::schemas_openxmlformats_org_presentationml_2006_main as p;
+    let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../corpus/Pandoc/test/pptx/slide-breaks-toc/output.pptx");
+    let black = Color {
+        r: 0,
+        g: 0,
+        b: 0,
+        a: 255,
+    };
+    let blue = Color {
+        r: 0,
+        g: 0,
+        b: 255,
+        a: 255,
+    };
+    let red = Color {
+        r: 255,
+        g: 0,
+        b: 0,
+        a: 255,
+    };
+    let yellow = Color {
+        r: 255,
+        g: 255,
+        b: 0,
+        a: 255,
+    };
+    for (run_red, bullet_yellow, mouse_over) in [
+        (false, false, false),
+        (true, false, false),
+        (false, true, false),
+        (false, false, true),
+    ] {
+        let mut package = PresentationDocument::new_from_file(&fixture).unwrap();
+        let presentation = package.presentation_part().unwrap();
+        let slide = presentation.slide_parts(&package).next().unwrap();
+        let root = slide.root_element_mut(&mut package).unwrap();
+        let paragraph = root
+            .common_slide_data
+            .shape_tree
+            .shape_tree_choice
+            .iter_mut()
+            .filter_map(|shape| match shape {
+                p::ShapeTreeChoice::Shape(shape) => shape.text_body.as_mut(),
+                _ => None,
+            })
+            .flat_map(|body| body.paragraph.iter_mut())
+            .find(|paragraph| {
+                paragraph.paragraph_choice.iter().any(|choice|
+                matches!(choice, a::ParagraphChoice::Run(run) if run.text == "Below section-level")
+            )
+            })
+            .unwrap();
+        if bullet_yellow {
+            paragraph
+                .paragraph_properties
+                .get_or_insert_with(Default::default)
+                .paragraph_properties_choice1 = Some(a::ParagraphPropertiesChoice::BulletColor(
+                Box::new(a::BulletColor {
+                    bullet_color_choice: Some(a::BulletColorChoice::PresetColor(a::PresetColor {
+                        val: a::PresetColorValues::Yellow,
+                        ..Default::default()
+                    })),
+                }),
+            ));
+        }
+        let a::ParagraphChoice::Run(run) = &mut paragraph.paragraph_choice[0] else {
+            panic!("fixture link run");
+        };
+        let properties = run.run_properties.as_mut().unwrap();
+        if run_red {
+            properties.run_properties_choice1 =
+                Some(a::RunPropertiesChoice::SolidFill(Box::new(a::SolidFill {
+                    solid_fill_choice: Some(a::SolidFillChoice::PresetColor(a::PresetColor {
+                        val: a::PresetColorValues::Red,
+                        ..Default::default()
+                    })),
+                    ..Default::default()
+                })));
+        }
+        if mouse_over {
+            let click = properties.hyperlink_on_click.take().unwrap();
+            properties.hyperlink_on_mouse_over = Some(Box::new(a::HyperlinkOnMouseOver {
+                id: click.id.clone(),
+                action: click.action.clone(),
+                ..Default::default()
+            }));
+        }
+        let document =
+            ooxmlsdk_layout::pptx::layout_document(&package, &LayoutOptions::default()).unwrap();
+        let items = page_display_items(&document, 0);
+        let bullet = items
+            .iter()
+            .find_map(|item| match item {
+                DisplayItem::Text(text) if text.text == "•" => Some(text),
+                _ => None,
+            })
+            .unwrap();
+        let text = items
+            .iter()
+            .find_map(|item| match item {
+                DisplayItem::Text(text) if text.text.starts_with("Below") => Some(text),
+                _ => None,
+            })
+            .unwrap();
+        assert_eq!(
+            bullet.color,
+            if bullet_yellow {
+                yellow
+            } else if run_red {
+                red
+            } else {
+                black
+            }
+        );
+        assert_eq!(text.color, if run_red { red } else { blue });
+        assert!(!bullet.style.underline);
+        assert!(text.style.underline);
+        assert!((bullet.style.font_size.0 - 24.0).abs() < 0.06);
+        assert!((text.style.font_size.0 - 24.0).abs() < 0.06);
+    }
+}
+
+#[test]
 fn text_paragraph_continues_in_the_next_column_before_a_line_overflows() {
     let document = open_xml_sdk_pptx_debug(
         "test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/PowerPoint/main_bodyPr_rtlCol.pptx",
@@ -306,9 +1302,12 @@ fn text_paragraph_continues_in_the_next_column_before_a_line_overflows() {
         if text.text.trim().is_empty() {
             continue;
         }
-        let column = if text.origin.x.0 < 260.4 {
+        // Column origins accumulate f32 inset/width arithmetic. A third-column
+        // origin can be 393.59998pt, just below its mathematical boundary;
+        // keep that rounding error from assigning its first run to column two.
+        let column = if text.origin.x.0 < 260.4 - 0.01 {
             0
-        } else if text.origin.x.0 < 393.6 {
+        } else if text.origin.x.0 < 393.6 - 0.01 {
             1
         } else {
             2

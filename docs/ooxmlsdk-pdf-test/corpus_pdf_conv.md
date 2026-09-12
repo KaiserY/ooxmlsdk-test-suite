@@ -1,289 +1,161 @@
 # Configured Office Golden PDF Fidelity
 
-Repair entry point: accepted progress, audit commands and source references.
-Keep experiments under `/tmp`, not in this guide.
+Session entry point: accepted progress, next repairs, and verification/debug routes.
+Keep per-attempt logs and experimental plans in the archive, not in this guide.
 
-## Golden Status
+## Current progress
 
-Reference generation closed 2026-09-12 at the user's request: **5,239 valid
-Office PDFs / 131 unresolved references / 0 pending**, retaining all **5,370
-source assignments**. The initial completed campaign produced 5,145 PDFs,
-221 failures and four timeouts. Authorized recovery of failed references added
-**94 PDFs: 54 Word, 20 Excel, 20 PowerPoint**, including all four original
-timeouts. All 94 pass `qpdf --check`, source/output/configuration checks and
-observed environment/clock validation. All 225 retry workers restored Office
-preferences. The remaining retry outcomes are **92 zero-page outputs, 32 errors
-and seven timeouts**; their original failed records are retained. No further
-Office retries are planned for this closure.
+The full audit on **2026-09-12** covered all **5,370 configured identities**:
 
-All 5,370 source SHA-256 values still match the original frozen selection.
-The original 5,145 successful configurations, conversion records and PDF bytes
-are unchanged. Recovery changes only failed-reference configurations and uses
-byte-identical temporary input copies, optionally opened with Office repair.
-Original files and manifests under `corpus/` are never rewritten. Exact adapter
-scripts, policy and provenance are in
-[`reference-adapters/`](../../corpus_pdf_conv/reference-adapters/README.md);
-`reference-recovery-history/` retains old assignments and worker evidence.
-`recovery-plan-overrides.jsonl` reproduces the updated plan. Its SHA-256 is
-`2670c58cf0c6f9f86b9f65207d747b773c33424042ac145ae5aa719bc587cd80`.
-Recovery evidence: `/tmp/office-reference-failure-review-20260912/`.
-Initial completion evidence: `/tmp/office-golden-rebuild-20260911/full-readiness/`.
+| Result | Count |
+| --- | ---: |
+| PASS | **3,099** |
+| FAIL | 2,140 |
+| REFERENCE_FAIL | 131 |
+| Infrastructure errors | 0 |
 
-Zero-page exports do not automatically establish normal empty output. Confirmed
-empty workbooks have separate functional observations in
-`corpus_pdf_conv/empty-output-observations.json`. The SDK now keeps their layout
-empty, including implicit header/footer-only sheets, and its PDF API reports an
-empty-layout error instead of inventing a white page. These checks do not count
-as valid PDF goldens or candidate PASS results. Four source layout checks and two
-PDF checks pass. A related comment-printing control passes. The pre-existing
-`singlecontrol.xlsx` test remains a separate pagination failure: its LibreOffice
-assertion expects three pages, the current default SDK layout has eleven, and
-the current configured Office PDF has twelve. Its assertion was not changed.
+All 3,099 accepted PASSes were retained: **zero regressions**. This is a complete
+rerun, confirming **41 additional PASSes** since the first full audit of the
+rebuilt references (3,058). A partial rendering improvement remains FAIL until
+all configured gates pass.
 
-Recovery replaces five pilot reference-failure identities; the archived
-311-identity checkpoint remains historical. Its 156 PASS and 140 FAIL identities
-are unchanged; recovered identities have no candidate verdict yet. All eleven
-campaign configuration/environment tests pass; the regenerated plan is byte
-identical. Both workspaces are formatted and the debug campaign binary builds.
-Rebuild the release campaign binary before the next configured candidate audit.
-No Office processes remain. No clippy or full candidate audit was run.
+Archive root: `/tmp/ooxmlsdk-repair-resume-20260912/`.
+Paths in the following table are relative to that root.
 
-Rebuild was authorized 2026-09-11. The old golden directory was cleared
-(5,146 PDFs, including reference revisions). Old plan/receipt metadata is in
-`/tmp/office-golden-rebuild-20260911/previous-metadata/`. The first replacement
-selection is 300 cases (100 per Office family). The v2 plan contains 5,370
-assignments. Production conversion uses one Office worker at a time; each worker
-temporarily selects the requested Office UI language, verifies actual readback,
-and restores the original Office preferences, including after timeout.
-The current inventory supplies `de-DE`, `en-US`, `es-MX`, `fr-CA`, `ja-JP`,
-`ko-KR`, `zh-CN`, and `zh-TW`; it does not substitute `es-ES`/`fr-FR` labels.
-Format locale, preferred authoring language and time zone are captured from the
-host and verified per export. Windows settings and clock are never changed.
-Each successful schema-4 receipt records the actual rendering environment and
-open/refresh/export UTC clock boundaries; the candidate replays the refresh
-start in the recorded time zone. Time-sensitive SDK discrepancies remain FAIL;
-the visual acceptance thresholds have not been relaxed.
+| Purpose | Authoritative artifact |
+| --- | --- |
+| Required PASS selection | `checkpoint-batch-09-full/pass-baseline.jsonl` |
+| Latest complete results | `checkpoint-batch-09-full/cumulative-results.jsonl` |
+| Checkpoint identity/accounting | `checkpoint-batch-09-full/manifest.json` |
+| Full audit and diagnostic changes | `batch-09-full-audit/summary.json`, `diagnostic-deltas.json` |
+| Audited sources and release binary hash | `snapshot-batch-09/source-snapshot.json`, `build.json` |
+| Subsequent lint cleanup and validation | `closure-lint-snapshot/`, `closure-validation.json` |
+| Handoff and individual repair evidence | `STAGE-CLOSURE.md`, `CURRENT.md`, `ledger/` |
+| Retired baseline/source mapping | `baseline/` |
 
-The first 300-case pilot is complete: **285 valid Office PDFs**, 14 conversion
-failures and one timeout. All 15 reference failures already failed or timed out
-in the retired campaign. Candidate comparison: **149 PASS / 136 FAIL /
-15 REFERENCE_FAIL / 0 infrastructure errors**. All 285 PDFs pass `qpdf --check`;
-source/output hashes and requested versus observed environments match. All 315
-attempts restored Office preferences; the final readback matches the initial
-snapshot and no Office processes remain. All eight UI languages are represented
-in successful receipts. Evidence and the pilot checkpoint are under
-`/tmp/office-golden-rebuild-20260911/`; the live report is
-`target/office-pdf-campaign/bootstrap-audit.jsonl`.
+Protect this PASS selection and every subsequently accepted PASS. New passes
+cannot cancel regressions. The original 2,774 baseline and cumulative 2,783
+source scopes remain required through `baseline/historical-2783-source-bridge.jsonl`;
+**126 mapped sources remain FAIL** in the new configurations. Their environment,
+configuration and reference hashes changed during replacement, so these are
+source obligations, not measured regressions of the old runtime identities.
+The retired baseline is preserved at
+`/tmp/ooxmlsdk-golden-baseline-20260911/pass-baseline.jsonl`; do not feed its old
+IDs to the v2 plan.
 
-The 5,370-source selection already excludes manifest `invalid` and `open_only`
-cases. Round-trip eligibility does not guarantee that Office accepts a file or
-exports a nonempty PDF; retain those failures as reference failures rather than
-silently shrinking the source set.
+Implemented repair areas include Word localized fields and text spacing; Excel
+number/time formats, RTL, print areas and conditional formats; PPTX table styles,
+SmartArt, script scaling and hyperlink bullets; and PDF symbol/vector handling.
+WMF now assembles complete embedded EMF chunks, validates either the strict or
+native Windows checksum convention, and selects one representation across raster
+and native extraction. Invalid optional EMF streams retain WMF fallback drawing.
+`GeomLec1.pptx` now converts but still has a text-content FAIL.
 
-Verification: workspace formatting, release build, seven campaign unit tests,
-the hidden-slide layout regression, Word adapter tests, and controlled success,
-environment-mismatch and timeout probes pass. No clippy or full campaign audit
-was run. The complete-receipt and registered-environment checks were subsequently
-run after all 5,370 conversions acquired terminal records.
+Focused checks and the release build passed before the full audit. Closure clippy
+passed for the implementation and suite workspaces, and for emfsdk with all targets
+and features, using `-D warnings`. After equivalent lint cleanup, 22 focused tests
+and 198 emfsdk tests passed, with one existing ignored test. The current source is
+archived separately from the full-audit build; rebuild before the next configured
+comparison. No full PDF audit was repeated for this cleanup.
 
-Rendering takes priority in the current plan: **5,212 / 5,370 assignments export
-all pages (97.1%)** after failed-reference recovery. The initial pilot had 150
-first-page selections; recovery overrides are recorded separately. Only nine
-additional directed sources exercise middle pages, final pages and non-first
-contiguous intervals (three per Office family). UI language, print/screen and
-other applicable settings retain the seeded random assignment; small directed
-exceptions are recorded in
-`crates/ooxmlsdk-pdf-test/data/office-functional-coverage.json`.
+An unrelated OLE adapter compile error was fixed by propagating image-relationship
+lookup errors. Its scoped `--no-deps` clippy and affected integration tests pass.
+The extra standalone OLE check also exposed **55 existing core-library lints**,
+which remain outside this repair; see `closure-validation.json`. Legacy integration
+test exceptions below likewise remain open.
 
-Two content-sensitive hidden-slide references now export all pages:
-`2411-Performance_Up.pptx` includes all 48 slides, and `60810.pptx` excludes its
-three hidden slides to export 25. Complementary print/screen and include/exclude
-controls, plus full-document counterparts for the nine range cases, are retained
-under `corpus_pdf_conv/functional-controls/`. The repeatable verifier checks
-actual page membership/content against full exports, not just PDF page counts:
+## Next session
+
+1. Read the current checkpoint and `STAGE-CLOSURE.md`; inspect worktree changes
+   before editing. All subagents are stopped; use the main thread unless the user
+   authorizes delegation again. The user creates commits.
+2. Select a concrete FAIL from the latest full results. Prefer a simple, evidenced
+   implementation gap; consult `ledger/` before repeating prior experiments.
+   Compile/functional success alone is not a configured PASS.
+3. For the prepared complex leads below, use the smallest discriminating control
+   before choosing a policy. Prepared probes are not completed evidence.
+4. Run focused checks and affected configured cases. Protect accepted PASSes before
+   promoting a checkpoint. Accumulate repairs before another full audit unless a
+   shared change or observed regression warrants it; documentation/lint-only edits
+   do not require another full rendering audit.
+
+| Lead | Established evidence and next discriminating step |
+| --- | --- |
+| Word Han fallback / ADDRESSBLOCK | First 11 controls use SimSun for generated and ordinary authored Han; explicit YaHei remains YaHei. Verify UI language, base-font family and compatibility mode 12/15 before choosing a Word-specific fallback policy. Do not change shared XLSX/PPTX fallback or let cached font metrics cross policy boundaries. Evidence: `word/address-block-resource/deep-font-fallback/round-1-conclusions.md`; further plans are prepared but unrun. |
+| Excel icon size / automatic rows | Seven Office controls show padding scales with print zoom and short rows crop height without proportional width reduction. Custom-row geometry does not follow the naive 14.5/15-point model; the tall grid lacks PDF text objects. Read `xlsx-next-format/icon-stop/appearance/office-experiment-01/measured-results.json`; its `interpretation.md` predates the run. Next: the prepared `office-experiment-02/` object-model observations and GDI font metrics, both unrun. No global size multiplier or font-family constant is established. |
+| Remaining conversion/content gaps | `GeomLec1.pptx`, `tdf164620.docx` and `tdf104492.docx` now convert but retain text-content failures. `SheetTab.xlsx` retains heading text differences; `stress004.docx` retains a 145/95-page mismatch. Use the actual configured report to choose the next defect, not the disappearance of an earlier error. |
+
+Keep these boundaries when resuming:
+
+- Office preserves Wingdings F0A8 private-use text in protected `tdf138899.docx`
+  and another PDF/A control. A blanket Unicode remap caused a real regression and
+  was withdrawn. Do not reintroduce it or add a profile-specific acceptance bypass.
+- Serbian LCID month naming, empty query-table header recovery and manual chart
+  legends need stronger Office controls. Their proposed policies are not accepted.
+- Existing `singlecontrol.xlsx` pagination and LibreOffice coverage/legend test
+  failures are documented in the ledgers. Establish Office behavior before changing
+  a legacy assertion; do not weaken golden gates to accommodate it.
+- Empty Office exports are not automatically valid empty goldens. Confirmed empty
+  workbooks have observations in `corpus_pdf_conv/empty-output-observations.json`;
+  the SDK preserves empty layout and the PDF API reports an empty-layout error.
+
+## Golden contract and provenance
+
+Reference generation is **closed: 5,239 valid Office PDFs / 131 unresolved /
+0 pending**. Recovery added 94 PDFs to the original 5,145 successes; unresolved
+retries comprise 92 zero-page outputs, 32 errors and seven timeouts. Keep their
+terminal records. Round-trip eligibility does not guarantee Office export success;
+do not silently drop these sources or resume generation as part of renderer repair.
+
+All 5,370 original source hashes are retained. Never rewrite corpus files or
+manifests: round-trip tests depend on them. Goldens, frozen configuration IDs and
+acceptance thresholds are immutable during implementation repairs. Experiments
+use byte-identical copies under `/tmp`; a reference revision needs concrete Office
+conflict evidence and preserved provenance.
+
+The v2 plan uses seeded configuration coverage with a few directed exceptions:
+**5,212 of 5,370 assignments export all pages (97.1%)**. Page-range and hidden-slide
+controls verify actual content membership against complementary full exports.
+Generic JPEG/DPI options do not imply effective Office coverage, which follows
+Office quality policy. Visual PASS also does not establish metadata, tagging,
+bookmarks or conformance correctness; those need functional assertions.
+
+Successful receipts verify actual UI language from `de-DE`, `en-US`, `es-MX`,
+`fr-CA`, `ja-JP`, `ko-KR`, `zh-CN`, `zh-TW`; do not relabel installed variants as
+`es-ES`/`fr-FR`. Format locale, preferred authoring language and time zone are
+observed host values. Schema-4 receipts retain open/refresh/export UTC boundaries;
+the candidate replays refresh start in that recorded time zone. Windows clock and
+settings are not changed. Authored run languages are distinct from Office defaults.
+
+| Need | Retained source |
+| --- | --- |
+| Frozen assignments | `corpus_pdf_conv/plan.jsonl`; exact hash in the checkpoint's audit/build manifest |
+| Adapter policy and provenance | [reference-adapters](../../corpus_pdf_conv/reference-adapters/README.md) |
+| Authorized failed-reference recovery | `corpus_pdf_conv/reference-recovery-history/`, `recovery-plan-overrides.jsonl` |
+| Directed configuration/content coverage | `crates/ooxmlsdk-pdf-test/data/office-functional-coverage.json`, `corpus_pdf_conv/functional-controls/` |
+| Earlier experiment/repair history | `/tmp/office-golden-rebuild-20260911/pending-repairs/`; current archive `ledger/` and `corpus_pdf_conv-before-cleanup.md` |
+
+Retained functional coverage can be verified without Office:
 
 ```sh
 python3 scripts/verify_office_pdf_functional_coverage.py --verify-only
 ```
 
-Directed verification is complete: all 11 main references and 15 complementary
-control PDFs were generated successfully; 13 content-sensitive checks pass,
-including retained-evidence verification without Office. Candidate comparison
-for these 11 cases is 7 PASS / 4 text-layer FAIL / 0 infrastructure errors, with
-no page-count or page-dimension failures. Office preferences were restored and
-no Office processes remain. Eight campaign unit tests and the release build pass.
-The original 300-case pilot is unchanged; cumulative checked identities now total
-311: **156 PASS / 140 FAIL / 15 REFERENCE_FAIL**. The combined checkpoint and
-final plan coverage are under `/tmp/office-golden-rebuild-20260911/full-readiness/`.
-Full generation of the remaining 5,059 sources started with user authorization
-on 2026-09-11. It uses the frozen plan, one Office worker, a 120-second per-source
-timeout and at most two attempts, preserving the 311 completed records.
-Live conversion log:
-`/tmp/office-golden-rebuild-20260911/full-readiness/full-convert.log`.
-Generation was stopped at the user's request on 2026-09-12 (local time), after
-the active Office worker completed and confirmed environment restoration.
-The persisted manifest has **4,393 converted / 14 failed / 1 timeout**;
-**962 assignments remain without records**. Resume with the same command,
-frozen plan and output directory: existing records are skipped, with successful
-PDFs checked by size and SHA-256. The final drained worker was not promoted by
-the stopped scheduler and may run once again. Failed/timeout records require
-separate retry handling; normal resume skips them too.
-The user authorized resuming conversion and simple repairs on 2026-09-12.
-Resumed conversion completed with the same frozen plan; its log is
-`/tmp/office-golden-rebuild-20260911/full-readiness/full-convert-resume-20260912.log`.
-Stop/resume details are in `full-readiness/full-run.json`; final receipts and
-counts are in `generation-completion.json` and `generation-native-summary.json`.
-Four sources that previously failed now have references. Three previously
-converted sources failed this time and are listed separately in
-`reference-status-deltas-final.json`: Open-XML-SDK `TestFiles/complex0.docx`
-(Word export error), Apache-POI `absolute-anchor-over-empty-sheet.xlsx`
-(Excel open error), and LibreOffice `testModernVBADelete.docm` (locked staging
-directory during cleanup). Their source hashes are unchanged. The Excel source
-was an old candidate PASS, but old/new configured identities differ; this is a
-reference-generation issue to investigate, not a measured candidate regression.
-Do not classify these three sources as damaged without further evidence.
+## Build and audit commands
 
-Forty-five SDK repairs and one Traditional Chinese waterfall resource
-correction are staged, with **no new configured PASS claimed**.
-The repair inventory, existing-fixture regressions, evidence, known
-limitations, scoped configuration selection and deferred verification commands
-are under `/tmp/office-golden-rebuild-20260911/pending-repairs/`.
-Evidence comes from current Office PDFs and the Source Map; no new Office
-experiments or acceptance-gate changes were made. After stopping Office, both
-workspaces were formatted; five focused private checks and the tdf161301
-fixture check passed at that snapshot. Remaining earlier runtime checks and
-configured candidate comparisons are pending. Repairs made or revised after
-conversion resumed still await formatting, compilation and focused tests,
-including the non-Japanese e/ee follow-up to the previously tested era path. The
-311-identity accepted checkpoint above is unchanged; staged repairs add no
-claimed PASS. In particular, the print-area repair still needs semantic-text
-verification, and the conditional-format repair strengthens a functional check
-for an existing PASS rather than claiming a newly passing identity.
-Reference recovery is now closed as described above. The earlier 45 repairs
-still need their remaining scoped runtime and configured-candidate checks;
-compilation alone does not establish their fidelity. The user requested returning
-to ordinary FAIL repairs after preparing this closure for their commit.
+Run each command from its owning workspace root with the default `target/`.
+Cargo, GDB, Office and campaign audits are serial; independent reading may continue.
+Do not set `CARGO_TARGET_DIR`. Use `cargo fmt --all`, not standalone rustfmt.
 
-The directed manifest is test-suite configuration, not SDK special-casing.
-Ordinary sources use full-page rendering outside the unchanged pilot. No old
-pilot identities or receipts were replaced when changing the pending plan.
+For iteration, choose tests for the changed subsystem. Closure clippy commands:
 
-Generic SDK JPEG/DPI requests do not constitute effective JPEG/DPI coverage under
-the Office raster policy, which follows Office quality selection. Likewise,
-visual PASS does not establish complete PDF metadata, bookmark, tagging or
-conformance correctness; those need their functional assertions. Formatting and
-authoring defaults remain the observed host profile, with observed-clock replay.
+| Workspace | Command |
+| --- | --- |
+| Implementation | `cargo clippy --workspace --all-targets -- -D warnings` |
+| Test suite | `cargo clippy --workspace --tests -- -D warnings` |
+| emfsdk, when changed | `cargo clippy --workspace --all-targets --all-features -- -D warnings` |
 
-Rebuild commands, from this workspace root after closing Office applications:
-
-```sh
-target/release/office_pdf_campaign capture-environment --pwsh pwsh.exe
-target/release/office_pdf_campaign generate-plan
-target/release/office_pdf_campaign convert --selection pilot-300 --jobs 1 --pwsh pwsh.exe
-target/release/office_pdf_campaign audit --selection pilot-300 --jobs 4
-```
-
-Capture and generation precede the first conversion only. Resume conversion with
-the existing plan/environment; do not replace their identities once receipts
-exist. Conversion skips terminal receipts and verifies existing PDF hashes.
-The pilot plus directed cases provide 156 PASS identities; a full replacement
-baseline is not available yet. The counts and protection rules below describe
-the retired campaign; they are historical provenance and
-must not be applied across the new environment/configuration identities.
-
-Historical results before the authorized replacement:
-
-| Scope | PASS | FAIL | Reference fail | Infrastructure error |
-| --- | ---: | ---: | ---: | ---: |
-| Latest full configured audit | 2,774 | 2,370 | 226 | 0 |
-| Cumulative, including targeted repairs | 2,783 | 2,361 | 226 | 0 |
-| New frozen PASS baseline | 2,774 | 0 | 0 | 0 |
-
-Frozen archive: `/tmp/ooxmlsdk-golden-baseline-20260911/accepted-audit/`.
-Results SHA-256: `b4b54d5b6b78d7892c6c90a587a423ac07a720282071d1f1b988c6d4426b20a7`.
-Promoted to 2,774 PASS identities at the user's request after the full audit.
-The previous 2,694-case baseline remains unchanged under
-`/tmp/ooxmlsdk-golden-baseline-20260910/` as provenance.
-Non-golden check results/exceptions: `/tmp/phase-closure-20260910/verification.json`
-and `/tmp/phase-closure-20260910/README.md`; non-golden tests are not all green.
-
-Latest full audit: `/tmp/full-pdf-printer-defaults-20260911/`, 293 seconds.
-All 2,770 previously accepted PASS identities remain PASS; four additional cases
-pass beyond the targeted repair. Results SHA-256:
-`b4b54d5b6b78d7892c6c90a587a423ac07a720282071d1f1b988c6d4426b20a7`.
-Latest targeted repair: `/tmp/pdf-xlsx-dxf-font-20260911/`: sparse DXF font
-effects now distinguish omitted, enabled and explicitly disabled values.
-Custom table regions apply after the table/column format snapshots;
-`totalsRowFunction.xlsx` now retains Office's bold teal total-row font, though
-its localized font-family mismatch remains FAIL. Scoped audit: explicit-disable
-and custom-table cases plus all 275 Excel PASS identities, 340 total,
-275 PASS / 65 FAIL; no new/lost PASS or new page-count mismatches. Two public
-regressions and 22 private style/table tests, formatting and release build pass;
-no clippy or full audit. The preceding pattern repair retained Office's `lightUp`
-bitmap brush; other pattern types/custom table patterns remain incomplete.
-The last added PASS remains `PivotSubtotalsSource/output.xlsx`.
-Use the latest repair's `protected-results.jsonl` as `--previous-results`; it
-protects all 2,783 PASS identities. This is a mixed checkpoint; the 2,774-case
-frozen baseline remains unchanged. Other style/geometry failures, including the
-sponsor report's earlier 12/13-page mismatch, remain open.
-
-### Required scope
-
-The new required selection is
-`/tmp/ooxmlsdk-golden-baseline-20260911/pass-baseline.jsonl`: **2,774 PASS identities**.
-SHA-256: `a9322d04d10612bab4fe0efec4df2898e2e822f517add0a15b8fd7430f280e4b`.
-The sibling `manifest.json` pins the full archive and selection; neither depends
-on `target/`. The historical union below is fully recovered and contained in this
-new baseline; it remains provenance, not the current 2,774-case selection.
-
-| Historical checkpoint | Subject | PASS |
-| --- | --- | ---: |
-| `1415b2688fba8902e0993ba8d7ae97db42d1b961` | fix(pdf): raise configured DOCX golden fidelity to 2,567 PASS | 2,567 |
-| `45189fab4397aa5dd41f92ce51b90f028ab28b4b` | refactor(pdf): migrate rendering to direct pdf-writer output | 2,591 |
-
-Their union is **2,660 identities** (2,498 shared + 69 + 93).
-Records: `/home/kazeno/test/ooxmlsdk-progress/ooxmlsdk-dual-baseline-results/`;
-selection: `target-pass-union.jsonl`, SHA-256
-`92de1314a71d728bc6405dfae880641becaa2b1fe1e264c13b2d6fa00e56186a`.
-
-Frozen PASS identities define scope; **current configured golden gates** define
-acceptance. Preserve the new baseline and every subsequently accepted PASS identity;
-new passes cannot cancel regressions. Do not change thresholds or exclusions.
-Only investigate reference refreshes on concrete old/current Office conflicts;
-preserve source/options and archive provenance as described in
-`corpus_pdf_conv/reference-revisions/README.md`.
-
-## Audit commands
-
-Run from the suite root, with a fresh archive directory. Prefer affected cases
-and relevant PASS controls during repairs. After accumulating a substantial repair
-batch, run a full audit and promote the verified PASS baseline. Full audits also
-apply to broad changes or evidence of cross-case risk. Skip clippy per the current
-user instruction.
-Full closure when warranted (build → audit → identity/PASS checks → archive):
-
-```sh
-python3 scripts/audit_office_pdf_pass_union.py --full --build \
-  --baseline /tmp/ooxmlsdk-golden-baseline-20260911/pass-baseline.jsonl \
-  --previous-results /tmp/pdf-xlsx-dxf-font-20260911/protected-results.jsonl \
-  --output-root /tmp/ooxmlsdk-golden-audit-next --jobs 4
-```
-
-Use the latest **accepted** full results or the documented cumulative protection
-checkpoint as `--previous-results`.
-Exit 0 requires complete matching identities, no infrastructure errors, a
-passing baseline and no lost PASS. Existing out-of-baseline FAIL/REFERENCE_FAIL are
-reported, not reclassified. `summary.json` is the verdict; `diagnostic-deltas.json`
-holds details. Build/campaign logs are quiet files. Full rendering can take
-minutes; wrapper-only work should be negligible. Never overlap audits: native
-report paths are shared (wrapper runs lock automatically).
-
-For baseline-only iteration, omit `--full`, compare previous **selected-set** results if
-available, and add `--require-all-pass` to enforce closure. Omit `--build` only
-when the release binary is already current. Wrapper tests:
-`python3 -m unittest discover -s scripts -p 'test_audit_office_pdf_pass_union.py'`.
-
-Single case after building the release campaign:
+From the suite root, build once before configured verification:
 
 ```sh
 cargo build -p ooxmlsdk-pdf-test --bin office_pdf_campaign --release
@@ -294,17 +166,36 @@ cargo build -p ooxmlsdk-pdf-test --bin office_pdf_campaign --release
 jq -e '.verdict == "PASS"' /tmp/case-result.json
 ```
 
-Batch selection uses `audit --selection full --configuration-ids FILE --jobs 4`;
-do not loop `prepare-audit-one` across a corpus (it revalidates the plan).
-A native process exit alone does not establish a PASS.
+Use `audit --selection full --configuration-ids FILE --jobs 4` for a batch;
+looping `prepare-audit-one` repeatedly revalidates the plan. Native exit 0 alone
+is not a PASS. To enforce the protected selection, omit `--full` from the wrapper
+below and add `--require-all-pass`; omit `--previous-results` or supply results
+with exactly that selected ID set, not the full campaign.
+
+Full verification when warranted (fresh output directory each time):
+
+```sh
+repair_archive=/tmp/ooxmlsdk-repair-resume-20260912
+python3 scripts/audit_office_pdf_pass_union.py --full --build \
+  --baseline "$repair_archive/checkpoint-batch-09-full/pass-baseline.jsonl" \
+  --previous-results "$repair_archive/checkpoint-batch-09-full/cumulative-results.jsonl" \
+  --output-root /tmp/ooxmlsdk-golden-audit-next --jobs 4
+```
+
+Omit `--build` only when the release binary matches current source. Full acceptance
+requires exact identities, no infrastructure errors and every protected PASS;
+existing FAIL/REFERENCE_FAIL remain reported. `summary.json` is authoritative;
+`diagnostic-deltas.json` contains changes. Archive sources, binary/plan hashes,
+results and the promoted PASS selection. Audits share native report paths: never
+overlap them. Wrapper tests:
+`python3 -m unittest discover -s scripts -p 'test_audit_office_pdf_pass_union.py'`.
 
 ## Source Map
 
-Start with local documents and implementations, supplement with primary online
-sources, and use controlled Office observations when behavior remains unclear.
-Read the relevant complete section or function and its callers, not just a
-matching line. The table is an index, not an exhaustive search boundary or a
-requirement to scan every project for every bug.
+Office configured output is the target. Start with the relevant local spec and
+implementation, then use primary online sources or controlled Office observations
+to resolve gaps. Read complete functions and their consumers. Use this index to
+choose a route; do not scan every project for each bug.
 
 | Need | Durable route |
 | --- | --- |
@@ -330,45 +221,62 @@ requirement to scan every project for every bug.
 | PDF comparison and output mechanisms | test code, `../pdfium-render/`, `../krilla/`, `../typst/crates/typst-pdf/`, `../cairo/`, `../tiny-skia/` |
 | Geometry and graphics types | `../kurbo/`, `../color/`, `../peniko/` |
 | EMF/WMF/GDI/OLE/CFB | local Microsoft specs, `../emfsdk/`, `../olecfsdk/`, `../libgdiplus/`, `../reactos/`, `../wine/` |
-| Locale and fallback mechanisms | `../icu4x/` |
+| Locale, generated resources and font fallback | `../icu4x/`; local `[MS-DOC]` FFM and Win32 font association/linking documentation. Word policy and shared font fallback need separate evidence. |
 | CJK/ruby counterexamples | `../clreq/`, `../klreq/`, `../simple-ruby/`, `../i18n-tests/`, W3C JLREQ |
 | OfficeMath/UnicodeMath | ECMA-376, Microsoft deviations, `../UnicodeMathML/` |
 | Independent spreadsheet behavior | `../poi/`, `../EPPlus/`, `../ClosedXML/` |
-
 
 Local implementations supply algorithms and counterexamples, not proof of Office
 policy. Check provenance/license; read complete relevant sections and consumers.
 Reuse the existing Markdown specs instead of reconverting them.
 
+## Development and debugging
 
-## Diagnostic commands and pitfalls
+Use focused tests and configured goldens for deterministic fixes. For complex
+visual differences, inspect enlarged candidate/Office images and PDF metrics,
+trace the final consumer with GDB, then vary one input in a controlled Office
+experiment. Reuse existing evidence and counterexamples before adding probes.
+A passing diagnostic is not a replacement for configured acceptance.
 
-- Simple deterministic fixes: focused tests + configured goldens. Complex visual
-  fixes: enlarged AB + metrics, GDB at the consumer, controlled Office cases.
-  Reuse existing controls; record only conclusions, counterexamples and next steps
-  per case. A factorial round around 1,100 cases is available when interactions
-  require it, not a routine prerequisite.
-- Compare identical physical grids, alpha/background, crops and zoom. Verify
-  measurement coordinates before diagnosing geometry/color. Lossless/preJPEG
-  comparisons isolate rendering; only configured PDF checks establish golden PASS.
-- Office adapter: `scripts/probe_office_pdf_options.ps1`; plan helper:
-  `scripts/prepare_office_pdf_options_probe_plan.ps1`. Reuse the complete golden
-  `assignment.office` and `conversion.office_options`, including cross-XML controls.
-  Companion exports: `-DiagnosticWordXps`, `-DiagnosticWordEmf`.
-- Native candidate:
+### Visual and font measurements
+
+- Compare the same physical grid, crop, zoom, alpha and background. Verify units
+  and transforms before blaming layout. Lossless/pre-JPEG output isolates painting.
+- Distinguish requested fonts from actual glyph coverage/fallback and PDF fonts;
+  missing PDF text may mean rasterized content or hidden output. An absent Windows
+  SystemLink entry does not prove that no other fallback mechanism applies.
+- EMF records use bytes; WMF record sizes use WORDs. An embedded EMF record may
+  cross WMFC chunks. Validate the complete alternative before playback and keep
+  raster/native extraction consistent; do not replay fallback graphics twice.
+- Inspect native candidate realization density, alpha and placement:
   `office_pdf_campaign render-native-one --task TASK --input DOCX --output-root NEW_DIR --dpi 600`.
-  Inspect the realization manifest for actual density, alpha and placement.
-- WSL: first resolve `wslpath -w PATH`, then use literal Windows paths:
-  `pwsh.exe -NoProfile -NonInteractive -STA -ExecutionPolicy Bypass -File '<script>' ...`.
-  Keep inputs read-only, macros disabled, and Office process ownership explicit.
-  Adapter tests: `scripts/test_office_pdf_options_adapter.ps1`.
-- Run Cargo, GDB, Office and audits serially, from the owning workspace with its
-  default `target/`; no `CARGO_TARGET_DIR`. Use `cargo fmt --all`, not standalone
-  rustfmt. See `AGENTS.md` for closure tests/clippy and generation commands.
 
-GDB: build **dev** to retain Rust locals; verify final behavior in release.
-Use literal `gdb` and a script, and check the inferior's normal exit (GDB exit 0
-can hide script errors). Gate hot-loop breakpoints; their cost is not render time.
+### Office experiments from WSL
+
+Use `scripts/probe_office_pdf_options.ps1` and
+`scripts/prepare_office_pdf_options_probe_plan.ps1`; reuse the complete golden
+`assignment.office` and receipt `office_options`. The worker
+`scripts/invoke_office_pdf_worker.ps1` accepts exactly one schema-2 record per
+plan. Optional Word companions are `-DiagnosticWordXps` and `-DiagnosticWordEmf`
+on the probe. Adapter checks: `scripts/test_office_pdf_options_adapter.ps1`.
+
+Resolve paths with `wslpath -w PATH`, then pass literal Windows paths to
+`pwsh.exe -NoProfile -NonInteractive -STA -ExecutionPolicy Bypass -File SCRIPT`.
+When the approved entry is Windows PowerShell, a literal `-File` bootstrap can
+invoke PowerShell 7 in STA mode. Keep logs/results under `/tmp` and reuse approved
+commands. Avoid fragile nested `-Command` quoting.
+
+Keep original inputs read-only, macros disabled and Office process ownership
+explicit. Do not force-close user applications. Run one Office worker at a time;
+verify actual options/environment and preference restoration on success, error
+and timeout. Do not change the OS clock/time zone. Prepared scripts or requested
+settings are not evidence until their observed receipts and output are inspected.
+
+### GDB
+
+Build **dev** for Rust locals; verify final behavior in release. Use a script,
+gate hot-loop breakpoints, and inspect the inferior's normal exit: GDB exit 0 can
+hide script errors. Debugger overhead is not renderer performance.
 
 ```gdb
 set pagination off

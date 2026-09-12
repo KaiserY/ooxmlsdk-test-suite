@@ -2045,7 +2045,7 @@ fn xls_conversion_marks_cells_in_phonetic_info_visible_ranges() {
         last_column: 255,
     }];
 
-    let mut document = convert_xls(&source)
+    let document = convert_xls(&source)
         .expect("strictly convert accounted phonetic visibility")
         .document;
     let workbook = document
@@ -2056,7 +2056,7 @@ fn xls_conversion_marks_cells_in_phonetic_info_visible_ranges() {
         .next()
         .expect("phonetic XLSX has a worksheet");
     let root = worksheet
-        .root_element(&mut document)
+        .root_element(&document)
         .expect("parse phonetic XLSX worksheet");
     let cells = root
         .sheet_data

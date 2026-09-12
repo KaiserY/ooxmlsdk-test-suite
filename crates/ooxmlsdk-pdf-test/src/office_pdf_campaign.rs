@@ -3456,7 +3456,7 @@ pub fn audit_one_with_artifacts(
         ui_language: &assignment.effective.ui_language,
         format_locale: &assignment.effective.format_locale,
     };
-    let candidate_options = assignment.reference_pdf_options(&conversion)?;
+    let candidate_options = assignment.reference_pdf_options(conversion)?;
     let comparison = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         compare_office_golden_detailed_with_prevalidated_options(
             case,

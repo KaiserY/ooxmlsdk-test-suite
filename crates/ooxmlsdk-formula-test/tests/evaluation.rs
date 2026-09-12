@@ -4522,6 +4522,19 @@ fn evaluates_apache_poi_date_and_time_function_cases() {
 }
 
 #[test]
+fn text_date_formats_consume_escape_markers_and_preserve_literals() {
+    let book = evaluation_book(&[]);
+    for (formula, expected) in [
+        (r#"TEXT(42438,"dd\ mmm\ yyyy")"#, "09 Mar 2016"),
+        (r#"TEXT(42438,"yyyy \m \d")"#, "2016 m d"),
+        (r#"TEXT(42438,"dd\\mmm\\yyyy")"#, r"09\Mar\2016"),
+        (r#"TEXT(42438,"yyyy ""\m""")"#, r"2016 \m"),
+    ] {
+        assert_text(&book, formula, expected);
+    }
+}
+
+#[test]
 fn evaluates_apache_poi_text_function_cases() {
     // Source: Apache POI
     // poi/src/test/java/org/apache/poi/ss/formula/functions/TestClean.java,

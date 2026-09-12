@@ -9,6 +9,553 @@ use ooxmlsdk_layout_test::{
 };
 use std::path::Path;
 
+fn assert_page_run_text_occurrences(
+    document: &ooxmlsdk_layout::common::LayoutDocument<'_>,
+    page_index: usize,
+    expected: &str,
+    expected_count: usize,
+) {
+    // Font fallback can split one Japanese or Korean word into several runs.
+    // Preserve authored spaces while joining those emitted text fragments.
+    let text: String = page_display_items(document, page_index)
+        .into_iter()
+        .filter_map(|item| match item {
+            DisplayItem::Text(run) => Some(run.text.as_ref()),
+            _ => None,
+        })
+        .collect();
+    let text = text.split_whitespace().collect::<Vec<_>>().join(" ");
+    let expected = expected.split_whitespace().collect::<Vec<_>>().join(" ");
+    assert_eq!(
+        text.matches(&expected).count(),
+        expected_count,
+        "text {expected:?} occurrence mismatch on page {page_index}; page_text={text:?}"
+    );
+}
+
+#[test]
+fn calibri_symbol_uses_its_unicode_cmap_despite_duplicate_symbol_charset() {
+    let file = "sw/qa/extras/uiwriter/data/tdf164620.docx";
+    for reverse_calibri_entries in [false, true] {
+        let mut package =
+            WordprocessingDocument::new_from_file(ooxmlsdk_layout_test::corpus_file(file)).unwrap();
+        if reverse_calibri_entries {
+            let main = package.main_document_part().unwrap();
+            let font_part = main.font_table_part(&package).unwrap();
+            let font_table = font_part.root_element_mut(&mut package).unwrap();
+            let indices: Vec<_> = font_table
+                .xml_children
+                .iter()
+                .enumerate()
+                .filter_map(|(index, entry)| match entry {
+                    w::FontsChoice::Font(font) if font.name == "Calibri" => Some(index),
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(indices.len(), 2, "retained duplicate Calibri declarations");
+            font_table.xml_children.swap(indices[0], indices[1]);
+        }
+        let document = docx::layout_document(
+            &package,
+            &LayoutOptions {
+                ui_language: Some("es-MX".into()),
+                format_locale: Some("zh-CN".into()),
+                default_document_language: Some("zh-CN".into()),
+                ..LayoutOptions::default()
+            },
+        )
+        .unwrap();
+        let symbols: Vec<_> = (0..document.pages.len())
+            .flat_map(|page| page_display_items(&document, page))
+            .filter_map(|item| match item {
+                DisplayItem::Text(run) if run.style.explicit_symbol_character => Some(run),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(symbols.len(), 1, "the source has one explicit w:sym");
+        let symbol = symbols[0];
+        assert_eq!(symbol.text, "&", "Office emits WinAnsi Calibri ampersand");
+        assert_eq!(symbol.style.font_family.as_deref(), Some("Calibri"));
+        assert_eq!(
+            symbol.style.high_ansi_font_family.as_deref(),
+            Some("Calibri")
+        );
+        assert_eq!(
+            symbol.style.east_asia_font_family.as_deref(),
+            Some("Calibri")
+        );
+        assert_eq!(symbol.style.complex_font_family.as_deref(), Some("Calibri"));
+        assert_eq!(symbol.style.symbol_font_family.as_deref(), Some("Calibri"));
+        assert!(!symbol.style.wordprocessingml_font_slots);
+        let shaped = ooxmlsdk_layout::fonts::shape_text_runs(&symbol.text, &symbol.style)
+            .expect("configured Calibri font must be available for the imported regression");
+        assert_eq!(shaped.len(), 1);
+        assert!(!shaped[0].approximate);
+        assert!(shaped[0].diagnostics.missing_glyphs.is_empty());
+        assert!(shaped[0].diagnostics.fallback_runs.is_empty());
+        assert_eq!(shaped[0].glyphs.len(), 1);
+        assert_ne!(shaped[0].glyphs[0].glyph_id, 0);
+        assert_eq!(shaped[0].glyphs[0].source_char, Some('&'));
+    }
+}
+
+#[test]
+fn address_block_placeholders_use_chinese_ui_resources_and_keep_authored_text() {
+    for (file, language, placeholder, trailing_text) in [
+        (
+            "sw/qa/extras/ww8export/data/tdf134264.docx",
+            "zh-TW",
+            "«地址區塊»",
+            None,
+        ),
+        (
+            "sw/qa/extras/odfexport/data/tdf129520.docx",
+            "zh-CN",
+            "«地址块»",
+            Some("Cette facture fait office de garantie"),
+        ),
+    ] {
+        for (ui_language, format_locale, expected, absent) in [
+            (language, "fr-FR", placeholder, "«AddressBlock»"),
+            ("en-US", language, "«AddressBlock»", placeholder),
+        ] {
+            let document = docx_layout_with_options(
+                file,
+                &LayoutOptions {
+                    ui_language: Some(ui_language.into()),
+                    format_locale: Some(format_locale.into()),
+                    default_document_language: Some("en-US".into()),
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+            assert_page_run_text_occurrences(&document, 0, expected, 1);
+            assert_page_run_text_occurrences(&document, 0, absent, 0);
+            assert_page_run_text_occurrences(&document, 0, "1815", 0);
+            if let Some(text) = trailing_text {
+                assert_page_run_text_occurrences(&document, 0, text, 1);
+            }
+            let mut delimiters = 0;
+            for item in page_display_items(&document, 0) {
+                let DisplayItem::Text(run) = item else {
+                    continue;
+                };
+                if run.text.contains('«') || run.text.contains('»') {
+                    delimiters += run.text.matches('«').count() + run.text.matches('»').count();
+                    assert_eq!(run.style.font_family.as_deref(), Some("Garamond"));
+                    assert!(!run.style.bold);
+                    assert_close(run.style.font_size.0, 12.0, 0.01, "Office address-block em");
+                }
+                if run.text.contains('»') {
+                    // Both retained Office streams paint a final Latin blank.
+                    assert!(
+                        run.text.ends_with(' '),
+                        "preserved address-block trailing blank"
+                    );
+                }
+            }
+            assert_eq!(delimiters, 2);
+        }
+    }
+}
+
+#[test]
+fn japanese_generated_diagnostics_use_resource_fonts_without_changing_authored_text() {
+    use ooxmlsdk::sdk::SdkType;
+
+    let options = LayoutOptions {
+        ui_language: Some("ja-JP".into()),
+        format_locale: Some("zh-CN".into()),
+        default_document_language: Some("zh-CN".into()),
+        ..Default::default()
+    };
+    for (file, message, latin_face) in [
+        (
+            "sw/qa/extras/ooxmlexport/data/fdo78910.docx",
+            "エラー! ブックマークが定義されていません。",
+            Some("Calibri"),
+        ),
+        (
+            "sw/qa/extras/ooxmlexport/data/tdf171299_tableInField.docx",
+            "エラー! 参照元が見つかりません。",
+            Some("Arial"),
+        ),
+        (
+            "sw/qa/core/docnode/data/redline-ends-before-toc.docx",
+            "目次項目が見つかりません。",
+            None,
+        ),
+        (
+            "sw/qa/extras/ooxmlexport/data/sdt-citation-run.docx",
+            "無効な資料文献が指定されました。",
+            None,
+        ),
+    ] {
+        let document = docx_layout_with_options(file, &options).unwrap();
+        assert_page_run_text_occurrences(&document, 0, message, 1);
+        let mut japanese_characters = 0;
+        let mut latin_punctuation = 0;
+        for item in page_display_items(&document, 0) {
+            let DisplayItem::Text(run) = item else {
+                continue;
+            };
+            let count = run
+                .text
+                .chars()
+                .filter(|character| !character.is_ascii())
+                .count();
+            if count > 0 {
+                japanese_characters += count;
+                assert_eq!(
+                    run.style.east_asia_font_family.as_deref(),
+                    Some("MS Mincho"),
+                    "{file}: {}",
+                    run.text
+                );
+                assert!(run.style.wordprocessingml_font_slots);
+                assert!(!run.style.wordprocessingml_east_asia_language_is_chinese);
+                assert!(run.style.bold);
+            }
+            if run.text.contains('!') {
+                latin_punctuation += 1;
+                assert_eq!(
+                    run.style.font_family.as_deref(),
+                    latin_face,
+                    "{file}: ASCII diagnostic face"
+                );
+            }
+        }
+        assert_eq!(
+            japanese_characters,
+            message
+                .chars()
+                .filter(|character| !character.is_ascii())
+                .count()
+        );
+        assert_eq!(latin_punctuation, usize::from(latin_face.is_some()));
+    }
+
+    // The generated citation resource does not change an authored Japanese
+    // run, even when document-language defaults select a different CJK face.
+    let path =
+        ooxmlsdk_layout_test::corpus_file("sw/qa/extras/ooxmlexport/data/sdt-citation-run.docx");
+    let mut package = WordprocessingDocument::new_from_file(path).unwrap();
+    let authored = w::Paragraph::from_bytes(
+        r#"<w:p xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:r><w:rPr><w:rFonts w:ascii="Yu Gothic" w:hAnsi="Yu Gothic" w:eastAsia="Yu Gothic" w:cs="Yu Gothic"/><w:b w:val="0"/><w:lang w:val="ja-JP" w:eastAsia="ja-JP"/></w:rPr><w:t>著者の文章</w:t></w:r></w:p>"#.as_bytes(),
+    ).unwrap();
+    let main = package.main_document_part().unwrap();
+    main.root_element_mut(&mut package)
+        .unwrap()
+        .body
+        .as_mut()
+        .unwrap()
+        .body_choice
+        .push(w::BodyChoice::Paragraph(Box::new(authored)));
+    let document = docx::layout_document(&package, &options).unwrap();
+    assert_page_run_text_occurrences(&document, 0, "無効な資料文献が指定されました。", 1);
+    assert_page_run_text_occurrences(&document, 0, "著者の文章", 1);
+    let authored_runs = page_display_items(&document, 0)
+        .into_iter()
+        .filter_map(|item| match item {
+            DisplayItem::Text(run) if run.text.contains("著者") => Some(run),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    assert!(!authored_runs.is_empty());
+    for run in authored_runs {
+        assert_eq!(
+            run.style.east_asia_font_family.as_deref(),
+            Some("Yu Gothic")
+        );
+        assert!(!run.style.bold);
+    }
+}
+
+#[test]
+fn greeting_line_resources_follow_the_office_ui_language_for_simple_and_complex_fields() {
+    for (file, ui_language, expected) in [
+        (
+            "../Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/O14ISOStrict/Word/fldSimple-Field Definitions-GreetingLine.docx",
+            "es-MX",
+            "«Línea de saludo»",
+        ),
+        (
+            "../Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestFiles/mailmerge.docx",
+            "ja-JP",
+            "«あいさつ文»",
+        ),
+    ] {
+        let localized = docx_layout_with_options(
+            file,
+            &LayoutOptions {
+                ui_language: Some(ui_language.into()),
+                format_locale: Some("en-US".into()),
+                default_document_language: Some("zh-CN".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_page_run_text_occurrences(&localized, 0, expected, 1);
+        assert_page_run_text_occurrences(&localized, 0, "«GreetingLine»", 0);
+        let english = docx_layout_with_options(
+            file,
+            &LayoutOptions {
+                ui_language: Some("en-US".into()),
+                format_locale: Some(ui_language.into()),
+                default_document_language: Some("zh-CN".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_page_run_text_occurrences(&english, 0, "«GreetingLine»", 1);
+        assert_page_run_text_occurrences(&english, 0, expected, 0);
+        if ui_language == "ja-JP" {
+            for text in ["Junzha", "Hello"] {
+                assert_page_contains(&localized, 0, text);
+                assert_page_contains(&english, 0, text);
+            }
+            let japanese_runs = page_display_items(&localized, 0)
+                .into_iter()
+                .filter_map(|item| match item {
+                    DisplayItem::Text(run)
+                        if run
+                            .text
+                            .chars()
+                            .any(|character| "あいさつ文".contains(character)) =>
+                    {
+                        Some(run)
+                    }
+                    _ => None,
+                })
+                .collect::<Vec<_>>();
+            assert!(!japanese_runs.is_empty());
+            for run in japanese_runs {
+                // The source Hans theme uses 宋体, whose font-table altName
+                // is SimSun (the Office PDF face). Preserve that authored
+                // slot instead of applying the MS Mincho diagnostic face.
+                assert_eq!(run.style.east_asia_font_family.as_deref(), Some("宋体"));
+                assert!(!run.style.bold);
+            }
+        }
+    }
+}
+
+#[test]
+fn traditional_chinese_bookmark_resource_keeps_latin_face_and_explicit_plain_style() {
+    use ooxmlsdk::sdk::SdkType;
+
+    let file = "sw/qa/extras/ooxmlexport/data/tdf64531.docx";
+    for (ui_language, format_locale, expected, absent) in [
+        (
+            "zh-TW",
+            "en-US",
+            "錯誤! 尚未定義書籤。",
+            "Error! Bookmark not defined.",
+        ),
+        (
+            "en-US",
+            "zh-TW",
+            "Error! Bookmark not defined.",
+            "錯誤! 尚未定義書籤。",
+        ),
+    ] {
+        let document = docx_layout_with_options(
+            file,
+            &LayoutOptions {
+                ui_language: Some(ui_language.into()),
+                format_locale: Some(format_locale.into()),
+                default_document_language: Some("zh-CN".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_page_run_text_occurrences(&document, 0, expected, 1);
+        assert_page_run_text_occurrences(&document, 0, absent, 0);
+        assert_page_run_text_occurrences(&document, 0, "錯誤！ 書籤未定義。", 0);
+        assert_page_run_text_occurrences(&document, 0, "Heading 1", 1);
+        let mut chinese_characters = 0;
+        let mut ascii_exclamations = 0;
+        for item in page_display_items(&document, 0) {
+            let DisplayItem::Text(run) = item else {
+                continue;
+            };
+            let count = run
+                .text
+                .chars()
+                .filter(|character| !character.is_ascii())
+                .count();
+            if count > 0 {
+                chinese_characters += count;
+                assert_eq!(run.style.east_asia_font_family.as_deref(), Some("PMingLiU"));
+                assert!(run.style.wordprocessingml_font_slots);
+                assert!(run.style.wordprocessingml_east_asia_language_is_chinese);
+                // Office's diagnostic is plain despite the inherited bold
+                // heading style: the paragraph mark explicitly has w:b=false.
+                assert!(!run.style.bold);
+                assert_close(run.style.font_size.0, 12.0, 0.01, "Office resource em");
+            }
+            if run.text.contains('!') {
+                ascii_exclamations += run.text.matches('!').count();
+                assert_eq!(
+                    run.style.font_family.as_deref(),
+                    Some("Lucida Sans Unicode")
+                );
+                assert!(!run.style.bold);
+            }
+        }
+        assert_eq!(
+            chinese_characters,
+            expected.chars().filter(|c| !c.is_ascii()).count()
+        );
+        assert_eq!(ascii_exclamations, 1);
+    }
+
+    let mut package =
+        WordprocessingDocument::new_from_file(ooxmlsdk_layout_test::corpus_file(file)).unwrap();
+    let authored = w::Paragraph::from_bytes(
+        r#"<w:p xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:r><w:rPr><w:rFonts w:ascii="Microsoft JhengHei" w:hAnsi="Microsoft JhengHei" w:eastAsia="Microsoft JhengHei" w:cs="Microsoft JhengHei"/><w:b w:val="0"/><w:lang w:val="zh-TW" w:eastAsia="zh-TW"/></w:rPr><w:t>作者的文字</w:t></w:r></w:p>"#.as_bytes(),
+    ).unwrap();
+    let main = package.main_document_part().unwrap();
+    main.root_element_mut(&mut package)
+        .unwrap()
+        .body
+        .as_mut()
+        .unwrap()
+        .body_choice
+        .push(w::BodyChoice::Paragraph(Box::new(authored)));
+    let document = docx::layout_document(
+        &package,
+        &LayoutOptions {
+            ui_language: Some("zh-TW".into()),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert_page_run_text_occurrences(&document, 0, "錯誤! 尚未定義書籤。", 1);
+    assert_page_run_text_occurrences(&document, 0, "作者的文字", 1);
+    let authored_runs: Vec<_> = page_display_items(&document, 0)
+        .into_iter()
+        .filter_map(|item| match item {
+            DisplayItem::Text(run) if run.text.contains("作者") => Some(run),
+            _ => None,
+        })
+        .collect();
+    assert!(!authored_runs.is_empty());
+    for run in authored_runs {
+        assert_eq!(
+            run.style.east_asia_font_family.as_deref(),
+            Some("Microsoft JhengHei")
+        );
+        assert!(!run.style.bold);
+    }
+}
+
+#[test]
+fn french_reference_diagnostic_uses_the_office_resource_and_keeps_cell_text() {
+    let file = "sw/qa/extras/ooxmlexport/data/tdf171383_refFieldInCell.docx";
+    for (ui_language, format_locale, expected, absent) in [
+        (
+            "fr-CA",
+            "en-US",
+            "Erreur! Source du renvoi introuvable.",
+            "Error! Reference source not found.",
+        ),
+        (
+            "en-US",
+            "fr-CA",
+            "Error! Reference source not found.",
+            "Erreur! Source du renvoi introuvable.",
+        ),
+    ] {
+        let document = docx_layout_with_options(
+            file,
+            &LayoutOptions {
+                ui_language: Some(ui_language.into()),
+                format_locale: Some(format_locale.into()),
+                default_document_language: Some("zh-CN".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_page_run_text_occurrences(&document, 0, expected, 1);
+        assert_page_run_text_occurrences(&document, 0, absent, 0);
+        for text in ["1", "Xyz", "YELLOW"] {
+            assert_page_contains(&document, 0, text);
+        }
+    }
+}
+
+#[test]
+fn empty_bibliography_and_missing_citation_source_use_distinct_japanese_resources() {
+    let file = "sw/qa/extras/ooxmlexport/data/99_Fields.docx";
+    let japanese = docx_layout_with_options(
+        file,
+        &LayoutOptions {
+            ui_language: Some("ja-JP".into()),
+            format_locale: Some("en-US".into()),
+            default_document_language: Some("zh-CN".into()),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    for message in [
+        "作業中の文書には元データがありません。",
+        "資料文献が指定されていません。",
+    ] {
+        assert_page_run_text_occurrences(&japanese, 0, message, 1);
+        // Office emits each full diagnostic as continuous MS Mincho text.
+        // In particular, the shared kana letter ー must not split データ into
+        // portions separated by Latin/East Asian automatic spacing.
+        let runs: Vec<_> = page_display_items(&japanese, 0)
+            .into_iter()
+            .filter_map(|item| match item {
+                DisplayItem::Text(run) if run.text == message => Some(run),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(runs.len(), 1, "continuous diagnostic: {message}");
+        assert_close(runs[0].origin.x.0, 72.02, 0.03, "Office diagnostic start");
+        assert_close(
+            runs[0].style.font_size.0,
+            11.04,
+            0.01,
+            "Office fullwidth em",
+        );
+    }
+    assert_page_run_text_occurrences(&japanese, 0, "###bidi outline", 1);
+    assert_page_run_text_occurrences(&japanese, 0, "無効な資料文献が指定されました。", 0);
+    for item in page_display_items(&japanese, 0) {
+        let DisplayItem::Text(run) = item else {
+            continue;
+        };
+        if !run.text.is_ascii() {
+            assert_eq!(
+                run.style.east_asia_font_family.as_deref(),
+                Some("MS Mincho")
+            );
+            assert!(run.style.bold);
+        }
+    }
+    let english = docx_layout_with_options(
+        file,
+        &LayoutOptions {
+            ui_language: Some("en-US".into()),
+            format_locale: Some("ja-JP".into()),
+            default_document_language: Some("zh-CN".into()),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    for message in [
+        "There are no sources in the current document.",
+        "No source specified.",
+        "###bidi outline",
+    ] {
+        assert_page_run_text_occurrences(&english, 0, message, 1);
+    }
+    assert_page_run_text_occurrences(&english, 0, "資料文献が指定されていません。", 0);
+}
+
 #[test]
 fn missing_bookmark_fields_use_the_german_and_japanese_office_resources() {
     for (file, language, page, message, count) in [
@@ -44,7 +591,7 @@ fn missing_bookmark_fields_use_the_german_and_japanese_office_resources() {
             },
         )
         .unwrap();
-        ooxmlsdk_layout_test::assert_page_text_occurrences(&document, page, message, count);
+        assert_page_run_text_occurrences(&document, page, message, count);
         assert!(!page_text_contains(
             &document,
             page,
@@ -86,6 +633,52 @@ fn spanish_waterfall_uses_office_axis_and_legend_resources() {
             !page_text_contains(&document, 0, text),
             "stale English resource: {text}"
         );
+    }
+}
+
+#[test]
+fn empty_toc_messages_use_the_japanese_and_french_office_ui_resources() {
+    // Existing configured Office PDFs: b9c7b075... (Japanese complex TOC),
+    // 13fe0e8d... (French simple TOC). The stored results use different text.
+    for (file, language, expected, authored) in [
+        (
+            "sw/qa/core/docnode/data/redline-ends-before-toc.docx",
+            "ja-JP",
+            "目次項目が見つかりません。",
+            "start",
+        ),
+        (
+            "sw/qa/core/exportdata/ooxml/pass/sdt-before-table.docx",
+            "fr-CA",
+            "Aucune entrée de table des matières n'a été trouvée.",
+            "Contents",
+        ),
+    ] {
+        let localized = docx_layout_with_options(
+            file,
+            &LayoutOptions {
+                ui_language: Some(language.into()),
+                format_locale: Some("zh-CN".into()),
+                default_document_language: Some("zh-CN".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_page_run_text_occurrences(&localized, 0, expected, 1);
+        assert_page_contains(&localized, 0, authored);
+
+        let english = docx_layout_with_options(
+            file,
+            &LayoutOptions {
+                ui_language: Some("en-US".into()),
+                format_locale: Some(language.into()),
+                default_document_language: Some(language.into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_page_run_text_occurrences(&english, 0, "NO TABLE OF CONTENTS ENTRIES FOUND.", 1);
+        assert_page_run_text_occurrences(&english, 0, expected, 0);
     }
 }
 
@@ -139,7 +732,7 @@ fn korean_style_ref_diagnostic_replaces_stale_english_heading_results() {
     for heading in ["Heading 1", "Heading 2"] {
         let message =
             format!("오류! 여기에 표시할 텍스트에 {heading} 을(를) 적용하려면 홈 탭을 사용하세요.");
-        ooxmlsdk_layout_test::assert_page_text_occurrences(&document, 0, &message, 2);
+        assert_page_run_text_occurrences(&document, 0, &message, 2);
     }
     assert_page_contains(&document, 0, "List items");
     assert_page_contains(&document, 0, "Baz");
@@ -225,6 +818,56 @@ fn paragraph_frame_default_anchor_and_explicit_y_follow_office() {
             fixture,
         );
     }
+}
+
+#[test]
+fn author_refresh_uses_the_core_text_value_before_applying_format_switches() {
+    use ooxmlsdk::schemas::opc_core_properties::Creator;
+
+    // Office configuration da652716470cac6adf670e9202f267c048ba6f64b2b87a0adf8f4632da13ae1f.
+    // The current Word PDF contains ANTONI and 16 June 2010, with no XML tags.
+    let file =
+        ooxmlsdk_layout_test::corpus_file("../Apache-POI/test-data/document/FieldCodes.docx");
+    let options = LayoutOptions {
+        field_update_datetime: Some(ooxmlsdk_layout::options::FieldUpdateDateTime {
+            year: 2026,
+            month: 9,
+            day: 11,
+            hour: 15,
+            minute: 57,
+            second: 0,
+        }),
+        ui_language: Some("ja-JP".into()),
+        format_locale: Some("zh-CN".into()),
+        default_document_language: Some("zh-CN".into()),
+        ..Default::default()
+    };
+    let mut package = WordprocessingDocument::new_from_file(file).unwrap();
+    for (author, expected) in [
+        ("Antoni", "ANTONI16 June 2010"),
+        ("<Antoni & Sons>", "<ANTONI & SONS>16 June 2010"),
+    ] {
+        let part = package.core_file_properties_part().unwrap();
+        part.root_element_mut(&mut package).unwrap().creator = Some(Creator {
+            xml_content: Some(author.into()),
+            ..Default::default()
+        });
+        let document = docx::layout_document(&package, &options).unwrap();
+        assert_eq!(document.pages.len(), 1);
+        let text: String = page_display_items(&document, 0)
+            .into_iter()
+            .filter_map(|item| match item {
+                DisplayItem::Text(run) => Some(run.text.as_ref()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(text, expected, "AUTHOR value {author:?}");
+    }
+
+    // Updating a different core value does not refresh the ordinary cache.
+    let cached = docx::layout_document(&package, &LayoutOptions::default()).unwrap();
+    assert_page_contains(&cached, 0, "ANTONI");
+    assert!(!page_text_contains(&cached, 0, "SONS"));
 }
 
 #[test]
@@ -792,6 +1435,62 @@ fn docx_tdf131728_advances_long_numbering_past_the_style_separator_heading() {
 }
 
 #[test]
+fn docx_rotated_vml_text_frame_keeps_one_upward_line_and_the_authored_inset() {
+    // Office configuration 2134117fd72bece5860c8a14e8a313b2208334aecb3aa652f800ef60acc11c6d.
+    // The authored -90-degree host rotates the 72pt left inset to the bottom;
+    // Office places the leading text edge at y=569.230pt on the page.
+    let document = docx_layout_with_options(
+        "sw/qa/extras/ooxmlexport/data/TextFrameRotation.docx",
+        &LayoutOptions {
+            ui_language: Some("de-DE".into()),
+            format_locale: Some("zh-CN".into()),
+            default_document_language: Some("zh-CN".into()),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(document.pages.len(), 1);
+    let text_runs: Vec<_> = page_display_items(&document, 0)
+        .into_iter()
+        .filter_map(|item| match item {
+            DisplayItem::Text(text) => Some(text),
+            _ => None,
+        })
+        .collect();
+    let text: String = text_runs.iter().map(|run| run.text.as_ref()).collect();
+    assert_eq!(text, "33333    33333    33333");
+    let leading = text_runs.first().copied().expect("rotated textbox text");
+    assert_close(
+        leading.origin.y.0,
+        569.23,
+        0.05,
+        "rotated left inset becomes the bottom edge",
+    );
+    // Display origins locate the line box; PDF adds the rotated font ascent
+    // when resolving its baseline. Center this line in the rotated inset box.
+    assert_close(
+        leading.origin.x.0 + leading.line_height.0 / 2.0,
+        172.2,
+        0.01,
+        "upward line box centered in the rotated inset rectangle",
+    );
+    for run in text_runs {
+        assert_close(
+            run.origin.x.0,
+            leading.origin.x.0,
+            0.001,
+            "all runs share one upward line",
+        );
+        assert_close(
+            run.style.rotation_degrees,
+            -90.0,
+            0.001,
+            "independent bottom-to-top writing",
+        );
+    }
+}
+
+#[test]
 // Sources: ECMA-376 Part 1 §§20.4.2.12, 20.4.3.5;
 // ../core/sw/qa/writerfilter/ooxml/ooxml.cxx::testNestedRuns
 fn docx_nested_runs_keeps_paragraph_relative_textbox_offset() {
@@ -880,18 +1579,24 @@ fn docx_mailmerge_uses_word_font_slots_for_latin1_delimiters() {
         },
     )
     .unwrap();
-    let style = document
-        .pages
-        .iter()
-        .flat_map(|page| &page.items)
-        .find_map(|item| match item {
-            DisplayItem::Text(text) if text.text == "»" => Some(&text.style),
-            _ => None,
-        })
-        .expect("mail-merge closing delimiter");
-
-    assert!(style.wordprocessingml_font_slots);
-    assert_eq!(style.font_family.as_deref(), Some("Calibri"));
+    // Adjacent Latin text may share a display run with either delimiter.
+    // Keep checking both delimiters' effective Word font state and count.
+    for delimiter in ['«', '»'] {
+        let mut count = 0;
+        for item in document.pages.iter().flat_map(|page| &page.items) {
+            let DisplayItem::Text(text) = item else {
+                continue;
+            };
+            let occurrences = text.text.matches(delimiter).count();
+            if occurrences == 0 {
+                continue;
+            }
+            count += occurrences;
+            assert!(text.style.wordprocessingml_font_slots);
+            assert_eq!(text.style.font_family.as_deref(), Some("Calibri"));
+        }
+        assert_eq!(count, 1, "mail-merge delimiter {delimiter}");
+    }
 }
 
 #[test]

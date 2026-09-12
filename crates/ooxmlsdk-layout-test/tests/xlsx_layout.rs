@@ -26,6 +26,426 @@ fn xlsx_workbooks_without_printable_pages_do_not_gain_a_blank_page() {
 }
 
 #[test]
+fn explicit_blank_print_areas_preserve_office_pages_and_manual_breaks() {
+    // The unchanged Office PDFs contain six and one completely blank pages.
+    // Sheets.xlsx has two disjoint areas plus a second sheet split 2 x 2 by
+    // manual breaks. LoadSheetsWithCommas.xlsx also has an implicit blank
+    // second sheet, which must remain absent from the output.
+    for (file, pages) in [
+        (
+            "../ClosedXML/ClosedXML.Tests/Resource/Examples/PageSetup/Sheets.xlsx",
+            6,
+        ),
+        (
+            "../ClosedXML/ClosedXML.Tests/Resource/TryToLoad/LoadSheetsWithCommas.xlsx",
+            1,
+        ),
+    ] {
+        let document = xlsx_layout(file).unwrap();
+        assert_eq!(document.pages.len(), pages, "{file}");
+        for page in 0..pages {
+            assert_page_size(&document, page, 595.32, 841.92);
+            assert!(
+                page_display_items(&document, page).is_empty(),
+                "{file}: page {page}"
+            );
+        }
+    }
+}
+
+#[test]
+fn removing_explicit_print_areas_leaves_the_same_blank_sheets_unprinted() {
+    use ooxmlsdk::parts::spreadsheet_document::SpreadsheetDocument;
+    use ooxmlsdk_layout::LayoutOptions;
+
+    for file in [
+        "../ClosedXML/ClosedXML.Tests/Resource/Examples/PageSetup/Sheets.xlsx",
+        "../ClosedXML/ClosedXML.Tests/Resource/TryToLoad/LoadSheetsWithCommas.xlsx",
+    ] {
+        let path = ooxmlsdk_layout_test::corpus_file(file);
+        let mut package = SpreadsheetDocument::new_from_file(&path).unwrap();
+        let workbook = package.workbook_part().unwrap();
+        let names = workbook
+            .root_element_mut(&mut package)
+            .unwrap()
+            .defined_names
+            .as_mut()
+            .unwrap();
+        assert!(!names.defined_name.is_empty());
+        // These sources only define print areas; leave worksheet data,
+        // dimensions, manual breaks, and every other setting unchanged.
+        assert!(
+            names
+                .defined_name
+                .iter()
+                .all(|name| name.name == "_xlnm.Print_Area")
+        );
+        names.defined_name.clear();
+        let document =
+            ooxmlsdk_layout::xlsx::layout_document(&package, &LayoutOptions::default()).unwrap();
+        assert!(document.pages.is_empty(), "{file}");
+    }
+}
+
+#[test]
+fn conditional_stop_if_true_preserves_office_value_and_only_lower_row_icons() {
+    // The original Office PDF prints only A1's 6 and three traffic lights.
+    // A1 satisfies a higher-priority stop rule with no differential style;
+    // showValue=0 on the later icon rule must not hide this stopped value.
+    let document = xlsx_layout(
+        "../ClosedXML/ClosedXML.Tests/Resource/Examples/ConditionalFormatting/CFStopIfTrue.xlsx",
+    )
+    .unwrap();
+    assert_eq!(document.pages.len(), 1);
+    assert_page_text_occurrences(&document, 0, "6", 1);
+    for value in ["1", "2", "3"] {
+        assert_page_text_occurrences(&document, 0, value, 0);
+    }
+    assert_page_image_count(&document, 0, 3);
+}
+
+#[test]
+fn conditional_icon_rules_obey_matching_stop_flags_and_priority() {
+    use ooxmlsdk::parts::spreadsheet_document::SpreadsheetDocument;
+    use ooxmlsdk::schemas::schemas_openxmlformats_org_spreadsheetml_2006_main as x;
+    use ooxmlsdk_layout::LayoutOptions;
+
+    let path = ooxmlsdk_layout_test::corpus_file(
+        "../ClosedXML/ClosedXML.Tests/Resource/Examples/ConditionalFormatting/CFStopIfTrue.xlsx",
+    );
+    // Exercise the same source values and icon rule with disabled stopping,
+    // a lower-priority stop, no matching value, the opposite match, and a
+    // higher-priority rule stored in another conditionalFormatting block.
+    for (label, stop, priority, operator, threshold, separate, visible, icons) in [
+        (
+            "no stop",
+            false,
+            1,
+            x::ConditionalFormattingOperatorValues::GreaterThan,
+            "5",
+            false,
+            &[][..],
+            4,
+        ),
+        (
+            "icon first",
+            true,
+            3,
+            x::ConditionalFormattingOperatorValues::GreaterThan,
+            "5",
+            false,
+            &[][..],
+            4,
+        ),
+        (
+            "no match",
+            true,
+            1,
+            x::ConditionalFormattingOperatorValues::GreaterThan,
+            "9",
+            false,
+            &[][..],
+            4,
+        ),
+        (
+            "opposite match",
+            true,
+            1,
+            x::ConditionalFormattingOperatorValues::LessThan,
+            "5",
+            false,
+            &["1", "2", "3"][..],
+            1,
+        ),
+        (
+            "separate block",
+            true,
+            1,
+            x::ConditionalFormattingOperatorValues::GreaterThan,
+            "5",
+            true,
+            &["6"][..],
+            3,
+        ),
+    ] {
+        let mut package = SpreadsheetDocument::new_from_file(&path).unwrap();
+        let workbook = package.workbook_part().unwrap();
+        let sheet = workbook.worksheet_parts(&package).next().unwrap();
+        let worksheet = sheet.root_element_mut(&mut package).unwrap();
+        let formats = &mut worksheet.conditional_formatting;
+        let rule = &mut formats[0].conditional_formatting_rule[0];
+        assert!(rule.format_id.is_none());
+        assert!(rule.icon_set.is_none());
+        rule.stop_if_true = Some(stop.into());
+        rule.priority = priority;
+        rule.operator = Some(operator);
+        rule.formula[0].xml_content = Some(threshold.to_owned());
+        if separate {
+            let mut earlier_rule = formats[0].clone();
+            earlier_rule.conditional_formatting_rule.truncate(1);
+            formats[0].conditional_formatting_rule.remove(0);
+            formats.push(earlier_rule);
+        }
+        let document =
+            ooxmlsdk_layout::xlsx::layout_document(&package, &LayoutOptions::default()).unwrap();
+        assert_eq!(document.pages.len(), 1, "{label}");
+        for value in ["6", "1", "2", "3"] {
+            assert_page_text_occurrences(
+                &document,
+                0,
+                value,
+                usize::from(visible.contains(&value)),
+            );
+        }
+        assert_page_image_count(&document, 0, icons);
+    }
+}
+
+#[test]
+fn narrow_general_numbers_use_scientific_notation_before_hashes() {
+    // Current configured Office PDFs use scientific notation when the
+    // authored General integer cannot fit its original column width.
+    for (file, expected) in [
+        ("../Apache-POI/test-data/spreadsheet/57914.xlsx", "1E+09"),
+        ("sc/qa/unit/data/xlsx/escape-unicode.xlsx", "1.16E+09"),
+    ] {
+        let document = xlsx_layout(file).unwrap();
+        let items = page_display_items(&document, 0);
+        assert!(
+            items.iter().any(|item| matches!(item,
+                DisplayItem::Text(text) if text.text == expected
+            )),
+            "{file}: missing exact General number {expected}"
+        );
+        assert!(
+            !items.iter().any(|item| matches!(item,
+                DisplayItem::Text(text) if text.text.starts_with("##")
+            )),
+            "{file}: numeric overflow hashes"
+        );
+    }
+}
+
+#[test]
+fn text_formula_date_escape_markers_are_not_painted() {
+    // The unchanged source's TEXT formula, cached value, and current Office
+    // PDF agree on 09 Mar 2016; the format's escape markers are not output.
+    let document = xlsx_layout("../Apache-POI/test-data/spreadsheet/59106.xlsx").unwrap();
+    assert_page_contains(&document, 0, "09 Mar 2016");
+    assert_page_not_contains(&document, 0, r"09\ Mar\ 2016");
+}
+
+#[test]
+fn rtl_worksheet_columns_follow_office_without_reversing_cell_text() {
+    use ooxmlsdk::parts::spreadsheet_document::SpreadsheetDocument;
+    use ooxmlsdk_layout::LayoutOptions;
+
+    // Office prints C1, B1, A1 from left to right. Its implicit column width
+    // differs from ours in both LTR and RTL sheets; compare placement against
+    // the same source's LTR geometry here. The configured PDF comparison
+    // separately retains its complete Office geometry checks.
+    let path = ooxmlsdk_layout_test::corpus_file(
+        "../ClosedXML/ClosedXML.Tests/Resource/Examples/Misc/RightToLeft.xlsx",
+    );
+    let mut snapshots = Vec::new();
+    for right_to_left in [false, true] {
+        let mut package = SpreadsheetDocument::new_from_file(&path).unwrap();
+        let workbook = package.workbook_part().unwrap();
+        let sheet = workbook.worksheet_parts(&package).next().unwrap();
+        let view = &mut sheet
+            .root_element_mut(&mut package)
+            .unwrap()
+            .sheet_views
+            .as_mut()
+            .unwrap()
+            .sheet_view[0];
+        assert!(view.right_to_left.unwrap().as_bool());
+        if !right_to_left {
+            view.right_to_left = Some(false.into());
+        }
+        let document =
+            ooxmlsdk_layout::xlsx::layout_document(&package, &LayoutOptions::default()).unwrap();
+        assert_eq!(document.pages.len(), 1);
+        assert_page_size(&document, 0, 595.32, 841.92);
+        let mut runs = page_display_items(&document, 0)
+            .into_iter()
+            .filter_map(|item| match item {
+                DisplayItem::Text(text) => Some(text.clone()),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        runs.sort_by(|left, right| left.text.cmp(&right.text));
+        assert_eq!(
+            runs.iter()
+                .map(|text| text.text.as_ref())
+                .collect::<Vec<_>>(),
+            ["A1", "B1", "C1"]
+        );
+        snapshots.push(runs);
+    }
+    let ltr = &snapshots[0];
+    let rtl = &snapshots[1];
+    let column_width = ltr[1].origin.x.0 - ltr[0].origin.x.0;
+    assert!(column_width > 0.0);
+    assert!((ltr[2].origin.x.0 - ltr[1].origin.x.0 - column_width).abs() < 0.001);
+    // The unchanged source authors equal 0.75-inch page margins. Reflect
+    // cell rectangles at the page center while preserving the LTR text inset.
+    let text_inset = ltr[0].origin.x.0 - 0.75 * 72.0;
+    assert!(text_inset > 0.0 && text_inset < column_width);
+    for (ltr_run, rtl_run) in ltr.iter().zip(rtl) {
+        let expected_x = 595.32 - ltr_run.origin.x.0 - column_width + 2.0 * text_inset;
+        assert!(
+            (rtl_run.origin.x.0 - expected_x).abs() < 0.001,
+            "{}: x={} expected {expected_x}",
+            rtl_run.text,
+            rtl_run.origin.x.0
+        );
+        assert_eq!(ltr_run.text, rtl_run.text);
+        assert_eq!(ltr_run.style, rtl_run.style);
+        assert_eq!(ltr_run.color, rtl_run.color);
+        assert_eq!(ltr_run.origin.y, rtl_run.origin.y);
+        assert_eq!(rtl_run.style.rotation_degrees, 0.0);
+    }
+    assert!(rtl[2].origin.x.0 < rtl[1].origin.x.0);
+    assert!(rtl[1].origin.x.0 < rtl[0].origin.x.0);
+}
+
+#[test]
+fn rtl_worksheet_keeps_general_and_authored_alignment_inside_each_cell() {
+    use ooxmlsdk::parts::spreadsheet_document::SpreadsheetDocument;
+    use ooxmlsdk::schemas::schemas_openxmlformats_org_spreadsheetml_2006_main as x;
+    use ooxmlsdk::sdk::SdkType;
+    use ooxmlsdk_layout::LayoutOptions;
+
+    let path = ooxmlsdk_layout_test::corpus_file(
+        "../ClosedXML/ClosedXML.Tests/Resource/Examples/Misc/RightToLeft.xlsx",
+    );
+    let mut snapshots = Vec::new();
+    for right_to_left in [false, true] {
+        let mut package = SpreadsheetDocument::new_from_file(&path).unwrap();
+        let workbook = package.workbook_part().unwrap();
+        let sheet = workbook.worksheet_parts(&package).next().unwrap();
+        *sheet.root_element_mut(&mut package).unwrap() = x::Worksheet::from_bytes(
+            format!(
+                r#"
+          <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+            <sheetViews><sheetView workbookViewId="0" rightToLeft="{right_to_left}"/></sheetViews>
+            <cols><col min="1" max="1" width="20" customWidth="1"/></cols>
+            <sheetData>
+              <row r="1"><c r="A1" s="1" t="inlineStr"><is><t>AB</t></is></c></row>
+              <row r="2"><c r="A2" s="2" t="inlineStr"><is><t>AB</t></is></c></row>
+              <row r="3"><c r="A3" s="3" t="inlineStr"><is><t>AB</t></is></c></row>
+              <row r="4"><c r="A4" s="0" t="inlineStr"><is><t>AB</t></is></c></row>
+              <row r="5"><c r="A5" s="0"><v>12</v></c></row>
+            </sheetData>
+          </worksheet>"#
+            )
+            .as_bytes(),
+        )
+        .unwrap();
+        let styles = workbook.workbook_styles_part(&package).unwrap();
+        *styles.root_element_mut(&mut package).unwrap() = x::Stylesheet::from_bytes(br#"
+          <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+            <fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>
+            <fills count="1"><fill><patternFill patternType="none"/></fill></fills>
+            <borders count="1"><border/></borders>
+            <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+            <cellXfs count="4">
+              <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+              <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment horizontal="left"/></xf>
+              <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment horizontal="center"/></xf>
+              <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment horizontal="right"/></xf>
+            </cellXfs>
+            <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+          </styleSheet>"#).unwrap();
+        let document =
+            ooxmlsdk_layout::xlsx::layout_document(&package, &LayoutOptions::default()).unwrap();
+        let mut runs = page_display_items(&document, 0)
+            .into_iter()
+            .filter_map(|item| match item {
+                DisplayItem::Text(text) if text.source.is_some() => Some(text.clone()),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        runs.sort_by_key(|text| text.source.as_ref().unwrap().path.clone());
+        assert_eq!(runs.len(), 5);
+        assert!(runs[0].origin.x.0 < runs[1].origin.x.0);
+        assert!(runs[1].origin.x.0 < runs[2].origin.x.0);
+        assert!((runs[0].origin.x.0 - runs[3].origin.x.0).abs() < 0.01);
+        snapshots.push(runs);
+    }
+    let shift = snapshots[1][0].origin.x.0 - snapshots[0][0].origin.x.0;
+    assert!(shift > 200.0);
+    for (ltr, rtl) in snapshots[0].iter().zip(&snapshots[1]) {
+        assert_eq!(ltr.text, rtl.text);
+        assert_eq!(ltr.style, rtl.style);
+        assert_eq!(ltr.color, rtl.color);
+        assert!((rtl.origin.x.0 - ltr.origin.x.0 - shift).abs() < 0.01);
+        assert_eq!(ltr.origin.y, rtl.origin.y);
+    }
+}
+
+#[test]
+fn rtl_worksheet_repeated_columns_and_merged_cells_keep_their_owners() {
+    use ooxmlsdk::parts::spreadsheet_document::SpreadsheetDocument;
+    use ooxmlsdk::schemas::schemas_openxmlformats_org_spreadsheetml_2006_main as x;
+    use ooxmlsdk::sdk::SdkType;
+    use ooxmlsdk_layout::LayoutOptions;
+
+    let path = ooxmlsdk_layout_test::corpus_file(
+        "../ClosedXML/ClosedXML.Tests/Resource/Examples/Misc/RightToLeft.xlsx",
+    );
+    let mut package = SpreadsheetDocument::new_from_file(&path).unwrap();
+    let workbook = package.workbook_part().unwrap();
+    workbook.root_element_mut(&mut package).unwrap().defined_names = Some(x::DefinedNames::from_bytes(br#"
+      <definedNames xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <definedName name="_xlnm.Print_Titles" localSheetId="0">RightToLeftSheet!$A:$A</definedName>
+        <definedName name="_xlnm.Print_Area" localSheetId="0">RightToLeftSheet!$A$1:$F$1</definedName>
+      </definedNames>"#).unwrap());
+    let sheet = workbook.worksheet_parts(&package).next().unwrap();
+    *sheet.root_element_mut(&mut package).unwrap() = x::Worksheet::from_bytes(br#"
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <sheetViews><sheetView workbookViewId="0" rightToLeft="1"/></sheetViews>
+        <cols><col min="1" max="6" width="10" customWidth="1"/></cols>
+        <sheetData><row r="1">
+          <c r="A1" t="inlineStr"><is><t>Title</t></is></c>
+          <c r="B1" t="inlineStr"><is><t>Merged</t></is></c>
+          <c r="D1" t="inlineStr"><is><t>D-value</t></is></c>
+          <c r="E1" t="inlineStr"><is><t>E-value</t></is></c>
+          <c r="F1" t="inlineStr"><is><t>F-value</t></is></c>
+        </row></sheetData>
+        <mergeCells count="1"><mergeCell ref="B1:C1"/></mergeCells>
+        <printOptions headings="1" gridLines="1"/>
+        <pageMargins left="0.75" right="0.75" top="0.75" bottom="0.75" header="0.3" footer="0.3"/>
+        <pageSetup paperSize="9" scale="100" usePrinterDefaults="0"/>
+        <colBreaks count="1" manualBreakCount="1"><brk id="3" min="0" max="1048575" man="1"/></colBreaks>
+      </worksheet>"#).unwrap();
+    let document =
+        ooxmlsdk_layout::xlsx::layout_document(&package, &LayoutOptions::default()).unwrap();
+    assert_eq!(document.pages.len(), 2);
+    assert_page_text_occurrences(&document, 0, "Merged", 1);
+    assert_page_text_occurrences(&document, 1, "Title", 1);
+    let items = page_display_items(&document, 1);
+    let x = |label: &str| {
+        items
+            .iter()
+            .find_map(|item| match item {
+                DisplayItem::Text(text) if text.text == label => Some(text.origin.x.0),
+                _ => None,
+            })
+            .unwrap_or_else(|| panic!("missing {label}"))
+    };
+    assert!(x("F-value") < x("E-value"));
+    assert!(x("E-value") < x("D-value"));
+    assert!(x("D-value") < x("Title"));
+    assert!(
+        x("Title") < x("1"),
+        "row heading stays on the sheet's leading side"
+    );
+    assert!(x("F") < x("E") && x("E") < x("D"));
+}
+
+#[test]
 fn boolean_cells_follow_office_ui_language_without_translating_strings() {
     use ooxmlsdk::parts::spreadsheet_document::SpreadsheetDocument;
     use ooxmlsdk_layout::LayoutOptions;
@@ -330,6 +750,7 @@ fn negative_prefixed_numbers_keep_automatic_and_authored_signs_separate() {
         assert_page_text_occurrences(&document, 0, "(NEG 5.20)", 1);
         assert_page_not_contains(&document, 0, "-(NEG 5.20)");
         if name == "Output" {
+            assert_page_text_occurrences(&document, 0, "P 1.20", 1);
             assert_page_text_occurrences(&document, 0, "N 1.20", 1);
             assert_page_not_contains(&document, 0, "-N 1.20");
         }
@@ -429,9 +850,13 @@ fn missing_workbook_theme_preserves_office_table_colors() {
         a: 255,
     });
     assert!(
-        page_display_items(&document, 0).iter().any(|item| matches!(
-            item, DisplayItem::Path(path) if path.fill == accent
-        )),
+        page_display_items(&document, 0)
+            .iter()
+            .any(|item| match item {
+                DisplayItem::Rect(rect) => rect.fill == accent,
+                DisplayItem::Path(path) => path.fill == accent,
+                _ => false,
+            }),
         "missing Office default accent1 table header"
     );
 }
@@ -519,19 +944,20 @@ fn text_conditional_formats_share_spreadsheet_function_semantics() {
         let items = page_display_items(&document, 0);
         let fills = items
             .iter()
-            .filter_map(|item| match item {
-                DisplayItem::Path(path)
-                    if path.fill
-                        == Fill::Solid(Color {
-                            r: 255,
-                            g: 0,
-                            b: 0,
-                            a: 255,
-                        }) =>
-                {
-                    Some(path.bounds)
-                }
-                _ => None,
+            .filter_map(|item| {
+                let (fill, bounds) = match item {
+                    DisplayItem::Rect(rect) => (&rect.fill, rect.bounds),
+                    DisplayItem::Path(path) => (&path.fill, path.bounds),
+                    _ => return None,
+                };
+                (*fill
+                    == Fill::Solid(Color {
+                        r: 255,
+                        g: 0,
+                        b: 0,
+                        a: 255,
+                    }))
+                .then_some(bounds)
             })
             .collect::<Vec<_>>();
         assert_eq!(fills.len(), expected_rows.len(), "{kind}: {needle}");
@@ -540,12 +966,16 @@ fn text_conditional_formats_share_spreadsheet_function_semantics() {
             let y = items
                 .iter()
                 .find_map(|item| match item {
-                    DisplayItem::Text(text) if text.text.as_ref() == label => Some(text.origin.y.0),
+                    DisplayItem::Text(text) if text.text.as_ref() == label => {
+                        // Use the line interior: the top origin can lie exactly
+                        // on the shared boundary of two adjacent row fills.
+                        Some(text.origin.y.0 + text.line_height.0 * 0.5)
+                    }
                     _ => None,
                 })
                 .expect("row label remains visible");
             let highlighted = fills.iter().any(|bounds| {
-                y >= bounds.origin.y.0 && y <= bounds.origin.y.0 + bounds.size.height.0
+                y >= bounds.origin.y.0 && y < bounds.origin.y.0 + bounds.size.height.0
             });
             assert_eq!(
                 highlighted,
@@ -605,7 +1035,12 @@ fn header_footer_clock_uses_the_supplied_time_and_format_locale() {
             },
         )
         .unwrap();
-        assert_page_contains(&document, 0, expected);
+        assert!(
+            page_display_items(&document, 0).iter().any(|item| matches!(
+                item, DisplayItem::Text(text) if text.text == expected
+            )),
+            "expected exact short-time header {expected}"
+        );
         assert_page_not_contains(&document, 0, "D - - T");
     }
 }
@@ -656,6 +1091,7 @@ fn error_conditional_formats_fill_only_the_matching_rows() {
         let fills = items
             .iter()
             .filter_map(|item| match item {
+                DisplayItem::Rect(rect) if rect.fill == red => Some(rect.bounds),
                 DisplayItem::Path(path) if path.fill == red => Some(path.bounds),
                 _ => None,
             })
