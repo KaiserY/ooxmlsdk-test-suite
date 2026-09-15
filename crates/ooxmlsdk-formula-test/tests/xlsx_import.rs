@@ -563,6 +563,66 @@ fn evaluates_apache_poi_structured_reference_formula_fixture() {
 }
 
 #[test]
+fn unavailable_user_functions_replace_cached_results_like_office() {
+    // Office's macros-disabled exports recalculate these VBA UDFs as #NAME?.
+    // Use evaluated_value so the original cached 42 / strings cannot pass.
+    for (file, cells) in [
+        (
+            "LibreOffice/sc/qa/unit/data/xlsm/vba-user-function.xlsm",
+            &["A1"][..],
+        ),
+        (
+            "Apache-POI/test-data/spreadsheet/testNames.xlsm",
+            &["B1", "C1", "A5", "A6"][..],
+        ),
+    ] {
+        let model = recalculated_workbook(file);
+        let sheet = sheet_id(&model, "Sheet1");
+        for cell in cells {
+            assert_eq!(
+                evaluated_formula_value(&model, sheet, cell),
+                Some(FormulaValue::Error(FormulaErrorValue::Name)),
+                "{file} {cell}"
+            );
+        }
+    }
+}
+
+#[test]
+fn evaluates_structured_references_with_backslash_table_names() {
+    // The configured Office golden prints 209, one, two on the first page
+    // and the six squared values on the table sheet.
+    let model = recalculated_workbook("Apache-POI/test-data/spreadsheet/StructuredReferences.xlsx");
+    let formulas = sheet_id(&model, "Formulas");
+    for (reference, expected) in [
+        ("A1", FormulaValue::Number(209.0)),
+        ("A2", FormulaValue::String("one".into())),
+        ("A3", FormulaValue::String("two".into())),
+    ] {
+        assert_eq!(
+            evaluated_formula_value(&model, formulas, reference),
+            Some(expected),
+            "{reference}"
+        );
+    }
+    let table = sheet_id(&model, "Table");
+    for (reference, expected) in [
+        ("A2", 1.0),
+        ("A3", 4.0),
+        ("A4", 9.0),
+        ("A5", 25.0),
+        ("A6", 49.0),
+        ("A7", 121.0),
+    ] {
+        assert_eq!(
+            evaluated_formula_value(&model, table, reference),
+            Some(FormulaValue::Number(expected)),
+            "{reference}"
+        );
+    }
+}
+
+#[test]
 fn evaluates_apache_poi_formula_eval_test_data_copy_fixture() {
     // Source: Apache POI
     // poi-ooxml/src/test/java/org/apache/poi/xssf/usermodel/TestFormulaEvaluatorOnXSSF.java.
@@ -857,7 +917,8 @@ fn imports_spill_formula_metadata_from_xlsx_fixture() {
         .get(&address("G2"))
         .and_then(|record| record.formula.as_ref())
         .expect("G2 formula");
-    assert_eq!(g2.formula_kind, FormulaKind::Array);
+    // The serialized array has cm=1 pointing to XLDAPR/fDynamic=1.
+    assert_eq!(g2.formula_kind, FormulaKind::DynamicArray);
     assert_eq!(g2.formula_text, "$A$2:$A$5");
     assert_eq!(
         g2.cached_value,
@@ -1090,9 +1151,16 @@ fn imports_cross_sheet_formula_persistence_regression_from_xlsx_fixture() {
 
     assert_eq!(
         formula_text(&model, sheet, "A1"),
-        "SUM($'time (misc) - last'.B1:$'time (pnrst)'.B1)"
+        "SUM('time (pnrst)':'time (misc) - last'!B1:B1)"
     );
-    assert_cell_value(&model, sheet, "A1", FormulaValue::Number(7.0));
+    // Office rejects separately quoted 3D endpoints; retain the source text
+    // instead of rewriting it into a different Calc formula.
+    assert_cell_value(
+        &model,
+        sheet,
+        "A1",
+        FormulaValue::Error(FormulaErrorValue::Name),
+    );
 }
 
 #[test]
@@ -1271,4 +1339,44 @@ fn imports_table_total_row_formula_caches_from_xlsx_fixtures() {
         FormulaValue::String("Total # Of Companies".into()),
     );
     assert_cell_value(&full_column, first_sheet, "K2", FormulaValue::Number(1.0));
+}
+
+#[test]
+fn index_recalculates_broken_array_references_as_office_ref_errors() {
+    // Apache POI 64473: the configured Office replay has four #REF! cells.
+    // Check evaluated_value explicitly so the persisted error cannot mask
+    // an unsupported evaluation or a regression to #VALUE!.
+    let model = recalculated_workbook("Apache-POI/test-data/openxml4j/64473.xlsx");
+    let sheet = &model.sheets[0];
+    for reference in ["A1", "A2", "A3", "A4"] {
+        let cell = sheet.cells.get(&address(reference)).expect("array cell");
+        let formula = cell.formula.as_ref().expect("authored INDEX array");
+        assert_eq!(
+            formula.evaluated_value,
+            Some(FormulaValue::Error(FormulaErrorValue::Ref)),
+            "{reference}"
+        );
+    }
+}
+
+#[test]
+fn sheet_qualified_ref_errors_recalculate_imported_defined_names() {
+    // Apache POI 49783: sale_1 and sale_2 contain Sheet1!#REF!.
+    // Office returns #REF! for their product and #NAME? for aaa*sale_1.
+    let model = recalculated_workbook("Apache-POI/test-data/spreadsheet/49783.xlsx");
+    for (reference, expected) in [
+        ("A1", FormulaErrorValue::Ref),
+        ("A2", FormulaErrorValue::Ref),
+        ("B2", FormulaErrorValue::Name),
+    ] {
+        let formula = model.sheets[0].cells[&address(reference)]
+            .formula
+            .as_ref()
+            .expect("formula cell");
+        assert_eq!(
+            formula.evaluated_value,
+            Some(FormulaValue::Error(expected)),
+            "{reference}"
+        );
+    }
 }

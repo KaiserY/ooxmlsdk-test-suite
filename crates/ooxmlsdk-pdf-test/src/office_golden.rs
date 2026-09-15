@@ -1832,6 +1832,15 @@ fn parse_pdf_style_color(value: &str) -> Option<([u8; 3], u8)> {
 }
 
 fn canonical_pdf_base_font_name(font_name: &str) -> String {
+    // Excel can write the localized family name in a simple TrueType font's
+    // BaseFont, while another producer writes its PostScript name. The font
+    // embedded in tdf134392's Office PDF declares both SimSun and 宋体 in its
+    // name table. Resolve this exact alias before ASCII normalization would
+    // erase it; neither another CJK family nor a styled face is equivalent.
+    let font_name = match font_name {
+        "宋体" => "SimSun",
+        other => other,
+    };
     let mut normalized = font_name
         .chars()
         .filter(|character| character.is_ascii_alphanumeric())
@@ -5011,6 +5020,13 @@ mod tests {
 
     #[test]
     fn base_font_name_ignores_foundry_syntax_but_preserves_style() {
+        assert_eq!(canonical_pdf_base_font_name("宋体"), "simsun");
+        for different in ["NSimSun", "Arial", "SimSun,Bold", "SimSun,Italic", "新宋体"] {
+            assert_ne!(
+                canonical_pdf_base_font_name("宋体"),
+                canonical_pdf_base_font_name(different)
+            );
+        }
         assert_eq!(canonical_pdf_base_font_name("ArialMT"), "arial");
         assert_eq!(canonical_pdf_base_font_name("Arial"), "arial");
         assert_eq!(canonical_pdf_base_font_name("Arial-BoldMT"), "arialbold");

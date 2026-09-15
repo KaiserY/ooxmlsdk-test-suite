@@ -46,6 +46,44 @@ fn docx_embedded_emf_exports_as_visible_pdf_image() {
 }
 
 #[test]
+fn xlsx_activex_preview_captions_survive_pdf_export() {
+    // Excel prints these captions from the EMF previews. They are not
+    // standalone text runs in the worksheet layout display list.
+    for (file, pages, captions) in [
+        ("activex_checkbox.xlsx", 1, &[(0, "Custom Caption", 1)][..]),
+        (
+            "tdf111980_radioButtons.xlsx",
+            2,
+            &[
+                (0, "ActiveX button1", 1),
+                (0, "ActiveX button2", 1),
+                (0, "ActiveX nogroup2", 2),
+                (1, "ActiveX 3", 1),
+            ][..],
+        ),
+    ] {
+        let fixture = libreoffice_fixture(&format!("sc/qa/unit/data/xlsx/{file}"));
+        let summary = pdf_summary_for_fixture(&fixture).unwrap();
+        assert_eq!(summary.page_count, pages, "{file}");
+        for &(page_index, caption, count) in captions {
+            let text = summary
+                .text_segments
+                .iter()
+                .filter(|segment| segment.page_index == page_index)
+                .map(|segment| segment.text.as_str())
+                .collect::<Vec<_>>()
+                .join(" ");
+            let text = text.split_whitespace().collect::<Vec<_>>().join(" ");
+            assert_eq!(
+                text.matches(caption).count(),
+                count,
+                "{file} page {page_index}: {text}"
+            );
+        }
+    }
+}
+
+#[test]
 // Sources: [MS-XLSX] 2.5.3, [MS-EMF] 2.3.1.1, and
 // ../msdn-code-gallery-microsoft/**/GenPrint Print Processor Sample/C++/emf.cpp.
 fn xlsx_ole_emf_keeps_excel_grid_placement_and_alpha_blend_content() {

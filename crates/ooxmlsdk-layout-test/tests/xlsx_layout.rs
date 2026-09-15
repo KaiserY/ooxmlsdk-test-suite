@@ -7,6 +7,317 @@ use ooxmlsdk_layout_test::{
 };
 
 #[test]
+fn serial_zero_formula_dates_fit_the_original_excel_cells() {
+    use ooxmlsdk::parts::spreadsheet_document::SpreadsheetDocument;
+    use ooxmlsdk_layout::LayoutOptions;
+
+    // The unchanged Office export of 61652.xlsx shows January 0, 1900.
+    // Formatting it as December 31, 1899 overflows A1/A2 and prints hashes.
+    let package = SpreadsheetDocument::new_from_file(ooxmlsdk_layout_test::corpus_file(
+        "../Apache-POI/test-data/spreadsheet/61652.xlsx",
+    ))
+    .unwrap();
+    let document = ooxmlsdk_layout::xlsx::layout_document(
+        &package,
+        &LayoutOptions {
+            format_locale: Some("zh-CN".into()),
+            ..LayoutOptions::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(document.pages.len(), 11);
+    for page in [0, 1] {
+        assert_page_text_occurrences(&document, page, "1900/1/0", 2);
+        assert_page_not_contains(&document, page, "########");
+        assert_page_not_contains(&document, page, "1899/");
+    }
+}
+
+#[test]
+fn automatic_rows_convert_through_the_normal_font_print_grid() {
+    use ooxmlsdk::parts::spreadsheet_document::SpreadsheetDocument;
+    use ooxmlsdk::schemas::schemas_openxmlformats_org_spreadsheetml_2006_main as x;
+    use ooxmlsdk::sdk::SdkType;
+    use ooxmlsdk_layout::LayoutOptions;
+
+    // Configured Excel exports and native screen/printer EMFs of POI 64473:
+    // all nine Calibri 24 controls have the same 30.75pt screen row height.
+    // The Normal font changes the printed row spacing. The last controls
+    // distinguish an all-column override from partly/wholly unstyled columns.
+    let cases = [
+        ("Arial", 10, 24., "all", 29.76),
+        ("Arial", 11, 24., "all", 31.08),
+        ("Arial", 12, 24., "all", 30.24),
+        ("Calibri", 11, 24., "all", 31.32),
+        ("Times New Roman", 10, 24., "all", 29.76),
+        ("SimSun", 10, 24., "all", 29.76),
+        ("SimSun", 11, 24., "all", 30.84),
+        ("SimSun", 12, 24., "all", 28.56),
+        ("DengXian", 11, 24., "all", 27.60),
+        ("Arial", 10, 11., "all", 13.80),
+        ("SimSun", 11, 11., "all", 14.28),
+        ("SimSun", 11, 11., "single", 14.64),
+        ("SimSun", 11, 11., "none", 14.64),
+    ];
+    for (family, normal_size, cell_size, columns, expected) in cases {
+        let mut package = SpreadsheetDocument::new_from_file(ooxmlsdk_layout_test::corpus_file(
+            "../Apache-POI/test-data/openxml4j/64473.xlsx",
+        ))
+        .unwrap();
+        let workbook = package.workbook_part().unwrap();
+        let sheet_id = workbook.root_element(&package).unwrap().sheets.sheet[0]
+            .id
+            .clone();
+        let Some(ooxmlsdk::parts::PartRef::WorksheetPart(sheet)) =
+            workbook.get_part_by_id(&package, &sheet_id)
+        else {
+            panic!("missing worksheet");
+        };
+        let styles = workbook.workbook_styles_part(&package).unwrap();
+        let fonts = &mut styles
+            .root_element_mut(&mut package)
+            .unwrap()
+            .fonts
+            .as_mut()
+            .unwrap()
+            .xml_children;
+        let charset = if matches!(family, "SimSun" | "DengXian") {
+            134
+        } else {
+            1
+        };
+        fonts[0] = x::FontsChoice::Font(x::Font::from_bytes(format!(r#"<font xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sz val="{normal_size}"/><name val="{family}"/><charset val="{charset}"/></font>"#).as_bytes()).unwrap());
+        let x::FontsChoice::Font(font) = &mut fonts[1] else {
+            panic!("missing cell font");
+        };
+        for choice in &mut font.font_choice {
+            if let x::FontChoice::FontSize(size) = choice {
+                size.val = cell_size;
+            }
+        }
+        let worksheet = sheet.root_element_mut(&mut package).unwrap();
+        for column in worksheet
+            .columns
+            .iter_mut()
+            .flat_map(|columns| &mut columns.column)
+        {
+            if columns == "none" || columns == "single" && column.min != 1 {
+                column.style = None;
+            }
+        }
+        let document = ooxmlsdk_layout::xlsx::layout_document(
+            &package,
+            &LayoutOptions {
+                ui_language: Some("ko-KR".into()),
+                format_locale: Some("zh-CN".into()),
+                default_document_language: Some("zh-CN".into()),
+                ..LayoutOptions::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(document.pages.len(), 1);
+        let mut baselines = page_display_items(&document, 0)
+            .iter()
+            .filter_map(|item| match item {
+                DisplayItem::Text(run) if run.text == "#REF!" => Some(run.origin.y.0),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        baselines.sort_by(f32::total_cmp);
+        assert_eq!(baselines.len(), 4);
+        for pair in baselines.windows(2) {
+            assert!(
+                (pair[1] - pair[0] - expected).abs() < 0.02,
+                "{family} {normal_size}, Calibri {cell_size}, columns={columns}: {baselines:?}, expected step {expected}"
+            );
+        }
+    }
+}
+
+#[test]
+fn automatic_mixed_font_rows_share_only_bottom_aligned_baselines() {
+    use ooxmlsdk::parts::spreadsheet_document::SpreadsheetDocument;
+    use ooxmlsdk::schemas::schemas_openxmlformats_org_spreadsheetml_2006_main as x;
+    use ooxmlsdk_layout::LayoutOptions;
+
+    // Three Office controls of the TNR 10 / SimSun 10 row grid. A1 and A3
+    // have the same font and alignment, so their baseline distance measures
+    // the combined height of rows 1 and 2, including the blank styled row.
+    for (alignment, expected) in [
+        (x::VerticalAlignmentValues::Center, 25.44),
+        (x::VerticalAlignmentValues::Top, 25.44),
+        (x::VerticalAlignmentValues::Bottom, 26.16),
+    ] {
+        let mut package = SpreadsheetDocument::new_from_file(ooxmlsdk_layout_test::corpus_file(
+            "sc/qa/unit/data/xlsx/tdf130104_indent.xlsx",
+        ))
+        .unwrap();
+        let workbook = package.workbook_part().unwrap();
+        let styles = workbook.workbook_styles_part(&package).unwrap();
+        let styles = styles.root_element_mut(&mut package).unwrap();
+        for format in styles
+            .cell_formats
+            .as_mut()
+            .unwrap()
+            .xml_children
+            .iter_mut()
+            .filter_map(|child| match child {
+                x::CellFormatsChoice::CellFormat(format) => Some(format),
+                _ => None,
+            })
+        {
+            format.alignment.as_mut().unwrap().vertical = Some(alignment);
+        }
+        let document = ooxmlsdk_layout::xlsx::layout_document(
+            &package,
+            &LayoutOptions {
+                ui_language: Some("ko-KR".into()),
+                format_locale: Some("zh-CN".into()),
+                default_document_language: Some("zh-CN".into()),
+                ..LayoutOptions::default()
+            },
+        )
+        .unwrap();
+        let items = page_display_items(&document, 0);
+        let baselines = ["Indent by 0", "Indent by 1"].map(|text| {
+            items
+                .iter()
+                .find_map(|item| match item {
+                    DisplayItem::Text(run) if run.text == text => Some(run.origin.y.0),
+                    _ => None,
+                })
+                .expect("missing indent text")
+        });
+        assert!(
+            (baselines[1] - baselines[0] - expected).abs() < 0.02,
+            "{alignment:?}: {baselines:?}, expected distance {expected}"
+        );
+    }
+}
+
+#[test]
+fn automatic_thick_rows_include_blank_cell_fonts_and_ignore_height_caches() {
+    use ooxmlsdk::parts::spreadsheet_document::SpreadsheetDocument;
+    use ooxmlsdk::schemas::schemas_openxmlformats_org_spreadsheetml_2006_main as x;
+    use ooxmlsdk::sdk::SdkType;
+    use ooxmlsdk_layout::LayoutOptions;
+
+    // Configured Excel controls of POI 61652.xlsx. B8..B12 are top-aligned
+    // markers: bottom-aligned cells share a row baseline and cannot measure
+    // grid heights independently. N9:S9 remain blank but carry font 2.
+    // Compare automatic rows after realizing each on Office's 600-DPI grid.
+    // The layout can already carry the Normal font's printer height, which
+    // differs slightly from COM.Top's logical screen height.
+    for (font_size, expected_height) in [(11.0, 13.92), (14.0, 18.0), (18.0, 23.64)] {
+        for cache in [None, Some(60.0)] {
+            let mut package = SpreadsheetDocument::new_from_file(
+                ooxmlsdk_layout_test::corpus_file("../Apache-POI/test-data/spreadsheet/61652.xlsx"),
+            )
+            .unwrap();
+            let workbook = package.workbook_part().unwrap();
+            let sheet_id = workbook
+                .root_element(&package)
+                .unwrap()
+                .sheets
+                .sheet
+                .iter()
+                .find(|sheet| sheet.name == "IRPPCalc")
+                .unwrap()
+                .id
+                .clone();
+            let Some(ooxmlsdk::parts::PartRef::WorksheetPart(sheet)) =
+                workbook.get_part_by_id(&package, &sheet_id)
+            else {
+                panic!("missing IRPPCalc");
+            };
+            let styles = workbook.workbook_styles_part(&package).unwrap();
+            let styles = styles.root_element_mut(&mut package).unwrap();
+            let x::FontsChoice::Font(font) = &mut styles.fonts.as_mut().unwrap().xml_children[2]
+            else {
+                panic!("missing row font");
+            };
+            for choice in &mut font.font_choice {
+                if let x::FontChoice::FontSize(size) = choice {
+                    size.val = font_size;
+                }
+            }
+            let formats = styles.cell_formats.as_mut().unwrap();
+            assert!(
+                formats
+                    .xml_children
+                    .iter()
+                    .all(|child| matches!(child, x::CellFormatsChoice::CellFormat(_)))
+            );
+            let top_style = formats.xml_children.len();
+            formats.xml_children.push(x::CellFormatsChoice::CellFormat(Box::new(x::CellFormat::from_bytes(br#"<xf xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment vertical="top"/></xf>"#).unwrap())));
+            formats.count = Some(formats.xml_children.len() as u32);
+            let worksheet = sheet.root_element_mut(&mut package).unwrap();
+            for index in 8..=12 {
+                if !worksheet
+                    .sheet_data
+                    .row
+                    .iter()
+                    .any(|row| row.row_index == Some(index))
+                {
+                    worksheet.sheet_data.row.push(x::Row {
+                        row_index: Some(index),
+                        ..Default::default()
+                    });
+                }
+                let row = worksheet
+                    .sheet_data
+                    .row
+                    .iter_mut()
+                    .find(|row| row.row_index == Some(index))
+                    .unwrap();
+                if matches!(index, 8 | 9) {
+                    row.height = cache;
+                }
+                assert!(
+                    !row.cell
+                        .iter()
+                        .any(|cell| cell.cell_reference.as_deref() == Some(&format!("B{index}")))
+                );
+                row.cell.push(x::Cell::from_bytes(format!(r#"<c xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" r="B{index}" s="{top_style}" t="n"><v>{}</v></c>"#, 9000+index).as_bytes()).unwrap());
+                row.cell.sort_by_key(|cell| cell.cell_reference.clone());
+            }
+            worksheet.sheet_data.row.sort_by_key(|row| row.row_index);
+            let document = ooxmlsdk_layout::xlsx::layout_document(
+                &package,
+                &LayoutOptions {
+                    ui_language: Some("es-MX".into()),
+                    format_locale: Some("zh-CN".into()),
+                    default_document_language: Some("zh-CN".into()),
+                    ..LayoutOptions::default()
+                },
+            )
+            .unwrap();
+            let items = page_display_items(&document, 0);
+            let markers = (8..=12)
+                .map(|row| {
+                    let text = (9000 + row).to_string();
+                    items
+                        .iter()
+                        .find_map(|item| match item {
+                            DisplayItem::Text(run) if run.text == text => Some(run.origin.y.0),
+                            _ => None,
+                        })
+                        .expect("missing top-aligned marker")
+                })
+                .collect::<Vec<_>>();
+            for (pair, expected) in markers.windows(2).zip([13.92, expected_height]) {
+                let printed_height =
+                    ooxmlsdk_layout::units::quantize_points_to_office_print_grid(pair[1] - pair[0]);
+                assert!(
+                    (printed_height - expected).abs() < 0.02,
+                    "font={font_size}, cache={cache:?}, expected={expected}, markers={markers:?}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
 fn xlsx_workbooks_without_printable_pages_do_not_gain_a_blank_page() {
     // Excel exported zero pages for these unchanged sources in both the
     // configured campaign and the 2026-09-12 print/all-pages recovery probe.
@@ -22,6 +333,97 @@ fn xlsx_workbooks_without_printable_pages_do_not_gain_a_blank_page() {
             "{file}: {} pages",
             document.pages.len()
         );
+    }
+}
+
+#[test]
+fn empty_sheet_headers_print_when_a_visible_cell_supplies_content() {
+    use ooxmlsdk::parts::spreadsheet_document::SpreadsheetDocument;
+    use ooxmlsdk::schemas::schemas_openxmlformats_org_spreadsheetml_2006_main as x;
+    use ooxmlsdk::sdk::SdkType;
+    use ooxmlsdk_layout::LayoutOptions;
+
+    // Excel's unchanged sources export zero pages. Adding only A1 produces
+    // one page and preserves these headers, including their colors/styles.
+    // See the Office controls linked from xlsx-legacy-assertion-resolution.md.
+    for (file, sheet_index) in [
+        ("hidden_sheets.xlsx", 1),
+        ("tdf134459_HeaderFooterColor.xlsx", 0),
+        ("tdf134817_HeaderFooterTextWith2Section.xlsx", 0),
+        ("tdf134826.xlsx", 0),
+    ] {
+        let path = ooxmlsdk_layout_test::corpus_file(&format!("sc/qa/unit/data/xlsx/{file}"));
+        let mut package = SpreadsheetDocument::new_from_file(path).unwrap();
+        let sheet = package
+            .workbook_part()
+            .unwrap()
+            .worksheet_parts(&package)
+            .nth(sheet_index)
+            .unwrap();
+        let rows = &mut sheet.root_element_mut(&mut package).unwrap().sheet_data.row;
+        assert!(rows.is_empty());
+        rows.push(x::Row::from_bytes(br#"<row xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" r="1"><c r="A1" t="inlineStr"><is><t>Office print probe</t></is></c></row>"#).unwrap());
+        let document = ooxmlsdk_layout::xlsx::layout_document(
+            &package,
+            &LayoutOptions {
+                source_file_name: Some(file.into()),
+                ..LayoutOptions::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(document.pages.len(), 1, "{file}");
+        assert_page_contains(&document, 0, "Office print probe");
+        match file {
+            "hidden_sheets.xlsx" => {
+                assert_page_contains(&document, 0, "Sheet2");
+                assert_page_not_contains(&document, 0, "Sheet1");
+                assert_page_not_contains(&document, 0, "Sheet3");
+            }
+            "tdf134459_HeaderFooterColor.xlsx" => {
+                for text in ["l", "c", "r"] {
+                    assert_eq!(
+                        page_display_items(&document, 0)
+                            .iter()
+                            .filter(|item| matches!(
+                                item, DisplayItem::Text(run) if run.text == text
+                            ))
+                            .count(),
+                        2,
+                        "header/footer text {text}"
+                    );
+                }
+                let colors = page_display_items(&document, 0)
+                    .iter()
+                    .filter_map(|item| match item {
+                        DisplayItem::Text(run) if matches!(run.text.as_ref(), "l" | "c" | "r") => {
+                            Some(run.color)
+                        }
+                        _ => None,
+                    })
+                    .collect::<Vec<_>>();
+                for (r, g, b) in [(192, 96, 64), (76, 55, 137), (100, 207, 95), (205, 21, 170)] {
+                    let color = Color { r, g, b, a: 255 };
+                    assert!(
+                        colors.contains(&color),
+                        "missing header/footer color {color:?}"
+                    );
+                }
+            }
+            "tdf134817_HeaderFooterTextWith2Section.xlsx" => {
+                for text in ["aaa", "bbb", "camb", "dant"] {
+                    assert_page_contains(&document, 0, text);
+                }
+            }
+            "tdf134826.xlsx" => {
+                for (text, bold, italic) in [("Bold", true, false), ("Italic", false, true)] {
+                    assert!(page_display_items(&document, 0).iter().any(|item| matches!(
+                        item, DisplayItem::Text(run)
+                        if run.text == text && run.style.bold == bold && run.style.italic == italic
+                    )), "missing styled header {text}");
+                }
+            }
+            _ => unreachable!(),
+        }
     }
 }
 
@@ -862,6 +1264,79 @@ fn missing_workbook_theme_preserves_office_table_colors() {
 }
 
 #[test]
+fn manual_excel_legend_insets_preserve_visible_entries_and_positions() {
+    use ooxmlsdk::parts::spreadsheet_document::SpreadsheetDocument;
+    use ooxmlsdk::simple_type::Coordinate32Value;
+    use ooxmlsdk_layout::LayoutOptions;
+
+    let path =
+        ooxmlsdk_layout_test::corpus_file("chart2/qa/extras/data/xlsx/legend_manual_layout.xlsx");
+    let mut original = None;
+    // Excel 20326 prints identical labels for all five body-inset controls.
+    for insets in [
+        None,
+        Some([0, 0, 0, 0]),
+        Some([91440, 91440, 45720, 45720]),
+        Some([0, 0, 45720, 45720]),
+        Some([91440, 91440, 0, 0]),
+    ] {
+        let mut package = SpreadsheetDocument::new_from_file(&path).unwrap();
+        if let Some([left, right, top, bottom]) = insets {
+            let workbook = package.workbook_part().unwrap();
+            let drawings = workbook
+                .worksheet_parts(&package)
+                .filter_map(|sheet| sheet.drawings_part(&package))
+                .collect::<Vec<_>>();
+            let charts = drawings
+                .iter()
+                .flat_map(|drawing| drawing.chart_parts(&package))
+                .collect::<Vec<_>>();
+            assert_eq!(charts.len(), 1);
+            let space = charts[0].root_element_mut(&mut package).unwrap();
+            let body = &mut space
+                .chart
+                .legend
+                .as_mut()
+                .unwrap()
+                .text_properties
+                .as_mut()
+                .unwrap()
+                .body_properties;
+            body.left_inset = Some(Coordinate32Value::Emu(left));
+            body.right_inset = Some(Coordinate32Value::Emu(right));
+            body.top_inset = Some(Coordinate32Value::Emu(top));
+            body.bottom_inset = Some(Coordinate32Value::Emu(bottom));
+        }
+        let document = ooxmlsdk_layout::xlsx::layout_document(
+            &package,
+            &LayoutOptions {
+                ui_language: Some("ko-KR".into()),
+                format_locale: Some("zh-CN".into()),
+                ..LayoutOptions::default()
+            },
+        )
+        .unwrap();
+        let entries = page_display_items(&document, 1)
+            .into_iter()
+            .filter_map(|item| match item {
+                DisplayItem::Text(run) if matches!(run.text.as_ref(), "col1" | "col2") => {
+                    Some((run.text.to_string(), run.origin))
+                }
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(entries.len(), 2);
+        assert!(entries.iter().any(|(text, _)| text == "col1"));
+        assert!(entries.iter().any(|(text, _)| text == "col2"));
+        if let Some(expected) = &original {
+            assert_eq!(&entries, expected);
+        } else {
+            original = Some(entries);
+        }
+    }
+}
+
+#[test]
 fn automatic_chart_title_uses_ui_instead_of_format_locale() {
     use ooxmlsdk::parts::spreadsheet_document::SpreadsheetDocument;
     use ooxmlsdk_layout::LayoutOptions;
@@ -1118,9 +1593,12 @@ fn error_conditional_formats_fill_only_the_matching_rows() {
             if row == 1 || row == 2 {
                 assert_eq!(text.text.as_ref(), "#DIV/0!");
             }
+            // Office's fill clip and logical text origin have separate
+            // device insets. Check the interior of the line, not its top edge.
+            let midline_y = text.origin.y.0 + text.line_height.0 * 0.5;
             let filled = fills.iter().any(|bounds| {
-                text.origin.y.0 >= bounds.origin.y.0
-                    && text.origin.y.0 < bounds.origin.y.0 + bounds.size.height.0
+                midline_y >= bounds.origin.y.0
+                    && midline_y < bounds.origin.y.0 + bounds.size.height.0
             });
             assert_eq!(
                 filled,
@@ -1393,15 +1871,19 @@ const CASES: &[XlsxCase] = &[
         tdf144642_excel_saved_row_height,
         source: "../core/sc/qa/unit/subsequent_export_test4.cxx:testTdf144642_RowHeightRounding_saveByExcel",
         file: "sc/qa/unit/data/xlsx/tdf144642_RowHeight_28.35pt_SavedByExcel.xlsx",
-        pages: 1,
-        contains: [pt!(0, "26 ___")],
+        // Default layout options retain the stored Latin Calibri font. The
+        // Office explicit-Calibri control also prints two pages; the configured
+        // zh-CN theme selects DengXian and is a separate golden obligation.
+        pages: 2,
+        contains: [pt!(1, "26 ___")],
     ),
     case!(
         tdf145129_default_row_height,
         source: "../core/sc/qa/unit/subsequent_export_test4.cxx:testTdf145129_DefaultRowHeightRounding",
         file: "sc/qa/unit/data/xlsx/tdf145129_DefaultRowHeight_28.35pt_SavedByExcel.xlsx",
-        pages: 2,
-        contains: [pt!(0, "1"), pt!(0, "2"), pt!(1, "28")],
+        // Office with the same explicit Latin Calibri font prints three pages.
+        pages: 3,
+        contains: [pt!(0, "1"), pt!(1, "2"), pt!(2, "28")],
     ),
     case!(
         misc_row_heights,
@@ -1456,9 +1938,9 @@ const CASES: &[XlsxCase] = &[
         image_hyperlink,
         source: "../core/sc/qa/unit/subsequent_export_test2.cxx:testTdf91634XLSX",
         file: "sc/qa/unit/data/xlsx/image_hyperlink.xlsx",
-        pages: 1,
+        pages: 2,
         not_contains: [pt!(0, "https://www.google.com/")],
-        image_counts: [page_count!(0, 1)],
+        image_counts: [page_count!(0, 0), page_count!(1, 1)],
         link_targets: ["https://www.google.com/"],
     ),
     case!(
@@ -1562,7 +2044,7 @@ const CASES: &[XlsxCase] = &[
         underline_color,
         source: "../core/sc/qa/unit/subsequent_export_test3.cxx:testTextUnderlineColorXLSX",
         file: "sc/qa/unit/data/xlsx/underlineColor.xlsx",
-        pages: 1,
+        pages: 2,
         occurrences: [count!(0, "Text Box", 2)],
     ),
     case!(
@@ -1577,10 +2059,7 @@ const CASES: &[XlsxCase] = &[
         hidden_sheets,
         source: "../core/sc/qa/unit/subsequent_filters_test2.cxx:testHiddenSheetsXLSX",
         file: "sc/qa/unit/data/xlsx/hidden_sheets.xlsx",
-        pages: 1,
-        contains: [pt!(0, "Sheet2")],
-        not_contains: [pt!(0, "Sheet1")],
-        page_sizes: [size!(0, 595.28, 841.89)],
+        pages: 0,
     ),
     case!(
         tdf121715_header_footer,
@@ -1598,17 +2077,13 @@ const CASES: &[XlsxCase] = &[
         tdf134459_header_footer_color,
         source: "../core/sc/qa/unit/subsequent_export_test4.cxx:testTdf134459_HeaderFooterColorXLSX",
         file: "sc/qa/unit/data/xlsx/tdf134459_HeaderFooterColor.xlsx",
-        pages: 1,
-        occurrences: [count!(0, "l c r", 2)],
-        page_sizes: [size!(0, 595.28, 841.89)],
+        pages: 0,
     ),
     case!(
         tdf134817_header_footer_sections,
         source: "../core/sc/qa/unit/subsequent_export_test4.cxx:testTdf134817_HeaderFooterTextWith2SectionXLSX",
         file: "sc/qa/unit/data/xlsx/tdf134817_HeaderFooterTextWith2Section.xlsx",
-        pages: 1,
-        contains: [pt!(0, "aaa bbb"), pt!(0, "cambdant")],
-        page_sizes: [size!(0, 595.28, 841.89)],
+        pages: 0,
     ),
     case!(
         writing_mode,
@@ -1655,7 +2130,9 @@ const CASES: &[XlsxCase] = &[
         totals_row_function,
         source: "../core/sc/qa/unit/subsequent_export_test5.cxx:testTotalsRowFunction",
         file: "sc/qa/unit/data/xlsx/totalsRowFunction.xlsx",
-        pages: 1,
+        // Without a document-language default the stored Century Gothic
+        // remains active, matching the two-page explicit-font Office control.
+        pages: 2,
         contains: [pt!(0, "PRESENT PLANNER"), pt!(0, "Total £350.00")],
         page_sizes: [size!(0, 841.89, 595.28)],
     ),
@@ -1682,7 +2159,7 @@ const CASES: &[XlsxCase] = &[
         source: "../core/sc/qa/unit/subsequent_export_test5.cxx:testAutofilterShowButton",
         file: "sc/qa/unit/data/xlsx/autofilterShowButton.xlsx",
         pages: 2,
-        contains: [pt!(0, "a b c DDD g h III"), pt!(0, "1 def example"), pt!(1, "III")],
+        contains: [pt!(0, "a b c"), pt!(0, "DDD"), pt!(0, "g h"), pt!(0, "III"), pt!(0, "1 def example"), pt!(1, "III")],
     ),
     case!(
         date_autofilter,
@@ -1727,8 +2204,7 @@ const CASES: &[XlsxCase] = &[
         tdf134826_header_font_style,
         source: "../core/sc/qa/unit/subsequent_export_test4.cxx:testHeaderFontStyleXLSX",
         file: "sc/qa/unit/data/xlsx/tdf134826.xlsx",
-        pages: 1,
-        contains: [pt!(0, "Bold"), pt!(0, "Italic")],
+        pages: 0,
     ),
     case!(
         tdf151755_styles,
@@ -1736,7 +2212,7 @@ const CASES: &[XlsxCase] = &[
         file: "sc/qa/unit/data/xlsx/tdf151755_stylesLostOnXLSXExport.xlsx",
         pages: 1,
         contains: [
-            pt!(0, "Daily Calendar Date"),
+            pt!(0, "Daily Calendar"), pt!(0, "Date"),
             pt!(0, "Time Appointment To Do Errands Calls"),
             pt!(0, "07:00:00"),
             pt!(0, "18:30:00"),
@@ -1762,11 +2238,13 @@ const CASES: &[XlsxCase] = &[
         file: "sc/qa/unit/data/xlsx/tdf111980_radioButtons.xlsx",
         pages: 2,
         contains: [
-            pt!(0, "Group Box 7"),
-            pt!(0, "ActiveX button1"),
+            pt!(1, "Group Box 7"),
+            pt!(0, "Form button1"),
             pt!(0, "Form button2"),
-            pt!(1, "ActiveX 3"),
+            pt!(1, "Form groupbox1"), pt!(1, "Form groupbox2"), pt!(1, "Form outside groupbox3"),
         ],
+        // ActiveX captions belong to the EMF previews and are tested in PDF output.
+        image_counts: [page_count!(0, 6), page_count!(1, 5)],
     ),
     case!(
         tdf153767,
@@ -1794,6 +2272,8 @@ const CASES: &[XlsxCase] = &[
             pt!(1, "above average below average above equal average below equal average"),
             pt!(2, "2.00 2 1 1.000 4.00 3"),
         ],
+        // Calibri Office controls keep this heading only on the continuation.
+        not_contains: [pt!(0, "above average")],
     ),
     case!(
         tdf83671_smartart,
@@ -1815,8 +2295,8 @@ const CASES: &[XlsxCase] = &[
         file: "sc/qa/unit/data/xlsx/pivot-table/with-strings-integers-and-dates.xlsx",
         pages: 3,
         contains: [
-            pt!(0, "mixed strings a Sum of all fields are integers"),
-            pt!(0, "Total Result 16665"),
+            pt!(0, "Row Labels Sum of all fields are integers"),
+            pt!(0, "Grand Total 16665"),
             pt!(2, "tekst 6/7/09 10:53 AM"),
         ],
     ),
@@ -1825,27 +2305,27 @@ const CASES: &[XlsxCase] = &[
         source: "../core/sc/qa/unit/pivottable_filters_test.cxx:testPivotTableTwoDataFields",
         file: "sc/qa/unit/data/xlsx/pivot-table/two-data-fields.xlsx",
         pages: 2,
-        contains: [pt!(0, "Name Sum of Value Count of Value2"), pt!(0, "Total Result 3.6512482152 7"), pt!(1, "Name Value")],
+        contains: [pt!(0, "Name Sum of Value Count of Value2"), pt!(0, "Grand Total 3.651248215 7"), pt!(1, "Name Value")],
     ),
     case!(
         pivotcompact,
         source: "../core/sc/qa/unit/pivottable_filters_test.cxx:testPivotTableCompactLayoutXLSX",
         file: "sc/qa/unit/data/xlsx/pivot-table/pivotcompact.xlsx",
         pages: 2,
-        contains: [pt!(1, "Sum of Val D"), pt!(1, "Row Labels ddd ddx Total Result"), pt!(1, "Total Result 40 41 81")],
+        contains: [pt!(1, "Sum of Val Column Labels"), pt!(1, "Row Labels ddd ddx Grand Total"), pt!(1, "Grand Total 40 41 81")],
     ),
     case!(
         first_header_row_zero,
         source: "../core/sc/qa/unit/pivottable_filters_test.cxx:testFirstHeaderRowZero",
         file: "sc/qa/unit/data/xlsx/pivot-table/first_header_row_zero.xlsx",
         pages: 2,
-        contains: [pt!(1, "A Suma de N Suma de V"), pt!(1, "Total Result 12 12"), pt!(1, "under")],
+        contains: [pt!(1, "A Suma de N Suma de V"), pt!(1, "Total general 12 12"), pt!(1, "under")],
     ),
     case!(
         calcfields,
         source: "../core/sc/qa/unit/pivottable_filters_test.cxx:testCalcFields1XLSX",
         file: "sc/qa/unit/data/xlsx/pivot-table/calcfields.xlsx",
-        pages: 3,
+        pages: 4,
         contains: [pt!(2, "Pivot Table_Sheet1_1"), pt!(2, "TATA 24 6.00 Ft"), pt!(2, "Total Result 114 18.00 Ft")],
     ),
     case!(
@@ -1853,7 +2333,7 @@ const CASES: &[XlsxCase] = &[
         source: "../core/sc/qa/unit/pivottable_filters_test.cxx:testCalcFields2XLSX",
         file: "sc/qa/unit/data/xlsx/pivot-table/onlycalcfields.xlsx",
         pages: 4,
-        contains: [pt!(2, "Name (empty)"), pt!(2, "TATA"), pt!(2, "TITI"), pt!(2, "TOTO"), pt!(2, "Total Result"), pt!(3, "5")],
+        contains: [pt!(2, "Name Sum - Field1 Sum - Field2"), pt!(2, "TATA"), pt!(2, "TITI"), pt!(2, "TOTO"), pt!(2, "Total Result"), pt!(3, "5")],
     ),
     case!(
         groupwithcalcfields,
@@ -1868,8 +2348,8 @@ const CASES: &[XlsxCase] = &[
         file: "sc/qa/unit/data/xlsx/pivot-table/tdf126858-1.xlsx",
         pages: 2,
         contains: [
-            pt!(0, "товар (empty)"),
-            pt!(0, "апельсин банан вишня Total Result"),
+            pt!(0, "Названия строк"), pt!(0, "Сумма по полю Стоимость"),
+            pt!(0, "апельсин 8976"), pt!(0, "банан 9936"), pt!(0, "вишня 37408"), pt!(0, "Общий итог 168168"),
             pt!(1, "товар"),
             pt!(1, "кол-во"),
             pt!(1, "цена"),
@@ -1882,8 +2362,8 @@ const CASES: &[XlsxCase] = &[
         test_diff_aggregation,
         source: "../core/sc/qa/unit/pivottable_filters_test.cxx:testCalcFieldDiffAggregationXLSX",
         file: "sc/qa/unit/data/xlsx/pivot-table/test_diff_aggregation.xlsx",
-        pages: 3,
-        contains: [pt!(1, "Pivot Table_Sheet1_1"), pt!(1, "2010 78"), pt!(2, "Pivot Table_Sheet1_2"), pt!(2, "Total Result 6")],
+        pages: 4,
+        contains: [pt!(2, "Pivot Table_Sheet1_1"), pt!(2, "2010 78"), pt!(3, "Pivot Table_Sheet1_2"), pt!(3, "Grand Total 6")],
     ),
     case!(
         pivottable_double_field_filter,
@@ -1897,7 +2377,7 @@ const CASES: &[XlsxCase] = &[
         source: "../core/sc/qa/unit/pivottable_filters_test.cxx:testPivotTableStringFieldFilterXLSX",
         file: "sc/qa/unit/data/xlsx/pivottable_string_field_filter.xlsx",
         pages: 2,
-        contains: [pt!(0, "Order ID Country Sum - Amount"), pt!(0, "United States")],
+        contains: [pt!(0, "Sum - Amount Order ID Country Total"), pt!(0, "United States")],
         not_contains: [pt!(0, "United Kingdom")],
     ),
     case!(
@@ -1905,42 +2385,42 @@ const CASES: &[XlsxCase] = &[
         source: "../core/sc/qa/unit/pivottable_filters_test.cxx:testPivotTableDateFieldFilterXLSX",
         file: "sc/qa/unit/data/xlsx/pivottable_date_field_filter.xlsx",
         pages: 3,
-        contains: [pt!(0, "Date Date2 Date3 Sum - Amount"), pt!(1, "2016/ January 7/"), pt!(2, "2016/ 1/ 8. 0:00")],
+        contains: [pt!(0, "Sum - Amount Date Date2 Date3 Total"), pt!(1, "2016/ January 7/"), pt!(2, "2016/ 1/ 8. 0:00")],
     ),
     case!(
         shared_group_field,
         source: "../core/sc/qa/unit/pivottable_filters_test.cxx:testPivotTableSharedGroupXLSX",
         file: "sc/qa/unit/data/xlsx/pivot-table/shared-group-field.xlsx",
         pages: 4,
-        contains: [pt!(0, "a2 Összeg / a Összeg / b"), pt!(0, "Csoport1 15 20 25"), pt!(0, "Total Result 171 189 207"), pt!(1, "Összeg / h Összeg / i")],
+        contains: [pt!(0, "Sorcímkék Összeg / a Összeg / b"), pt!(0, "Csoport1 15 20 25"), pt!(0, "Végösszeg 171 189 207"), pt!(1, "Összeg / h Összeg / i")],
     ),
     case!(
         shared_dategroup,
         source: "../core/sc/qa/unit/pivottable_filters_test.cxx:testPivotTableSharedDateGroupXLSX",
         file: "sc/qa/unit/data/xlsx/pivot-table/shared-dategroup.xlsx",
         pages: 4,
-        contains: [pt!(2, "a Összeg / c Összeg / d Összeg / e"), pt!(2, "1965 163877 212212 262738"), pt!(2, "Total Result 1113132 1301928 2042856")],
+        contains: [pt!(2, "Sorcímkék Összeg / c Összeg / d Összeg / e"), pt!(2, "1965 163877 212212 262738"), pt!(2, "Végösszeg 1113132 1301928 2042856")],
     ),
     case!(
         shared_nested_dategroup,
         source: "../core/sc/qa/unit/pivottable_filters_test.cxx:testPivotTableSharedNestedDateGroupXLSX",
         file: "sc/qa/unit/data/xlsx/pivot-table/shared-nested-dategroup.xlsx",
         pages: 4,
-        contains: [pt!(2, "Row Labels Összeg / c Összeg / e"), pt!(2, "1965"), pt!(2, "Jan 53274 87176"), pt!(2, "Total Result 1113132 2042856")],
+        contains: [pt!(2, "Sorcímkék Összeg / c Összeg / e"), pt!(2, "1965"), pt!(2, "Jan 53274 87176"), pt!(2, "Végösszeg 1113132 2042856")],
     ),
     case!(
         shared_numgroup,
         source: "../core/sc/qa/unit/pivottable_filters_test.cxx:testPivotTableSharedNumGroupXLSX",
         file: "sc/qa/unit/data/xlsx/pivot-table/shared-numgroup.xlsx",
         pages: 4,
-        contains: [pt!(2, "f Összeg / c Összeg / d Összeg / e"), pt!(2, "32674-47673 193380 194190 414100"), pt!(2, "Total Result 1113132 1301928 2042856")],
+        contains: [pt!(2, "Sorcímkék Összeg / c Összeg / d Összeg / e"), pt!(2, "32674-47673 193380 194190 414100"), pt!(2, "Végösszeg 1113132 1301928 2042856")],
     ),
     case!(
         pivottable_bool_field_filter,
         source: "../core/sc/qa/unit/pivottable_filters_test.cxx:testPivotTableBoolFieldFilterXLSX",
         file: "sc/qa/unit/data/xlsx/pivottable_bool_field_filter.xlsx",
         pages: 2,
-        contains: [pt!(0, "Bool field Sum of Amount"), pt!(0, "TRUE"), pt!(1, "FALSE")],
+        contains: [pt!(0, "Sum of Amount Bool field Total"), pt!(0, "TRUE"), pt!(1, "FALSE")],
         not_contains: [pt!(0, "FALSE")],
     ),
     case!(
@@ -1948,49 +2428,49 @@ const CASES: &[XlsxCase] = &[
         source: "../core/sc/qa/unit/pivottable_filters_test.cxx:testPivotTableRowColPageFieldFilterXLSX",
         file: "sc/qa/unit/data/xlsx/pivottable_rowcolpage_field_filter.xlsx",
         pages: 3,
-        contains: [pt!(0, "Double3 field - multiple -"), pt!(0, "Order ID 2"), pt!(0, "1 $4,270"), pt!(2, "Double3 field Double4 field")],
+        contains: [pt!(0, "Double3 field (All)"), pt!(0, "Order ID 2"), pt!(0, "1 4270"), pt!(2, "Double3 field Double4 field")],
     ),
     case!(
         pivottable_error_item_filter,
         source: "../core/sc/qa/unit/pivottable_filters_test.cxx:testPivotTableErrorItemFilterXLSX",
         file: "sc/qa/unit/data/xlsx/pivottable_error_item_filter.xlsx",
         pages: 1,
-        contains: [pt!(0, "a b b Sum of a"), pt!(0, "2 #DIV/0! Total Result 4")],
+        contains: [pt!(0, "a b Row Labels Sum of a"), pt!(0, "2 #DIV/0! Grand Total 4")],
     ),
     case!(
         pivottable_long_text,
         source: "../core/sc/qa/unit/pivottable_filters_test.cxx:testTdf125046",
         file: "sc/qa/unit/data/xlsx/pivottable_long_text.xlsx",
         pages: 4,
-        contains: [pt!(0, "n (empty)"), pt!(1, "A very-very long"), pt!(1, "greater than wto hundred fifty five character")],
+        contains: [pt!(0, "Row Labels a b (blank) Grand Total"), pt!(1, "A very-very long"), pt!(1, "greater than wto hundred fifty five characte")],
     ),
     case!(
         pivottable_one_second_difference,
         source: "../core/sc/qa/unit/pivottable_filters_test.cxx:testTdf125055",
         file: "sc/qa/unit/data/xlsx/pivottable_1s_difference.xlsx",
         pages: 1,
-        contains: [pt!(0, "n d n (empty)"), pt!(0, "a 7/10/2017 9:11"), pt!(0, "b 7/10/2017 9:11")],
+        contains: [pt!(0, "n d Row Labels"), pt!(0, "a 7/10/2017 9:11"), pt!(0, "b 7/10/2017 9:11")],
     ),
     case!(
         pivot_cached_definition_in_sync,
         source: "../core/sc/qa/unit/pivottable_filters_test.cxx:testPivotTableXLSX_OutOfSyncPivotTableCachedDefinitionImport",
         file: "sc/qa/unit/data/xlsx/PivotTable_CachedDefinitionAndDataInSync.xlsx",
         pages: 3,
-        contains: [pt!(0, "K Sum of A"), pt!(0, "1 5"), pt!(0, "Total Result 10")],
+        contains: [pt!(0, "Row Labels Sum of A"), pt!(0, "1 5"), pt!(0, "Grand Total 10")],
     ),
     case!(
         pivot_cached_definition_with_cache_data,
         source: "../core/sc/qa/unit/pivottable_filters_test.cxx:testPivotTableXLSX_OutOfSyncPivotTableCachedDefinitionImport2",
         file: "sc/qa/unit/data/xlsx/PivotTable_CachedDefinitionAndDataNotInSync_SheetColumnsRemoved_WithCacheData.xlsx",
         pages: 2,
-        contains: [pt!(0, "K Sum of A"), pt!(0, "2 5"), pt!(1, "A K")],
+        contains: [pt!(0, "Row Labels Sum of A"), pt!(0, "2 5"), pt!(1, "A K")],
     ),
     case!(
         pivot_cached_definition_without_cache_data,
         source: "../core/sc/qa/unit/pivottable_filters_test.cxx:testPivotTableXLSX_OutOfSyncPivotTableCachedDefinitionImport3",
         file: "sc/qa/unit/data/xlsx/PivotTable_CachedDefinitionAndDataNotInSync_SheetColumnsRemoved_WithoutCacheData.xlsx",
         pages: 2,
-        contains: [pt!(0, "K Sum of A"), pt!(0, "Total Result 10"), pt!(1, "1 1")],
+        contains: [pt!(0, "Row Labels Sum of A"), pt!(0, "Grand Total 10"), pt!(1, "1 1")],
     ),
     case!(
         book1_custom,
@@ -2032,8 +2512,8 @@ const CASES: &[XlsxCase] = &[
         pivot_calcfield_nameerror,
         source: "../core/sc/qa/unit/pivottable_filters_test.cxx:testCalcFieldNameErrorXLSX",
         file: "sc/qa/unit/data/xlsx/pivot-table/pivot_calcfield_nameerror.xlsx",
-        pages: 3,
-        contains: [pt!(0, "Bez Werte Hilfe + Hilfe -"), pt!(2, "Bez bezeichnung von deinen Pluswerten"), pt!(2, "Total Result 1300 -1678")],
+        pages: 5,
+        contains: [pt!(0, "Bez Werte Hilfe + Hilfe -"), pt!(2, "Zeilenbeschriftungen bezeichnung von deinen Pluswerten"), pt!(2, "Gesamtergebnis 1300 -1678")],
     ),
     case!(
         tdf169326,
@@ -2103,7 +2583,8 @@ const CASES: &[XlsxCase] = &[
         source: "../core/sc/qa/unit/subsequent_filters_test3.cxx:testActiveXCheckboxXLSX",
         file: "sc/qa/unit/data/xlsx/activex_checkbox.xlsx",
         pages: 1,
-        contains: [pt!(0, "Custom Caption")],
+        // The caption is inside this EMF preview; metafile_pdf tests its PDF text.
+        image_counts: [page_count!(0, 1)],
     ),
     case!(
         cell_anchored_hidden_shapes,
@@ -2201,7 +2682,9 @@ const CASES: &[XlsxCase] = &[
         source: "../core/sc/qa/unit/subsequent_filters_test2.cxx:testTdf100709XLSX",
         file: "sc/qa/unit/data/xlsx/tdf100709.xlsx",
         pages: 2,
-        contains: [pt!(0, "65 218"), pt!(0, "05-Mar-00 218")],
+        // Upstream checks unformatted B52/A75 = 218, not the malformed date styles.
+        // Excel cannot open this source; it remains a REFERENCE_FAIL.
+        contains: [pt!(0, "65 218 46"), pt!(1, "218 11")],
     ),
     case!(
         tdf105272,
@@ -2236,7 +2719,9 @@ const CASES: &[XlsxCase] = &[
         source: "../core/sc/qa/unit/subsequent_export_test2.cxx:testTdf170201_empty_values_in_array_formulas",
         file: "sc/qa/unit/data/xlsx/tdf170201.xlsx",
         pages: 1,
-        contains: [pt!(0, "Sheet1"), pt!(0, "1 3")],
+        // Office repair-mode export rejects the named constant {1,,3};
+        // the golden and controlled exports print three #NAME? errors.
+        contains: [pt!(0, "Sheet1"), pt!(0, "#NAME? #NAME? #NAME?")],
     ),
     case!(
         tdf134553,
@@ -2318,7 +2803,8 @@ const CASES: &[XlsxCase] = &[
         source: "../core/sc/qa/unit/subsequent_export_test5.cxx:testTdf163554",
         file: "sc/qa/unit/data/xlsx/tdf163554.xlsx",
         pages: 2,
-        contains: [pt!(0, "time (misc) - last"), pt!(0, "7 7"), pt!(1, "time (pnrst)")],
+        contains: [pt!(0, "time (misc) - last"), pt!(0, "#NAME? 7"), pt!(1, "time (pnrst)"), pt!(1, "Seite 1")],
+        occurrences: [count!(0, "#NAME?", 5)],
     ),
     case!(
         tdf85617,
@@ -2339,48 +2825,48 @@ const CASES: &[XlsxCase] = &[
         source: "../core/sc/qa/unit/pivottable_filters_test.cxx:testPivotTableOutlineModeXLSX",
         file: "sc/qa/unit/data/xlsx/pivottable_outline_mode.xlsx",
         pages: 1,
-        contains: [pt!(0, "field1 field2 field3"), pt!(0, "Sum of field3"), pt!(0, "Total Result 6")],
+        contains: [pt!(0, "field1 field2 field3"), pt!(0, "Sum of field3"), pt!(0, "Grand Total 6")],
     ),
     case!(
         pivottable_tabular_mode,
         source: "../core/sc/qa/unit/pivottable_filters_test.cxx:testPivotTableTabularModeXLSX",
         file: "sc/qa/unit/data/xlsx/pivottable_tabular_mode.xlsx",
         pages: 4,
-        contains: [pt!(0, "pwdLastSet (empty)"), pt!(0, "company employeeID Count - mail"), pt!(0, "Total Result 13")],
+        contains: [pt!(0, "pwdLastSet (Multiple Items)"), pt!(0, "company employeeID mail"), pt!(0, "Grand Total 9")],
     ),
     case!(
         pivot_dark1,
         source: "../core/sc/qa/unit/pivottable_filters_test.cxx:testTdf124810_pivotDark",
         file: "sc/qa/unit/data/xlsx/pivot_dark1.xlsx",
         pages: 2,
-        contains: [pt!(0, "name date value"), pt!(0, "Count of v date"), pt!(1, "Total Result")],
+        contains: [pt!(0, "name date value"), pt!(0, "Column Labels"), pt!(1, "Grand Total")],
     ),
     case!(
         pivottable_invalid_formats,
         source: "../core/sc/qa/unit/pivottable_filters_test.cxx:testInvalidFormats",
         file: "sc/qa/unit/data/xlsx/pivottable_invalid_formats.xlsx",
         pages: 5,
-        contains: [pt!(0, "Spalte 1 Spalte 2 Spalte 3"), pt!(0, "A Ur 600 0.65"), pt!(1, "H Th 1144 149.89")],
+        contains: [pt!(0, "Spalte 1 Spalte 2 Spalte 3"), pt!(0, "A Ur 600 0.65"), pt!(0, "H Th 1144 149.89")],
     ),
     case!(
         tdf89139_pivot_table,
         source: "../core/sc/qa/unit/pivottable_filters_test.cxx:testPivotTableExportXLSX",
         file: "sc/qa/unit/data/xlsx/tdf89139_pivot_table.xlsx",
         pages: 2,
-        contains: [pt!(0, "Name Id Dept Date"), pt!(1, "Dept Count of Id"), pt!(1, "Total Result 17")],
+        contains: [pt!(0, "Name Id Dept Date"), pt!(1, "Row Labels Count of Id"), pt!(1, "Grand Total 2")],
     ),
     case!(
         tdf165503,
         source: "../core/sc/qa/unit/subsequent_export_test5.cxx:testTdf165503",
         file: "sc/qa/unit/data/xlsx/tdf165503.xlsx",
         pages: 2,
-        contains: [pt!(0, "Date Val"), pt!(0, "1/3/2021 3"), pt!(0, "10/10/2022 9")],
+        contains: [pt!(0, "Date Val"), pt!(0, "1/3/2021 3"), pt!(0, "######### 9")],
     ),
     case!(
         tdf137091,
         source: "../core/sc/qa/unit/subsequent_filters_test3.cxx:testTdf137091",
         file: "sc/qa/unit/data/xlsx/tdf137091.xlsx",
-        pages: 2,
+        pages: 20,
         contains: [pt!(0, "SG STOKKODU Sütun2"), pt!(0, "IP 1 B J7 0280 4 4 08 YY MR0084 28/4")],
     ),
     case!(
@@ -2409,14 +2895,16 @@ const CASES: &[XlsxCase] = &[
         source: "../core/sc/qa/unit/subsequent_filters_test3.cxx:testTdf164895",
         file: "sc/qa/unit/data/xlsx/tdf164895.xlsx",
         pages: 1,
-        contains: [pt!(0, "a 1"), pt!(0, "8 30 5")],
+        // Office rejects the unqualified references in X/Cnt; Calc accepts them.
+        contains: [pt!(0, "a 1"), pt!(0, "8 #NAME? #NAME? 9 10")],
+        occurrences: [count!(0, "#NAME?", 2)],
     ),
     case!(
         tdf162093,
         source: "../core/sc/qa/unit/subsequent_filters_test4.cxx:testTdf162093",
         file: "sc/qa/unit/data/xlsx/tdf162093.xlsx",
         pages: 2,
-        contains: [pt!(0, "Surname Count Region Surname Count Region"), pt!(0, "Murray 15 North Murray 15 North"), pt!(0, "Total 296 Total 296"), pt!(1, "{=myData[#Headers]} =myData[#Headers]")],
+        contains: [pt!(0, "Surname Count Region Surname Count Region"), pt!(0, "Murray 15 North Murray 15 North"), pt!(0, "Total 296 Total 296"), pt!(1, "=myData[#Headers] =myData[#Headers]")],
     ),
     case!(
         tdf147955,
@@ -2458,14 +2946,18 @@ const CASES: &[XlsxCase] = &[
         source: "../core/sc/qa/unit/subsequent_filters_test3.cxx:testTdf119190",
         file: "sc/qa/unit/data/xlsx/tdf119190.xlsx",
         pages: 1,
-        contains: [pt!(0, "Kelemen Gábor 2:"), pt!(0, "Comment!")],
+        contains: [pt!(0, "c?")],
+        not_contains: [pt!(0, "Kelemen Gábor 2:"), pt!(0, "Comment!")],
     ),
     case!(
         tdf141495,
         source: "../core/sc/qa/unit/subsequent_filters_test3.cxx:testTdf141495",
         file: "sc/qa/unit/data/xlsx/tdf141495.xlsx",
         pages: 2,
-        contains: [pt!(0, "44227 44255 44286 44316"), pt!(1, "44804 44834 44865 44895 44926")],
+        // Office has no LibreOffice Analysis add-in; retain the literal A5
+        // serial and recalculate its service-name calls as #NAME?.
+        contains: [pt!(0, "44227 #NAME? #NAME? #NAME?"), pt!(1, "#NAME? #NAME? #NAME? #NAME? #NAME?")],
+        not_contains: [pt!(0, "44255"), pt!(1, "44926")],
     ),
     case!(
         tdf79972,
@@ -2543,14 +3035,14 @@ const CASES: &[XlsxCase] = &[
         source: "../core/sc/qa/unit/pivottable_filters_test.cxx:many-fields-in-cache import check",
         file: "sc/qa/unit/data/xlsx/pivot-table/many-fields-in-cache.xlsx",
         pages: 2,
-        contains: [pt!(0, "F1 F2 F3 F4 F5 F6 F7 F8"), pt!(0, "Sum of F10 F4"), pt!(0, "Total Result 5 6 11")],
+        contains: [pt!(0, "F1 F2 F3 F4 F5 F6 F7 F8"), pt!(0, "Sum of F10 F4"), pt!(0, "Grand Total 5 6 11")],
     ),
     case!(
         pivottable_duplicated_member_filter,
         source: "../core/sc/qa/unit/pivottable_filters_test.cxx:testPivotTableDuplicatedMemberFilterXLSX",
         file: "sc/qa/unit/data/xlsx/pivottable_duplicated_member_filter.xlsx",
         pages: 3,
-        contains: [pt!(0, "pwdLastSet (empty)"), pt!(0, "First type 4"), pt!(0, "Second type 9"), pt!(0, "Total Result 13")],
+        contains: [pt!(0, "pwdLastSet (blank)"), pt!(0, "First type 4"), pt!(0, "Second type 5"), pt!(0, "Grand Total 9")],
     ),
     case!(
         tdf104310,
@@ -2579,7 +3071,8 @@ const CASES: &[XlsxCase] = &[
         source: "../core/sc/qa/unit/subsequent_export_test2.cxx:testTdf73063",
         file: "sc/qa/unit/data/xlsx/tdf73063.xlsx",
         pages: 1,
-        contains: [pt!(0, "Saturday, 17. June 1972")],
+        // The explicit Serbian LCID overrides the UI language.
+        contains: [pt!(0, "субота, 17. јуни 1972")],
     ),
     case!(
         tdf139021,
@@ -2621,21 +3114,23 @@ const CASES: &[XlsxCase] = &[
         source: "../core/sc/qa/unit/pivottable_filters_test.cxx:testTdf112106",
         file: "sc/qa/unit/data/xlsx/tdf112106.xlsx",
         pages: 2,
-        contains: [pt!(0, "Country - all -"), pt!(0, "Banana $617"), pt!(0, "Total Result $13,126"), pt!(1, "Order ID Product Category Amount Date Country")],
+        contains: [pt!(0, "Country (All)"), pt!(0, "Banana 617"), pt!(0, "Grand Total 13126"), pt!(1, "Order ID Product Category Amount Date Country")],
     ),
     case!(
         tdf155402,
         source: "../core/sc/qa/unit/subsequent_filters_test4.cxx:testTdf155402",
         file: "sc/qa/unit/data/xlsx/tdf155402.xlsx",
-        pages: 2,
+        // This helper supplies only the basename to CELL(FILENAME). Office
+        // includes its long temporary directory, overflowing onto page 2.
+        pages: 1,
         contains: [pt!(0, "[tdf155402.xlsx]Sheet1")],
     ),
     case!(
         tdf91251,
         source: "../core/sc/qa/unit/subsequent_export_test4.cxx:testTdf91251_missingOverflowRoundtrip",
         file: "sc/qa/unit/data/xlsx/tdf91251_missingOverflowRoundtrip.xlsx",
-        pages: 1,
-        contains: [pt!(0, "Text Box")],
+        pages: 2,
+        contains: [pt!(1, "Text Box")],
     ),
     case!(
         tdf164417,
@@ -2706,14 +3201,14 @@ const CASES: &[XlsxCase] = &[
         source: "../core/sc/qa/unit/PivotTable_FieldsAndItemsExport.cxx:Pivot1_Row_Grand",
         file: "sc/qa/unit/data/xlsx/pivot/Pivot1_Row_Grand.xlsx",
         pages: 2,
-        contains: [pt!(1, "Name Type Sum of Price"), pt!(1, "Total Result 600")],
+        contains: [pt!(1, "Name Type Sum of Price"), pt!(1, "Grand Total 600")],
     ),
     case!(
         pivot1_row_grand_subtotals,
         source: "../core/sc/qa/unit/PivotTable_FieldsAndItemsExport.cxx:Pivot1_Row_Grand_Subtotals",
         file: "sc/qa/unit/data/xlsx/pivot/Pivot1_Row_Grand_Subtotals.xlsx",
         pages: 2,
-        contains: [pt!(1, "X1 Result 100"), pt!(1, "X5 Result 50"), pt!(1, "Total Result 600")],
+        contains: [pt!(1, "X1 Total 100"), pt!(1, "X5 Total 50"), pt!(1, "Grand Total 600")],
     ),
     case!(
         pivot2_row,
@@ -2734,21 +3229,21 @@ const CASES: &[XlsxCase] = &[
         source: "../core/sc/qa/unit/PivotTable_FieldsAndItemsExport.cxx:Pivot2_Row_Grand",
         file: "sc/qa/unit/data/xlsx/pivot/Pivot2_Row_Grand.xlsx",
         pages: 2,
-        contains: [pt!(1, "Type Name Sum of Price"), pt!(1, "Total Result 600")],
+        contains: [pt!(1, "Type Name Sum of Price"), pt!(1, "Grand Total 600")],
     ),
     case!(
         pivot2_row_grand_subtotals,
         source: "../core/sc/qa/unit/PivotTable_FieldsAndItemsExport.cxx:Pivot2_Row_Grand_Subtotals",
         file: "sc/qa/unit/data/xlsx/pivot/Pivot2_Row_Grand_Subtotals.xlsx",
         pages: 2,
-        contains: [pt!(1, "A Result 150"), pt!(1, "B Result 350"), pt!(1, "Total Result 600")],
+        contains: [pt!(1, "A Total 150"), pt!(1, "B Total 350"), pt!(1, "Grand Total 600")],
     ),
     case!(
         pivot2_row_subtotals,
         source: "../core/sc/qa/unit/PivotTable_FieldsAndItemsExport.cxx:Pivot2_Row_Subtotals",
         file: "sc/qa/unit/data/xlsx/pivot/Pivot2_Row_Subtotals.xlsx",
         pages: 2,
-        contains: [pt!(1, "A Result 150"), pt!(1, "B Result 350"), pt!(1, "C Result 100")],
+        contains: [pt!(1, "A Total 150"), pt!(1, "B Total 350"), pt!(1, "C Total 100")],
     ),
     case!(
         pivot2_row_subtotals_sort_desc,
@@ -2762,7 +3257,7 @@ const CASES: &[XlsxCase] = &[
         source: "../core/sc/qa/unit/PivotTable_FieldsAndItemsExport.cxx:Pivot3_Column_Grand_Subtotals",
         file: "sc/qa/unit/data/xlsx/pivot/Pivot3_Column_Grand_Subtotals.xlsx",
         pages: 2,
-        contains: [pt!(1, "Type Name"), pt!(1, "Total Result"), pt!(1, "100 50 150 200 150 350 100 100 600")],
+        contains: [pt!(1, "Type Name"), pt!(1, "Grand Total"), pt!(1, "100 50 150 200 150 350 100 100 600")],
     ),
     case!(
         pivot4_column_grand_subtotals_sort_desc,
@@ -2771,7 +3266,7 @@ const CASES: &[XlsxCase] = &[
         pages: 2,
         contains: [
             pt!(1, "Type Name"),
-            pt!(1, "Total Result"),
+            pt!(1, "Grand Total"),
             pt!(1, "100 100 200 150 350 100 50"),
             pt!(1, "600"),
         ],
@@ -2786,6 +3281,8 @@ const CASES: &[XlsxCase] = &[
             pt!(1, "above average below average above equal average below equal average"),
             pt!(1, "1.00 2 2.00"),
         ],
+        // Calibri Office controls keep this heading only on the continuation.
+        not_contains: [pt!(0, "above average")],
     ),
 ];
 
@@ -3018,7 +3515,7 @@ fn xlsx_conditional_statistics_paint_office_top_and_bottom_ties() {
             })
             .collect::<Vec<_>>();
         assert_eq!(fills.len(), 2, "{file}: {fills:?}");
-        for row in expected_rows {
+        for row in 0..4 {
             let run = items
                 .iter()
                 .find_map(|item| match item {
@@ -3033,11 +3530,14 @@ fn xlsx_conditional_statistics_paint_office_top_and_bottom_ties() {
                     _ => None,
                 })
                 .unwrap();
-            assert!(
-                fills
-                    .iter()
-                    .any(|bounds| run.origin.y.0 + 0.01 >= bounds.origin.y.0
-                        && run.origin.y.0 < bounds.origin.y.0 + bounds.size.height.0),
+            let midline_y = run.origin.y.0 + run.line_height.0 * 0.5;
+            let filled = fills.iter().any(|bounds| {
+                midline_y >= bounds.origin.y.0
+                    && midline_y < bounds.origin.y.0 + bounds.size.height.0
+            });
+            assert_eq!(
+                filled,
+                expected_rows.contains(&row),
                 "{file} row {}: origin {:?}, fills {fills:?}",
                 row + 1,
                 run.origin
@@ -3412,40 +3912,53 @@ fn xlsx_letter_printer_canvas_owns_unscaled_column_breaks() {
     use ooxmlsdk_layout::LayoutOptions;
     use ooxmlsdk_layout::common::{DebugRecord, DebugValue};
 
-    // The Office PDF starts its second page with K11, while the final PDF
-    // MediaBox is A4. The related DEVMODE requests a Letter worksheet canvas.
+    // The related DEVMODE requests a Letter worksheet canvas; the PDF is A4.
+    // Office's configured SimSun theme starts the continuation at K, whereas
+    // retaining Calibri starts at J and repeats the I-column overflow string.
     let path = ooxmlsdk_layout_test::corpus_file("../Apache-POI/test-data/spreadsheet/59264.xlsx");
     let package = SpreadsheetDocument::new_from_file(&path).unwrap();
-    let mut options = LayoutOptions::default();
-    options.diagnostics.collect_debug_records = true;
-    let document = ooxmlsdk_layout::xlsx::layout_document(&package, &options).unwrap();
-    let page = document
-        .debug_records
-        .iter()
-        .find_map(|record| match record {
-            DebugRecord::Shape(shape)
-                if shape.kind == "xlsx_print_page" && shape.page_index == 1 =>
-            {
-                Some(shape)
-            }
-            _ => None,
-        })
-        .expect("second worksheet page");
-    let value = |name| {
-        page.metadata
+    for (language, start_column, repeats_medium_dashed) in
+        [("zh-CN", 11, false), ("en-US", 10, true)]
+    {
+        let mut options = LayoutOptions {
+            default_document_language: Some(language.into()),
+            ..Default::default()
+        };
+        options.diagnostics.collect_debug_records = true;
+        let document = ooxmlsdk_layout::xlsx::layout_document(&package, &options).unwrap();
+        let page = document
+            .debug_records
             .iter()
-            .find_map(|property| match property.value {
-                DebugValue::Integer(value) if property.name == name => Some(value),
+            .find_map(|record| match record {
+                DebugRecord::Shape(shape)
+                    if shape.kind == "xlsx_print_page" && shape.page_index == 1 =>
+                {
+                    Some(shape)
+                }
                 _ => None,
             })
-    };
-    assert_eq!(value("start_column"), Some(11));
-    assert_eq!(value("paper_scale_percent"), Some(95));
-    assert_eq!(value("pagination_paper_scale_percent"), Some(100));
-    assert_page_not_contains(&document, 0, "MEDIUM_DASH_DOT");
-    assert_page_contains(&document, 1, "MEDIUM_DASH_DOT");
-    assert_page_not_contains(&document, 1, "MEDIUM_DASHED");
-    assert_page_size(&document, 1, 595.32, 841.92);
+            .expect("second worksheet page");
+        let value = |name| {
+            page.metadata
+                .iter()
+                .find_map(|property| match property.value {
+                    DebugValue::Integer(value) if property.name == name => Some(value),
+                    _ => None,
+                })
+        };
+        assert_eq!(value("start_column"), Some(start_column), "{language}");
+        assert_eq!(value("paper_scale_percent"), Some(95));
+        assert_eq!(value("pagination_paper_scale_percent"), Some(100));
+        assert_page_not_contains(&document, 0, "MEDIUM_DASH_DOT");
+        assert_page_contains(&document, 1, "MEDIUM_DASH_DOT");
+        assert_page_text_occurrences(
+            &document,
+            1,
+            "MEDIUM_DASHED",
+            usize::from(repeats_medium_dashed),
+        );
+        assert_page_size(&document, 1, 595.32, 841.92);
+    }
 
     let graph_paper = xlsx_layout("../Open-XML-SDK/test/DocumentFormat.OpenXml.Tests.Assets/assets/TestDataStorage/v2FxTestFiles/spreadsheet/O12 templates/GraphPaper_TP10193274.xltx").unwrap();
     assert_eq!(
@@ -3745,20 +4258,113 @@ fn xlsx_tdf126033_point_none_suppresses_only_the_selected_points() {
 }
 
 #[test]
-// Sources:
-// - ../core/sc/source/core/data/documen9.cxx::ScDocument::IsPrintEmpty
-// - ../core/sc/qa/unit/subsequent_filters_test4.cxx::testControlImport
-fn xlsx_singlecontrol_skips_empty_page_ranges_before_the_row_517_control() {
+// Excel retains the preceding header/footer pages and places the control on
+// Sheet1's tenth page. The LibreOffice empty-range policy expected three pages.
+fn xlsx_singlecontrol_retains_header_footer_pages_before_the_row_517_control() {
     let document = xlsx_layout("sc/qa/unit/data/xlsx/singlecontrol.xlsx").unwrap();
     let print_pages = debug_shapes(&document, "xlsx_print_page");
     assert_eq!(
         document.pages.len(),
-        3,
+        12,
         "unexpected retained print ranges: {print_pages:?}"
     );
-    assert_page_contains(&document, 0, "form control inside cell b517");
-    assert_page_contains(&document, 1, "adfa");
-    assert_page_contains(&document, 2, "adfad");
+    for page in 0..9 {
+        assert_page_contains(&document, page, "Sheet1");
+        assert_page_not_contains(&document, page, "form control inside cell b517");
+    }
+    assert_page_contains(&document, 9, "form control inside cell b517");
+    assert_page_contains(&document, 10, "adfa");
+    assert_page_contains(&document, 11, "adfad");
+}
+
+#[test]
+fn manual_rows_do_not_freeze_the_cached_automatic_row_height() {
+    use ooxmlsdk::parts::spreadsheet_document::SpreadsheetDocument;
+    use ooxmlsdk::schemas::schemas_openxmlformats_org_spreadsheetml_2006_main as x;
+    use ooxmlsdk::sdk::{
+        FileFormatVersion, MarkupCompatibilityProcessMode, MarkupCompatibilityProcessSettings,
+        OpenSettings, SdkType,
+    };
+    use ooxmlsdk_layout::LayoutOptions;
+
+    // Office row markers 100..103 are 13.56pt apart in both controls. Existing
+    // manual rows and the row-517 control remain in place when only the cached
+    // automatic defaultRowHeight changes from 14.25 to 30pt.
+    for cached_height in [14.25, 30.0] {
+        let mut package = SpreadsheetDocument::new_with_settings(
+            std::fs::File::open(ooxmlsdk_layout_test::corpus_file(
+                "sc/qa/unit/data/xlsx/singlecontrol.xlsx",
+            ))
+            .unwrap(),
+            OpenSettings {
+                markup_compatibility_process_settings: MarkupCompatibilityProcessSettings {
+                    process_mode: MarkupCompatibilityProcessMode::ProcessLoadedPartsOnly,
+                    target_file_format_version: FileFormatVersion::Microsoft365,
+                },
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let workbook_part = package.workbook_part().unwrap();
+        let workbook = workbook_part.root_element(&package).unwrap();
+        let sheet_id = &workbook
+            .sheets
+            .sheet
+            .iter()
+            .find(|sheet| sheet.name == "Sheet1")
+            .unwrap()
+            .id;
+        let Some(ooxmlsdk::parts::PartRef::WorksheetPart(sheet)) =
+            workbook_part.get_part_by_id(&package, sheet_id)
+        else {
+            panic!("missing Sheet1 worksheet part");
+        };
+        let worksheet = sheet.root_element_mut(&mut package).unwrap();
+        worksheet
+            .sheet_format_properties
+            .as_mut()
+            .unwrap()
+            .default_row_height = cached_height;
+        for row in 100..104 {
+            assert!(
+                !worksheet
+                    .sheet_data
+                    .row
+                    .iter()
+                    .any(|r| r.row_index == Some(row))
+            );
+            worksheet.sheet_data.row.push(x::Row::from_bytes(format!(
+                r#"<row xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" r="{row}"><c r="A{row}" t="n"><v>{row}</v></c></row>"#
+            ).as_bytes()).unwrap());
+        }
+        worksheet.sheet_data.row.sort_by_key(|row| row.row_index);
+        let document =
+            ooxmlsdk_layout::xlsx::layout_document(&package, &LayoutOptions::default()).unwrap();
+        assert_eq!(
+            document.pages.len(),
+            12,
+            "cached_height={cached_height}, pages={:?}",
+            (0..document.pages.len())
+                .map(|page| all_page_text(&document, page))
+                .collect::<Vec<_>>()
+        );
+        assert_page_contains(&document, 9, "form control inside cell b517");
+        let mut baselines = Vec::new();
+        for row in 100..104 {
+            let text = row.to_string();
+            let baseline = page_display_items(&document, 1)
+                .iter()
+                .find_map(|item| match item {
+                    DisplayItem::Text(run) if run.text == text => Some(run.origin.y.0),
+                    _ => None,
+                })
+                .expect("missing row marker on the second page");
+            baselines.push(baseline);
+        }
+        for pair in baselines.windows(2) {
+            assert!((pair[1] - pair[0] - 13.56).abs() < 0.02, "{baselines:?}");
+        }
+    }
 }
 
 #[test]

@@ -118,8 +118,9 @@ fn alternate_family_names_participate_in_lookup() {
 }
 
 #[test]
-fn fixed_pitch_request_prefers_fixed_pitch_face() {
-    // Source: LibreOffice vcl/qa/cppunit/physicalfontface.cxx pitch match ranking.
+fn named_face_ignores_pitch_hint_while_substitution_uses_it() {
+    // Sources: ECMA-376 §§17.8.2–17.8.3; Office Arial conflicting-hints control
+    // (corpus_pdf_conv.md, legacy-test-cleanup). Pitch ranks substitutes only.
     let mut registry = FontRegistry::new();
     registry.register_face(
         FontSource::System,
@@ -129,15 +130,16 @@ fn fixed_pitch_request_prefers_fixed_pitch_face() {
     fixed.pitch = FontPitch::Fixed;
     registry.register_face(FontSource::System, fixed);
 
-    let resolved = registry
-        .resolve(&FontRequest {
-            family: Some(Cow::Borrowed("Mono Candidate")),
-            pitch: Some(FontPitch::Fixed),
-            ..FontRequest::default()
-        })
-        .expect("fixed pitch request should resolve");
-
-    assert_eq!(resolved.font_id, FontId(Arc::from("fixed")));
+    for (family, expected) in [(Some("Mono Candidate"), "variable"), (None, "fixed")] {
+        let resolved = registry
+            .resolve(&FontRequest {
+                family: family.map(Cow::Borrowed),
+                pitch: Some(FontPitch::Fixed),
+                ..FontRequest::default()
+            })
+            .expect("pitch request should resolve");
+        assert_eq!(resolved.font_id, FontId(Arc::from(expected)));
+    }
 }
 
 #[test]
@@ -264,8 +266,9 @@ fn other_style_family_class_does_not_match_unrelated_monotype_name() {
 }
 
 #[test]
-fn charset_request_prefers_registered_charset_face() {
-    // Sources: ECMA-376 Part 1 §18.4.1 and Microsoft LOGFONT lfCharSet font mapping.
+fn named_face_ignores_charset_hint_while_substitution_uses_it() {
+    // Sources: ECMA-376 §§17.8.2–17.8.3 and MS-DOC FFN; Office
+    // conflicting-hints control keeps installed Arial (corpus_pdf_conv.md).
     let mut registry = FontRegistry::new();
     registry.register_face(
         FontSource::Path {
@@ -288,35 +291,45 @@ fn charset_request_prefers_registered_charset_face() {
     );
     registry.faces[1].charset = Some(FontCharset::ShiftJis);
 
-    let resolved = registry
-        .resolve_with_diagnostics(&FontRequest {
-            family: Some(Cow::Borrowed("CJK Candidate")),
-            charset: Some(FontCharset::ShiftJis),
-            ..FontRequest::default()
-        })
-        .expect("charset-specific request should resolve");
-
-    assert_eq!(resolved.font_id, FontId(Arc::from("shift-jis")));
-    assert_eq!(
-        resolved
-            .match_diagnostics
-            .candidates
-            .iter()
-            .find(|candidate| candidate.font_id == FontId(Arc::from("ansi")))
-            .expect("ANSI face candidate")
-            .reason,
-        Some(ooxmlsdk_fonts::FontMatchReason::Charset)
-    );
+    for (family, expected, reason) in [
+        (
+            Some("CJK Candidate"),
+            "ansi",
+            ooxmlsdk_fonts::FontMatchReason::Family,
+        ),
+        (None, "shift-jis", ooxmlsdk_fonts::FontMatchReason::Charset),
+    ] {
+        let resolved = registry
+            .resolve_with_diagnostics(&FontRequest {
+                family: family.map(Cow::Borrowed),
+                charset: Some(FontCharset::ShiftJis),
+                ..FontRequest::default()
+            })
+            .expect("charset request should resolve");
+        assert_eq!(resolved.font_id, FontId(Arc::from(expected)));
+        assert_eq!(
+            resolved
+                .match_diagnostics
+                .candidates
+                .iter()
+                .find(|candidate| candidate.font_id == FontId(Arc::from("ansi")))
+                .expect("ANSI face candidate")
+                .reason,
+            Some(reason)
+        );
+    }
 }
 
 #[test]
-fn symbol_charset_request_prefers_symbolic_face() {
-    // Source: LibreOffice vcl/qa/cppunit/physicalfontcollection.cxx symbol-family tests.
+fn named_face_ignores_symbol_hint_while_substitution_uses_it() {
+    // Sources: ECMA-376 §§17.8.2–17.8.3; Office Arial Symbol-charset
+    // control (corpus_pdf_conv.md). Known ANSI faces remain ineligible substitutes.
     let mut registry = FontRegistry::new();
     registry.register_face(
         FontSource::System,
         FontFaceInfo::synthetic("text-symbol", "Symbolic Family"),
     );
+    registry.faces[0].charset = Some(FontCharset::Ansi);
     let mut symbolic = FontFaceInfo::synthetic("real-symbol", "Symbolic Family");
     symbolic.flags = FontFlags {
         symbolic: true,
@@ -324,25 +337,37 @@ fn symbol_charset_request_prefers_symbolic_face() {
     };
     registry.register_face(FontSource::System, symbolic);
 
-    let resolved = registry
-        .resolve_with_diagnostics(&FontRequest {
-            family: Some(Cow::Borrowed("Symbolic Family")),
-            charset: Some(FontCharset::Symbol),
-            ..FontRequest::default()
-        })
-        .expect("symbol charset should resolve");
-
-    assert_eq!(resolved.font_id, FontId(Arc::from("real-symbol")));
-    assert_eq!(
-        resolved
-            .match_diagnostics
-            .candidates
-            .iter()
-            .find(|candidate| candidate.font_id == FontId(Arc::from("text-symbol")))
-            .expect("text face candidate")
-            .reason,
-        Some(ooxmlsdk_fonts::FontMatchReason::Charset)
-    );
+    for (family, expected, reason) in [
+        (
+            Some("Symbolic Family"),
+            "text-symbol",
+            ooxmlsdk_fonts::FontMatchReason::Family,
+        ),
+        (
+            None,
+            "real-symbol",
+            ooxmlsdk_fonts::FontMatchReason::Charset,
+        ),
+    ] {
+        let resolved = registry
+            .resolve_with_diagnostics(&FontRequest {
+                family: family.map(Cow::Borrowed),
+                charset: Some(FontCharset::Symbol),
+                ..FontRequest::default()
+            })
+            .expect("symbol charset should resolve");
+        assert_eq!(resolved.font_id, FontId(Arc::from(expected)));
+        assert_eq!(
+            resolved
+                .match_diagnostics
+                .candidates
+                .iter()
+                .find(|candidate| candidate.font_id == FontId(Arc::from("text-symbol")))
+                .expect("text face candidate")
+                .reason,
+            Some(reason)
+        );
+    }
 }
 
 #[test]
@@ -353,6 +378,14 @@ fn symbol_charset_without_family_rejects_normal_text_faces() {
         FontSource::System,
         FontFaceInfo::synthetic("normal", "Normal Text"),
     );
+
+    // A synthetic face without charset metadata is unknown, not known ANSI.
+    let request = FontRequest {
+        charset: Some(FontCharset::Symbol),
+        ..FontRequest::default()
+    };
+    assert!(registry.resolve(&request).is_ok());
+    registry.faces[0].charset = Some(FontCharset::Ansi);
 
     let error = registry
         .resolve(&FontRequest {
@@ -1340,8 +1373,9 @@ fn default_office_policy_provides_pdf_font_aliases() {
 }
 
 #[test]
-fn real_ttf_shaping_applies_character_spacing_to_inter_glyph_advances() {
-    // Source: ooxmlsdk-pdf text_metrics.rs character_spacing_pt tracking behavior.
+fn real_ttf_shaping_includes_terminal_character_spacing_in_run_width() {
+    // Sources: ECMA-376 §17.3.2.35; Office centered AA ±2pt controls
+    // (corpus_pdf_conv.md). The terminal spacing contributes to alignment width.
     let mut registry = FontRegistry::new();
     let bytes = read_core_fixture("vcl/qa/cppunit/font/data/Ahem.ttf");
     registry
@@ -1361,13 +1395,17 @@ fn real_ttf_shaping_applies_character_spacing_to_inter_glyph_advances() {
         )
         .expect("base shaping should succeed");
     let mut options = ShapeOptions::from_request(&request, TextDirection::LeftToRight);
-    options.character_spacing_pt = 2.0;
-
-    let tracked = registry
-        .shape_font_face(&resolved, "AA", &options)
-        .expect("tracked shaping should succeed");
-
-    assert_eq!(tracked.advance_pt, base.advance_pt + 2.0);
+    for spacing in [-2.0, 0.0, 2.0] {
+        options.character_spacing_pt = spacing;
+        let tracked = registry
+            .shape_font_face(&resolved, "AA", &options)
+            .expect("tracked shaping should succeed");
+        assert_eq!(tracked.advance_pt, base.advance_pt + spacing * 2.0);
+        assert_eq!(tracked.glyphs.len(), 2);
+        for (actual, original) in tracked.glyphs.iter().zip(base.glyphs.iter()) {
+            assert_eq!(actual.x_advance_pt, original.x_advance_pt + spacing);
+        }
+    }
 }
 
 #[test]

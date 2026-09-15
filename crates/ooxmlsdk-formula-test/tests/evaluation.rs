@@ -10,6 +10,46 @@ use ooxmlsdk_formula::{
 const SHEET: SheetId = SheetId(1);
 
 #[test]
+fn sheet_qualified_ref_errors_preserve_office_error_semantics() {
+    let mut book = evaluation_book(&[]);
+    book.sheet_names[0].name = Cow::Borrowed("Sheet1");
+    for formula in [
+        "Sheet1!#REF!",
+        "'Sheet1'!#REF!",
+        "MissingSheet!#REF!",
+        "Sheet1!#REF!+1",
+        "Sheet1!#REF!*aaa",
+        "SUM(Sheet1!#REF!)",
+    ] {
+        assert_error_with_grammar(
+            &book,
+            formula,
+            FormulaGrammar::ExcelA1,
+            FormulaErrorValue::Ref,
+        );
+    }
+    assert_error_with_grammar(
+        &book,
+        "aaa*Sheet1!#REF!",
+        FormulaGrammar::ExcelA1,
+        FormulaErrorValue::Name,
+    );
+    for (formula, expected) in [
+        ("IFERROR(Sheet1!#REF!,7)", FormulaValue::Number(7.0)),
+        ("ISREF(Sheet1!#REF!)", FormulaValue::Boolean(false)),
+        ("\"Sheet1!#REF!\"", string("Sheet1!#REF!")),
+        ("Sheet1!C1", FormulaValue::Number(0.0)),
+        ("IF(FALSE,Sheet1!#REF!,9)", FormulaValue::Number(9.0)),
+    ] {
+        assert_eq!(
+            book.evaluate_formula_text_with_grammar(SHEET, None, formula, FormulaGrammar::ExcelA1),
+            Some(expected),
+            "{formula}"
+        );
+    }
+}
+
+#[test]
 fn text_search_propagates_referenced_and_array_errors_before_coercion() {
     let book = evaluation_book(&[
         ("A1", FormulaValue::Error(FormulaErrorValue::NA)),
@@ -4522,6 +4562,28 @@ fn evaluates_apache_poi_date_and_time_function_cases() {
 }
 
 #[test]
+fn text_uses_excel_1900_display_dates() {
+    // Office's numeric date cells and TEXT formulas agree at serial 0 and 60.
+    let book = evaluation_book(&[]);
+    for (serial, expected) in [
+        ("0", "1900-01-00 00:00:00"),
+        ("0.5", "1900-01-00 12:00:00"),
+        ("1", "1900-01-01 00:00:00"),
+        ("59", "1900-02-28 00:00:00"),
+        ("60", "1900-02-29 00:00:00"),
+        ("60.5", "1900-02-29 12:00:00"),
+        ("61", "1900-03-01 00:00:00"),
+        ("1462", "1904-01-01 00:00:00"),
+    ] {
+        assert_text(
+            &book,
+            &format!(r#"TEXT({serial},"yyyy-mm-dd hh:mm:ss")"#),
+            expected,
+        );
+    }
+}
+
+#[test]
 fn text_date_formats_consume_escape_markers_and_preserve_literals() {
     let book = evaluation_book(&[]);
     for (formula, expected) in [
@@ -5743,5 +5805,55 @@ fn evaluates_matrix_determinant_cases() {
         "MDETERM({23,31,13,12;34,64,34,31;98,32,33,63;45,54,65,76})",
         -180655.0,
         1e-6,
+    );
+}
+
+#[test]
+fn index_preserves_office_error_priority_and_selected_array_values() {
+    // Configured Excel 20326 controls, retained with corpus_pdf_conv.md:
+    // source errors precede selector errors; unselected matrix errors stay local.
+    let book = evaluation_book(&[]);
+    for (formula, error) in [
+        ("INDEX(#REF!,1)", FormulaErrorValue::Ref),
+        ("INDEX(#N/A,1)", FormulaErrorValue::NA),
+        ("INDEX(#DIV/0!,1)", FormulaErrorValue::Div0),
+        ("INDEX(#VALUE!,1)", FormulaErrorValue::Value),
+        ("INDEX(#REF!,#N/A)", FormulaErrorValue::Ref),
+        ("INDEX(#N/A,#REF!)", FormulaErrorValue::NA),
+        ("INDEX(#DIV/0!,#REF!,#N/A)", FormulaErrorValue::Div0),
+        ("INDEX(#REF!,-1)", FormulaErrorValue::Ref),
+        ("INDEX({10;20},#REF!)", FormulaErrorValue::Ref),
+        ("INDEX({10,20},1,#N/A)", FormulaErrorValue::NA),
+        ("INDEX((D10,D11),1,1,#DIV/0!)", FormulaErrorValue::Div0),
+        ("INDEX({10},#VALUE!)", FormulaErrorValue::Value),
+        ("INDEX({#REF!;20},1)", FormulaErrorValue::Ref),
+        ("INDEX({10,#N/A},1,2)", FormulaErrorValue::NA),
+        ("INDEX({10;20},\"bad\")", FormulaErrorValue::Value),
+        ("INDEX({10;20},-1)", FormulaErrorValue::Value),
+        ("INDEX(#REF!,RANK(#REF!,#REF!))", FormulaErrorValue::Ref),
+    ] {
+        assert_error_with_grammar(&book, formula, FormulaGrammar::ExcelA1, error);
+    }
+    for (formula, expected) in [
+        ("INDEX({#REF!;20},2)", 20.0),
+        ("INDEX({10,#N/A},1,1)", 10.0),
+        ("INDEX(10,1)", 10.0),
+    ] {
+        assert_number_at_sheet_with_grammar(
+            &book,
+            SHEET,
+            formula,
+            FormulaGrammar::ExcelA1,
+            expected,
+        );
+    }
+    assert_eq!(
+        book.evaluate_formula_text_with_grammar(
+            SHEET,
+            None,
+            "INDEX(\"abc\",1)",
+            FormulaGrammar::ExcelA1
+        ),
+        Some(string("abc"))
     );
 }

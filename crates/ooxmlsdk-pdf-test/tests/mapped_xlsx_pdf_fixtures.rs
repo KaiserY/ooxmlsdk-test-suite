@@ -738,14 +738,15 @@ fn mapped_xlsx_new_cond_format_keeps_rule_sample_table_visible() {
     assert_page_contains(
         &summary,
         0,
-        "top n elements bottom n elements top n percent bottom n percent above average",
+        "top n elements bottom n elements top n percent bottom n percent",
     );
     assert_page_contains(
         &summary,
         1,
-        "below average above equal average below equal average",
+        "above average below average above equal average below equal average",
     );
     assert_page_contains(&summary, 2, "2.00 2 1 1.000 4.00 3");
+    assert_page_not_contains(&summary, 0, "above average");
 }
 
 #[test]
@@ -1475,12 +1476,14 @@ fn mapped_xlsx_tdf118990_keeps_external_vlookup_results_visible() {
 
 #[test]
 // Source: ../core/sc/qa/unit/subsequent_export_test5.cxx:testTdf163554
-fn mapped_xlsx_tdf163554_keeps_quoted_3d_range_sum_visible() {
+fn mapped_xlsx_tdf163554_rejects_separately_quoted_3d_endpoints() {
     let summary = render_summary("tdf163554.xlsx");
     assert_eq!(summary.page_count, 2);
     assert_page_contains(&summary, 0, "time (misc) - last");
-    assert_page_contains(&summary, 0, "7 7");
+    assert_page_contains(&summary, 0, "#NAME? 7");
+    assert_page_text_occurrences(&summary, 0, "#NAME?", 5);
     assert_page_contains(&summary, 1, "time (pnrst)");
+    assert_page_contains(&summary, 1, "Seite 1");
 }
 
 #[test]
@@ -1605,11 +1608,13 @@ fn mapped_xlsx_tdf115022_keeps_recalculated_sum_visible() {
 
 #[test]
 // Source: ../core/sc/qa/unit/subsequent_filters_test3.cxx:testTdf164895
-fn mapped_xlsx_tdf164895_keeps_horizontal_range_operator_result_visible() {
+fn mapped_xlsx_tdf164895_keeps_office_unqualified_name_errors_visible() {
     let summary = render_summary("tdf164895.xlsx");
     assert_eq!(summary.page_count, 1);
     assert_page_contains(&summary, 0, "a 1");
-    assert_page_contains(&summary, 0, "8 30 5");
+    // Excel rejects the two names containing unqualified references.
+    assert_page_contains(&summary, 0, "8 #NAME? #NAME? 9 10");
+    assert_page_text_occurrences(&summary, 0, "#NAME?", 2);
 }
 
 #[test]
@@ -1620,7 +1625,7 @@ fn mapped_xlsx_tdf162093_keeps_structured_reference_outputs_visible() {
     assert_page_contains(&summary, 0, "Surname Count Region Surname Count Region");
     assert_page_contains(&summary, 0, "Murray 15 North Murray 15 North");
     assert_page_contains(&summary, 0, "Total 296 Total 296");
-    assert_page_contains(&summary, 1, "{=myData[#Headers]} =myData[#Headers]");
+    assert_page_contains(&summary, 1, "=myData[#Headers] =myData[#Headers]");
 }
 
 #[test]
@@ -1694,11 +1699,21 @@ fn mapped_xlsx_tdf119190_keeps_visible_comment_caption() {
 
 #[test]
 // Source: ../core/sc/qa/unit/subsequent_filters_test3.cxx:testTdf141495
-fn mapped_xlsx_tdf141495_keeps_turkish_locale_date_serial_visible() {
+fn mapped_xlsx_tdf141495_reports_unavailable_foreign_addin() {
     let summary = render_summary("tdf141495.xlsx");
     assert_eq!(summary.page_count, 2);
-    assert_page_contains(&summary, 0, "44227 44255 44286 44316");
-    assert_page_contains(&summary, 1, "44804 44834 44865 44895 44926");
+    // The configured Office golden retains the literal serial but reports
+    // #NAME? for all 23 LibreOffice Analysis service-name formulas.
+    assert_page_contains(&summary, 0, "44227 #NAME? #NAME? #NAME?");
+    assert_page_contains(&summary, 1, "#NAME? #NAME? #NAME? #NAME? #NAME?");
+    assert_eq!(
+        (0..summary.page_count)
+            .map(|page| page_text(&summary, page).matches("#NAME?").count())
+            .sum::<usize>(),
+        23
+    );
+    assert_page_not_contains(&summary, 0, "44255");
+    assert_page_not_contains(&summary, 1, "44926");
 }
 
 #[test]
@@ -1872,7 +1887,8 @@ fn mapped_xlsx_tdf129985_keeps_custom_date_format_visible() {
 fn mapped_xlsx_tdf73063_keeps_localized_long_date_visible() {
     let summary = render_summary("tdf73063.xlsx");
     assert_eq!(summary.page_count, 1);
-    assert_page_contains(&summary, 0, "Saturday, 17. June 1972");
+    // The stored 1C1A LCID selects Serbian even with an English UI.
+    assert_page_contains(&summary, 0, "субота, 17. јуни 1972");
 }
 
 #[test]
@@ -2215,12 +2231,13 @@ fn mapped_xlsx_new_cond_format_export_keeps_rule_sample_table_visible() {
     assert_page_contains(
         &summary,
         0,
-        "top n elements bottom n elements top n percent bottom n percent above average",
+        "top n elements bottom n elements top n percent bottom n percent",
     );
     assert_page_contains(
         &summary,
         1,
-        "below average above equal average below equal average",
+        "above average below average above equal average below equal average",
     );
     assert_page_contains(&summary, 1, "1.00 2 2.00");
+    assert_page_not_contains(&summary, 0, "above average");
 }
