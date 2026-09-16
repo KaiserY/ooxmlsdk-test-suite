@@ -8,7 +8,7 @@ fn mixed_authored_row_grid_preserves_office_pagination() {
     // The configured Office export has one page. Replacing only the default
     // grid with Arial 10 printer metrics while retaining its authored row
     // sizes splits it over two pages. Those sizes need their own conversion.
-    let package = SpreadsheetDocument::new_from_file(&corpus_file(
+    let package = SpreadsheetDocument::new_from_file(corpus_file(
         "../ClosedXML/ClosedXML.Tests/Resource/TryToLoad/WorksheetWithExclamationMark.xlsx",
     ))
     .unwrap();
@@ -36,7 +36,7 @@ fn automatic_times_new_roman_rows_follow_the_office_printer_font() {
         (10.0, 30.0, 12.72),
         (11.0, 12.75, 13.92),
     ] {
-        let mut package = SpreadsheetDocument::new_from_file(&corpus_file(
+        let mut package = SpreadsheetDocument::new_from_file(corpus_file(
             "../LibreOffice/sc/qa/unit/data/xlsx/tdf130104_indent.xlsx",
         ))
         .unwrap();

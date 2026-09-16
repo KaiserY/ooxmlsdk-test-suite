@@ -2620,11 +2620,12 @@ fn extracted_text_line_content_key(
     if accept_pdfium_ordered_text_substitutions {
         // PDFium expands an embedded-font U+2026 glyph into three U+002E
         // characters for some candidate PDFs even though their ToUnicode CMap
-        // and Poppler extraction retain U+2026. Only canonicalize that known
-        // decomposition after Poppler has independently confirmed every
-        // ordered non-empty line in both PDFs. A real source "..." versus
-        // U+2026 therefore keeps failing because it cannot enable this gate.
-        key.replace("...", "\u{2026}")
+        // and Poppler extraction retain U+2026. It can likewise report one
+        // SimSun U+FF1D glyph as U+003D while the CMap and Poppler retain the
+        // fullwidth source character. Only canonicalize these known cases
+        // after Poppler has independently confirmed every ordered non-empty
+        // line in both PDFs. Real source differences cannot enable this gate.
+        key.replace("...", "\u{2026}").replace('\u{ff1d}', "=")
     } else {
         key
     }
@@ -4990,6 +4991,18 @@ mod tests {
         assert_ne!(
             extracted_text_line_content_key("Comments..", true, true),
             extracted_text_line_content_key("Comments…", true, true)
+        );
+        assert_ne!(
+            extracted_text_line_content_key("５行目=110", true, false),
+            extracted_text_line_content_key("５行目＝110", true, false)
+        );
+        assert_eq!(
+            extracted_text_line_content_key("５行目=110", true, true),
+            extracted_text_line_content_key("５行目＝110", true, true)
+        );
+        assert_ne!(
+            extracted_text_line_content_key("５行目=110", true, true),
+            extracted_text_line_content_key("５行目＝120", true, true)
         );
     }
 

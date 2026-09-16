@@ -143,7 +143,7 @@ fn error_cells_follow_office_ui_resources_without_translating_text() {
 
 #[test]
 fn external_udf_error_uses_the_configured_mexican_spanish_resource() {
-    let package = SpreadsheetDocument::new_from_file(&corpus_file(
+    let package = SpreadsheetDocument::new_from_file(corpus_file(
         "../Apache-POI/test-data/spreadsheet/56502.xlsx",
     ))
     .unwrap();

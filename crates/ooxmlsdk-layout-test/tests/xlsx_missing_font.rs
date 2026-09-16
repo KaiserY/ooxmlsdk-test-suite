@@ -9,7 +9,7 @@ fn missing_swiss_face_uses_simsun_and_synthetic_bold_but_installed_arial_stays_a
     // FreeSans + family=2 + charset=1 to SimSun. The otherwise identical Arial
     // control keeps Arial and its real bold face. Both use the zh-CN host locale.
     for (authored, expected) in [("FreeSans", "SimSun"), ("Arial", "Arial")] {
-        let mut package = SpreadsheetDocument::new_from_file(&corpus_file(
+        let mut package = SpreadsheetDocument::new_from_file(corpus_file(
             "../LibreOffice/sc/qa/unit/data/xlsx/tdf134392.xlsx",
         ))
         .unwrap();
