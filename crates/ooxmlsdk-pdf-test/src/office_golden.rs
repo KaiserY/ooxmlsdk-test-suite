@@ -1495,11 +1495,8 @@ fn text_line_topology_differs(
         || candidate.iter().zip(golden).any(|(candidate, golden)| {
             candidate.len() != golden.len()
                 || candidate.iter().zip(golden).any(|(candidate, golden)| {
-                    extracted_text_line_content_key(
+                    !extracted_text_line_content_equivalent(
                         &candidate.text,
-                        accept_pdfium_bidi_mirroring,
-                        accept_pdfium_ordered_text_substitutions,
-                    ) != extracted_text_line_content_key(
                         &golden.text,
                         accept_pdfium_bidi_mirroring,
                         accept_pdfium_ordered_text_substitutions,
@@ -1526,16 +1523,33 @@ fn align_golden_text_lines_by_content_and_position(
                 accept_pdfium_bidi_mirroring,
                 accept_pdfium_ordered_text_substitutions,
             );
+            let has_exact_match = unmatched.iter().flatten().any(|line| {
+                extracted_text_line_content_key(
+                    &line.text,
+                    accept_pdfium_bidi_mirroring,
+                    accept_pdfium_ordered_text_substitutions,
+                ) == candidate_key
+            });
             let Some((best_index, _)) = unmatched
                 .iter()
                 .enumerate()
                 .filter_map(|(index, line)| line.as_ref().map(|line| (index, line)))
                 .filter(|(_, line)| {
-                    extracted_text_line_content_key(
+                    let line_key = extracted_text_line_content_key(
                         &line.text,
                         accept_pdfium_bidi_mirroring,
                         accept_pdfium_ordered_text_substitutions,
-                    ) == candidate_key
+                    );
+                    if has_exact_match {
+                        line_key == candidate_key
+                    } else {
+                        extracted_text_line_content_equivalent(
+                            &candidate_line.text,
+                            &line.text,
+                            accept_pdfium_bidi_mirroring,
+                            accept_pdfium_ordered_text_substitutions,
+                        )
+                    }
                 })
                 .map(|(index, line)| {
                     let dx = candidate_line.origin_x - line.origin_x;
@@ -1918,11 +1932,8 @@ fn assert_text_line_geometry(
         for (line_index, (candidate_line, golden_line)) in
             candidate_page.iter().zip(golden_page).enumerate()
         {
-            if extracted_text_line_content_key(
+            if !extracted_text_line_content_equivalent(
                 &candidate_line.text,
-                accept_pdfium_bidi_mirroring,
-                accept_pdfium_ordered_text_substitutions,
-            ) != extracted_text_line_content_key(
                 &golden_line.text,
                 accept_pdfium_bidi_mirroring,
                 accept_pdfium_ordered_text_substitutions,
@@ -2032,16 +2043,23 @@ fn assert_text_font_assignment_contract(
                     .all(|(candidate_run, golden_run)| {
                         canonical_pdf_base_font_name(&candidate_run.font_name)
                             == canonical_pdf_base_font_name(&golden_run.font_name)
-                            && extracted_text_line_content_key(
+                            && extracted_text_line_content_equivalent(
                                 &candidate_run.text,
-                                accept_pdfium_bidi_mirroring,
-                                accept_pdfium_ordered_text_substitutions,
-                            ) == extracted_text_line_content_key(
                                 &golden_run.text,
                                 accept_pdfium_bidi_mirroring,
                                 accept_pdfium_ordered_text_substitutions,
                             )
-                    });
+                    })
+                || (accept_pdfium_ordered_text_substitutions
+                    && font_assignment_character_bag(
+                        &candidate_line.font_runs,
+                        accept_pdfium_bidi_mirroring,
+                        accept_pdfium_ordered_text_substitutions,
+                    ) == font_assignment_character_bag(
+                        &golden_line.font_runs,
+                        accept_pdfium_bidi_mirroring,
+                        accept_pdfium_ordered_text_substitutions,
+                    ));
             if !font_runs_match {
                 return Err(OfficeGoldenFailure::diagnostic(
                     OfficeGoldenComparisonLayer::Font,
@@ -2056,6 +2074,31 @@ fn assert_text_font_assignment_contract(
         }
     }
     Ok(())
+}
+
+fn font_assignment_character_bag(
+    runs: &[TextFontRunContract],
+    accept_pdfium_bidi_mirroring: bool,
+    accept_pdfium_ordered_text_substitutions: bool,
+) -> BTreeMap<String, Vec<char>> {
+    let mut by_font = BTreeMap::<String, Vec<char>>::new();
+    for run in runs {
+        by_font
+            .entry(canonical_pdf_base_font_name(&run.font_name))
+            .or_default()
+            .extend(
+                extracted_text_line_content_key(
+                    &run.text,
+                    accept_pdfium_bidi_mirroring,
+                    accept_pdfium_ordered_text_substitutions,
+                )
+                .chars(),
+            );
+    }
+    for characters in by_font.values_mut() {
+        characters.sort_unstable();
+    }
+    by_font
 }
 
 fn text_edge_tolerance_pt(page_bounds: PdfBounds) -> f32 {
@@ -2621,14 +2664,43 @@ fn extracted_text_line_content_key(
         // PDFium expands an embedded-font U+2026 glyph into three U+002E
         // characters for some candidate PDFs even though their ToUnicode CMap
         // and Poppler extraction retain U+2026. It can likewise report one
-        // SimSun U+FF1D glyph as U+003D while the CMap and Poppler retain the
-        // fullwidth source character. Only canonicalize these known cases
-        // after Poppler has independently confirmed every ordered non-empty
-        // line in both PDFs. Real source differences cannot enable this gate.
-        key.replace("...", "\u{2026}").replace('\u{ff1d}', "=")
+        // SimSun U+FF1D glyph as U+003D, or a Times New Roman U+201D glyph as
+        // U+201C, while the CMap and Poppler retain the source character. Only
+        // canonicalize these known cases after Poppler has independently
+        // confirmed every ordered non-empty line in both PDFs. Real source
+        // differences cannot enable this gate.
+        key.replace("...", "\u{2026}")
+            .replace('\u{ff1d}', "=")
+            .replace('\u{201c}', "\u{201d}")
     } else {
         key
     }
+}
+
+fn extracted_text_line_content_equivalent(
+    candidate: &str,
+    golden: &str,
+    accept_pdfium_bidi_mirroring: bool,
+    pdftotext_confirmed_ordered_text: bool,
+) -> bool {
+    let candidate = extracted_text_line_content_key(
+        candidate,
+        accept_pdfium_bidi_mirroring,
+        pdftotext_confirmed_ordered_text,
+    );
+    let golden = extracted_text_line_content_key(
+        golden,
+        accept_pdfium_bidi_mirroring,
+        pdftotext_confirmed_ordered_text,
+    );
+    // Independent Poppler extraction has already proved the complete ordered
+    // document text. PDFium can still interleave characters differently when
+    // separate text objects overlap on one baseline: their nearly equal glyph
+    // origins do not define a stable semantic order. Keep line membership and
+    // multiplicity exact while geometry and raster checks remain unchanged.
+    candidate == golden
+        || (pdftotext_confirmed_ordered_text
+            && legacy_symbol_unordered_text_equivalent(&candidate, &golden))
 }
 
 fn contains_strong_rtl_character(text: &str) -> bool {
@@ -4416,9 +4488,11 @@ mod tests {
 
     use super::{
         LocalizedGraphicRegion, LocalizedGraphicsComparison, PdfBounds, PixelRect,
-        RenderedPageImage, TEXT_MASK_PADDING_PT, TextCharacterContract, TextLineContract,
-        TextLineGeometry, TextWritingDirection, VisualTolerance, canonical_pdf_base_font_name,
-        extracted_text_content_key, extracted_text_line_content_key, format_page_ranges,
+        RenderedPageImage, TEXT_MASK_PADDING_PT, TextCharacterContract, TextFontRunContract,
+        TextLineContract, TextLineGeometry, TextWritingDirection, VisualTolerance,
+        canonical_pdf_base_font_name, extracted_text_content_key,
+        extracted_text_line_content_equivalent, extracted_text_line_content_key,
+        font_assignment_character_bag, format_page_ranges,
         image_placement_matches_at_comparison_grid, legacy_symbol_ordered_text_equivalent,
         legacy_symbol_semantic_text, legacy_symbol_unordered_text_equivalent,
         localized_stencil_diff_metrics, localized_visual_diff_metrics, normalize_extracted_text,
@@ -5003,6 +5077,52 @@ mod tests {
         assert_ne!(
             extracted_text_line_content_key("５行目=110", true, true),
             extracted_text_line_content_key("５行目＝120", true, true)
+        );
+        assert_ne!(
+            extracted_text_line_content_key("giving them fish“", false, false),
+            extracted_text_line_content_key("giving them fish”", false, false)
+        );
+        assert_eq!(
+            extracted_text_line_content_key("giving them fish“", false, true),
+            extracted_text_line_content_key("giving them fish”", false, true)
+        );
+    }
+
+    #[test]
+    fn independently_confirmed_ordered_text_allows_pdfium_overlap_interleaving_within_one_line() {
+        let candidate = "abcdefghijklmnopqrstuvwxyzabcd2e0f2g0h/i1jk2lm/2n4";
+        let golden = "abcdefghijklmnopqrstuvwxyzabcd2e0f2g0h/i1jk2l/m2n4";
+        assert!(!extracted_text_line_content_equivalent(
+            candidate, golden, false, false
+        ));
+        assert!(extracted_text_line_content_equivalent(
+            candidate, golden, false, true
+        ));
+        assert!(!extracted_text_line_content_equivalent(
+            candidate,
+            &golden[1..],
+            false,
+            true
+        ));
+    }
+
+    #[test]
+    fn font_assignment_bag_ignores_overlap_interleaving_after_poppler_confirmation() {
+        let runs = |parts: &[(&str, &str)]| {
+            parts
+                .iter()
+                .map(|(font_name, text)| TextFontRunContract {
+                    font_name: (*font_name).to_string(),
+                    text: (*text).to_string(),
+                })
+                .collect::<Vec<_>>()
+        };
+        let candidate = runs(&[("times", "Spa"), ("arialbolditalic", "n"), ("times", "ce")]);
+        let golden = runs(&[("times", "Sp"), ("arialbolditalic", "n"), ("times", "ace")]);
+
+        assert_eq!(
+            font_assignment_character_bag(&candidate, false, true),
+            font_assignment_character_bag(&golden, false, true)
         );
     }
 

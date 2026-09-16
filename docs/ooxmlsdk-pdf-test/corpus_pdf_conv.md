@@ -8,46 +8,29 @@ details in the indexed archive, and promote only reusable lessons here.
 
 ## Current progress
 
-Accepted checkpoint: **batch 32 full**, **5,370 configured identities**:
+Accepted checkpoint: **batch 35 full**, **5,370 configured identities**:
 
 | Result | Count |
 | --- | ---: |
-| PASS | **3,274** |
-| FAIL | 1,965 |
+| PASS | **3,311** |
+| FAIL | 1,928 |
 | REFERENCE_FAIL | 131 |
 | Infrastructure errors | 0 |
 
-There are no pending PASSes. Protect all **3,274 accepted PASSes**, including the
-user's original 3,099 baseline. New passes never cancel regressions.
+Protect all **3,311 accepted PASSes**; there are no pending PASS obligations.
+Batch 35 retains every earlier protected PASS and accepts 37 net gains over
+batch 32. Its release binary is
+`c8080b93c56d91690bb473cc1eafd3252ba4fd28bdccec394eecc32fe8197713`;
+the archived result hash is
+`e64e65bc292f670d92e7ceade5448d707eac3c8b2e1726efa2259f3a0f08746c`.
+Both Clippy lanes pass.
 
-The latest complete audit is `xlsx-drawing-autofit/full-02-release/`. All 1,236
-valid Excel references are **724 PASS / 512 FAIL**; another 109 Excel assignments
-remain REFERENCE_FAIL. The final release binary is
-`9711fcf19f3dbd8d6936c394911f473a6934165c0218b53510446bf06a2008f0`.
-It retains all 3,259 batch-31 PASSes, promotes exactly fifteen accumulated gains,
-and has zero regressions or infrastructure errors. Both requested Clippy lanes
-also pass.
-
-Latest repair: `xlsx-drawing-autofit/` makes LibreOffice
-`testShapeAutofit.xlsx` PASS. Excel emits a worksheet DrawingML run on a
-continuation page only after a shaped glyph origin reaches the physical page and
-the run reaches the printable horizontal band. A ten-export Office matrix rules
-out wrap, overflow, explicit no-autofit and run-merging explanations; translated
-and lengthened controls establish the print-band boundary. Half an em of
-font-relative shaping slack covers the measured Office/SDK printer-font advance
-difference. The final target plus Apache POI `56514.xlsx`, LibreOffice
-`underlineColor.xlsx` and two upright controls are 5/5 PASS.
-
-Batch 32 accepts these fifteen scoped gains accumulated since batch 31:
-
-| Evidence | Accepted behavior | New PASSes |
-| --- | --- | ---: |
-| `xlsx-underline-color/`, `xlsx-drawing-rich-text/` | DrawingML run/style preservation | 2 |
-| `xlsx-drawing-bullets/`, `xlsx-drawing-wrap/`, `xlsx-drawing-character-spacing/`, `xlsx-drawing-page-text-culling/` | bullets, wrapping, spacing and physical-page culling | 6 |
-| `xlsx-font-symbol-fallback/`, `xlsx-54524-font/` | script/coverage and missing Modern-family font resolution | 2 |
-| `xlsx-system-theme-colors/` | configured Windows `window`/`windowText` theme colors | 2 |
-| `xlsx-62629-drawing-font/` | header/footer theme face and bounded two-cell picture marker mapping | 2 |
-| `xlsx-drawing-autofit/` | printable-band continuation-page culling | 1 |
+A pre-closure full audit exposed seven regressions: six rotated-text cases lost
+3-D outline classification when `scene3d` omitted the optional `sp3d`, and one
+user-drawn master slide-number field was mistaken for a legacy placeholder.
+The corrected batch 35 has **3,311/3,311 protected PASSes**, zero regressions and
+zero infrastructure errors. The rejected audit remains evidence only and was
+not promoted.
 
 The earlier 12 layout, five public-font and three public-XLSX failures are
 closed; do not repeatedly reassess them. Office-based assertion decisions are
@@ -65,27 +48,26 @@ Paths below are relative to that root unless stated otherwise.
 | Need | Authoritative entry |
 | --- | --- |
 | Resume current work | `CURRENT.md`, `ledger/pending-golden-repairs.json` |
-| Accepted identities/results | `checkpoint-batch-32-full/pass-baseline.jsonl`, `cumulative-results.jsonl`, `manifest.json` |
-| Additional protected PASSes | `ledger/pending-pass-obligations.jsonl` (currently empty) |
-| Latest verification and runtime hashes | `xlsx-drawing-autofit/closure.json`, `compiled-source-hashes.json` |
-| Latest full campaign evidence | `xlsx-drawing-autofit/full-02-release/`, `checkpoint-batch-32-full/` |
+| Accepted identities/results | `checkpoint-batch-35-full/pass-baseline.jsonl`, `cumulative-results.jsonl`, `manifest.json`, `summary.json` |
+| Protected PASSes | `ledger/current-pass-union.jsonl` (3,311); `ledger/pending-pass-obligations.jsonl` is empty |
+| Latest full campaign evidence | `checkpoint-batch-35-full/` |
 | Audited source/configuration preservation | `snapshot-batch-32-final-audited/` |
 | Individual repairs and Office experiments | Stage `evidence.md`, `office-*-validation.json`; consult the ledger before repeating work |
 | Detailed history removed from this entry | `xlsx-chartsheet-geometry/guide-before-condense.md`; earlier `corpus_pdf_conv-before-cleanup.md` |
 
 The retired 2,774/2,783 source cohorts remain obligations through
-`baseline/historical-2783-source-bridge.jsonl`: **117 mapped sources still FAIL**
-in the current configurations. `testShapeAutofit.xlsx` closes one source-bridge
-obligation in batch 32. Changed reference/configuration hashes make these source
+`baseline/historical-2783-source-bridge.jsonl`. The last dedicated bridge audit
+at batch 32 had **117 mapped source failures**; refresh that count only with a
+new bridge audit. Changed reference/configuration hashes make these source
 obligations, not measured regressions of old runtime identities. Do not feed
 retired IDs from `/tmp/ooxmlsdk-golden-baseline-20260911/` into the v2 plan.
 
 ## Next work
 
-1. Continue from the clean batch 32 full baseline. Prefer deterministic remaining
-   Excel gaps, especially unused typed attributes and missing final-consumer
-   behavior. Reuse the mature DOCX/PPTX drawing paths and archived `/tmp`
-   experiments only where their semantics match.
+1. Continue from the clean batch 35 baseline. Prefer deterministic remaining
+   DOCX/PPTX/XLSX gaps, especially unused typed attributes and missing
+   final-consumer behavior. Reuse archived `/tmp` experiments only where their
+   semantics match.
 2. Keep `BloodPressureTracker_TP10073878.xltx`, the residual Arial 11 table-grid
    phase, and `tdf66668.xlsx` deferred until a separate feature supplies the
    missing discriminator. Their evidence is in `xlsx-chartsheet-shadow/`,
@@ -151,7 +133,11 @@ jq -e '.verdict == "PASS"' /tmp/case-result.json
 `office_pdf_campaign render-native-one` is the Word native-picture realization
 path and rejects Excel tasks. For XLSX Office controls, use the serialized
 environment-controlled Office worker or a standalone Excel COM export guarded
-against concurrent Office processes.
+against concurrent Office processes. Export the controlled PDF before querying
+Excel `VPageBreaks`: reading that collection can repaginate the workbook and
+change the later fixed-format output. When constructing OOXML matrices, preserve
+the original ZIP entries and namespace prefixes; ElementTree serialization can
+rename prefixes still referenced by `mc:Ignorable` and invalidate the package.
 
 Use `audit --selection full --configuration-ids FILE --jobs 4` for a batch;
 looping `prepare-audit-one` repeatedly revalidates the plan. Native exit 0 alone
@@ -173,7 +159,7 @@ import json
 from pathlib import Path
 root = Path('/tmp/ooxmlsdk-repair-resume-20260912')
 protected = {}
-for name in ('checkpoint-batch-32-full/pass-baseline.jsonl',
+for name in ('checkpoint-batch-35-full/pass-baseline.jsonl',
              'ledger/pending-pass-obligations.jsonl'):
     for line in (root / name).read_text().splitlines():
         row = json.loads(line)
@@ -183,7 +169,7 @@ for name in ('checkpoint-batch-32-full/pass-baseline.jsonl',
 PYTHON
 python3 scripts/audit_office_pdf_pass_union.py --full --build \
   --baseline "$repair_archive/ledger/current-pass-union.jsonl" \
-  --previous-results "$repair_archive/checkpoint-batch-32-full/cumulative-results.jsonl" \
+  --previous-results "$repair_archive/checkpoint-batch-35-full/cumulative-results.jsonl" \
   --output-root /tmp/ooxmlsdk-golden-audit-next --jobs 4
 ```
 
@@ -285,7 +271,7 @@ Per user, prioritize remaining golden PDF failures. During iteration, use the
 individual configured gate, only necessary private tests, and an affected scoped
 audit for a bounded feature. Accumulate several repairs before a broad Excel or
 full campaign audit; do not run a full audit for each small fix.
-Both Clippy lanes passed at the batch-32 closure. Subsequent
+Both Clippy lanes passed at the batch-35 closure. Subsequent
 `ooxmlsdk-layout-test`, public-XLSX and Clippy runs are skipped during ordinary
 golden iteration; collect broad checks for a later requested closure.
 
@@ -294,6 +280,31 @@ visual differences, inspect enlarged candidate/Office images and PDF metrics,
 trace the final consumer with GDB, then vary one input in a controlled Office
 experiment. Reuse existing evidence and counterexamples before adding probes.
 A passing diagnostic is not a replacement for configured acceptance.
+When a direct-writer PDF is unexpectedly blank, inspect its final bytes before
+debugging page paint. `pdf-writer` 0.15 ends at `%%EOF`; Apache POI
+`54542_cropped_bitmap.pptx` rendered correctly in both Poppler and PDFium after
+appending one LF, while `qpdf --check` still accepted the unterminated file and
+a QDF rewrite silently supplied the missing line ending. The former Krilla path
+could hide this through its later PDF post-processing passes. Keep the terminal
+LF in the direct writer and use a byte-for-byte copy plus one appended LF as the
+minimal discriminator.
+For PowerPoint text 3-D, classify the scene independently from the optional
+`sp3d`/`flatTx` choice. A front-facing orthographic scene with no camera/light/
+backdrop or surface state is inert, but `a:camera/a:rot` remains effective when
+`sp3d` is omitted and Office exports glyph outlines. For inherited slide-number
+fields, keep ordinary `userDrawn="1"` master text boxes separate from generated
+`Slide Number Placeholder …` objects controlled by `p:hf@sldNum`.
+Carry DrawingML `a:blip@cstate` through image lowering and the PDF cache key:
+PowerPoint Screen uses the screen JPEG path for omitted/`screen`, while explicit
+`print` can retain the palette/lossless branch. For overlapping independent PDF
+text objects, exact font-run interleaving is unstable; only after an independent
+Poppler ordered-text check succeeds may the golden observer compare normalized
+per-font character multisets to verify font assignment.
+Controlled PowerPoint probes also establish that missing Myriad Pro resolves to
+Segoe UI independently of `pitchFamily`; generated chart-title text follows the
+UI language while its theme face follows the document language. A character
+bullet reserves at least its natural glyph advance before the first text run,
+including when authored margins are omitted.
 Worksheet DrawingML `xdr:txBody` contains `a:p/a:r` properties; flattening its
 text and retaining only the first run silently loses later colors and underline
 fills. Preserve the paragraph/run boundary, apply defaults from broadest to most
@@ -425,9 +436,7 @@ do not prepend Python preparation or another shell command in that same invocati
 Keep logs/results under `/tmp` and reuse approved commands.
 Avoid fragile nested `-Command` quoting.
 Let the tool capture `pwsh.exe` output directly; the Office worker already writes
-per-case logs. In this environment, adding shell `>` redirection failed at WSL
-startup while the identical direct invocation ran successfully. A startup failure
-does not establish that the prepared Office experiment ran.
+per-case logs.
 
 Campaign `--configuration-ids` accepts JSONL identity objects, for example
 `{"configuration_id":"<64 hex>"}`, rather than bare ID lines. A parse failure
