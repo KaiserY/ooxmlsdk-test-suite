@@ -233,6 +233,7 @@ pub struct TextCharSummary {
     pub text: String,
     pub font_name: String,
     pub bounds: String,
+    pub ink_bounds: String,
     pub font_metric_bounds: Option<String>,
     pub origin_x: String,
     pub origin_y: String,
@@ -827,12 +828,12 @@ fn normalized_pdfium_page_text(page_index: usize, page: &PdfPage<'_>) -> Result<
     let mut characters = Vec::with_capacity(pdfium_text_characters.len());
     let mut pdfium_characters = pdfium_text_characters.iter().peekable();
     while let Some(character) = pdfium_characters.next() {
-        let (decoded, consume_next) = decode_pdfium_unicode_scalar(
-            character.unicode_value(),
+        let (decoded, consume_next) = decode_pdfium_character_unicode(
+            &character,
             pdfium_characters
                 .peek()
                 .map(|character| character.unicode_value()),
-        );
+        )?;
         if consume_next {
             pdfium_characters.next();
         }
@@ -842,6 +843,34 @@ fn normalized_pdfium_page_text(page_index: usize, page: &PdfPage<'_>) -> Result<
         characters,
         text.segments().iter().map(|segment| segment.text()),
     ))
+}
+
+fn decode_pdfium_character_unicode(
+    character: &PdfPageTextChar<'_>,
+    next: Option<u32>,
+) -> Result<(Option<char>, bool), String> {
+    let value = character.unicode_value();
+    // CPDF_TextPage::ProcessGenerateCharacter(kHyphen) replaces a line-end
+    // hyphen with U+0002 and exposes its type through FPDFText_IsHyphen.
+    // Restore the painted character only with that explicit API proof. An
+    // authored/control U+0002 without the flag remains a distinct character.
+    let hyphen = value == 2
+        && character
+            .is_hyphen()
+            .map_err(|error| format!("PDFium could not read character hyphen type: {error}"))?;
+    Ok(decode_pdfium_typed_unicode_scalar(value, next, hyphen))
+}
+
+fn decode_pdfium_typed_unicode_scalar(
+    value: u32,
+    next: Option<u32>,
+    hyphen: bool,
+) -> (Option<char>, bool) {
+    if value == 2 && hyphen {
+        (Some('-'), false)
+    } else {
+        decode_pdfium_unicode_scalar(value, next)
+    }
 }
 
 fn decode_pdfium_unicode_scalar(value: u32, next: Option<u32>) -> (Option<char>, bool) {
@@ -1156,10 +1185,10 @@ fn pdfium_summary(pdf: &[u8]) -> Result<PdfiumSummary, String> {
         let pdfium_text_characters = text.chars();
         let mut characters = pdfium_text_characters.iter().peekable();
         while let Some(character) = characters.next() {
-            let (value, consume_next) = decode_pdfium_unicode_scalar(
-                character.unicode_value(),
+            let (value, consume_next) = decode_pdfium_character_unicode(
+                &character,
                 characters.peek().map(|character| character.unicode_value()),
-            );
+            )?;
             if consume_next {
                 characters.next();
             }
@@ -1167,6 +1196,9 @@ fn pdfium_summary(pdf: &[u8]) -> Result<PdfiumSummary, String> {
                 let bounds = character
                     .loose_bounds()
                     .map_err(|error| format!("PDFium could not read char bounds: {error}"))?;
+                let ink_bounds = character
+                    .tight_bounds()
+                    .map_err(|error| format!("PDFium could not read char ink bounds: {error}"))?;
                 let (origin_x, origin_y) = character
                     .origin()
                     .map_err(|error| format!("PDFium could not read char origin: {error}"))?;
@@ -1191,6 +1223,7 @@ fn pdfium_summary(pdf: &[u8]) -> Result<PdfiumSummary, String> {
                     text: value.to_string(),
                     font_name,
                     bounds: format_rect(bounds, 2),
+                    ink_bounds: format_rect(ink_bounds, 2),
                     font_metric_bounds,
                     origin_x: format_points(origin_x, 2),
                     origin_y: format_points(origin_y, 2),
@@ -2607,6 +2640,15 @@ pub(crate) fn pdftotext_page_raw(
     )
 }
 
+pub(crate) fn pdftotext_pages(pdf: &[u8]) -> std::result::Result<Vec<String>, String> {
+    let output = run_pdftotext(pdf, ["-layout"])?;
+    let mut pages = output.split('\u{c}').map(str::to_owned).collect::<Vec<_>>();
+    if pages.last().is_some_and(|page| page.trim().is_empty()) {
+        pages.pop();
+    }
+    Ok(pages)
+}
+
 fn pdftotext(pdf: &[u8]) -> std::result::Result<String, String> {
     run_pdftotext(pdf, ["-layout", "-nopgbrk"])
 }
@@ -2700,6 +2742,30 @@ mod tests {
         assert_eq!(
             decode_pdfium_unicode_scalar('\u{1f878}' as u32, None),
             (Some('\u{1f878}'), false)
+        );
+    }
+
+    #[test]
+    fn pdfium_hyphen_sentinel_requires_the_native_character_type() {
+        assert_eq!(
+            decode_pdfium_typed_unicode_scalar(2, None, true),
+            (Some('-'), false)
+        );
+        assert_eq!(
+            decode_pdfium_typed_unicode_scalar(2, None, false),
+            (Some('\u{2}'), false)
+        );
+        assert_eq!(
+            decode_pdfium_typed_unicode_scalar('−' as u32, None, true),
+            (Some('−'), false)
+        );
+        assert_eq!(
+            decode_pdfium_typed_unicode_scalar('A' as u32, None, true),
+            (Some('A'), false)
+        );
+        assert_eq!(
+            decode_pdfium_typed_unicode_scalar(0xd83e, Some(0xdc78), false),
+            (Some('\u{1f878}'), true)
         );
     }
 

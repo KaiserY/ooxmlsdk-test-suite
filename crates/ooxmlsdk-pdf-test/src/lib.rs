@@ -12,6 +12,8 @@ pub mod office_pdf_campaign;
 mod office_reference_environment;
 pub mod pdf_extract;
 pub mod pdf_fragment;
+pub mod pdf_painted_glyphs;
+mod pdf_semantic_source;
 pub mod render;
 
 use std::path::{Path, PathBuf};

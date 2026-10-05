@@ -592,6 +592,16 @@ impl CampaignAssignment {
                 OfficeFamily::Excel => PdfDocumentKind::Xlsx,
                 OfficeFamily::PowerPoint => PdfDocumentKind::Pptx,
             });
+        // This configured Office installation exposes MSHY7EN/GE/FR/IT/ES
+        // through Language.ActiveHyphenationDictionary. Other source languages
+        // have no automatic dictionary here; they still honor w:softHyphen.
+        // See the entry point's proofing-resource observations and commands.
+        options.automatic_hyphenation_languages = Some(
+            ["en", "de", "fr", "it", "es"]
+                .into_iter()
+                .map(str::to_string)
+                .collect(),
+        );
         Ok(options)
     }
 

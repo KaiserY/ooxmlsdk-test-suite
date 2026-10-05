@@ -838,7 +838,7 @@ fn text_runs_matching<'a, 'doc>(
             DisplayItem::Text(text)
                 if page_text_matches(text.text.as_ref(), &normalized_expected) =>
             {
-                Some(text)
+                Some(text.as_ref())
             }
             _ => None,
         })

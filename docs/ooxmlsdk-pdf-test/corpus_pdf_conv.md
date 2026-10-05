@@ -1,188 +1,258 @@
 # Configured Office Golden PDF Fidelity
 
-Session entry point: current obligations, next repairs, evidence locations and
-reusable development/debugging lessons. Keep per-attempt logs under `/tmp`.
-Update this entry at meaningful stage boundaries; replace stale status instead
-of appending a chronology. Keep attempt commands, measurements and validation
-details in the indexed archive, and promote only reusable lessons here.
+**`/tmp/` is the authoritative working/evidence root across all stages.** Search
+from `/tmp/` for prior scripts, C# probes, GDB traces and images. A directory such
+as `/tmp/ooxmlsdk-repair-resume-20260912/` is one stage, not the archive root.
+This entry keeps current obligations, source routes and reusable commands.
+Keep experiments and case-specific history under `/tmp/`; replace stale status.
 
 ## Current progress
 
-Accepted checkpoint: **batch 35 full**, **5,370 configured identities**:
+Accepted **batch54 full**: **5,370 identities = 3,641 PASS / 1,598 FAIL /
+131 REFERENCE_FAIL**. All 3,641 protected passes preserved; **14 new PASS** versus
+batch53, zero regressions or infrastructure errors. Audit: 370.679 seconds.
+Receipt: `/tmp/ooxmlsdk-repair-resume-20260912/checkpoint-batch-54-full-final/`
+(`summary.json`, `promotion.json`, frozen source/binary hashes).
 
-| Result | Count |
-| --- | ---: |
-| PASS | **3,311** |
-| FAIL | 1,928 |
-| REFERENCE_FAIL | 131 |
-| Infrastructure errors | 0 |
+**Original Astra84 completed and accepted**: 78 indexed cases verified against
+exact IDs, plus 6 previously resolved obligations preserved. Receipt:
+`/tmp/ooxmlsdk-repair-resume-20260912/ledger/astra-batch-54.json`.
+Pause at this milestone as requested. On resumption, select one of the remaining
+1,598 configured failures, prioritize concrete missing features, and accumulate
+repairs before another full audit. Keep the 131 reference failures separate.
 
-Protect all **3,311 accepted PASSes**; there are no pending PASS obligations.
-Batch 35 retains every earlier protected PASS and accepts 37 net gains over
-batch 32. Its release binary is
-`c8080b93c56d91690bb473cc1eafd3252ba4fd28bdccec394eecc32fe8197713`;
-the archived result hash is
-`e64e65bc292f670d92e7ceade5448d707eac3c8b2e1726efa2259f3a0f08746c`.
-Both Clippy lanes pass.
+Closure verification: all three release Clippy lanes below PASS; private layout
+2,233 PASS / 3 recorded old skips, PDF 293 PASS, emfsdk 225 PASS / 1 existing
+ignored and 2 derive PASS. Native controls, actual dev GDB and release PDF checks
+are in `/tmp/ooxmlsdk-batch54-regressions/README-current.md`; regression repairs
+preserve golden files and acceptance gates. Full validation receipt:
+`/tmp/ooxmlsdk-repair-resume-20260912/ledger/validation-batch-54.json`.
 
-A pre-closure full audit exposed seven regressions: six rotated-text cases lost
-3-D outline classification when `scene3d` omitted the optional `sp3d`, and one
-user-drawn master slide-number field was mistaken for a legacy placeholder.
-The corrected batch 35 has **3,311/3,311 protected PASSes**, zero regressions and
-zero infrastructure errors. The rejected audit remains evidence only and was
-not promoted.
+**`/tmp/ab.png/json` is floating-table-caption physical page 1, final-v2-PASS**.
+Latest regression comparisons: `/tmp/ooxmlsdk-batch54-regressions/after-final/`.
+Case histories and prior entry text are archived under
+`/tmp/ooxmlsdk-floating-table-caption/entry-{progress-before-batch54,reference-before-compaction}.md`.
 
-The earlier 12 layout, five public-font and three public-XLSX failures are
-closed; do not repeatedly reassess them. Office-based assertion decisions are
-recorded in [legacy assertions](legacy-assertion-resolution.md) and
-[XLSX assertions](xlsx-legacy-assertion-resolution.md).
+## Repair workflow and obligations
 
-Three cases remain deliberately deferred until a related deterministic feature
-supplies new evidence: the `BloodPressureTracker_TP10073878.xltx` marker raster
-phase, the residual Arial 11 PivotTable grid phase, and `tdf66668.xlsx` rich-font
-flattening. Their current evidence is indexed in the live ledger.
+1. Start with one configured FAIL and its source XML. Separate missing features,
+   geometry, text shaping and PDF paint before changing code. Prioritize unused
+   attributes/types and clear functional gaps; avoid fitting small differences.
+2. Search `/tmp/` for the same subsystem before creating probes. Combine local
+   sources/specs, primary web sources, actual dev GDB, images and Office output.
+   A metric alone does not justify a fix or reverting one. Office configured
+   output is the target; preserve golden acceptance gates.
+3. Check the affected case and meaningful controls in release. Add every new
+   PASS to the protected union immediately. Accumulate repairs before full audits;
+   public layout/XLSX suites and Clippy are not routine iteration gates. Run Clippy
+   when requested for closure. Never claim an unrun command as a failed case.
+4. Keep Cargo, GDB, Office and campaigns serial. Use each owning workspace's
+   default `target/`, never `CARGO_TARGET_DIR`; use workspace `cargo fmt --all`.
+   Release for checks, dev for GDB. The user commits; preserve unrelated changes.
+5. Prefer pure Rust and read-only upstream references (especially `../fontations/`).
+   On a failed crate update, stop and give the user the exact error; no retries or
+   path-dependency substitution. Pause for a major dependency issue. No subagents
+   without authorization.
 
-Archive root: `/tmp/ooxmlsdk-repair-resume-20260912/`.
-Paths below are relative to that root unless stated otherwise.
+Current ledger stage: `/tmp/ooxmlsdk-repair-resume-20260912/`:
+`ledger/current-pass-union.jsonl` protects accepted **and pending** PASSes;
+`ledger/pending-pass-obligations.jsonl` contains pending promotions;
+`ledger/pending-golden-repairs.json` points to the accepted checkpoint.
+`astra-deferred-index.tsv` indexes the original difficult cases.
+Retired IDs are not valid v2 campaign IDs: their continuing obligations are mapped
+in `baseline/historical-2783-source-bridge.jsonl`.
 
-| Need | Authoritative entry |
-| --- | --- |
-| Resume current work | `CURRENT.md`, `ledger/pending-golden-repairs.json` |
-| Accepted identities/results | `checkpoint-batch-35-full/pass-baseline.jsonl`, `cumulative-results.jsonl`, `manifest.json`, `summary.json` |
-| Protected PASSes | `ledger/current-pass-union.jsonl` (3,311); `ledger/pending-pass-obligations.jsonl` is empty |
-| Latest full campaign evidence | `checkpoint-batch-35-full/` |
-| Audited source/configuration preservation | `snapshot-batch-32-final-audited/` |
-| Individual repairs and Office experiments | Stage `evidence.md`, `office-*-validation.json`; consult the ledger before repeating work |
-| Detailed history removed from this entry | `xlsx-chartsheet-geometry/guide-before-condense.md`; earlier `corpus_pdf_conv-before-cleanup.md` |
+## Build and verification
 
-The retired 2,774/2,783 source cohorts remain obligations through
-`baseline/historical-2783-source-bridge.jsonl`. The last dedicated bridge audit
-at batch 32 had **117 mapped source failures**; refresh that count only with a
-new bridge audit. Changed reference/configuration hashes make these source
-obligations, not measured regressions of old runtime identities. Do not feed
-retired IDs from `/tmp/ooxmlsdk-golden-baseline-20260911/` into the v2 plan.
-
-## Next work
-
-1. Continue from the clean batch 35 baseline. Prefer deterministic remaining
-   DOCX/PPTX/XLSX gaps, especially unused typed attributes and missing
-   final-consumer behavior. Reuse archived `/tmp` experiments only where their
-   semantics match.
-2. Keep `BloodPressureTracker_TP10073878.xltx`, the residual Arial 11 table-grid
-   phase, and `tdf66668.xlsx` deferred until a separate feature supplies the
-   missing discriminator. Their evidence is in `xlsx-chartsheet-shadow/`,
-   `xlsx-chartsheet-origin-grid/`, `xlsx-pivot-row-lines/` and
-   `xlsx-tdf66668-font/`.
-3. During iteration, use release individual golden checks and necessary private
-   tests. Use affected scoped audits for bounded changes, add each gain to the
-   pending union, and accumulate several repairs before another broad audit.
-   Public layout/XLSX suites and Clippy stay out of ordinary golden iteration
-   unless later closure work explicitly requests them. The user commits; preserve
-   unrelated changes. No subagents unless newly authorized.
-
-Retained functional coverage can be verified without Office:
-
-```sh
-python3 scripts/verify_office_pdf_functional_coverage.py --verify-only
-```
-
-## Build and audit commands
-
-Run each command from its owning workspace root with the default `target/`.
-Cargo, GDB, Office and campaign audits are serial; independent reading may continue.
-Do not set `CARGO_TARGET_DIR`. Use `cargo fmt --all`, not standalone rustfmt.
-
-For iteration, choose tests for the changed subsystem. The user has waived
-clippy for subsequent golden repairs: prioritize fixes, necessary functional
-tests and affected configured audits. Inspect local `../fontations/` and
-`../harfrust/` before dependency upgrades; upgrade when the changes help fidelity.
-If a `cargo update` fails, stop and give the user its command and error; do not
-retry or substitute path dependencies. A successful dependency update still needs
-functional checks and an audit of the affected scope before acceptance.
-
-The clippy commands below are retained as a reference for separately requested lint work:
-
-| Workspace | Command |
-| --- | --- |
-| Implementation | `cargo clippy --workspace --all-targets -- -D warnings` |
-| Test suite | `cargo clippy --workspace --tests -- -D warnings` |
-| emfsdk, when changed | `cargo clippy --workspace --all-targets --all-features -- -D warnings` |
-
-Table-driven layout case labels are not Cargo test names. Select a case through
-`OOXMLSDK_LAYOUT_CASE` and run its actual test function; verify that tests ran:
-
-```sh
-env OOXMLSDK_LAYOUT_CASE=tdf170201 cargo test -p ooxmlsdk-layout-test --release \
-  --test xlsx_layout xlsx_layout_matches_libreoffice_layout_coverage -- --exact
-```
-
-Private XLSX display tests use several named submodules: filter with
-`xlsx::display::`, not `xlsx::display::tests`; zero selected tests are not verification.
-
-From the suite root, build once before configured verification:
+From the **test-suite root**, build once and reuse the binary:
 
 ```sh
 cargo build -p ooxmlsdk-pdf-test --bin office_pdf_campaign --release
-./target/release/office_pdf_campaign prepare-audit-one \
+target/release/office_pdf_campaign prepare-audit-one \
   --configuration-id '<id>' --task /tmp/case-task.json
-./target/release/office_pdf_campaign audit-one \
+target/release/office_pdf_campaign audit-one \
   --task /tmp/case-task.json --result /tmp/case-result.json --write-artifacts true
 jq -e '.verdict == "PASS"' /tmp/case-result.json
+target/release/office_pdf_campaign render-one \
+  --task /tmp/case-task.json --input /absolute/source.docx --output /tmp/fresh-candidate.pdf
 ```
 
-`office_pdf_campaign render-native-one` is the Word native-picture realization
-path and rejects Excel tasks. For XLSX Office controls, use the serialized
-environment-controlled Office worker or a standalone Excel COM export guarded
-against concurrent Office processes. Export the controlled PDF before querying
-Excel `VPageBreaks`: reading that collection can repaginate the workbook and
-change the later fixed-format output. When constructing OOXML matrices, preserve
-the original ZIP entries and namespace prefixes; ElementTree serialization can
-rename prefixes still referenced by `mc:Ignorable` and invalidate the package.
+Exit0 alone is not PASS. Use a fresh result/output path; `render-one` does not
+replace existing files. A PASS need not refresh the failure artifact at
+`target/office-golden/<id>/candidate.pdf`; render explicitly before comparing.
+Record input/PDF hashes and page number in `/tmp/ab.json` alongside `/tmp/ab.png`.
 
-Use `audit --selection full --configuration-ids FILE --jobs 4` for a batch;
-looping `prepare-audit-one` repeatedly revalidates the plan. Native exit 0 alone
-is not a PASS. To enforce the protected selection, omit `--full` from the wrapper
-below and add `--require-all-pass`; omit `--previous-results` or supply results
-with exactly that selected ID set, not the full campaign.
-Scoped selections accept only PASS/FAIL rows with valid references. Keep affected
-REFERENCE_FAIL rows separately and inherit their unresolved obligations in the
-merged ledger; including them in a scoped selection causes validation to fail.
+Select private tests for the changed subsystem. Zero selected tests is not
+verification. Private XLSX filters use `xlsx::display::`, not only `::tests`;
+chart filters should cover importer/model/render modules. Table-driven public
+layout labels require `OOXMLSDK_LAYOUT_CASE` and the actual test function.
+Recorded unrelated private layout skips are listed in the current case receipt.
 
-Full verification when warranted (fresh output directory each time). Include the
-accepted PASS selection **and every pending PASS** in the protected baseline;
-refresh this union immediately before auditing:
+Requested closure commands, run serially from their respective roots:
+
+| Workspace | Command |
+| --- | --- |
+| Implementation | `cargo clippy --workspace --all-targets --release -- -D warnings` |
+| Test suite | `cargo clippy --workspace --tests --release -- -D warnings` |
+| emfsdk, when changed | `cargo clippy --workspace --all-targets --all-features --release -- -D warnings` |
+
+If `clippy --fix` fails to bind its lock-management TCP listener in the sandbox,
+ordinary Clippy still works. Use `--message-format=json` and review/apply its
+suggestions directly; do not treat this as a Cargo or Office permission failure.
+
+For cumulative full verification, refresh the protected union from the accepted
+checkpoint and pending PASS rows **before** starting. Keep that baseline, source
+and binary frozen throughout the run. Use a fresh output directory:
 
 ```sh
-repair_archive=/tmp/ooxmlsdk-repair-resume-20260912
-python3 - <<'PYTHON'
-import json
-from pathlib import Path
-root = Path('/tmp/ooxmlsdk-repair-resume-20260912')
-protected = {}
-for name in ('checkpoint-batch-35-full/pass-baseline.jsonl',
-             'ledger/pending-pass-obligations.jsonl'):
-    for line in (root / name).read_text().splitlines():
-        row = json.loads(line)
-        protected[row['configuration_id']] = row
-(root / 'ledger/current-pass-union.jsonl').write_text(
-    ''.join(json.dumps(row) + '\n' for row in protected.values()))
-PYTHON
+repair_stage=/tmp/ooxmlsdk-repair-resume-20260912
 python3 scripts/audit_office_pdf_pass_union.py --full --build \
-  --baseline "$repair_archive/ledger/current-pass-union.jsonl" \
-  --previous-results "$repair_archive/checkpoint-batch-35-full/cumulative-results.jsonl" \
-  --output-root /tmp/ooxmlsdk-golden-audit-next --jobs 4
+  --baseline "$repair_stage/ledger/current-pass-union.jsonl" \
+  --previous-results "$repair_stage/checkpoint-batch-54-full-final/results.jsonl" \
+  --output-root /tmp/ooxmlsdk-golden-audit-next --jobs 12
 ```
 
-Omit `--build` only when the release binary matches current source. Full acceptance
-requires exact identities, no infrastructure errors and every protected PASS;
-existing FAIL/REFERENCE_FAIL remain reported. `summary.json` is authoritative;
-`diagnostic-deltas.json` contains changes. Archive sources, binary/plan hashes,
-results and the promoted PASS selection. Audits share native report paths: never
-overlap them. Read selected summary fields rather than dumping the whole JSON:
-embedded unresolved rows can make it several megabytes. Whitelist the small
-summary fields to print; excluding guessed large keys can still dump
-`unresolved_union` and its full diagnostic payload. Wrapper tests:
-`python3 -m unittest discover -s scripts -p 'test_audit_office_pdf_pass_union.py'`.
+Omit `--build` only for a current binary. For a protected scoped audit, omit
+`--full`, add `--require-all-pass`, and omit `--previous-results` unless it has
+exactly the same selected IDs. Native `--configuration-ids` expects compact
+JSONL identity objects, not bare hashes or multiline JSON. Scoped selections
+exclude REFERENCE_FAIL; retain those obligations separately. Campaign subcommands
+have no `--help`; inspect the CLI source or use this wrapper's help.
+`summary.json` is authoritative: require exact identities, no infrastructure
+errors, and all protected PASSes. Print selected summary fields; unresolved
+payloads can be huge. Archive source/binary hashes and promote only after checks.
+Audits share report paths and must not overlap.
+
+## Office and GDB commands
+
+First check the command against `~/.codex/rules/default.rules` and existing `/tmp/`
+scripts; do not immediately diagnose an environment failure. Resolve Windows paths
+with `wslpath -w`. Invoke authorized executables directly, without a shell/Python
+prefix or output redirection. A working PowerShell form on this host is:
+
+```sh
+pwsh.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command '& "\\wsl.localhost\Ubuntu-26.04\tmp\case\probe.ps1"'
+```
+
+`default.rules` explicitly allows the standalone `pwsh.exe` and `gdb` prefixes.
+Run each as its own tool command, with the owning `workdir`; do not prepend
+`cd ... &&`, `timeout`, `env`, Python or another shell. Let the tool capture
+PowerShell output; use GDB's internal logging below. Keep shell single quotes
+around the PowerShell expression so `$variables` are not expanded by Bash.
+These rules describe known working invocations, not a way to override an actual
+sandbox denial. If the same command is genuinely denied, report the exact action
+and error instead of trying increasingly different wrappers.
+
+`-File` with a UNC path can fail before PowerShell starts with
+`UtilBindVsockAnyPort`; the standalone `-Command` form above has worked. Reuse
+`scripts/invoke_office_pdf_worker.ps1`: its plan is exactly one schema2 record
+with `schema_version,file,options,environment`, where `options=assignment.office`.
+Use the suite `corpus/` root and a corpus-prefixed relative filename. Create a
+fresh OutputRoot. The environment's UI/format/document languages are distinct;
+a requested locale does not switch the host's installed preferences.
+
+Recovery references must use their saved worker under
+`corpus_pdf_conv/reference-adapters/`, selected by `reference_environment_id`.
+Match import/recovery behavior as well as export options and package content type
+(e.g. stress014.docx is internally DOTX). Original adapters are in `scripts/`,
+identified by `corpus_pdf_conv/environment.json`. Optional probe companions:
+`-DiagnosticWordXps`, `-DiagnosticWordEmf`; sidecars can remain in
+`output/_worker-stage/case-000/` with the original filename.
+
+Office matrix probes up to1100controls are authorized. Export before intrusive
+COM diagnostics: header access and Excel page-break queries can repaginate.
+COM positions do not supersede the actual exported PDF/XPS. If golden disagrees,
+re-export the unchanged source to exclude Office version drift. Keep input
+read-only, macros disabled, owned process cleanup explicit; never close unrelated
+Office processes. Font realization can be cached across documents, so isolate
+font/charset variants in separate Word processes. Native RVA probes must pin the
+actual binary hash; relocate stale addresses instead of assuming them valid.
+
+Reusable C# native observers:
+`/tmp/ooxmlsdk-stress019/native-space-v18/producer/CharacterWidthObserver.cs`,
+`/tmp/ooxmlsdk-stress019/native-punct-v10/LineAdvanceObserver.cs` and `observe.ps1`;
+earlier hint probes under
+`/tmp/ooxmlsdk-repair-resume-20260912/docx-WordWithAttachments/astra-hint-readback/`.
+Check HRESULT, retry/buffer capacity, observed counts and actual process exit.
+An API request or prepared script is not an observed result.
+
+For GDB, build the dev campaign serially, then invoke `gdb` directly:
+
+```sh
+cargo build -p ooxmlsdk-pdf-test --bin office_pdf_campaign
+gdb -q -batch -x /tmp/case.gdb --args target/debug/office_pdf_campaign
+```
+
+```gdb
+set pagination off
+set confirm off
+set debuginfod enabled off
+source <rustc-sysroot>/lib/rustlib/etc/gdb_load_rust_pretty_printers.py
+set logging file /tmp/case-gdb.log
+set logging overwrite on
+set logging enabled on
+break path/to/source.rs:LINE
+set args render-one --task /tmp/case-task.json --input /absolute/source.docx --output /tmp/fresh-gdb.pdf
+run
+p $_exitcode
+```
+
+Resolve `<rustc-sysroot>` once with `rustc --print sysroot` and substitute its
+literal path in the `.gdb` file. Keep `debuginfod` disabled for local builds;
+do not download symbols merely because a breakpoint or expression failed.
+
+Assert nonempty captures and inferior normal exit; GDB exit0 can hide script
+errors. Break after local assignment, not on iterator-closure lines. Gate hot
+breakpoints by source identity/text and emit only needed fields. Rust slices use
+`data_ptr`/`length` in GDB Python. Section-local page indices reset; identify the
+physical page via source owner or page collection. Debugger time is not renderer
+performance. Confirm the final release gate and compare dev/release PDFs.
+
+## Diagnostic guardrails and evidence routes
+
+- Separate source layout, device-grid conversion and final PDF operators.
+  Check real transforms/units, clipping and paint order before tuning positions.
+  Identical geometry split into different paths can rasterize differently.
+- Red text contours alone do not prove wrong outlines: compare actual glyphs,
+  origins, font size, fallback, paint and semantic mapping separately. Structured
+  extraction can merge overlaps or omit clipped text; inspect raw BT/Tj, recursive
+  `mutool draw -F trace`, PDFium boxes and native XPS before declaring glyph loss.
+  MuPDF can emit glyph names and truncate font names; resolve embedded font maps.
+- Use `hb-shape FONT.ttf TEXT --no-glyph-names --output-format=json` to isolate
+  shaping, and compare to Office. Check probe DPI awareness and actual font face.
+  Terminal-line controls need a following visible paragraph or end coordinate;
+  matching glyphs alone does not prove height/pagination.
+- Preserve namespaces/QName bindings (`mc:Ignorable`), XML child/cell order and
+  package relationships in probes. Parse and verify the exact mutation. Copy
+  `ZipInfo` before `writestr`; reusing its mutated metadata can cause false CRC or
+  overlapping-entry errors. Match source defaults; empty content can select a
+  different formatter path from the behavior under test.
+- For COM matrices, use separate numeric/string `Value2` setters and explicit
+  `[double]`/`[string]` casts. Inspect indexed properties and exported output,
+  release child objects, quit the owned application and verify its recorded PID.
+- Optimize measured whole-document bottlenecks: count calls and establish the
+  algorithm/source contract first. Conservative off-page effect bounds must
+  include shadows/glows; overlapping profiler intervals are not additive.
+
+Search `/tmp/` first. High-value starting points (paths are under that root):
+
+| Topic | Evidence owner |
+| --- | --- |
+| Font outlines vs origins, raw visual diff | `ooxmlsdk-text-outline-diagnostic/README.md` |
+| U2004/U2006 font dispatch and native width producer | `ooxmlsdk-stress019/space-width-sources-v18.md` |
+| Drawing, glyph hinting, C# Office probes | `ooxmlsdk-repair-resume-20260912/docx-drawing/` and `docx-textbox-zorder/` in that stage |
+| Table rules, print grids and text baselines | `ooxmlsdk-bib-horizontal-borders/`, `ooxmlsdk-bib-body-grid/`, `ooxmlsdk-bug65649/` |
+| Floating table grid vs outside frame | `ooxmlsdk-floating-table-caption/README-current.md` |
+| Unicode/PDF semantic text and EMF | `ooxmlsdk-stress010-pagination/README-current.md` |
+| Footnotes, bidi and line ownership | `ooxmlsdk-stress008/README.md`, `ooxmlsdk-stress011-cover/README-current.md` |
+| Office codec choice / pure Rust cost model | `ooxmlsdk-bug59058-pagination/image-codec/README.md` |
+| Performance algorithms / conservative effect culling | `ooxmlsdk-audit-performance/README.md`, `visibility-sources.md` in that owner |
+
+Full earlier business/debug notes, searchable without bloating this entry:
+`/tmp/ooxmlsdk-floating-table-caption/entry-reference-before-compaction.md`.
+Older case-specific relative paths in that archive refer to
+`/tmp/ooxmlsdk-repair-resume-20260912/` unless explicitly rooted otherwise.
+Functional-coverage receipt check: `python3 scripts/verify_office_pdf_functional_coverage.py --verify-only`.
 
 ## Source Map
 
@@ -194,24 +264,30 @@ choose a route; do not scan every project for each bug.
 | Need | Durable route |
 | --- | --- |
 | ECMA Word, DrawingML, charts, math, MCE, OPC | `references/references/Ecma Office Open XML Part *.md` |
-| Office deviations/defaults/extensions | local `[MS-OI29500]`, `[MS-DOCX]`, `[MS-OE376]`, and `[MS-ODRAWXML]` Markdown |
+| Office deviations/defaults/extensions | `references/[MS-OI29500]-260519.docx`, `[MS-DOCX]-251113.docx`, `[MS-OE376]-220816.docx`, `[MS-ODRAWXML]-260217.docx` (all in `references/`). Read `word/document.xml` from the ZIP; do not assume Markdown conversions exist. |
 | Microsoft Open XML/API guidance | `../open-xml-docs/`, Microsoft Learn |
 | Office fixed-format export policy | `scripts/convert_office_corpus.ps1`, `scripts/probe_office_pdf_options.ps1`; Microsoft Learn [Word](https://learn.microsoft.com/en-us/office/vba/api/word.document.exportasfixedformat), [Excel](https://learn.microsoft.com/en-us/office/vba/api/excel.workbook.exportasfixedformat), [PowerPoint](https://learn.microsoft.com/en-us/office/vba/api/powerpoint.presentation.exportasfixedformat), and [fixed-format extension](https://learn.microsoft.com/en-us/office/pdf/extendingofficepdfexport) documentation |
 | Archived Microsoft/Windows examples | `../msdn-code-gallery-microsoft/`, `../msdn-code-gallery-community-{0-9-non-alphabetic,a-c,d-l,s-z}/`; verify each sample's API, provenance, and license |
 | VML, GDI, and Win32 contracts | `../win32/`, especially `desktop-src/VML/` |
 | Windows API declarations and interop | `../win32metadata/`, `../CsWin32/`, `../WindowsAppSDK/`; `../windows-api-function-cheatsheets/` for discovery, not normative behavior |
 | Windows Forms GDI text measurement and padding | `../winforms/src/System.Windows.Forms/System/Windows/Forms/Rendering/TextExtensions.cs` and `../winforms/src/test/unit/System.Windows.Forms/System/Windows/Forms/TextRendererTests.cs` |
+| Geometry libraries | Existing `kurbo 0.13.1`, local `../kurbo/kurbo/src/`, owns curves/paths/strokes. [geo](https://docs.rs/geo/latest/geo/) is a candidate for polygon operations/indexed queries; [spade](https://docs.rs/spade/latest/spade/) for constrained triangulation. Neither is currently imported. Preserve Office fill rules, event/source-face ownership and material interpolation; ordinary buffering/retriangulation is not a direct replacement. Assessment: `/tmp/ooxmlsdk-audit-performance/geometry-libraries.md`. |
+| Conservative visible-effect bounds | `../wpf/src/Microsoft.DotNet.Wpf/src/WpfGfx/core/uce/drawingcontext.cpp` (`GetClippedWorldSpaceBounds`); `../core/drawinglayer/source/primitive2d/{shadow,glow}primitive2d.cxx`; `../skia/src/core/SkImageFilter.cpp`; [Direct2D custom-effect bounds](https://learn.microsoft.com/en-us/windows/win32/direct2d/custom-effects). Reject only complete conservative effect support at its final coordinate owner; an off-page caster can still cast a visible shadow. |
+| Geometry performance and active-edge algorithms | `../wpf/src/Microsoft.DotNet.Wpf/src/WpfGfx/core/geometry/scanner.{cpp,h}` (`CActiveList`, candidate heap); [CGAL straight-skeleton event propagation](https://doc.cgal.org/latest/Straight_skeleton_2/classCGAL_1_1Straight__skeleton__builder__2.html). Preserve event ties and winding predicates when adding indexes. Measure Office export separately from process startup/open and SDK rendering separately from comparison/diagnostic rerenders. |
 | Windows rendering, printing, and XPS | `../Windows-classic-samples/`, `../Win2D/`; `../wpf/src/Microsoft.DotNet.Wpf/src/ReachFramework/Serialization/XpsImageSerializationService.cs`, `../wpf/src/Microsoft.DotNet.Wpf/src/System.Printing/CPP/src/GDIExporter/gdibitmap.cpp`, `../wpf/src/Microsoft.DotNet.Wpf/src/WpfGfx/core/common/Gamma.{cpp,h}`, `../wpf/src/Microsoft.DotNet.Wpf/src/WpfGfx/core/sw/swlib/swglyphpainter.cpp`, and `../wpf/src/Microsoft.DotNet.Wpf/src/WpfGfx/core/resources/{BlurEffect,DropShadowEffect}.cpp` |
 | Direct2D path coverage and device grids | `../win32/desktop-src/Direct2D/`, local `d2d1.h` in `../win32metadata/`; Microsoft [D3D11.3 functional specification](https://microsoft.github.io/DirectX-Specs/d3d/archive/D3D11_3_FunctionalSpec.htm), especially fixed-point rasterization and per-path resolve. The standard sample patterns do not by themselves establish which profile an Office render target uses. |
-| Package, schema, validators, fixtures | `../Open-XML-SDK/` |
+| Package, schema, validators, fixtures | `../Open-XML-SDK/`; local ZIP implementation evidence in `../zip2/` |
 | WordprocessingML transforms and content controls | `../Open-Xml-PowerTools/` as supplemental implementation evidence |
 | DOCX import and visible layout | `../core/sw/`, `../core/oox/`, matching `qa/` |
+| HTML altChunk parsing | `../html5ever/html5ever/src/{tokenizer,tree_builder}/` for HTML tokenization and tree construction; `../rust-cssparser/src/` for CSS syntax, stylesheet/declaration parsing and error recovery |
+| CSS selector matching and computed styles | `../stylo/selectors/{parser,matching}.rs` (standalone selector engine); `../stylo/style/dom.rs` and `../stylo/style/properties/cascade.rs` (full Stylo engine adapters and cascade). Keep Word-specific import and pagination policy in our layout model; browser CSS behavior alone does not establish Office behavior. |
 | XLSX import and print layout | `../core/sc/source/filter/oox/`, `../core/sc/source/ui/view/printfun.cxx`, `../core/sc/qa/` |
 | PPTX import and fixed pages | `../core/oox/source/ppt/`, `../core/oox/source/drawingml/`, `../core/sd/qa/` |
 | LibreOffice PDF export | `../core/vcl/source/pdf/`, `../core/filter/source/pdf/`, `../core/officecfg/registry/schema/org/openoffice/Office/Common.xcs`, `../core/vcl/qa/cppunit/pdfexport/` |
+| DEFLATE algorithm versus Office codec selection | `../wine/libs/zlib/{deflate,trees}.c`; [stock zlib](https://github.com/madler/zlib), [zlib-rs algorithm differences](https://trifectatech.org/blog/zlib-rs-in-firefox/). `/tmp/ooxmlsdk-bug59058-pagination/image-codec/` has actual native trial-size probes. Compression format compatibility does not establish identical size or image-policy decisions. |
 | PDF catalog, actions, metadata, conformance | Adobe PDF Reference/pdfmark; `../pdf-issues/` for errata with their approval status; `../pdf-writer/`, `../krilla/`, and object-level `../lopdf/` tests for implementation evidence |
 | OpenType contract | current Microsoft OpenType pages; `../OpenType-Specification/` is a historical mirror |
-| Font parsing, shaping, bidi, breaking | `../fontations/`, `../harfrust/`, `../parley/` |
+| Font parsing, shaping, bidi, breaking | `../fontations/`, `../harfrust/`, `../parley/`; `../cosmic-text/` for source-cluster/bidi/fallback implementation comparisons (not PDF extraction or Office layout policy) |
 | PDF comparison and output mechanisms | test code, `../pdfium-render/`, `../krilla/`, `../typst/crates/typst-pdf/`, `../cairo/`, `../tiny-skia/` |
 | Geometry and graphics types | `../kurbo/`, `../color/`, `../peniko/` |
 | EMF/WMF/GDI/OLE/CFB | local Microsoft specs, `../emfsdk/`, `../olecfsdk/`, `../libgdiplus/`, `../reactos/`, `../wine/` |
@@ -227,372 +303,3 @@ The `references/references/` paths above are relative to the **test-suite root**
 Before using optional PDF inspection libraries, check the available tools;
 `qpdf --qdf --object-streams=disable`, `pdftotext`, `pdftoppm` and `mutool` are
 available in the current environment; Python `fitz` is not.
-For initial content inspection, limit `pdftotext` with `-f N -l N` and inspect
-formula-bearing cells with per-part output limits; a short first-page mismatch
-can come from a very large workbook.
-The normalized text-content diagnostic sorts characters; it is not literal PDF
-text. Read the actual page text or glyph trace before interpreting error codes
-or formula output. Truncate long result messages when inspecting many-page cases.
-Literal page-text array differences alone do not establish a configured failure:
-the content gate compares page character bags, followed by line topology,
-geometry and font checks. Follow the actual failed layer before changing the
-order of independent text blocks. Diagnostic `page_index` and `page-N-*.png`
-artifact names are zero-based; index 15 means physical page 16. Old failure
-images can survive a later PASS; render the final candidate PDF for fresh images.
-Batch audit results with `artifacts=none` also leave earlier `candidate.pdf`
-files untouched. Use `audit-one --write-artifacts true` or `render-one` on the
-current release binary before taking screenshots; existing paths prove no freshness.
-The visible-output gate masks text already checked by the text contract. A better
-header/footer screenshot can therefore leave that gate's metrics unchanged.
-Inspect non-text differences first, including the last painted row on each page:
-repeated titles can shorten the first page if pagination reserves them twice.
-For physical-point vector comparisons, omit `mutool draw -r` or normalize by
-its scaled media box. Office can coalesce adjacent same-color fills; identify
-actual cell boundaries before comparing junctions. Inspect every page when row
-geometry differs. `render-one` rejects existing output files: use a fresh path
-or archive the disposable output before rerendering.
-
-`mutool draw -F trace` and `pdftotext -bbox` can omit text lying wholly outside
-the physical page even when PDFium extracts it. Inspect the decoded stream with
-`mutool show FILE.pdf pages/N/Contents` before concluding that such payload is
-absent. DynamicArrayFixture's page 5 keeps its merged title at x = -596.76 with
-a page clip; see `xlsx-dynamic-array-merged/` in the repair archive.
-
-Worksheet DrawingML continuation-page text has two relevant boundaries. First
-require a shaped glyph origin on the physical page; then require the shaped run
-to reach the printable horizontal band. Printer-font advances can differ slightly
-from SDK shaping, so use font-relative boundary slack backed by controls rather
-than a case constant. `xlsx-drawing-autofit/office-matrix/` varies wrap, overflow,
-autofit, run structure, translation and length to isolate this rule.
-
-## Development and debugging
-
-Per user, prioritize remaining golden PDF failures. During iteration, use the
-individual configured gate, only necessary private tests, and an affected scoped
-audit for a bounded feature. Accumulate several repairs before a broad Excel or
-full campaign audit; do not run a full audit for each small fix.
-Both Clippy lanes passed at the batch-35 closure. Subsequent
-`ooxmlsdk-layout-test`, public-XLSX and Clippy runs are skipped during ordinary
-golden iteration; collect broad checks for a later requested closure.
-
-Use focused tests and configured goldens for deterministic fixes. For complex
-visual differences, inspect enlarged candidate/Office images and PDF metrics,
-trace the final consumer with GDB, then vary one input in a controlled Office
-experiment. Reuse existing evidence and counterexamples before adding probes.
-A passing diagnostic is not a replacement for configured acceptance.
-When a direct-writer PDF is unexpectedly blank, inspect its final bytes before
-debugging page paint. `pdf-writer` 0.15 ends at `%%EOF`; Apache POI
-`54542_cropped_bitmap.pptx` rendered correctly in both Poppler and PDFium after
-appending one LF, while `qpdf --check` still accepted the unterminated file and
-a QDF rewrite silently supplied the missing line ending. The former Krilla path
-could hide this through its later PDF post-processing passes. Keep the terminal
-LF in the direct writer and use a byte-for-byte copy plus one appended LF as the
-minimal discriminator.
-For PowerPoint text 3-D, classify the scene independently from the optional
-`sp3d`/`flatTx` choice. A front-facing orthographic scene with no camera/light/
-backdrop or surface state is inert, but `a:camera/a:rot` remains effective when
-`sp3d` is omitted and Office exports glyph outlines. For inherited slide-number
-fields, keep ordinary `userDrawn="1"` master text boxes separate from generated
-`Slide Number Placeholder …` objects controlled by `p:hf@sldNum`.
-Carry DrawingML `a:blip@cstate` through image lowering and the PDF cache key:
-PowerPoint Screen uses the screen JPEG path for omitted/`screen`, while explicit
-`print` can retain the palette/lossless branch. For overlapping independent PDF
-text objects, exact font-run interleaving is unstable; only after an independent
-Poppler ordered-text check succeeds may the golden observer compare normalized
-per-font character multisets to verify font assignment.
-Controlled PowerPoint probes also establish that missing Myriad Pro resolves to
-Segoe UI independently of `pitchFamily`; generated chart-title text follows the
-UI language while its theme face follows the document language. A character
-bullet reserves at least its natural glyph advance before the first text run,
-including when authored margins are omitted.
-Worksheet DrawingML `xdr:txBody` contains `a:p/a:r` properties; flattening its
-text and retaining only the first run silently loses later colors and underline
-fills. Preserve the paragraph/run boundary, apply defaults from broadest to most
-specific, and resolve color transformations at the final consumer without
-intermediate 8-bit quantization. `xlsx-underline-color/` contains the source
-scan, decoded Office PDF stream and affected PASS guards.
-Interpret PDF paths with their transforms and active clips: retained geometry
-outside a print body does not prove that the overflow was painted. Distinguish
-COM font metadata and text bounds from the effective PDF font and glyph advances.
-For apparent layer seams, inspect drawing order and RGB/soft-mask samples separately.
-GDI+ primitive coverage and premultiply/unpremultiply rounding can change how an
-image edge blends with the line beneath it; reuse native pixel controls before
-changing layer order or authored colors.
-
-Use the **release** campaign binary for configured checks, including individual
-cases and scoped audits. Use a dev campaign binary for GDB, then confirm the
-result with release. Do not attribute debugger timeouts to renderer regressions without a release check; the resolved example
-is archived under `xlsx-grid-strokes/excel-05-dev/`.
-
-### Visual and font measurements
-
-- Inspect every glyph advance: rotated PDF text may alternate long/short steps,
-  so the first step or whole-string average can conceal device rounding. XPS
-  `Glyphs.Indices` provides a useful cross-check of Office's pre-PDF distances;
-  PDF can round tracking separately. Keep the golden PDF gate authoritative.
-  Native f32 angle projection can straddle an integer boundary differently from
-  f64 trigonometry (`xlsx-rotated-font-advances/xps-validation.json`).
-- Excel `Range.Text` can report hashes while the exported PDF fits the full value
-  at a boundary width. Use PDF glyphs/geometry for fixed-output decisions; retain
-  COM values and alignment as supporting observations. See `xlsx-boolean-width/`.
-- Excel `Range.Width` is a screen observation, not the printed column width.
-  Use colored column markers at multiple print scales. In `xlsx-print-columns/`,
-  31.5pt screen width prints as 30.96pt; the wrong conversion admits an extra
-  column. Include sub-character widths: the inverse-storage half-MDW correction
-  truncates before restoring pixels, so rounding `width * MDW` alone is wrong.
-  Invalid `#N/A` PrintArea names were independently ruled out by identical
-  original, cleared-area and explicit-area Office replays.
-  Excel 12 Japanese controls add another counterexample: COM reports 8.47
-  characters / 51pt, while fixed output uses a 417-dot (50.04pt) implicit
-  column. `xlsx-font-symbol-fallback/sheet16-columns-office.json` records the
-  screen grid and its column-10 page break; the two-page Office PDF records the
-  printer grid.
-- DrawingML two-cell marker offsets can remain in that screen cell grid even
-  when fixed output uses printer-sized cells. For Excel 14+ explicit Arial 10
-  pictures, restore `col@width` to whole pixels at the 192dpi worksheet device
-  and map each offset by its fraction of the independently realized output cell;
-  manual row heights use Excel's existing quarter-pixel grid. Do not extend this
-  from `pic` to `graphicFrame`: the rejected broad iteration moved the accepted
-  `tdf122915.xlsx` chart. The four-position Office matrix and exact source scan
-  are under `xlsx-62629-drawing-font/`.
-- Excel COM `RowHeight`/`StandardHeight` describe screen metrics; verify printed
-  row distances in the exported PDF. Automatic rows may ignore cached
-  `defaultRowHeight` and `dyDescent`. Use exact VDMX/GDI measurements where
-  available; custom rows and mixed cell fonts need separate controls. Verified
-  examples: `xlsx-text-position/evidence.md` and `probe-validation.json` in the archive.
-- Inspect every cell in a row before attributing its height to a cache. In
-  `51626.xlsx`, wrapped G/J/Q headers determine the A/C-page row height; changing
-  `ht` to 40 leaves the Office PDF unchanged. Post-export `RowHeight` can also
-  return a device-rounded value differing from `Range.Height`. Compare both
-  with printed stripe distances (`xlsx-merged-borders/wrap-validation.json`).
-- Check rich-string `rPr/scheme` as well as cell font schemes: the cached `rFont`
-  can differ from Office's effective theme face. Shared and inline runs follow
-  the same rule. Separate missing-theme substitution from installed-face and
-  explicit non-theme behavior (`xlsx-template-fonts/` controls).
-- DrawingML `sysClr` is bound to the viewing system; `lastClr` is the saved
-  fallback, not automatically the rendered color. For XLSX theme slots, query
-  the configured Windows host with `GetSysColor` and compare the final Office
-  PDF. `xlsx-system-theme-colors/` records `window=FFFFFF` and
-  `windowText=000000`; its corpus-wide theme scan protects noncanonical caches.
-- [Excel header/footer `&"+"` and `&"-"`](https://learn.microsoft.com/en-us/office/vba/excel/concepts/workbooks-and-worksheets/formatting-and-vba-codes-for-headers-and-footers)
-  are theme Heading and Body font selectors, respectively, rather than literal
-  font names. Resolve the current
-  document script's supplemental face before the corresponding Latin theme
-  face; keep explicit family names unchanged. The official Microsoft syntax,
-  13-source scan and zh-CN SimSun control are indexed by
-  `xlsx-62629-drawing-font/`.
-- Inspect `col@style` alongside row, cell and Normal fonts before attributing
-  an automatic-row difference. Columns outside the printed range can affect
-  the default height; the COM Normal style alone does not identify its owner.
-  Fully styled columns can replace Normal in the screen font box while Normal
-  still defines its printer conversion. Only bottom-aligned fonts combine their
-  separate ascent/descent bounds; top and center alignment use independent font
-  heights. See the native EMF controls in `xlsx-64473-rows/evidence.md`.
-- When a public helper leaves the document language unset, verify its actual
-  PDF font before applying a configured CJK assertion. Explicit-font and theme-
-  selected-font controls distinguish font resolution from the stored Latin name.
-  `new_cond_format` and `59264` have different Calibri/SimSun column-page owners;
-  changing an implicit metric must not also change authored column widths.
-- Compare the same physical grid, crop, zoom, alpha and background. Verify units
-  and transforms before blaming layout. Lossless/pre-JPEG output isolates painting.
-  Inspect enlarged crops as well as whole pages: downscaling hid the reversed
-  table bands after a filtered row in `FilterColumn.xlsx` (`xlsx-print-grid/`).
-- Compare native fill boundaries as well as border rectangles. At intersections,
-  Office may trim a horizontal rule against the vertical rule; its left endpoint
-  alone does not identify the cell origin. For margin controls, fix
-  `PageSetup.Zoom`: fit-to-page can change the scale when a margin
-  changes (`xlsx-border-origins/`).
-- Distinguish requested fonts from actual glyph coverage/fallback and PDF fonts;
-  missing PDF text may mean rasterized content or hidden output. An absent Windows
-  SystemLink entry does not prove that no other fallback mechanism applies.
-- EMF records use bytes; WMF record sizes use WORDs. An embedded EMF record may
-  cross WMFC chunks. Validate the complete alternative before playback and keep
-  raster/native extraction consistent; do not replay fallback graphics twice.
-- Inspect native candidate realization density, alpha and placement:
-  `office_pdf_campaign render-native-one --task TASK --input DOCX --output-root NEW_DIR --dpi 600`.
-
-### Office experiments from WSL
-
-Use `scripts/probe_office_pdf_options.ps1` and
-`scripts/prepare_office_pdf_options_probe_plan.ps1`; reuse the complete golden
-`assignment.office` and receipt `office_options`. The worker
-`scripts/invoke_office_pdf_worker.ps1` accepts exactly one schema-2 record per
-plan. Optional Word companions are `-DiagnosticWordXps` and `-DiagnosticWordEmf`
-on the probe. Adapter checks: `scripts/test_office_pdf_options_adapter.ps1`.
-
-Before reproducing a recovered reference, resolve its `reference_environment_id`
-to the saved `corpus_pdf_conv/reference-adapters/` bundle and use that bundle's
-worker. The ordinary probe's open behavior differs from repair-mode loading;
-matching export options alone does not reproduce the recovery import contract.
-The original environment is recorded in `corpus_pdf_conv/environment.json`;
-its three adapter hashes match the scripts under `scripts/`. It has no separate
-hash-named recovery bundle.
-
-Resolve paths with `wslpath -w PATH`, then pass literal Windows paths to
-`pwsh.exe -NoProfile -NonInteractive -STA -ExecutionPolicy Bypass -File SCRIPT`.
-Use the authorized `pwsh.exe` executable directly: command authorization matches
-the executable prefix. Invoke it in a separate command beginning with `pwsh.exe`;
-do not prepend Python preparation or another shell command in that same invocation.
-Keep logs/results under `/tmp` and reuse approved commands.
-Avoid fragile nested `-Command` quoting.
-Let the tool capture `pwsh.exe` output directly; the Office worker already writes
-per-case logs.
-
-Campaign `--configuration-ids` accepts JSONL identity objects, for example
-`{"configuration_id":"<64 hex>"}`, rather than bare ID lines. A parse failure
-happens before any audit case runs and remains an unrun attempt. When copying an
-OOXML ZIP with Python, pass `copy(info)` to `ZipFile.writestr`; that method mutates
-the supplied `ZipInfo`, so reusing the input object's metadata can cause a false
-CRC error on later reads even though `unzip -t` is clean.
-
-For small Excel COM matrices, assign a character to `Range.Value2` as
-`[string][char]$codepoint`; a boxed `[char]` can be rejected by the automation
-marshaller. Excel's COM `Font` object does not expose `NameFarEast`, so inspect
-the OOXML run/font slots and exported PDF font instead. Close the workbook before
-hashing a saved copy, release every acquired COM child, call `Quit()`, and verify
-that no owned Office process remains. Process teardown can briefly outlive the
-`Quit()` return; recheck the recorded owned PID before classifying it as a leak.
-
-For native table controls, `ListObject.ShowTotals = true` plus `SaveCopyAs`
-provides an Office-authored experimental workbook. Enabling totals can insert
-worksheet rows and move later tables: read their resulting ranges instead of
-keeping original cell addresses. Preserve the saved copy used for SDK comparison.
-
-When constructing SpreadsheetML border probes, preserve schema child order:
-`vertical` precedes `horizontal`. Reversing them caused Excel `Workbooks.Open`
-to fail; correcting that order made the same probe load successfully.
-
-Keep original inputs read-only, macros disabled and Office process ownership
-explicit. Do not force-close user applications. Run one Office worker at a time;
-verify actual options/environment and preference restoration on success, error
-and timeout. Do not change the OS clock/time zone. Prepared scripts or requested
-settings are not evidence until their observed receipts and output are inspected.
-When editing XML probe attributes, match the full attribute boundary and parse
-the result to assert the intended element/value: a bare `ht="..."` replacement
-also matches the suffix of `defaultRowHeight="..."`.
-Check formula argument grammar when designing error controls. `DCOUNT` requires
-a reference expression for its database argument (MS-XLSX 2.2.2); use
-`INDEX(A1:C7,NA(),0)` to produce a runtime error there. A literal `#N/A` instead
-tests rejected syntax and can fail both workbook Open and `Range.Formula` assignment.
-Windows `GetLocaleInfoEx` supplies useful primary locale data, but compare it with
-observed Excel text and exported PDF: some month abbreviations still differ.
-BCP47 number-format markers may be normalized to hexadecimal LCIDs on Open;
-compare the resolved language and rendered text rather than literal marker spelling.
-For an ordinary SpreadsheetML custom `formatCode`, do not infer month/day-name
-language from the host format locale. On the verified zh-CN Excel 16 host,
-unmarked `d mmmm yyyy` stays English; `[$-0804]` changes it to Chinese and
-`[$-0409]` explicitly keeps English. Reserve the host format locale for F800/F400
-system formats. Evidence: `xlsx-datetime-filter/office-probe/result.json`.
-The plan's `document_language` checks the observed Office authoring language;
-changing that field alone does not switch the installed preference.
-Receipt build strings are application-specific: this Office installation reports
-Word `16.0.20326` and Excel `20326`; do not require an identical string for both.
-Optional `HPageBreaks.Item` diagnostics can raise `DISP_E_BADINDEX` after a
-successful PDF export despite `Count`. Catch and record that enumeration error
-separately, then inspect the PDF and receipt; it does not indicate an Open failure.
-For Excel AutoFit probes, select the target worksheet alone with `Select(true)`
-first: grouped-sheet selection caused a multi-selection error in the local API
-experiment. Read `Range.Height` for precise geometry; `RowHeight` reported 74.7pt
-where `Height` was 74.625pt. See `xlsx-rotated-row-height/office-api-validation.json`.
-Excel [XlBordersIndex](https://learn.microsoft.com/en-us/office/vba/api/excel.xlbordersindex)
-uses positive 7/8/9/10 for left/top/bottom/right and 11/12 for internal rules.
-Cast mixed numeric arrays to `[double]` when assigning COM `Range.RowHeight`;
-an integer entry such as 48 can fail after earlier fractional entries succeeded.
-For manual-height matrices, retain `SaveCopyAs` output and check a reopened copy.
-The API request, serialized `ht`, displayed `RowHeight` and screen `Range.Height`
-can differ: a 36.79pt request serialized as 36.85pt and displayed as 36.9pt.
-Use the exported PDF to verify the actual printer grid; see `xlsx-border-origins/`.
-For table header/totals controls, mutate a valid copied workbook through
-`ListObject.ShowHeaders`/`ShowTotals`; the XML-only totals shortcuts failed Open
-in `xlsx-print-grid/`. Set manual row hiding explicitly with
-`Range('F16').EntireRow.Hidden`, then verify the printed bands.
-
-For font matrices, give independent missing-font cases distinct names: Excel can
-coalesce same-name records despite differing `family`/`charset`. When replacing
-a worksheet's cells, remove stale `calcChain` entries and their package edges in
-the experimental copy. Do not infer another authoring locale from a requested
-value: this adapter validates the host's actual document language and format
-locale (currently zh-CN). Requesting en-US format locale alone fails environment
-validation before export; it does not switch Excel's host format settings.
-Evidence: `xlsx-freesans/validation.json`, `xlsx-zero-date-fit/validation.json`.
-
-For XML probe mutations, preserve the source namespace declarations and prefixes.
-ElementTree reserialization can rename namespace prefixes while leaving QName
-values such as `mc:Ignorable="x14ac xr xr2 xr3"` unchanged; Excel then fails Open
-before the intended experiment. Use bounded lexical attribute changes or a
-serializer that preserves those bindings. The failed first height matrix and its
-replacement are retained under `xlsx-public-legacy/`.
-When changing row or border fragments, check preserved cell-to-row membership,
-ascending cell-column order and border indices as well as XML syntax. Excel can
-reject parseable A2/C2/B2/D2 order at Open (`xlsx-row-column-fill/probe-02/`).
-A greedy expression can consume a
-self-closing element and its following sibling while leaving parseable XML.
-Preserve worksheet child order when inserting controls: `mergeCells` follows
-`customSheetViews` and precedes `phoneticPr`; otherwise Excel can reject Open
-before testing the intended merge behavior (`xlsx-boolean-width/`).
-
-For experimental PivotTable field changes, a `saveData="0"` cache may need
-`PivotCache.Refresh()` before setting field orientation. Keep that refresh out
-of the original-source replay. Verify custom-style color controls on a populated
-report too: Excel's solid custom-table DXF uses `bgColor`; a foreground-only
-control resolves white. See `xlsx-empty-pivot-style/`.
-
-Worker diagnostic sidecars may remain under `output/_worker-stage/case-000/`
-with the original filename; the controller copies only the PDF/receipt to
-`case-000.*`. Enumerate the sidecars before reading them. Read indexed COM
-properties explicitly: PowerShell's bare `PageSetup.PrintQuality` is a property
-wrapper, not a DPI observation. `ListObject.TableStyle` returns a COM object;
-read its `.Name` and release the reference instead of casting it to a string.
-For standalone chart diagnostics, enumerate `Workbook.Charts`: `Chart.Type`
-reports the chart kind, so comparing it with the `xlChart` sheet-type constant
-silently skips the observation. Check diagnostic row counts as well as export receipts.
-`CELL("filename")` also exposes the worker's
-random temporary directory, so even original-source replays can differ in text,
-width and page count. Preserve this distinction from a basename-only SDK call.
-For SDK worksheet mutations, resolve the worksheet through the workbook sheet's
-name and relationship ID. `worksheet_parts()` enumerates relationships, which
-need not follow the workbook's displayed sheet order. Inspect the complete generated
-type before mutating a collection: `Fonts` and `CellFormats` use `xml_children`
-choice lists, while some neighboring collections expose named vectors.
-`FontsChoice::Font` contains a direct `Font`; `CellFormatsChoice::CellFormat`
-contains `Box<CellFormat>`. Do not infer boxing from a neighboring choice list.
-Field access may also use `Deref`: `CellValue` wraps `XstringType`, so its struct
-literal differs from the fields visible through `cell_value.xml_content`.
-Match UI, format and document languages separately in public layout probes;
-format locale alone does not select a theme's Hans font. Compare logical
-COM row distances before printer rounding, and printed PDF distances afterward.
-
-Record DPI awareness for native font probes. An unaware PowerShell process can
-report 96 DPI through `GetDpiForSystem` on this 192-DPI host. The font experiment
-sets and restores its thread's awareness explicitly; see
-`xlsx-61652-rows/measure-font-aware.ps1`. Use `mutool draw -F trace` to inspect
-PDF font sizes and glyph origins when Python PDF libraries are unavailable.
-
-### GDB
-
-Use a **dev** binary for GDB so the required Rust locals and symbols remain
-inspectable; the configured golden decision still comes from a fresh release
-binary. GeneralLedger happened to expose some release locals, but do not rely on
-that exception. Use a script, gate hot-loop breakpoints,
-and inspect the inferior's normal exit: GDB exit 0 can
-hide script errors. Debugger overhead is not renderer performance.
-Invoke `gdb` directly in the tool command so the authorized standalone prefix
-matches. A compound shell/Python prefix that never starts GDB is a command-use
-error, not evidence of a ptrace or environment failure. Explicitly source Rust's
-pretty printers; without them, collection locals may show only raw pointers.
-
-```gdb
-set pagination off
-set breakpoint pending on
-source <rustc-sysroot>/lib/rustlib/etc/gdb_load_rust_pretty_printers.py
-set logging file /tmp/case-gdb.log
-set logging overwrite on
-set logging enabled on
-break path/to/source.rs:LINE
-run
-```
-
-```sh
-gdb -q -x /tmp/case.gdb --args ./target/debug/office_pdf_campaign audit-one \
-  --task /tmp/case-task.json --result /tmp/case-gdb-result.json --write-artifacts true
-```

@@ -15,7 +15,7 @@ use ooxmlsdk::schemas::schemas_openxmlformats_org_wordprocessingml_2006_main::Bo
 use ooxmlsdk::sdk::{OpenSettings, PackageOpenMode, SdkPackage, SdkPart};
 use quick_xml::{Reader, XmlVersion, escape::unescape, events::Event};
 use serde::Deserialize;
-use zip::ZipArchive;
+use zip::{CompressionMethod, ZipArchive};
 
 #[derive(Clone, Copy, Debug)]
 enum DocSampleKind {
@@ -603,6 +603,19 @@ fn read_zip_entries(bytes: &[u8], file_name: &str) -> BTreeMap<String, Vec<u8>> 
         });
 
         if file.is_dir() {
+            continue;
+        }
+
+        // Some legacy Office packages encode logically empty entries as Deflate
+        // while storing no Deflate stream at all. Newer flate2 versions reject
+        // those entries as truncated, so recognize only the unambiguous empty
+        // form and keep all other decoder errors strict.
+        if file.compression() == CompressionMethod::Deflated
+            && file.compressed_size() == 0
+            && file.size() == 0
+            && file.crc32() == 0
+        {
+            entries.insert(file.name().to_string(), Vec::new());
             continue;
         }
 
@@ -4422,17 +4435,56 @@ fn normalize_namespace_uri(value: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeMap;
+    use std::{collections::BTreeMap, io::Read};
 
     use super::{
-        relationship_graph_signature, relationship_source_path, strict_xml_equivalence_errors,
-        xml_equivalence_errors,
+        read_zip_entries, relationship_graph_signature, relationship_source_path,
+        strict_xml_equivalence_errors, xml_equivalence_errors,
     };
+    use zip::{CompressionMethod, ZipArchive, ZipWriter, write::SimpleFileOptions};
 
     const FILE_NAME: &str = "Apache-POI/test-data/spreadsheet/sample.xlsx";
     const ENTRY_NAME: &str = "xl/charts/chart1.xml";
     const WORD_FILE_NAME: &str = "Pandoc/test/docx/sample.docx";
     const PANDOC_NS0_FILE_NAME: &str = "Pandoc/test/docx/ns0-reference.docx";
+
+    #[test]
+    fn zip_comparison_accepts_legacy_zero_length_deflate_entry() {
+        let mut writer = ZipWriter::new(std::io::Cursor::new(Vec::new()));
+        writer
+            .start_file(
+                "legacy-empty",
+                SimpleFileOptions::default().compression_method(CompressionMethod::Stored),
+            )
+            .unwrap();
+        let mut bytes = writer.finish().unwrap().into_inner();
+
+        let local_header = bytes
+            .windows(4)
+            .position(|window| window == [0x50, 0x4b, 0x03, 0x04])
+            .unwrap();
+        bytes[local_header + 8..local_header + 10].copy_from_slice(&8_u16.to_le_bytes());
+        let central_header = bytes
+            .windows(4)
+            .position(|window| window == [0x50, 0x4b, 0x01, 0x02])
+            .unwrap();
+        bytes[central_header + 10..central_header + 12].copy_from_slice(&8_u16.to_le_bytes());
+
+        let mut archive = ZipArchive::new(std::io::Cursor::new(bytes.as_slice())).unwrap();
+        let mut entry = archive.by_index(0).unwrap();
+        assert_eq!(entry.compression(), CompressionMethod::Deflated);
+        assert_eq!(entry.compressed_size(), 0);
+        assert_eq!(entry.size(), 0);
+        assert_eq!(entry.crc32(), 0);
+        assert!(entry.read_to_end(&mut Vec::new()).is_err());
+        drop(entry);
+        drop(archive);
+
+        assert_eq!(
+            read_zip_entries(&bytes, "legacy-empty.zip"),
+            BTreeMap::from([("legacy-empty".to_string(), Vec::new())])
+        );
+    }
 
     #[test]
     fn relationship_graph_preserves_multiple_edges_to_the_same_target() {

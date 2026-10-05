@@ -136,7 +136,7 @@ fn public_docx_conversion_applies_page_range_and_viewer_options_to_pdf_objects()
     );
     assert_eq!(
         catalog.get(b"PageLayout").unwrap().as_name().unwrap(),
-        b"TwoColumnRight"
+        b"TwoColumnLeft"
     );
 
     let preferences = catalog
@@ -153,10 +153,8 @@ fn public_docx_conversion_applies_page_range_and_viewer_options_to_pdf_objects()
             .as_bool()
             .unwrap()
     );
-    assert_eq!(
-        preferences.get(b"Direction").unwrap().as_name().unwrap(),
-        b"R2L"
-    );
+    // First-page placement is a PageLayout choice, not a text reading order.
+    assert!(!preferences.has(b"Direction"));
 
     let open_action = catalog.get(b"OpenAction").unwrap().as_array().unwrap();
     assert!(matches!(open_action[0], Object::Reference(id) if id == pages[&2]));

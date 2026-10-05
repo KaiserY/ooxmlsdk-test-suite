@@ -831,6 +831,7 @@ fn fallback_chain_splits_missing_glyph_runs_by_coverage() {
     fallback.coverage = coverage_for_chars(['中']);
     registry.register_face(FontSource::System, fallback);
     registry.book.fallback_chains.push(FontFallbackChain {
+        unicode_ranges: Vec::new(),
         requested_family: None,
         script: Some(TextScript::Latin),
         language: None,
@@ -885,12 +886,14 @@ fn missing_family_and_missing_glyph_use_distinct_policy_chains() {
         .book
         .family_substitution_chains
         .push(FontFallbackChain {
+            unicode_ranges: Vec::new(),
             requested_family: Some(Cow::Borrowed("Missing Family")),
             script: None,
             language: None,
             families: vec![Cow::Borrowed("Primary Substitute")],
         });
     registry.book.fallback_chains.push(FontFallbackChain {
+        unicode_ranges: Vec::new(),
         requested_family: None,
         script: None,
         language: None,
@@ -1022,6 +1025,7 @@ fn fallback_chain_is_filtered_by_script() {
     arabic.coverage = coverage_for_chars(['ش']);
     registry.register_face(FontSource::System, arabic);
     registry.book.fallback_chains.push(FontFallbackChain {
+        unicode_ranges: Vec::new(),
         requested_family: None,
         script: Some(TextScript::Arabic),
         language: None,
@@ -1056,6 +1060,7 @@ fn fallback_chain_language_matching_is_case_insensitive() {
     fallback.coverage = coverage_for_chars(['中']);
     registry.register_face(FontSource::System, fallback);
     registry.book.fallback_chains.push(FontFallbackChain {
+        unicode_ranges: Vec::new(),
         requested_family: None,
         script: Some(TextScript::Han),
         language: Some(Cow::Borrowed("ja-JP")),
@@ -1087,6 +1092,7 @@ fn fallback_chain_does_not_duplicate_primary_family() {
     primary.coverage = coverage_for_chars(['A']);
     registry.register_face(FontSource::System, primary);
     registry.book.fallback_chains.push(FontFallbackChain {
+        unicode_ranges: Vec::new(),
         requested_family: None,
         script: Some(TextScript::Latin),
         language: None,

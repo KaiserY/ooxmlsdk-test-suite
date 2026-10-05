@@ -21,6 +21,10 @@ use crate::pdf_extract::{
     ImageSummary, RenderedPagePairError, first_pdf_page_text_mismatch, pdf_font_structure,
     pdf_page_dimensions, pdftotext_page, pdftotext_page_raw, visit_rendered_page_pairs,
 };
+use crate::pdf_painted_glyphs::{
+    PaintedGlyphComparison, compare_painted_glyphs, glyph_backed_text_fidelity,
+};
+use crate::pdf_semantic_source::inspect_docx_semantics;
 use crate::{
     CalibrationError, PdfBounds, PdfSummary, PixelRect, RenderedPageImage, Result, parse_pdf_rect,
     workspace_root,
@@ -596,6 +600,7 @@ fn compare_office_golden_detailed_inner(
     } else {
         None
     };
+    let mut painted_preflight = None;
     if let Some(mismatch) = early_text_mismatch {
         stage_trace.mark("page-text-preflight-mismatch");
         let legacy_symbol_transport_match = if contains_legacy_symbol_transport(&mismatch.candidate)
@@ -615,13 +620,24 @@ fn compare_office_golden_detailed_inner(
         } else {
             false
         };
-        if !write_failure_artifacts && !legacy_symbol_transport_match {
+        if !write_failure_artifacts
+            && !legacy_symbol_transport_match
+            && is_word_source(&source_path)
+        {
+            painted_preflight = compare_painted_glyphs(&candidate_pdf, &golden_pdf)
+                .ok()
+                .filter(|report| glyph_backed_text_fidelity(report).is_ok());
+        }
+        if !write_failure_artifacts && !legacy_symbol_transport_match && painted_preflight.is_none()
+        {
             return Err(OfficeGoldenFailure::diagnostic(
                 OfficeGoldenComparisonLayer::Text,
                 OfficeGoldenDiagnosticKind::TextContent,
                 format!(
-                    "case {} page {} normalized text content mismatch: candidate={:?}, golden={:?}",
-                    case.id, mismatch.page_index, mismatch.candidate, mismatch.golden
+                    "case {} extracted text mismatch on page {}: {}",
+                    case.id,
+                    mismatch.page_index + 1,
+                    describe_text_content_bag_difference(&mismatch.candidate, &mismatch.golden)
                 ),
             )
             .at(mismatch.page_index, None));
@@ -643,40 +659,103 @@ fn compare_office_golden_detailed_inner(
         }) {
             Ok(text_contract) => text_contract,
             Err(error) => {
-                if !write_failure_artifacts {
-                    return Err(error);
-                }
-                collect_candidate_diagnostics(
-                    &source_path,
-                    &diagnostic_options,
-                    &mut candidate_diagnostics,
-                );
-                let artifact_dir = write_candidate_artifact(
-                    case.id,
-                    &candidate_pdf,
-                    &golden_pdf,
-                    &candidate_font_audit,
-                    &candidate_diagnostics,
-                    &[0],
-                )
-                .map_err(|artifact_error| {
-                    OfficeGoldenFailure::new(
-                        OfficeGoldenComparisonLayer::ComparisonArtifact,
-                        artifact_error,
+                if error.diagnostic_kind == OfficeGoldenDiagnosticKind::TextContent
+                    && is_word_source(&source_path)
+                {
+                    let painted_contract = glyph_backed_text_contract(
+                        &source_path,
+                        &candidate,
+                        &golden,
+                        (&candidate_pdf, &golden_pdf),
+                        &diagnostic_options,
+                        &mut candidate_diagnostics,
+                        painted_preflight.take(),
+                    );
+                    if let Ok(text_contract) = painted_contract {
+                        text_contract
+                    } else {
+                        let mut error = error;
+                        if let Err(reason) = painted_contract {
+                            error
+                                .message
+                                .push_str(&format!("; painted-text proof rejected: {reason}"));
+                        }
+                        if !write_failure_artifacts {
+                            return Err(error);
+                        }
+                        collect_candidate_diagnostics(
+                            &source_path,
+                            &diagnostic_options,
+                            &mut candidate_diagnostics,
+                        );
+                        let artifact_dir = write_candidate_artifact(
+                            case.id,
+                            &candidate_pdf,
+                            &golden_pdf,
+                            &candidate_font_audit,
+                            &candidate_diagnostics,
+                            &[0],
+                        )
+                        .map_err(|artifact_error| {
+                            OfficeGoldenFailure::new(
+                                OfficeGoldenComparisonLayer::ComparisonArtifact,
+                                artifact_error,
+                            )
+                        })?;
+                        let _ = write_painted_glyph_diagnostic_artifact(
+                            &artifact_dir,
+                            &candidate_pdf,
+                            &golden_pdf,
+                        );
+                        return Err(error.with_artifacts(&artifact_dir));
+                    }
+                } else {
+                    if !write_failure_artifacts {
+                        return Err(error);
+                    }
+                    collect_candidate_diagnostics(
+                        &source_path,
+                        &diagnostic_options,
+                        &mut candidate_diagnostics,
+                    );
+                    let artifact_dir = write_candidate_artifact(
+                        case.id,
+                        &candidate_pdf,
+                        &golden_pdf,
+                        &candidate_font_audit,
+                        &candidate_diagnostics,
+                        &[0],
                     )
-                })?;
-                return Err(error.with_artifacts(&artifact_dir));
+                    .map_err(|artifact_error| {
+                        OfficeGoldenFailure::new(
+                            OfficeGoldenComparisonLayer::ComparisonArtifact,
+                            artifact_error,
+                        )
+                    })?;
+                    if error.diagnostic_kind == OfficeGoldenDiagnosticKind::TextContent {
+                        // Supplement the extraction failure; an unsupported font or
+                        // unavailable MuPDF must never replace the original verdict.
+                        let _ = write_painted_glyph_diagnostic_artifact(
+                            &artifact_dir,
+                            &candidate_pdf,
+                            &golden_pdf,
+                        );
+                    }
+                    return Err(error.with_artifacts(&artifact_dir));
+                }
             }
         };
     stage_trace.mark("text-contract");
 
-    if let Err(error) = assert_text_font_assignment_contract(
-        case.id,
-        &text_contract.candidate_lines,
-        &text_contract.golden_lines,
-        text_contract.pdftotext_confirmed_pdfium_mismatch,
-        text_contract.pdftotext_confirmed_ordered_text,
-    ) {
+    if !text_contract.glyph_backed
+        && let Err(error) = assert_text_font_assignment_contract(
+            case.id,
+            &text_contract.candidate_lines,
+            &text_contract.golden_lines,
+            text_contract.pdftotext_confirmed_pdfium_mismatch,
+            text_contract.pdftotext_confirmed_ordered_text,
+        )
+    {
         if !write_failure_artifacts {
             return Err(error);
         }
@@ -1387,13 +1466,31 @@ fn assert_text_contract(
         pdftotext_confirmed_ordered_text = content_matches && ordered_text_matches;
     }
     if !content_matches {
+        let page_index = candidate_content
+            .iter()
+            .zip(&golden_content)
+            .position(|(candidate, golden)| candidate != golden)
+            .unwrap_or(0);
+        let differing_pages = candidate_content
+            .iter()
+            .zip(&golden_content)
+            .filter(|(candidate, golden)| candidate != golden)
+            .count();
         return Err(OfficeGoldenFailure::diagnostic(
             OfficeGoldenComparisonLayer::Text,
             OfficeGoldenDiagnosticKind::TextContent,
             format!(
-                "case {case_id} normalized page text mismatch: candidate={candidate_text:?}, golden={golden_text:?}"
+                "case {case_id} extracted text mismatch on page {} ({differing_pages} pages have different character bags): {}",
+                page_index + 1,
+                describe_text_mismatch(
+                    &candidate_text[page_index],
+                    &golden_text[page_index],
+                    &candidate_content[page_index],
+                    &golden_content[page_index],
+                )
             ),
-        ));
+        )
+        .at(page_index, None));
     }
     assert_text_style_contract(case_id, candidate, golden)?;
     let mut candidate_lines =
@@ -1482,6 +1579,68 @@ fn assert_text_contract(
         golden_lines,
         pdftotext_confirmed_pdfium_mismatch,
         pdftotext_confirmed_ordered_text,
+        glyph_backed: false,
+    })
+}
+
+fn is_word_source(path: &Path) -> bool {
+    path.extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| {
+            matches!(
+                extension.to_ascii_lowercase().as_str(),
+                "docx" | "docm" | "dotx" | "dotm"
+            )
+        })
+}
+
+fn glyph_backed_text_contract(
+    source_path: &Path,
+    candidate: &PdfSummary,
+    golden: &PdfSummary,
+    pdf_bytes: (&[u8], &[u8]),
+    options: &ooxmlsdk_pdf::PdfOptions,
+    diagnostics: &mut CandidateDiagnosticsState,
+    painted_preflight: Option<PaintedGlyphComparison>,
+) -> std::result::Result<TextContract, String> {
+    let (candidate_pdf, golden_pdf) = pdf_bytes;
+    let painted = match painted_preflight {
+        Some(report) => report,
+        None => compare_painted_glyphs(candidate_pdf, golden_pdf)?,
+    };
+    glyph_backed_text_fidelity(&painted)?;
+    collect_candidate_diagnostics(source_path, options, diagnostics);
+    let CandidateDiagnosticsState::Collected(layout) = diagnostics else {
+        return Err("candidate layout diagnostics are unavailable".into());
+    };
+    let semantic = inspect_docx_semantics(source_path, candidate_pdf, golden_pdf, layout)?;
+    if !semantic.verified() {
+        return Err(format!(
+            "candidate source/transport text proof failed: {semantic:?}"
+        ));
+    }
+    let candidate_lines = text_line_contracts(candidate, TextLineGeometry::EmbeddedFont)
+        .map_err(|error| error.to_string())?;
+    let golden_lines = text_line_contracts(golden, TextLineGeometry::EmbeddedFont)
+        .map_err(|error| error.to_string())?;
+    let masks = candidate_lines
+        .iter()
+        .zip(&golden_lines)
+        .map(|(candidate, golden)| {
+            candidate
+                .iter()
+                .chain(golden)
+                .map(|line| line.bounds)
+                .collect::<Vec<_>>()
+        })
+        .collect();
+    Ok(TextContract {
+        masks,
+        candidate_lines: Vec::new(),
+        golden_lines: Vec::new(),
+        pdftotext_confirmed_pdfium_mismatch: false,
+        pdftotext_confirmed_ordered_text: false,
+        glyph_backed: true,
     })
 }
 
@@ -1581,6 +1740,7 @@ struct TextContract {
     golden_lines: Vec<Vec<TextLineContract>>,
     pdftotext_confirmed_pdfium_mismatch: bool,
     pdftotext_confirmed_ordered_text: bool,
+    glyph_backed: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -1588,6 +1748,7 @@ struct TextLineContract {
     text: String,
     font_runs: Vec<TextFontRunContract>,
     bounds: PdfBounds,
+    ink_bounds: PdfBounds,
     origin_x: f32,
     origin_y: f32,
     writing_direction: TextWritingDirection,
@@ -1645,6 +1806,7 @@ struct TextCharacterContract {
     text: String,
     font_name: String,
     bounds: PdfBounds,
+    ink_bounds: PdfBounds,
     origin_x: f32,
     origin_y: f32,
     writing_direction: TextWritingDirection,
@@ -1965,15 +2127,17 @@ fn assert_text_line_geometry(
                 .at(page_index, Some(line_index)));
             }
             // Compare in the golden line's coordinate system. For ordinary
-            // horizontal text these are exactly the historical left, right,
-            // and baseline-y checks. Rotated text uses the corresponding
-            // advance start/end and cross-axis baseline instead of treating
-            // horizontal and vertical content as the same line.
+            // horizontal text these are the painted left/right edges and
+            // baseline-y. Keep the loose font boxes for line reconstruction
+            // and raster masks, but do not treat PDF /Widths as painted ink:
+            // Office simple TrueType subsets can declare .notdef widths for
+            // Latin-1 characters while placing the correct embedded outlines.
+            // Rotated text uses the corresponding projected ink edges.
             let writing_direction = golden_line.writing_direction;
             let (candidate_start, candidate_end) =
-                writing_direction.projected_bounds(candidate_line.bounds, true);
+                writing_direction.projected_bounds(candidate_line.ink_bounds, true);
             let (golden_start, golden_end) =
-                writing_direction.projected_bounds(golden_line.bounds, true);
+                writing_direction.projected_bounds(golden_line.ink_bounds, true);
             let candidate_cross_origin = writing_direction
                 .cross_coordinate(candidate_line.origin_x, candidate_line.origin_y);
             let golden_cross_origin =
@@ -2006,8 +2170,8 @@ fn assert_text_line_geometry(
                         OfficeGoldenComparisonLayer::Text,
                         diagnostic_kind,
                         format!(
-                            "case {case_id} page {page_index} line {line_index} {edge} mismatch: candidate={candidate_value}, golden={golden_value}, tolerance={tolerance}; text={:?}; candidate_bounds={:?}; golden_bounds={:?}",
-                            candidate_line.text, candidate_line.bounds, golden_line.bounds
+                            "case {case_id} page {page_index} line {line_index} {edge} mismatch: candidate={candidate_value}, golden={golden_value}, tolerance={tolerance}; text={:?}; candidate_ink_bounds={:?}; golden_ink_bounds={:?}; candidate_bounds={:?}; golden_bounds={:?}",
+                            candidate_line.text, candidate_line.ink_bounds, golden_line.ink_bounds, candidate_line.bounds, golden_line.bounds
                         ),
                     )
                     .at(page_index, Some(line_index)));
@@ -2160,6 +2324,8 @@ fn text_line_contracts(
             text: legacy_symbol_semantic_text(&character.text, &font_name).into_owned(),
             font_name,
             bounds,
+            ink_bounds: parse_pdf_rect(&character.ink_bounds)
+                .map_err(CalibrationError::PdfiumExtraction)?,
             origin_x,
             origin_y,
             writing_direction: TextWritingDirection::from_degrees(angle_degrees),
@@ -2213,6 +2379,7 @@ fn text_line_contracts(
                     text: String::new(),
                     font_runs: Vec::new(),
                     bounds: first.bounds,
+                    ink_bounds: first.ink_bounds,
                     origin_x: first.origin_x,
                     origin_y: first.origin_y,
                     writing_direction,
@@ -2232,6 +2399,7 @@ fn text_line_contracts(
                         });
                     }
                     line.bounds = union_pdf_bounds(line.bounds, character.bounds);
+                    line.ink_bounds = union_pdf_bounds(line.ink_bounds, character.ink_bounds);
                 }
                 line
             })
@@ -2405,6 +2573,60 @@ fn page_text_content_bags(pages: &[String]) -> Vec<String> {
         .iter()
         .map(|page| unordered_extracted_text_content(page))
         .collect()
+}
+
+fn describe_text_mismatch(
+    candidate: &str,
+    golden: &str,
+    candidate_bag: &str,
+    golden_bag: &str,
+) -> String {
+    let candidate_chars = candidate.chars().collect::<Vec<_>>();
+    let golden_chars = golden.chars().collect::<Vec<_>>();
+    let first_difference = candidate_chars
+        .iter()
+        .zip(&golden_chars)
+        .position(|(candidate, golden)| candidate != golden)
+        .unwrap_or(candidate_chars.len().min(golden_chars.len()));
+    let start = first_difference.saturating_sub(24);
+    let candidate_end = (first_difference + 25).min(candidate_chars.len());
+    let golden_end = (first_difference + 25).min(golden_chars.len());
+    let candidate_excerpt = candidate_chars[start.min(candidate_end)..candidate_end]
+        .iter()
+        .collect::<String>();
+    let golden_excerpt = golden_chars[start.min(golden_end)..golden_end]
+        .iter()
+        .collect::<String>();
+    format!(
+        "candidate_chars={}, golden_chars={}, first_ordered_difference_at={}, candidate_excerpt={candidate_excerpt:?}, golden_excerpt={golden_excerpt:?}; {}",
+        candidate_chars.len(),
+        golden_chars.len(),
+        first_difference,
+        describe_text_content_bag_difference(candidate_bag, golden_bag)
+    )
+}
+
+fn describe_text_content_bag_difference(candidate: &str, golden: &str) -> String {
+    let mut deltas = BTreeMap::<char, i64>::new();
+    for character in candidate.chars() {
+        *deltas.entry(character).or_default() += 1;
+    }
+    for character in golden.chars() {
+        *deltas.entry(character).or_default() -= 1;
+    }
+    let candidate_only = deltas
+        .iter()
+        .filter(|(_, count)| **count > 0)
+        .take(8)
+        .map(|(character, count)| format!("U+{:04X} {character:?} x{count}", *character as u32))
+        .collect::<Vec<_>>();
+    let golden_only = deltas
+        .iter()
+        .filter(|(_, count)| **count < 0)
+        .take(8)
+        .map(|(character, count)| format!("U+{:04X} {character:?} x{}", *character as u32, -*count))
+        .collect::<Vec<_>>();
+    format!("candidate_only={candidate_only:?}, golden_only={golden_only:?}")
 }
 
 fn extracted_text_content_key(text: &str) -> String {
@@ -2757,6 +2979,13 @@ fn localized_graphics_bounds(
         .iter()
         .filter(|image| image.page_index == page_index)
     {
+        // A decoded, all-zero soft mask makes this image invisible. Word can
+        // leave such images beside its visible WordArt shadings; their bounds
+        // must not impose an unrelated localized raster check on the shading.
+        // Unknown or partially transparent masks still take the usual path.
+        if fully_transparent_soft_mask_image(golden, image) {
+            continue;
+        }
         // A decoded-pixel, native-dimension, and placement match is stronger
         // evidence than comparing the same tiny image after two PDF producers
         // independently quantize it onto a three-pixel raster. Consume the
@@ -2840,6 +3069,12 @@ fn localized_graphics_bounds(
         }
     }
     Ok(bounds)
+}
+
+fn fully_transparent_soft_mask_image(summary: &PdfSummary, image: &ImageSummary) -> bool {
+    page_object_semantic_soft_mask_image(summary, image).is_some_and(|soft_mask| {
+        !soft_mask.alpha.is_empty() && soft_mask.alpha.iter().all(|&alpha| alpha == 0)
+    })
 }
 
 fn soft_mask_stencil_color(summary: &PdfSummary, image: &ImageSummary) -> Option<[u8; 3]> {
@@ -4255,6 +4490,23 @@ fn write_candidate_artifact(
         &font_structure,
     )?;
     if let CandidateDiagnosticsState::Collected(diagnostics) = diagnostics {
+        // Keep the semantic text passed from layout to the PDF writer by page.
+        // Comparing this with extraction isolates writer transport problems
+        // from layout/import problems without trusting the reference CMap.
+        let pages = diagnostics
+            .pages
+            .iter()
+            .map(|page| {
+                json!({
+                    "page_index": page.page_index,
+                    "text": page.text_runs.iter().map(|run| run.pdf_text.as_str()).collect::<String>(),
+                })
+            })
+            .collect::<Vec<_>>();
+        write_pretty_json(
+            &artifact_dir.join("candidate-layout-text.json"),
+            &json!({ "schema_version": 1, "pages": pages }),
+        )?;
         let fonts = diagnostics
             .fonts
             .iter()
@@ -4292,6 +4544,30 @@ fn write_candidate_artifact(
     }
     write_candidate_glyph_pages(&artifact_dir, diagnostics, diagnostic_pages)?;
     Ok(artifact_dir)
+}
+
+fn write_painted_glyph_diagnostic_artifact(
+    artifact_dir: &Path,
+    candidate_pdf: &[u8],
+    golden_pdf: &[u8],
+) -> Result<()> {
+    let diagnostic = match compare_painted_glyphs(candidate_pdf, golden_pdf) {
+        Ok(report) => json!({
+            "schema_version": 1,
+            "status": "ok",
+            "purpose": "diagnostic only; does not change golden acceptance",
+            "report": report,
+        }),
+        Err(error) => json!({
+            "schema_version": 1,
+            "status": "unavailable",
+            "error": error,
+        }),
+    };
+    write_pretty_json(
+        &artifact_dir.join("painted-glyph-diagnostic.json"),
+        &diagnostic,
+    )
 }
 
 fn font_audit_json(audit: &PdfFontAudit) -> Value {
@@ -4490,7 +4766,7 @@ mod tests {
         LocalizedGraphicRegion, LocalizedGraphicsComparison, PdfBounds, PixelRect,
         RenderedPageImage, TEXT_MASK_PADDING_PT, TextCharacterContract, TextFontRunContract,
         TextLineContract, TextLineGeometry, TextWritingDirection, VisualTolerance,
-        canonical_pdf_base_font_name, extracted_text_content_key,
+        canonical_pdf_base_font_name, describe_text_mismatch, extracted_text_content_key,
         extracted_text_line_content_equivalent, extracted_text_line_content_key,
         font_assignment_character_bag, format_page_ranges,
         image_placement_matches_at_comparison_grid, legacy_symbol_ordered_text_equivalent,
@@ -4502,6 +4778,17 @@ mod tests {
         type0_base_font_matches_descendant, unmatched_image_requires_localized_comparison,
         unordered_extracted_text_content, validate_candidate_font_contract, visual_diff_metrics,
     };
+
+    #[test]
+    fn text_mismatch_reports_first_page_context_and_bounded_character_delta() {
+        let candidate = format!("{}abc", "x".repeat(500));
+        let golden = format!("{}adc", "x".repeat(500));
+        let diagnostic = describe_text_mismatch(&candidate, &golden, "abc", "adc");
+        assert!(diagnostic.contains("first_ordered_difference_at=501"));
+        assert!(diagnostic.contains("U+0062 'b' x1"));
+        assert!(diagnostic.contains("U+0064 'd' x1"));
+        assert!(diagnostic.len() < 500);
+    }
 
     #[test]
     fn office_conversion_timestamp_uses_the_recorded_reference_time_zone() {
@@ -4588,49 +4875,78 @@ mod tests {
         bytes
     }
 
+    fn masked_image_summary(alpha: Option<[u8; 4]>) -> crate::PdfSummary {
+        let mut document = Document::load_mem(&blank_pdf()).unwrap();
+        let mut image = dictionary! {
+            "Type" => "XObject", "Subtype" => "Image",
+            "Width" => 2, "Height" => 2,
+            "ColorSpace" => "DeviceRGB", "BitsPerComponent" => 8,
+        };
+        if let Some(alpha) = alpha {
+            let mask = document.add_object(Stream::new(
+                dictionary! {
+                    "Type" => "XObject", "Subtype" => "Image",
+                    "Width" => 2, "Height" => 2,
+                    "ColorSpace" => "DeviceGray", "BitsPerComponent" => 8,
+                },
+                alpha.to_vec(),
+            ));
+            image.set("SMask", mask);
+        }
+        let image = document.add_object(Stream::new(image, vec![0; 12]));
+        let content = document.add_object(Stream::new(
+            dictionary! {},
+            b"q 20 0 0 20 10 10 cm /Im0 Do Q".to_vec(),
+        ));
+        let page_id = document.get_pages()[&1];
+        let page = document
+            .get_object_mut(page_id)
+            .unwrap()
+            .as_dict_mut()
+            .unwrap();
+        page.set("Contents", content);
+        page.set(
+            "Resources",
+            dictionary! { "XObject" => dictionary! { "Im0" => image } },
+        );
+        let mut bytes = Vec::new();
+        document.save_to(&mut bytes).unwrap();
+        crate::PdfSummary::from_bytes_for_golden(&bytes).unwrap()
+    }
+
+    #[test]
+    fn fully_transparent_office_image_does_not_create_a_localized_graphics_region() {
+        let transparent = masked_image_summary(Some([0; 4]));
+        let visible = masked_image_summary(Some([0, 64, 128, 255]));
+        let mut unknown = transparent.clone();
+        unknown.raw_pages[0].xobjects[0].semantic_soft_mask_image = None;
+        let page_bounds = PdfBounds {
+            left: 0.0,
+            bottom: 0.0,
+            right: 200.0,
+            top: 100.0,
+        };
+        let regions = |golden: &crate::PdfSummary| {
+            super::localized_graphics_bounds(
+                &masked_image_summary(None),
+                golden,
+                0,
+                page_bounds,
+                1333,
+                667,
+            )
+            .unwrap()
+        };
+        assert!(regions(&transparent).is_empty());
+        assert_eq!(regions(&visible).len(), 1);
+        assert_eq!(regions(&unknown).len(), 1);
+    }
+
     #[test]
     fn exact_image_identity_does_not_bypass_a_different_or_unknown_soft_mask() {
-        fn summary(alpha: Option<[u8; 4]>) -> crate::PdfSummary {
-            let mut document = Document::load_mem(&blank_pdf()).unwrap();
-            let mut image = dictionary! {
-                "Type" => "XObject", "Subtype" => "Image",
-                "Width" => 2, "Height" => 2,
-                "ColorSpace" => "DeviceRGB", "BitsPerComponent" => 8,
-            };
-            if let Some(alpha) = alpha {
-                let mask = document.add_object(Stream::new(
-                    dictionary! {
-                        "Type" => "XObject", "Subtype" => "Image",
-                        "Width" => 2, "Height" => 2,
-                        "ColorSpace" => "DeviceGray", "BitsPerComponent" => 8,
-                    },
-                    alpha.to_vec(),
-                ));
-                image.set("SMask", mask);
-            }
-            let image = document.add_object(Stream::new(image, vec![0; 12]));
-            let content = document.add_object(Stream::new(
-                dictionary! {},
-                b"q 20 0 0 20 10 10 cm /Im0 Do Q".to_vec(),
-            ));
-            let page_id = document.get_pages()[&1];
-            let page = document
-                .get_object_mut(page_id)
-                .unwrap()
-                .as_dict_mut()
-                .unwrap();
-            page.set("Contents", content);
-            page.set(
-                "Resources",
-                dictionary! { "XObject" => dictionary! { "Im0" => image } },
-            );
-            let mut bytes = Vec::new();
-            document.save_to(&mut bytes).unwrap();
-            crate::PdfSummary::from_bytes_for_golden(&bytes).unwrap()
-        }
-        let reference = summary(Some([0, 64, 128, 255]));
-        let different = summary(Some([255, 128, 64, 0]));
-        let opaque = summary(None);
+        let reference = masked_image_summary(Some([0, 64, 128, 255]));
+        let different = masked_image_summary(Some([255, 128, 64, 0]));
+        let opaque = masked_image_summary(None);
         let matches = |candidate: &crate::PdfSummary, golden: &crate::PdfSummary| {
             super::exact_decoded_image_match(
                 candidate,
@@ -4653,7 +4969,7 @@ mod tests {
         );
         assert!(matches(&reference, &reference));
         assert!(matches(&opaque, &opaque));
-        let opaque_mask = summary(Some([255; 4]));
+        let opaque_mask = masked_image_summary(Some([255; 4]));
         assert!(matches(&opaque_mask, &opaque));
         assert!(matches(&opaque, &opaque_mask));
         assert!(!matches(&different, &reference));
@@ -5137,6 +5453,12 @@ mod tests {
                 right: 0.0,
                 top: 0.0,
             },
+            ink_bounds: PdfBounds {
+                left: 0.0,
+                bottom: 0.0,
+                right: 0.0,
+                top: 0.0,
+            },
             origin_x: 0.0,
             origin_y: 0.0,
             writing_direction: TextWritingDirection::from_degrees(0.0),
@@ -5248,6 +5570,65 @@ mod tests {
     }
 
     #[test]
+    fn text_geometry_compares_ink_without_relaxing_placement_or_size() {
+        use super::{OfficeGoldenDiagnosticKind, assert_text_contract};
+        use crate::PdfSummary;
+
+        let pdf = blank_pdf();
+        let mut golden = PdfSummary::from_bytes_for_golden(&pdf).unwrap();
+        golden.text_chars.push(crate::pdf_extract::TextCharSummary {
+            page_index: 0,
+            text: "å".to_owned(),
+            font_name: "Georgia".to_owned(),
+            // The embedded outline ends at x=25; a bad /Widths entry
+            // extends only the loose font box to x=31.
+            bounds: "[20 18 31 31]".to_owned(),
+            ink_bounds: "[20.4 20 25 29]".to_owned(),
+            font_metric_bounds: None,
+            origin_x: "20".to_owned(),
+            origin_y: "20".to_owned(),
+            angle_degrees: "0".to_owned(),
+        });
+        let mut candidate = golden.clone();
+        candidate.text_chars[0].bounds = "[20 18 25.5 31]".to_owned();
+        let compare = |candidate: &PdfSummary| {
+            assert_text_contract("ink-control", candidate, &golden, &pdf, &pdf)
+        };
+        let contract = compare(&candidate).expect("identical painted glyphs must match");
+        // Raster masks still include the complete original font boxes.
+        assert_eq!(contract.masks[0][0].right, 31.0);
+
+        for (ink, origin_x, origin_y, kind) in [
+            (
+                "[25.4 20 30 29]",
+                "25",
+                "20",
+                OfficeGoldenDiagnosticKind::TextHorizontalBounds,
+            ),
+            (
+                "[20.4 20 30 29]",
+                "20",
+                "20",
+                OfficeGoldenDiagnosticKind::TextHorizontalBounds,
+            ),
+            (
+                "[20.4 25 25 34]",
+                "20",
+                "25",
+                OfficeGoldenDiagnosticKind::TextBaseline,
+            ),
+        ] {
+            let mut changed = candidate.clone();
+            let character = &mut changed.text_chars[0];
+            character.ink_bounds = ink.to_owned();
+            character.origin_x = origin_x.to_owned();
+            character.origin_y = origin_y.to_owned();
+            let failure = compare(&changed).err().expect("visible changes must fail");
+            assert_eq!(failure.diagnostic_kind, kind);
+        }
+    }
+
+    #[test]
     fn text_lines_use_baseline_identity_instead_of_overlapping_extents() {
         assert!(same_text_line(100.0, 100.2));
         assert!(!same_text_line(100.0, 100.3));
@@ -5260,6 +5641,7 @@ mod tests {
                 text: text.to_owned(),
                 font_name: "arial".to_owned(),
                 bounds,
+                ink_bounds: bounds,
                 origin_x,
                 origin_y,
                 writing_direction: TextWritingDirection::from_degrees(angle_degrees),
