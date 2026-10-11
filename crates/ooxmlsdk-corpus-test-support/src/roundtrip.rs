@@ -1,5 +1,4 @@
 use std::{
-    borrow::Cow,
     collections::BTreeMap,
     fs,
     io::{Cursor, Read},
@@ -281,7 +280,11 @@ pub fn assert_package_file_opens(path: &Path, file_name: &str) {
                 WordprocessingDocument::new_from_file_with_settings(path, eager_open_settings())
                     .unwrap();
             let main_part = package.main_document_part().unwrap();
-            assert_eq!(part_path(&package, &main_part), "word/document.xml");
+            // OPC part names are compared without ASCII case sensitivity.
+            assert_eq!(
+                part_path(&package, &main_part).to_ascii_lowercase(),
+                "word/document.xml"
+            );
         }
         DocSampleKind::Spreadsheet => {
             let package =
@@ -3033,11 +3036,10 @@ fn compare_xml_attrs(
         .map(|(k, v)| (k.as_str(), v.as_str()))
         .collect::<BTreeMap<_, _>>();
 
+    // Parsing already normalized literal whitespace and preserved character references.
     for (name, value) in &original {
         match roundtripped.get(name) {
-            Some(roundtripped_value)
-                if normalized_xml_attr_value(roundtripped_value).as_ref()
-                    == normalized_xml_attr_value(value).as_ref() => {}
+            Some(roundtripped_value) if roundtripped_value == value => {}
             Some(roundtripped_value) => errors.push(format!(
                 "{path}: attr value mismatch for {}: original {:?}, roundtripped {:?}",
                 readable_xml_name(name),
@@ -3061,22 +3063,6 @@ fn compare_xml_attrs(
             ));
         }
     }
-}
-
-fn normalized_xml_attr_value(value: &str) -> Cow<'_, str> {
-    if !value.bytes().any(|b| matches!(b, b'\t' | b'\n' | b'\r')) {
-        return Cow::Borrowed(value);
-    }
-
-    Cow::Owned(
-        value
-            .chars()
-            .map(|ch| match ch {
-                '\t' | '\n' | '\r' => ' ',
-                _ => ch,
-            })
-            .collect(),
-    )
 }
 
 fn push_xml_name_error(
@@ -4447,6 +4433,124 @@ mod tests {
     const ENTRY_NAME: &str = "xl/charts/chart1.xml";
     const WORD_FILE_NAME: &str = "Pandoc/test/docx/sample.docx";
     const PANDOC_NS0_FILE_NAME: &str = "Pandoc/test/docx/ns0-reference.docx";
+
+    #[test]
+    fn attribute_character_reference_whitespace_loss_is_not_compatible() {
+        for reference in ["&#9;", "&#10;", "&#13;"] {
+            let original = format!(
+                "<v:textpath xmlns:v=\"urn:schemas-microsoft-com:vml\" string=\"before{reference}after\"/>"
+            );
+            for replacement in [" ", "\t", "\n", "\r"] {
+                let changed = format!(
+                    "<v:textpath xmlns:v=\"urn:schemas-microsoft-com:vml\" string=\"before{replacement}after\"/>"
+                );
+                assert!(
+                    !xml_equivalence_errors(
+                        original.as_bytes(),
+                        changed.as_bytes(),
+                        WORD_FILE_NAME,
+                        "word/document.xml",
+                    )
+                    .is_empty(),
+                    "{reference} must differ from literal {replacement:?}"
+                );
+                assert!(
+                    !strict_xml_equivalence_errors(
+                        original.as_bytes(),
+                        changed.as_bytes(),
+                        WORD_FILE_NAME,
+                        "word/document.xml",
+                    )
+                    .is_empty(),
+                    "{reference} must differ from literal {replacement:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn literal_attribute_whitespace_is_compatible_with_spaces() {
+        let normalized = br#"<x a="before after"/>"#;
+        for whitespace in ["\t", "\n", "\r", "\r\n"] {
+            let original = format!("<x a=\"before{whitespace}after\"/>");
+            assert!(
+                xml_equivalence_errors(
+                    original.as_bytes(),
+                    normalized,
+                    WORD_FILE_NAME,
+                    "word/document.xml",
+                )
+                .is_empty()
+            );
+            assert!(
+                strict_xml_equivalence_errors(
+                    original.as_bytes(),
+                    normalized,
+                    WORD_FILE_NAME,
+                    "word/document.xml",
+                )
+                .is_empty()
+            );
+        }
+    }
+
+    #[test]
+    fn text_character_reference_cr_is_distinct_from_literal_line_endings() {
+        let normalized = b"<t>before\nafter</t>";
+        let referenced = b"<t>before&#13;after</t>";
+        for line_ending in ["\r", "\r\n", "\n"] {
+            let original = format!("<t>before{line_ending}after</t>");
+            assert!(
+                strict_xml_equivalence_errors(
+                    original.as_bytes(),
+                    normalized,
+                    WORD_FILE_NAME,
+                    "word/document.xml",
+                )
+                .is_empty()
+            );
+            assert!(
+                !xml_equivalence_errors(
+                    original.as_bytes(),
+                    referenced,
+                    WORD_FILE_NAME,
+                    "word/document.xml",
+                )
+                .is_empty()
+            );
+        }
+    }
+
+    #[test]
+    fn generated_text_round_trip_preserves_literal_line_ending_semantics() {
+        use ooxmlsdk::{schemas::w::Text as WordText, sdk::SdkType};
+
+        for line_ending in ["\r", "\r\n", "\n"] {
+            let original = format!(
+                "<w:t xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\">before{line_ending}after</w:t>"
+            );
+            for node in [
+                WordText::from_bytes(original.as_bytes()).unwrap(),
+                WordText::from_reader(std::io::Cursor::new(original.as_bytes())).unwrap(),
+            ] {
+                let saved = node.to_xml().unwrap();
+                // A generated leaf inherits its namespace from the surrounding part.
+                let original_part = format!(
+                    "<root xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\">{original}</root>"
+                );
+                let saved_part = format!(
+                    "<root xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\">{saved}</root>"
+                );
+                let errors = strict_xml_equivalence_errors(
+                    original_part.as_bytes(),
+                    saved_part.as_bytes(),
+                    WORD_FILE_NAME,
+                    "word/document.xml",
+                );
+                assert!(errors.is_empty(), "{errors:?}; saved: {saved:?}");
+            }
+        }
+    }
 
     #[test]
     fn zip_comparison_accepts_legacy_zero_length_deflate_entry() {

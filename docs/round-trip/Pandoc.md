@@ -12,7 +12,7 @@
 
 | Total files | Round-trip candidates | Open-only | Invalid | Known failures | Last run | Passed | Failed |
 | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: |
-| 235 | 235 | 0 | 0 | 0 | 2026-08-16 | 235 | 0 |
+| 235 | 235 | 0 | 0 | 0 | 2026-10-11 | 235 | 0 |
 
 The imported corpus covers Pandoc's DOCX, PPTX, and XLSX reader/writer fixtures:
 
@@ -37,7 +37,7 @@ cargo test -p ooxmlsdk-roundtrip-tests --test pandoc_roundtrip -- --ignored
 ## Last Run
 
 ```text
-test result: ok. 235 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.31s
+test result: ok. 235 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.13s
 ```
 
 Current failures: none.

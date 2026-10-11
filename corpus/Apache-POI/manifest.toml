@@ -8,6 +8,12 @@ source_commit = "913c78891bd0cd20945b050c63abfb8c66c88009"
 default_roundtrip = false
 
 [[expectation]]
+file = "test-data/document/unicode-path.docx"
+test = "roundtrip"
+mode = "open_only"
+reason = "conflicting ZIP Unicode path fields are a POI/LibreOffice rejection fixture; the SDK imports it using Office-compatible recovery, without requiring lossless save"
+
+[[expectation]]
 file = "test-data/integration/stress025.docx"
 test = "roundtrip"
 mode = "invalid"

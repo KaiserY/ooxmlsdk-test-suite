@@ -12,7 +12,7 @@
 
 | Total files | Round-trip candidates | Open-only | Invalid | Known failures | Last run | Passed | Failed |
 | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: |
-| 682 | 613 | 5 | 64 | 0 | 2026-08-15 | 682 | 0 |
+| 682 | 612 | 6 | 64 | 0 | 2026-10-11 | 682 | 0 |
 
 The current scaffold generates one ignored test per supported Office package
 fixture.
@@ -26,10 +26,29 @@ cargo test -p ooxmlsdk-roundtrip-tests --test apache_poi_roundtrip -- --ignored
 Result:
 
 ```text
-test result: ok. 682 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 24.67s
+test result: ok. 682 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 22.36s
 ```
 
-Current failures: none.
+`test-data/document/unicode-path.docx` now uses `open_only`: the SDK must eagerly
+parse its main document, without requiring a lossless package save. Its existing
+first-save failure, `Duplicate filename: word/document.xml`, is caused by
+conflicting ZIP entry names and occurs before canonical XML comparison.
+
+Upstream classifies this as a corrupt ZIP rejection test, not a normal
+round-trip fixture:
+[`testUnicodePathDocWithCorruptZipEntry`](https://github.com/apache/poi/blob/trunk/poi-ooxml/src/test/java/org/apache/poi/xwpf/usermodel/TestXWPFDocument.java)
+asserts an opening exception. It is byte-identical to LibreOffice's
+`package/qa/cppunit/data/unicode-path.docx`, whose test also requires rejection.
+ZIP header filenames conflict with the Unicode path extra fields. The SDK
+currently accepts the archive but later copies an extra entry under the main
+document's name. The import recovery policy is unchanged. The generated test
+continues to require successful parsing, rather than skipping the fixture or
+expecting an arbitrary error.
+
+Its configured Office PDF is an approved `OpenAndRepair` recovery reference and
+remains a protected PASS. The PDF campaign includes this recovery despite its
+`open_only` classification; ordinary open-only fixtures remain excluded. See
+[the golden PDF entry point](../ooxmlsdk-pdf-test/corpus_pdf_conv.md).
 
 Invalid-package expectations include encrypted CDFV2 packages, corrupt fuzz
 and crash fixtures, empty or missing-part packages, XML entity expansion

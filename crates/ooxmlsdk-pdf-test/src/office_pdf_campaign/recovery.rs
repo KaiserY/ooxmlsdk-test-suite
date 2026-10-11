@@ -76,7 +76,7 @@ pub(super) fn validate_assignment_environment(
     Ok(())
 }
 
-fn overrides(root: &Path) -> Result<Vec<CampaignAssignment>, String> {
+pub(super) fn overrides(root: &Path) -> Result<Vec<CampaignAssignment>, String> {
     let path = root.join("corpus_pdf_conv/recovery-plan-overrides.jsonl");
     if path.exists() {
         read_plan(&path)

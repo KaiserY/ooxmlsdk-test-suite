@@ -857,10 +857,10 @@ fn office_page_range(range: Option<&str>) -> Result<(Option<u32>, Option<u32>), 
 
 pub fn generate_campaign_assignments(root: &Path) -> Result<Vec<CampaignAssignment>, String> {
     let host = CampaignHostProfile::load(root)?;
-    let sources = collect_round_trip_sources(root)?;
+    let sources = collect_campaign_sources(root)?;
     if sources.len() != EXPECTED_ASSIGNMENT_COUNT {
         return Err(format!(
-            "round-trip source count drifted: got {}, expected {EXPECTED_ASSIGNMENT_COUNT}",
+            "campaign source count drifted: got {}, expected {EXPECTED_ASSIGNMENT_COUNT}",
             sources.len()
         ));
     }
@@ -1305,7 +1305,11 @@ struct LocalExpectation {
     mode: String,
 }
 
-fn collect_round_trip_sources(root: &Path) -> Result<Vec<SourceIdentity>, String> {
+fn collect_campaign_sources(root: &Path) -> Result<Vec<SourceIdentity>, String> {
+    let recovered_sources = recovery::overrides(root)?
+        .into_iter()
+        .map(|assignment| assignment.source_key())
+        .collect::<BTreeSet<_>>();
     let workspace_manifest_path = root.join("corpus-manifest.toml");
     let raw = fs::read_to_string(&workspace_manifest_path).map_err(|error| {
         format!(
@@ -1368,7 +1372,11 @@ fn collect_round_trip_sources(root: &Path) -> Result<Vec<SourceIdentity>, String
                 .get(&relative)
                 .map(String::as_str)
                 .unwrap_or("round_trip");
-            if mode != "round_trip" {
+            // Approved Office recoveries also cover import-only packages. Their
+            // exact source identity is checked when recovery overrides are applied.
+            let recovered_open_only = mode == "open_only"
+                && recovered_sources.contains(&format!("{corpus_name}/{relative}"));
+            if mode != "round_trip" && !recovered_open_only {
                 continue;
             }
             let metadata = fs::metadata(path)
@@ -4020,7 +4028,7 @@ mod tests {
     }
 
     #[test]
-    fn generated_campaign_has_exact_round_trip_and_pilot_cardinality() {
+    fn generated_campaign_has_exact_source_and_pilot_cardinality() {
         let root = crate::workspace_root();
         let assignments = generate_campaign_assignments(&root).unwrap();
         let summary = validate_assignments(&root, &assignments).unwrap();
@@ -4032,6 +4040,47 @@ mod tests {
         assert_eq!(summary.pilot_family_assignments["word"], 100);
         assert_eq!(summary.pilot_family_assignments["excel"], 100);
         assert_eq!(summary.pilot_family_assignments["powerpoint"], 100);
+    }
+
+    #[test]
+    fn generated_campaign_preserves_approved_open_only_recoveries() {
+        let root = crate::workspace_root();
+        let assignments = generate_campaign_assignments(&root).unwrap();
+        let recorded = read_plan(&root.join("corpus_pdf_conv/plan.jsonl"))
+            .unwrap()
+            .into_iter()
+            .map(|assignment| (assignment.source_key(), assignment))
+            .collect::<BTreeMap<_, _>>();
+        assert_eq!(assignments.len(), recorded.len());
+        for assignment in &assignments {
+            let key = assignment.source_key();
+            assert_eq!(Some(assignment), recorded.get(&key), "{key}");
+        }
+
+        for (corpus, file) in [
+            ("Apache-POI", "test-data/document/unicode-path.docx"),
+            ("LibreOffice", "package/qa/cppunit/data/unicode-path.docx"),
+            ("LibreOffice", "package/qa/cppunit/data/casing.docx"),
+            ("LibreOffice", "sw/qa/core/data/ooxml/pass/tdf93284.docx"),
+        ] {
+            let raw =
+                fs::read_to_string(root.join("corpus").join(corpus).join("manifest.toml")).unwrap();
+            let manifest: LocalCorpusManifest = toml::from_str(&raw).unwrap();
+            assert!(manifest.expectation.iter().any(|expectation| {
+                expectation.file == file
+                    && expectation.test == "roundtrip"
+                    && expectation.mode == "open_only"
+            }));
+            assert!(
+                assignments
+                    .iter()
+                    .any(|assignment| { assignment.corpus == corpus && assignment.file == file })
+            );
+        }
+        assert!(!assignments.iter().any(|assignment| {
+            assignment.corpus == "Apache-POI"
+                && assignment.file == "test-data/document/Bug51170.docx"
+        }));
     }
 
     #[test]

@@ -18,6 +18,14 @@ Stage closed for PR integration. **Protected union 3,728; pending promotions 0**
 Original Astra84 is completed and accepted (`ledger/astra-batch-54.json`). Keep
 reference failures separate; golden acceptance gates are unchanged.
 
+Corpus expectations now contain **5,366 round-trip sources** and four
+`open_only` packages with approved Office `OpenAndRepair` recovery references:
+the POI and LibreOffice copies of `unicode-path.docx`, LibreOffice's
+`casing.docx`, and `tdf93284.docx`. All four are protected batch56 PASSes. The
+campaign retains them through `recovery-plan-overrides.jsonl`, preserving the
+same **5,370 source/configuration identities**. Ordinary open-only and invalid
+fixtures remain excluded; round-trip save failures do not change golden verdicts.
+
 Completed `fdo64256.docx`: configured **PASS, zero raw raster diff**. Word picture
 bullet sizing, line/indent ownership, device endpoints and GIF transparency now
 match the native controls. Evidence and verification:
