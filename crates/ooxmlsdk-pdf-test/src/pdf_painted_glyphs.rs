@@ -1183,6 +1183,26 @@ mod tests {
     }
 
     #[test]
+    fn overlapping_same_character_at_different_sizes_keeps_both_paint_obligations() {
+        // Extractors may deduplicate the larger x against the adjacent tiny x.
+        // The paint proof must retain both, including their distinct matrices.
+        let tiny = glyph("x", 0.0, 1.0, "x");
+        let large = glyph("x", 0.48, 10.0, "x");
+        let golden = page(vec![tiny.clone(), large.clone()]);
+        let identical = compare_painted_glyph_pages(&golden, &golden).unwrap();
+        glyph_backed_text_fidelity(&identical).unwrap();
+        for changed in [
+            page(vec![tiny.clone()]),
+            page(vec![large.clone()]),
+            page(vec![tiny.clone(), glyph("x", 0.48, 1.0, "x")]),
+            page(vec![tiny, glyph("x", 1.58, 10.0, "x")]),
+        ] {
+            let report = compare_painted_glyph_pages(&changed, &golden).unwrap();
+            assert!(glyph_backed_text_fidelity(&report).is_err());
+        }
+    }
+
+    #[test]
     fn source_unicode_alias_is_visual_but_displaced_or_recolored_glyph_is_not() {
         let golden = page(vec![glyph("A", 0.0, 10.0, "ي")]);
         let alias = page(vec![glyph("A", 0.2, 10.0, "ی")]);

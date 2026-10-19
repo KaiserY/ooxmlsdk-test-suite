@@ -1,0 +1,43 @@
+{
+  "status": "PASS_REVIEWED_REFERENCE_REVISION",
+  "runtime": "v270",
+  "configured_result": {
+    "corpus": "LibreOffice",
+    "file": "sw/qa/extras/docbookexport/data/tdf91095.docx",
+    "family": "word",
+    "configuration_id": "6db82d9aa0729584fac83fc85b9def831c9c894dc71e0939de9b210798ef3f43",
+    "reference_status": "converted",
+    "verdict": "PASS",
+    "layer": null,
+    "diagnostic_kind": null,
+    "page_index": null,
+    "line_index": null,
+    "elapsed_ms": 661,
+    "message": ""
+  },
+  "implementation_gain": false,
+  "sdk_pdf_byte_equal_to_v268": true,
+  "source_unchanged": true,
+  "source_binary_snapshot": "/tmp/ooxmlsdk-tdf91095-20261015/source-binary-v270.json",
+  "native_controls": 15,
+  "actual_dev_gdb": "/tmp/ooxmlsdk-tdf91095-20261015/gdb-blocks-v268/observations.json",
+  "native_vs_sdk": "/tmp/ooxmlsdk-tdf91095-20261015/native-current-comparison.json",
+  "review": "/tmp/ooxmlsdk-tdf91095-20261015/reference-refresh/review.json",
+  "original_full_office_version": "16.0.20326.20144",
+  "current_full_office_version": "16.0.20430.20146",
+  "campaign_environment_tests": {
+    "passed": 18,
+    "failed": 0
+  },
+  "plan_validation": {
+    "assignments": 5370,
+    "pilot": 300
+  },
+  "suite_sources": {
+    "/home/kazeno/git/ooxmlsdk-test-suite/crates/ooxmlsdk-pdf-test/src/office_pdf_campaign.rs": "1dff1ae89281f303ece123f53be4c14f2d88ba03517377fe14e69a9b11ea30a0",
+    "/home/kazeno/git/ooxmlsdk-test-suite/crates/ooxmlsdk-pdf-test/src/office_reference_environment.rs": "0809fadd12cda08c70ed73347512fe5bd22e4b8cf91dac5c9efaf0a541d4bbe8"
+  },
+  "protected_union": 3744,
+  "pending_promotions": 16,
+  "full_audit_run": false
+}

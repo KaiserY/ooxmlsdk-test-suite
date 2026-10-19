@@ -1,0 +1,305 @@
+{
+  "assignment": {
+    "schema_version": 2,
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "seed": "ooxmlsdk-office-pdf-environments-2026-09-11-v2",
+    "corpus": "LibreOffice",
+    "file": "sw/qa/extras/docbookexport/data/tdf91095.docx",
+    "family": "word",
+    "source_extension": "docx",
+    "source_bytes": 19141,
+    "source_sha256": "00be6d5f88230cce45b9c3815b5201664c287313f4e1b748107ec005d8a6bf56",
+    "configuration_id": "6db82d9aa0729584fac83fc85b9def831c9c894dc71e0939de9b210798ef3f43",
+    "reference_environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "reference_time_zone": "Asia/Shanghai",
+    "pilot_300": false,
+    "requested": {
+      "standards": [
+        "pdf16"
+      ],
+      "compress_content_streams": false,
+      "ui_language": "fr-CA",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "field_update": null,
+      "tagged_pdf": true,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": false,
+      "open_bookmark_levels": 2,
+      "page_range": null,
+      "images": {
+        "use_lossless_compression": true,
+        "jpeg_quality": 90,
+        "reduce_resolution": true,
+        "max_resolution_dpi": 96
+      },
+      "link_action": "remove_external_links",
+      "export_form_fields": true,
+      "viewer": {
+        "page_mode": "use_thumbs",
+        "page_layout": "default",
+        "magnification": "zoom125",
+        "initial_page": 1,
+        "hide_toolbar": false,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": true,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": "OOXMLSDK configured golden: LibreOffice/sw/qa/extras/docbookexport/data/tdf91095.docx",
+        "author": "ooxmlsdk-test-suite",
+        "subject": "Configured Office PDF fidelity",
+        "keywords": "ooxmlsdk,office,golden",
+        "creator": null,
+        "producer": null,
+        "creation_date": null
+      },
+      "embed_campaign_attachment": true
+    },
+    "effective": {
+      "standards": [
+        "pdf16"
+      ],
+      "compress_content_streams": false,
+      "ui_language": "fr-CA",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "field_update": null,
+      "tagged_pdf": true,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": false,
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "images": {
+        "use_lossless_compression": true,
+        "jpeg_quality": null,
+        "reduce_resolution": true,
+        "max_resolution_dpi": 96
+      },
+      "link_action": "remove_external_links",
+      "export_form_fields": true,
+      "viewer": {
+        "page_mode": "use_thumbs",
+        "page_layout": "default",
+        "magnification": "zoom125",
+        "initial_page": 1,
+        "hide_toolbar": false,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": true,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": "OOXMLSDK configured golden: LibreOffice/sw/qa/extras/docbookexport/data/tdf91095.docx",
+        "author": "ooxmlsdk-test-suite",
+        "subject": "Configured Office PDF fidelity",
+        "keywords": "ooxmlsdk,office,golden",
+        "creator": null,
+        "producer": null,
+        "creation_date": null
+      },
+      "embed_campaign_attachment": true
+    },
+    "adjustments": [
+      {
+        "feature": "ui-language",
+        "reason": "application-generated UI strings currently fall back to English outside English and Chinese resource packs"
+      },
+      {
+        "feature": "image-compression",
+        "reason": "lossless image compression makes JPEG quality inapplicable"
+      },
+      {
+        "feature": "bookmarks",
+        "reason": "open bookmark levels are inactive when bookmark export is disabled"
+      }
+    ],
+    "office": {
+      "quality": "print",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "tagged_pdf": true,
+      "bookmarks": "none",
+      "pdf_a_1": false,
+      "bitmap_missing_fonts": false,
+      "print_hidden_slides": false
+    }
+  },
+  "conversion": {
+    "schema_version": 4,
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "file": "sw/qa/extras/docbookexport/data/tdf91095.docx",
+    "family": "word",
+    "source_extension": "docx",
+    "source_bytes": 19141,
+    "source_sha256": "00be6d5f88230cce45b9c3815b5201664c287313f4e1b748107ec005d8a6bf56",
+    "configuration_id": "6db82d9aa0729584fac83fc85b9def831c9c894dc71e0939de9b210798ef3f43",
+    "requested": {
+      "standards": [
+        "pdf16"
+      ],
+      "compress_content_streams": false,
+      "ui_language": "fr-CA",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "field_update": null,
+      "tagged_pdf": true,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": false,
+      "open_bookmark_levels": 2,
+      "page_range": null,
+      "images": {
+        "use_lossless_compression": true,
+        "jpeg_quality": 90,
+        "reduce_resolution": true,
+        "max_resolution_dpi": 96
+      },
+      "link_action": "remove_external_links",
+      "export_form_fields": true,
+      "viewer": {
+        "page_mode": "use_thumbs",
+        "page_layout": "default",
+        "magnification": "zoom125",
+        "initial_page": 1,
+        "hide_toolbar": false,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": true,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": "OOXMLSDK configured golden: LibreOffice/sw/qa/extras/docbookexport/data/tdf91095.docx",
+        "author": "ooxmlsdk-test-suite",
+        "subject": "Configured Office PDF fidelity",
+        "keywords": "ooxmlsdk,office,golden",
+        "creator": null,
+        "producer": null,
+        "creation_date": null
+      },
+      "embed_campaign_attachment": true
+    },
+    "effective": {
+      "standards": [
+        "pdf16"
+      ],
+      "compress_content_streams": false,
+      "ui_language": "fr-CA",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "field_update": null,
+      "tagged_pdf": true,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": false,
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "images": {
+        "use_lossless_compression": true,
+        "jpeg_quality": null,
+        "reduce_resolution": true,
+        "max_resolution_dpi": 96
+      },
+      "link_action": "remove_external_links",
+      "export_form_fields": true,
+      "viewer": {
+        "page_mode": "use_thumbs",
+        "page_layout": "default",
+        "magnification": "zoom125",
+        "initial_page": 1,
+        "hide_toolbar": false,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": true,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": "OOXMLSDK configured golden: LibreOffice/sw/qa/extras/docbookexport/data/tdf91095.docx",
+        "author": "ooxmlsdk-test-suite",
+        "subject": "Configured Office PDF fidelity",
+        "keywords": "ooxmlsdk,office,golden",
+        "creator": null,
+        "producer": null,
+        "creation_date": null
+      },
+      "embed_campaign_attachment": true
+    },
+    "adjustments": [
+      {
+        "feature": "ui-language",
+        "reason": "application-generated UI strings currently fall back to English outside English and Chinese resource packs"
+      },
+      {
+        "feature": "image-compression",
+        "reason": "lossless image compression makes JPEG quality inapplicable"
+      },
+      {
+        "feature": "bookmarks",
+        "reason": "open bookmark levels are inactive when bookmark export is disabled"
+      }
+    ],
+    "office_options": {
+      "quality": "print",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "tagged_pdf": true,
+      "bookmarks": "none",
+      "pdf_a_1": false,
+      "bitmap_missing_fonts": false,
+      "print_hidden_slides": false
+    },
+    "status": "converted",
+    "reference_engine": "Microsoft Office",
+    "environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "application": "Word",
+    "application_version": "16.0",
+    "application_build": "16.0.20326",
+    "output": "sw/qa/extras/docbookexport/data/tdf91095.docx.pdf",
+    "output_bytes": 273142,
+    "output_sha256": "c2f117c53822cb7fe4a19f46db4209d3d0b8290f7a46ea2e69f7b225585a86f5",
+    "observed_pdf": {
+      "header_version": "1.7",
+      "page_count": 9,
+      "tagged_pdf": true,
+      "has_outlines": false,
+      "pdf_a_part": null,
+      "pdf_a_conformance": null
+    },
+    "render_environment": {
+      "ui_language": "fr-CA",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "time_zone": "Asia/Shanghai",
+      "windows_time_zone": "China Standard Time",
+      "clock": {
+        "opened_at_utc": "2026-09-11T10:13:43.7707571Z",
+        "refresh_started_at_utc": "2026-09-11T10:13:43.9864627Z",
+        "refresh_completed_at_utc": "2026-09-11T10:13:44.2276851Z",
+        "export_started_at_utc": "2026-09-11T10:13:44.4942644Z",
+        "export_completed_at_utc": "2026-09-11T10:13:45.4391220Z"
+      }
+    },
+    "converted_at_utc": "2026-09-11T10:13:48.123369891Z",
+    "elapsed_ms": 7110,
+    "attempts": 1,
+    "annotations": [],
+    "failure_class": "",
+    "error_code": "",
+    "error": ""
+  }
+}

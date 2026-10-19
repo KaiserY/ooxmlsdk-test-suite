@@ -26,8 +26,12 @@ cargo test -p ooxmlsdk-roundtrip-tests --test apache_poi_roundtrip -- --ignored
 Result:
 
 ```text
-test result: ok. 682 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 22.36s
+test result: ok. 682 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 23.93s
 ```
+
+Rechecked after correcting single-occurrence wildcard fields: original-package
+comparison and second-save stability both pass, with no new comparison
+relaxations or manifest exceptions.
 
 `test-data/document/unicode-path.docx` now uses `open_only`: the SDK must eagerly
 parse its main document, without requiring a lossless package save. Its existing

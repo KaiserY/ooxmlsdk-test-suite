@@ -4435,6 +4435,44 @@ mod tests {
     const PANDOC_NS0_FILE_NAME: &str = "Pandoc/test/docx/ns0-reference.docx";
 
     #[test]
+    fn single_any_overwrite_is_detected_against_original_xml() {
+        use ooxmlsdk::schemas::schemas_openxmlformats_org_presentationml_2006_main::Extension;
+        use ooxmlsdk::sdk::SdkType;
+
+        let first = r#"<probe:first xmlns:probe="urn:probe"/>"#;
+        let last = r#"<probe:last xmlns:probe="urn:probe"/>"#;
+        for (children, expect_loss) in [(last.to_string(), false), (format!("{first}{last}"), true)]
+        {
+            let original = format!(
+                r#"<p:ext xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" uri="urn:probe">{children}</p:ext>"#
+            );
+            let parsed = Extension::from_bytes(original.as_bytes()).unwrap();
+            let saved = parsed.to_xml().unwrap();
+            let reopened = Extension::from_bytes(saved.as_bytes()).unwrap();
+            let saved_again = reopened.to_xml().unwrap();
+            assert_eq!(
+                saved, saved_again,
+                "the saved form is stable even after data loss"
+            );
+            // Extension is a child type: its p prefix is declared by the owning part.
+            let with_part_namespace = |xml: &str| {
+                format!(
+                    r#"<p:extLst xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">{xml}</p:extLst>"#
+                )
+            };
+            let errors = xml_equivalence_errors(
+                with_part_namespace(&original).as_bytes(),
+                with_part_namespace(&saved).as_bytes(),
+                "probe.pptx",
+                "ppt/slides/slide1.xml",
+            );
+            assert_eq!(!errors.is_empty(), expect_loss, "{errors:?}");
+            assert!(saved.contains("probe:last"));
+            assert!(!saved.contains("probe:first"));
+        }
+    }
+
+    #[test]
     fn attribute_character_reference_whitespace_loss_is_not_compatible() {
         for reference in ["&#9;", "&#10;", "&#13;"] {
             let original = format!(

@@ -659,8 +659,11 @@ fn compare_office_golden_detailed_inner(
         }) {
             Ok(text_contract) => text_contract,
             Err(error) => {
-                if error.diagnostic_kind == OfficeGoldenDiagnosticKind::TextContent
-                    && is_word_source(&source_path)
+                if matches!(
+                    error.diagnostic_kind,
+                    OfficeGoldenDiagnosticKind::TextContent
+                        | OfficeGoldenDiagnosticKind::TextLineContent
+                ) && is_word_source(&source_path)
                 {
                     let painted_contract = glyph_backed_text_contract(
                         &source_path,
@@ -1609,15 +1612,24 @@ fn glyph_backed_text_contract(
         None => compare_painted_glyphs(candidate_pdf, golden_pdf)?,
     };
     glyph_backed_text_fidelity(&painted)?;
-    collect_candidate_diagnostics(source_path, options, diagnostics);
-    let CandidateDiagnosticsState::Collected(layout) = diagnostics else {
-        return Err("candidate layout diagnostics are unavailable".into());
-    };
-    let semantic = inspect_docx_semantics(source_path, candidate_pdf, golden_pdf, layout)?;
-    if !semantic.verified() {
-        return Err(format!(
-            "candidate source/transport text proof failed: {semantic:?}"
-        ));
+    // PDFium can remove an overlapping character from just one reconstructed
+    // line even when both PDFs paint it and Poppler preserves the same ordered
+    // page text. Complete transport agreement plus the unchanged strict glyph
+    // proof is sufficient, just as in the ordinary text path. A reference whose
+    // transport text is also broken still needs the independent source proof.
+    if !pdftotext_ordered_text_matches(candidate_pdf, golden_pdf, candidate.page_count)
+        .map_err(|error| error.message)?
+    {
+        collect_candidate_diagnostics(source_path, options, diagnostics);
+        let CandidateDiagnosticsState::Collected(layout) = diagnostics else {
+            return Err("candidate layout diagnostics are unavailable".into());
+        };
+        let semantic = inspect_docx_semantics(source_path, candidate_pdf, golden_pdf, layout)?;
+        if !semantic.verified() {
+            return Err(format!(
+                "candidate source/transport text proof failed: {semantic:?}"
+            ));
+        }
     }
     let candidate_lines = text_line_contracts(candidate, TextLineGeometry::EmbeddedFont)
         .map_err(|error| error.to_string())?;

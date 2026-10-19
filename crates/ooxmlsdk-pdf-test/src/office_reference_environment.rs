@@ -25,6 +25,12 @@ pub(crate) struct ReferenceEnvironment {
     approved_references: Option<Vec<ApprovedReference>>,
 }
 
+impl ReferenceEnvironment {
+    pub(crate) fn is_scoped_revision(&self) -> bool {
+        self.approved_references.is_some()
+    }
+}
+
 #[derive(Debug, Default)]
 pub(crate) struct ReferenceEnvironments(BTreeMap<String, ReferenceEnvironment>);
 

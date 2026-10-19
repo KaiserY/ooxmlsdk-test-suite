@@ -1,0 +1,37 @@
+{
+  "schema_version": 2,
+  "file": "00.docx",
+  "application": "Word",
+  "application_version": "16.0",
+  "application_build": "16.0.20430",
+  "options": {
+    "quality": "print",
+    "include_document_properties": false,
+    "page_from": null,
+    "page_to": null,
+    "tagged_pdf": true,
+    "bookmarks": "none",
+    "pdf_a_1": false,
+    "bitmap_missing_fonts": false,
+    "print_hidden_slides": false
+  },
+  "source_sha256": "00be6d5f88230cce45b9c3815b5201664c287313f4e1b748107ec005d8a6bf56",
+  "output": "case-000.pdf",
+  "output_bytes": 273853,
+  "output_sha256": "72d82afce94a97429652e973c35e365a234f9fa99d2516f7ce33779b6fe6eccc",
+  "elapsed_ms": 3529,
+  "environment": {
+    "ui_language": "fr-CA",
+    "format_locale": "zh-CN",
+    "document_language": "zh-CN",
+    "time_zone": "Asia/Shanghai",
+    "windows_time_zone": "China Standard Time",
+    "clock": {
+      "opened_at_utc": "2026-10-15T13:03:38.3675703Z",
+      "refresh_started_at_utc": "2026-10-15T13:03:38.5525783Z",
+      "refresh_completed_at_utc": "2026-10-15T13:03:38.8186190Z",
+      "export_started_at_utc": "2026-10-15T13:03:39.1262624Z",
+      "export_completed_at_utc": "2026-10-15T13:03:39.9439406Z"
+    }
+  }
+}

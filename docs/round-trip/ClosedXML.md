@@ -38,8 +38,12 @@ cargo test -p ooxmlsdk-roundtrip-tests --test closedxml_roundtrip -- --ignored
 ## Last Run
 
 ```text
-test result: ok. 286 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.40s
+test result: ok. 286 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.70s
 ```
+
+Rechecked after correcting single-occurrence wildcard fields: original-package
+comparison and second-save stability both pass, with no new comparison
+relaxations or manifest exceptions.
 
 Current failures: none.
 

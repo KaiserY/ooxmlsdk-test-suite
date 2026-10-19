@@ -37,8 +37,12 @@ cargo test -p ooxmlsdk-roundtrip-tests --test pandoc_roundtrip -- --ignored
 ## Last Run
 
 ```text
-test result: ok. 235 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.13s
+test result: ok. 235 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.48s
 ```
+
+Rechecked after correcting single-occurrence wildcard fields: original-package
+comparison and second-save stability both pass, with no new comparison
+relaxations or manifest exceptions.
 
 Current failures: none.
 

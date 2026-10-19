@@ -586,6 +586,7 @@ impl CampaignAssignment {
             .office
             .candidate_optimize_for()
             .ok_or_else(|| format!("invalid Office quality for {}", self.source_key()))?;
+        options.bitmap_missing_fonts = self.office.bitmap_missing_fonts;
         options.images.optimization_policy =
             PdfImageOptimizationPolicy::MicrosoftOfficeFixedOutput(match self.family {
                 OfficeFamily::Word => PdfDocumentKind::Docx,
@@ -632,8 +633,130 @@ impl CampaignAssignment {
         );
         options.field_update_time_zone = Some(observed.time_zone.clone());
         options.include_hidden_slides = self.office.print_hidden_slides;
+        if let Some(name) = reference_opened_file_name(&crate::workspace_root(), self, record)? {
+            options.source_file_name = Some(name);
+        }
         Ok(options)
     }
+}
+
+// A recovery adapter may change only the temporary open filename to match the
+// package content type. That observed name owns fields such as Excel's &F;
+// the corpus path and source/configuration identities remain unchanged.
+#[derive(Deserialize)]
+struct ReferenceRecoveryHistory {
+    original_assignment: CampaignAssignment,
+    recovered_assignment: CampaignAssignment,
+    probe_receipt: ProbeResult,
+    stages: String,
+}
+
+fn reference_opened_file_name(
+    root: &Path,
+    assignment: &CampaignAssignment,
+    record: &CampaignConversionRecord,
+) -> Result<Option<String>, String> {
+    let mut recovery_ids = record
+        .annotations
+        .iter()
+        .filter(|annotation| {
+            annotation.get("kind").and_then(serde_json::Value::as_str) == Some("reference-recovery")
+        })
+        .map(|annotation| {
+            annotation
+                .get("previous_configuration_id")
+                .and_then(serde_json::Value::as_str)
+        });
+    let Some(previous_id) = recovery_ids.next() else {
+        return Ok(None);
+    };
+    let previous_id =
+        previous_id.ok_or("reference recovery has no previous configuration identity")?;
+    if recovery_ids.next().is_some()
+        || previous_id.len() != 64
+        || !previous_id
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    {
+        return Err("invalid or ambiguous reference recovery identity".into());
+    }
+    let path = root
+        .join("corpus_pdf_conv/reference-recovery-history")
+        .join(format!("{previous_id}.json"));
+    let bytes = fs::read(&path).map_err(|error| {
+        format!(
+            "could not read reference recovery {}: {error}",
+            path.display()
+        )
+    })?;
+    let history: ReferenceRecoveryHistory = serde_json::from_slice(&bytes)
+        .map_err(|error| format!("invalid reference recovery {}: {error}", path.display()))?;
+    validate_recovery_opened_file_name(assignment, record, previous_id, &history).map(Some)
+}
+
+fn validate_recovery_opened_file_name(
+    assignment: &CampaignAssignment,
+    record: &CampaignConversionRecord,
+    previous_id: &str,
+    history: &ReferenceRecoveryHistory,
+) -> Result<String, String> {
+    let original = &history.original_assignment;
+    let probe = &history.probe_receipt;
+    if original.configuration_id != previous_id
+        || original.corpus != assignment.corpus
+        || original.file != assignment.file
+        || original.family != assignment.family
+        || original.source_bytes != assignment.source_bytes
+        || original.source_sha256 != assignment.source_sha256
+        || history.recovered_assignment != *assignment
+        || probe.schema_version != CAMPAIGN_SCHEMA_VERSION
+        || probe.file != assignment.source_key()
+        || probe.source_sha256 != record.source_sha256
+        || probe.output_bytes != record.output_bytes
+        || probe.output_sha256 != record.output_sha256
+        || probe.options != record.office_options
+        || serde_json::to_value(&probe.environment).map_err(|error| error.to_string())?
+            != serde_json::to_value(&record.render_environment)
+                .map_err(|error| error.to_string())?
+    {
+        return Err(format!(
+            "reference recovery identity drift for {}",
+            assignment.source_key()
+        ));
+    }
+    let mut opened_name = None;
+    for line in history
+        .stages
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+    {
+        let stage: serde_json::Value = serde_json::from_str(line)
+            .map_err(|error| format!("invalid reference recovery stage: {error}"))?;
+        if stage.get("stage").and_then(serde_json::Value::as_str) != Some("stage-input") {
+            continue;
+        }
+        let original_name = stage
+            .pointer("/detail/original")
+            .and_then(serde_json::Value::as_str);
+        let staged_name = stage
+            .pointer("/detail/staged")
+            .and_then(serde_json::Value::as_str)
+            .ok_or("reference recovery input stage has no opened filename")?;
+        if opened_name.is_some()
+            || original_name
+                != Path::new(&assignment.file)
+                    .file_name()
+                    .and_then(|name| name.to_str())
+            || staged_name.is_empty()
+            || staged_name.contains(['/', '\\', ':', '\0'])
+            || Path::new(staged_name).file_stem()
+                != Path::new(original_name.unwrap_or_default()).file_stem()
+        {
+            return Err("invalid or ambiguous reference recovery opened filename".into());
+        }
+        opened_name = Some(staged_name.to_string());
+    }
+    opened_name.ok_or_else(|| "reference recovery has no input stage".into())
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -2636,7 +2759,9 @@ fn validate_conversion_record(
         ));
     }
     if record.status == "converted" {
-        if record.environment_id != assignment.reference_environment_id {
+        if record.environment_id != assignment.reference_environment_id
+            && !has_exact_reference_revision(assignment, record)
+        {
             return Err("conversion host environment differs from its assignment".into());
         }
         record
@@ -2665,6 +2790,28 @@ fn validate_conversion_record(
         ));
     }
     Ok(())
+}
+
+fn has_exact_reference_revision(
+    assignment: &CampaignAssignment,
+    record: &CampaignConversionRecord,
+) -> bool {
+    // An explicitly reviewed reference can retain its original requested
+    // configuration while recording a newer actual Office environment. The
+    // registered environment must additionally approve the exact configuration,
+    // source and PDF hashes in validate_audit_reference_environment(). This
+    // annotation alone never authorizes an unregistered or different PDF.
+    record.annotations.iter().any(|revision| {
+        revision["kind"] == "reference-revision"
+            && revision["configuration_id"] == assignment.configuration_id
+            && revision["previous_environment_id"] == assignment.reference_environment_id
+            && revision["environment_id"] == record.environment_id
+            && revision["source_sha256"] == record.source_sha256
+            && revision["output_sha256"] == record.output_sha256
+            && revision["reason"]
+                .as_str()
+                .is_some_and(|reason| !reason.trim().is_empty())
+    })
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -2937,6 +3084,12 @@ pub fn audit_campaign_selection(
     } else {
         1
     };
+    eprintln!(
+        "audit scheduling: {} tasks, {} workers, {} isolated historical budget overruns",
+        pending.len(),
+        desired_worker_count,
+        serial_task_count,
+    );
     let mut serial_tasks_remaining = serial_task_count;
     let mut workers = Vec::with_capacity(desired_worker_count);
     for _ in 0..initial_worker_count {
@@ -3137,33 +3290,40 @@ fn prioritize_audit_tasks(tasks: &mut [AuditTask], report_path: &Path, timeout: 
     let Ok(file) = File::open(report_path) else {
         return 0;
     };
-    let elapsed_by_id = BufReader::new(file)
+    let history_by_id = BufReader::new(file)
         .lines()
         .map_while(Result::ok)
         .filter_map(|line| serde_json::from_str::<CampaignAuditRecord>(&line).ok())
-        .map(|record| (record.configuration_id, record.elapsed_ms))
+        .map(|record| {
+            // A successful slow case still uses an ordinary worker slot.
+            // Isolate only observed timeouts or work already exceeding the
+            // current budget. A half-budget heuristic serializes previously
+            // passing work and can double a warm full campaign's makespan.
+            let isolate =
+                record.verdict == "INFRA_TIMEOUT" || record.elapsed_ms >= timeout.as_millis();
+            (record.configuration_id, (isolate, record.elapsed_ms))
+        })
         .collect::<BTreeMap<_, _>>();
-    if elapsed_by_id.is_empty() {
+    if history_by_id.is_empty() {
         return 0;
     }
     tasks.sort_by(|left, right| {
-        let left_elapsed = elapsed_by_id
+        let left_priority = history_by_id
             .get(&left.assignment.configuration_id)
             .copied()
             .unwrap_or_default();
-        let right_elapsed = elapsed_by_id
+        let right_priority = history_by_id
             .get(&right.assignment.configuration_id)
             .copied()
             .unwrap_or_default();
-        right_elapsed.cmp(&left_elapsed)
+        right_priority.cmp(&left_priority)
     });
-    let serial_threshold = timeout.as_millis() / 2;
     tasks
         .iter()
         .take_while(|task| {
-            elapsed_by_id
+            history_by_id
                 .get(&task.assignment.configuration_id)
-                .is_some_and(|elapsed| *elapsed >= serial_threshold)
+                .is_some_and(|(isolate, _)| *isolate)
         })
         .count()
 }
@@ -3751,6 +3911,16 @@ fn validate_audit_reference_environment(
         &conversion.source_sha256,
         &conversion.output_sha256,
     )?;
+    if conversion
+        .annotations
+        .iter()
+        .any(|annotation| annotation["kind"] == "reference-revision")
+        && !environment.is_scoped_revision()
+    {
+        return Err(
+            "reviewed reference revision requires an exact scoped environment approval".into(),
+        );
+    }
     let version_components = environment.office_version.split('.').collect::<Vec<_>>();
     let expected_build = match conversion.family {
         OfficeFamily::Word => version_components.get(..3).map(|parts| parts.join(".")),
@@ -3836,6 +4006,101 @@ fn sha256_bytes(bytes: &[u8]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn audit_history_keeps_passed_slow_cases_parallel() {
+        let root = crate::workspace_root();
+        let conversions = read_conversion_records(&root).unwrap();
+        let tasks = generate_campaign_assignments(&root)
+            .unwrap()
+            .into_iter()
+            .filter_map(|assignment| {
+                let conversion =
+                    conversions.get(&(assignment.corpus.clone(), assignment.file.clone()))?;
+                (conversion.status == "converted").then(|| AuditTask {
+                    assignment,
+                    conversion: conversion.clone(),
+                })
+            })
+            .take(4)
+            .collect::<Vec<_>>();
+        assert_eq!(tasks.len(), 4);
+        let record = |index: usize, verdict: &str, elapsed_ms| CampaignAuditRecord {
+            corpus: tasks[index].assignment.corpus.clone(),
+            file: tasks[index].assignment.file.clone(),
+            family: tasks[index].assignment.family,
+            configuration_id: tasks[index].assignment.configuration_id.clone(),
+            reference_status: "converted".into(),
+            verdict: verdict.into(),
+            layer: None,
+            diagnostic_kind: None,
+            page_index: None,
+            line_index: None,
+            elapsed_ms,
+            message: String::new(),
+        };
+        let history = std::env::temp_dir().join(format!(
+            "ooxmlsdk-audit-history-{}-{}.jsonl",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos(),
+        ));
+        let order = |tasks: &[AuditTask]| {
+            tasks
+                .iter()
+                .map(|task| task.assignment.configuration_id.clone())
+                .collect::<Vec<_>>()
+        };
+        let mut records = vec![
+            record(0, "PASS", 165_000),
+            record(1, "FAIL", 100_000),
+            record(2, "PASS", 20_000),
+        ];
+        write_json_lines(&history, &records).unwrap();
+        let mut scheduled = tasks.iter().rev().cloned().collect::<Vec<_>>();
+        assert_eq!(
+            prioritize_audit_tasks(&mut scheduled, &history, Duration::from_secs(180)),
+            0,
+            "a previous PASS below the real deadline must not reduce worker concurrency",
+        );
+        assert_eq!(order(&scheduled), order(&tasks));
+
+        // A timeout remains isolated even when the next campaign raises its
+        // budget; ordinary successful work keeps longest-first ordering.
+        records[2] = record(2, "INFRA_TIMEOUT", 120_000);
+        write_json_lines(&history, &records).unwrap();
+        assert_eq!(
+            prioritize_audit_tasks(&mut scheduled, &history, Duration::from_secs(180)),
+            1,
+        );
+        assert_eq!(
+            order(&scheduled),
+            order(&[
+                tasks[2].clone(),
+                tasks[0].clone(),
+                tasks[1].clone(),
+                tasks[3].clone(),
+            ])
+        );
+
+        // Lowering the budget also isolates a measured over-budget PASS.
+        assert_eq!(
+            prioritize_audit_tasks(&mut scheduled, &history, Duration::from_secs(150)),
+            2,
+        );
+        assert_eq!(
+            order(&scheduled),
+            order(&[
+                tasks[0].clone(),
+                tasks[2].clone(),
+                tasks[1].clone(),
+                tasks[3].clone(),
+            ])
+        );
+        fs::remove_file(history).unwrap();
+    }
 
     #[test]
     fn functional_coverage_preserves_existing_receipts_and_maps_page_intervals() {
@@ -3957,6 +4222,187 @@ mod tests {
         for record in records.values() {
             validate_audit_reference_environment(&environments, record).unwrap();
         }
+    }
+
+    #[test]
+    fn reviewed_reference_revision_preserves_configuration_and_requires_exact_approval() {
+        let root = crate::workspace_root();
+        let assignments = read_plan(&root.join("corpus_pdf_conv/plan.jsonl")).unwrap();
+        let records = read_conversion_records(&root).unwrap();
+        let original_environment_id = CampaignHostProfile::load(&root).unwrap().id;
+        let assignment = assignments
+            .iter()
+            .find(|assignment| {
+                let record = &records[&(assignment.corpus.clone(), assignment.file.clone())];
+                record.status == "converted"
+                    && record.environment_id == assignment.reference_environment_id
+                    && record.environment_id == original_environment_id
+            })
+            .unwrap();
+        let mut revised = records[&(assignment.corpus.clone(), assignment.file.clone())].clone();
+        validate_conversion_record(assignment, &revised).unwrap();
+        revised.environment_id = "e".repeat(64);
+        revised.output_sha256 = "f".repeat(64);
+        assert!(validate_conversion_record(assignment, &revised).is_err());
+        let revision = serde_json::json!({
+            "kind": "reference-revision",
+            "configuration_id": assignment.configuration_id,
+            "previous_environment_id": assignment.reference_environment_id,
+            "environment_id": revised.environment_id,
+            "source_sha256": revised.source_sha256,
+            "output_sha256": revised.output_sha256,
+            "reason": "Reviewed same-source and same-options Office output conflict",
+        });
+        revised.annotations = vec![revision.clone()];
+        validate_conversion_record(assignment, &revised).unwrap();
+        for key in [
+            "kind",
+            "configuration_id",
+            "previous_environment_id",
+            "environment_id",
+            "source_sha256",
+            "output_sha256",
+            "reason",
+        ] {
+            let mut mismatched = revised.clone();
+            mismatched.annotations[0][key] = serde_json::json!("");
+            assert!(
+                validate_conversion_record(assignment, &mismatched).is_err(),
+                "{key}"
+            );
+        }
+        let environments =
+            crate::office_reference_environment::ReferenceEnvironments::load(&root).unwrap();
+        assert!(validate_audit_reference_environment(&environments, &revised).is_err());
+        let mut unscoped = revised.clone();
+        unscoped.environment_id = original_environment_id;
+        unscoped.annotations[0]["environment_id"] = serde_json::json!(unscoped.environment_id);
+        validate_conversion_record(assignment, &unscoped).unwrap();
+        assert!(validate_audit_reference_environment(&environments, &unscoped).is_err());
+    }
+
+    #[test]
+    fn reference_recovery_opened_names_match_all_configured_receipts() {
+        let root = crate::workspace_root();
+        let assignments = read_plan(&root.join("corpus_pdf_conv/plan.jsonl")).unwrap();
+        let records = read_conversion_records(&root).unwrap();
+        let mut recovery_count = 0;
+        for assignment in assignments {
+            let record = &records[&(assignment.corpus.clone(), assignment.file.clone())];
+            if record.status != "converted" {
+                continue;
+            }
+            validate_conversion_record(&assignment, record).unwrap();
+            let opened = reference_opened_file_name(&root, &assignment, record)
+                .unwrap_or_else(|error| panic!("{}: {error}", assignment.source_key()));
+            recovery_count += usize::from(opened.is_some());
+            if assignment.source_key() == "Apache-POI/test-data/integration/stress002.xlsx" {
+                assert_eq!(opened.as_deref(), Some("stress002.xlsm"));
+                assert_eq!(
+                    assignment
+                        .reference_pdf_options(record)
+                        .unwrap()
+                        .source_file_name
+                        .as_deref(),
+                    Some("stress002.xlsm")
+                );
+                assert_eq!(
+                    assignment
+                        .requested_pdf_options()
+                        .unwrap()
+                        .source_file_name
+                        .as_deref(),
+                    Some("stress002.xlsx")
+                );
+            }
+        }
+        assert!(recovery_count > 0);
+    }
+
+    #[test]
+    fn reference_recovery_opened_name_rejects_provenance_and_stage_drift() {
+        let root = crate::workspace_root();
+        let records = read_conversion_records(&root).unwrap();
+        let record = &records[&(
+            "Apache-POI".into(),
+            "test-data/integration/stress002.xlsx".into(),
+        )];
+        let previous_id = record
+            .annotations
+            .iter()
+            .find_map(|annotation| {
+                (annotation["kind"] == "reference-recovery")
+                    .then(|| annotation["previous_configuration_id"].as_str().unwrap())
+            })
+            .unwrap();
+        let path = root
+            .join("corpus_pdf_conv/reference-recovery-history")
+            .join(format!("{previous_id}.json"));
+        let history_value: serde_json::Value =
+            serde_json::from_slice(&fs::read(path).unwrap()).unwrap();
+        let history: ReferenceRecoveryHistory =
+            serde_json::from_value(history_value.clone()).unwrap();
+        let assignment = &history.recovered_assignment;
+        assert_eq!(
+            validate_recovery_opened_file_name(assignment, record, previous_id, &history).unwrap(),
+            "stress002.xlsm"
+        );
+        for pointer in [
+            "/original_assignment/configuration_id",
+            "/original_assignment/source_sha256",
+            "/recovered_assignment/reference_environment_id",
+            "/probe_receipt/source_sha256",
+            "/probe_receipt/output_sha256",
+            "/probe_receipt/environment/ui_language",
+        ] {
+            let mut changed = history_value.clone();
+            *changed.pointer_mut(pointer).unwrap() = serde_json::json!("drift");
+            let changed: ReferenceRecoveryHistory = serde_json::from_value(changed).unwrap();
+            assert!(
+                validate_recovery_opened_file_name(assignment, record, previous_id, &changed)
+                    .is_err(),
+                "{pointer}"
+            );
+        }
+        for staged in [
+            "../stress002.xlsm",
+            "C:\\stress002.xlsm",
+            "different.xlsm",
+            "",
+            "stress002.xlsm\0",
+        ] {
+            let mut changed = history_value.clone();
+            changed["stages"] = serde_json::json!(serde_json::json!({"stage":"stage-input", "detail":{"original":"stress002.xlsx", "staged":staged}}).to_string());
+            let changed: ReferenceRecoveryHistory = serde_json::from_value(changed).unwrap();
+            assert!(
+                validate_recovery_opened_file_name(assignment, record, previous_id, &changed)
+                    .is_err(),
+                "{staged:?}"
+            );
+        }
+        for stages in ["", "not JSON", &(history.stages.clone() + &history.stages)] {
+            let mut changed = history_value.clone();
+            changed["stages"] = serde_json::json!(stages);
+            let changed: ReferenceRecoveryHistory = serde_json::from_value(changed).unwrap();
+            assert!(
+                validate_recovery_opened_file_name(assignment, record, previous_id, &changed)
+                    .is_err()
+            );
+        }
+        let mut ordinary = record.clone();
+        ordinary.annotations.clear();
+        assert_eq!(
+            reference_opened_file_name(&root, assignment, &ordinary).unwrap(),
+            None
+        );
+        for id in ["", "../outside", &"A".repeat(64)] {
+            ordinary.annotations = vec![
+                serde_json::json!({"kind":"reference-recovery", "previous_configuration_id":id}),
+            ];
+            assert!(reference_opened_file_name(&root, assignment, &ordinary).is_err());
+        }
+        ordinary.annotations = vec![record.annotations[0].clone(), record.annotations[0].clone()];
+        assert!(reference_opened_file_name(&root, assignment, &ordinary).is_err());
     }
 
     #[test]

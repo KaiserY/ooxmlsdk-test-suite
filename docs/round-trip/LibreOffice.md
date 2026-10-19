@@ -40,8 +40,12 @@ cargo test -p ooxmlsdk-roundtrip-tests --test libreoffice_roundtrip -- --ignored
 ## Last Run
 
 ```text
-test result: ok. 3388 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 32.25s
+test result: ok. 3388 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 34.54s
 ```
+
+Rechecked after correcting single-occurrence wildcard fields: original-package
+comparison and second-save stability both pass, with no new comparison
+relaxations or manifest exceptions.
 
 Three malformed packages now use `open_only`, which requires successful eager
 parsing and main-part lookup. Their existing lossless-save failures were:

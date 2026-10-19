@@ -27,8 +27,12 @@ cargo test -p ooxmlsdk-roundtrip-tests --test open_xml_sdk_roundtrip -- --ignore
 Result:
 
 ```text
-test result: ok. 886 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 14.31s
+test result: ok. 886 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 16.49s
 ```
+
+Rechecked after correcting single-occurrence wildcard fields: original-package
+comparison and second-save stability both pass, with no new comparison
+relaxations or manifest exceptions.
 
 The round-trip check eagerly opens, saves, and reopens each package before
 comparing its public part graph, complete relationship edge graph, ZIP entries,
