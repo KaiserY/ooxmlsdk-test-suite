@@ -241,7 +241,6 @@ fn slide_wrapped_timing_with_encoded_namespace_uri_stays_after_added_transition(
 fn slide_preserves_wrapped_payload_with_undecodable_namespace() {
     for payload in [
         r#"<q:timing xmlns:q="urn:&bogus;"/>"#,
-        // A malformed local binding must not inherit the valid root p binding.
         r#"<p:timing xmlns:p="urn:&bogus;"/>"#,
         r#"<timing xmlns="urn:&bogus;"/>"#,
     ] {
