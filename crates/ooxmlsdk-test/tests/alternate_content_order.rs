@@ -238,9 +238,69 @@ fn slide_wrapped_timing_with_encoded_namespace_uri_stays_after_added_transition(
 }
 
 #[test]
-fn slide_wrapped_timing_with_malformed_namespace_declaration_is_rejected() {
+fn slide_preserves_wrapped_payload_with_undecodable_namespace() {
+    for payload in [
+        r#"<q:timing xmlns:q="urn:&bogus;"/>"#,
+        // A malformed local binding must not inherit the valid root p binding.
+        r#"<p:timing xmlns:p="urn:&bogus;"/>"#,
+        r#"<timing xmlns="urn:&bogus;"/>"#,
+    ] {
+        for preceding_transition in [false, true] {
+            let wrapped = format!(
+                r#"<mc:AlternateContent><mc:Choice Requires="p14">{payload}</mc:Choice></mc:AlternateContent>"#
+            );
+            let children = if preceding_transition {
+                format!("{TRANSITION}{wrapped}")
+            } else {
+                wrapped
+            };
+            let (mut parsed, serialized, _) = assert_stable_roundtrip::<Slide>(&slide(&children));
+            assert!(serialized.contains(payload), "{serialized}");
+            assert_eq!(
+                parsed.alternate_content_0.len(),
+                usize::from(!preceding_transition)
+            );
+            assert_eq!(
+                parsed.alternate_content_1.len(),
+                usize::from(preceding_transition)
+            );
+            parsed.transition = Some(Default::default());
+            let serialized = parsed.to_string();
+            let expected = if preceding_transition {
+                ["cSld", "clrMapOvr", "transition", "AC(timing)"]
+            } else {
+                ["cSld", "clrMapOvr", "AC(timing)", "transition"]
+            };
+            assert_eq!(child_order(&serialized), expected, "{serialized}");
+            assert!(serialized.contains(payload), "{serialized}");
+            assert_stable_roundtrip::<Slide>(&serialized);
+        }
+    }
+}
+
+#[test]
+fn slide_routes_by_valid_fallback_after_undecodable_choice_namespace() {
+    let payload = r#"<p:timing xmlns:p="urn:&bogus;"/>"#;
+    let xml = slide(&format!(
+        r#"<mc:AlternateContent><mc:Choice Requires="p14">{payload}</mc:Choice><mc:Fallback><p:timing/></mc:Fallback></mc:AlternateContent>"#
+    ));
+    let (mut parsed, _, _) = assert_stable_roundtrip::<Slide>(&xml);
+    assert!(parsed.alternate_content_0.is_empty());
+    assert_eq!(parsed.alternate_content_1.len(), 1);
+    parsed.transition = Some(Default::default());
+    let serialized = parsed.to_string();
+    assert_eq!(
+        child_order(&serialized),
+        ["cSld", "clrMapOvr", "transition", "AC(timing)"],
+        "{serialized}"
+    );
+    assert!(serialized.contains(payload), "{serialized}");
+}
+
+#[test]
+fn slide_still_rejects_structurally_malformed_wrapped_payload() {
     let xml = slide(
-        r#"<mc:AlternateContent><mc:Choice Requires="p14"><q:timing xmlns:q="urn:&bogus;"/></mc:Choice></mc:AlternateContent>"#,
+        r#"<mc:AlternateContent><mc:Choice Requires="p14"><p:timing></p:transition></mc:Choice></mc:AlternateContent>"#,
     );
     assert!(xml.parse::<Slide>().is_err());
 }
