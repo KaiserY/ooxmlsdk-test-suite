@@ -27,14 +27,21 @@ cargo test -p ooxmlsdk-roundtrip-tests --test open_xml_sdk_roundtrip -- --ignore
 Result:
 
 ```text
-test result: ok. 886 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 14.68s
+test result: ok. 886 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 14.32s
 ```
 
-Rechecked after the Visio integration in PR #31 on 2026-10-26, using
-ooxmlsdk 0.14.0 and zip 9.0.5: original-package comparison
+Rechecked after the MCE field-routing fix in PR #33 on 2026-10-26, using
+ooxmlsdk 0.15.0 and zip 9.0.5: original-package comparison
 and second-save stability both pass, with no new comparison relaxations or
 manifest exceptions. The ZIP dependency enables `unreserved` to preserve
 registered Unix extra fields when raw-copying package entries.
+
+The five-corpus MCE lane also passes with `ProcessAllParts` targeting both
+Office 2007 and Microsoft 365. It honors the existing `open_only` expectations:
+those fixtures must open and process MCE, while save/output checks apply to
+round-trip fixtures. This corrects the MCE harness's unconditional save of the
+two existing `unicode-path.docx` recovery fixtures; their configured Office
+golden PDF coverage and all manifest classifications are unchanged.
 
 The round-trip check eagerly opens, saves, and reopens each package before
 comparing its public part graph, complete relationship edge graph, ZIP entries,

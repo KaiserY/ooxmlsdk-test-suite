@@ -1790,7 +1790,7 @@ checksum = "d6790f58c7ff633d8771f42965289203411a5e5c68388703c06e14f24770b41e"
 
 [[package]]
 name = "ooxmlsdk"
-version = "0.14.0"
+version = "0.15.0"
 dependencies = [
  "base64 0.23.1",
  "bytes",
@@ -1830,7 +1830,7 @@ dependencies = [
 
 [[package]]
 name = "ooxmlsdk-derive"
-version = "0.14.0"
+version = "0.15.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1839,7 +1839,7 @@ dependencies = [
 
 [[package]]
 name = "ooxmlsdk-fonts"
-version = "0.14.0"
+version = "0.15.0"
 dependencies = [
  "fontique",
  "harfrust 0.13.3",
@@ -1863,7 +1863,7 @@ dependencies = [
 
 [[package]]
 name = "ooxmlsdk-formula"
-version = "0.14.0"
+version = "0.15.0"
 dependencies = [
  "bitflags 2.13.2",
  "encoding_rs",
@@ -1896,7 +1896,7 @@ dependencies = [
 
 [[package]]
 name = "ooxmlsdk-layout"
-version = "0.14.0"
+version = "0.15.0"
 dependencies = [
  "base64 0.23.1",
  "bytes",
@@ -1943,7 +1943,7 @@ dependencies = [
 
 [[package]]
 name = "ooxmlsdk-pdf"
-version = "0.14.0"
+version = "0.15.0"
 dependencies = [
  "emfsdk",
  "flate2",

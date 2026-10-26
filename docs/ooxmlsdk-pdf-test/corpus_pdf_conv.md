@@ -14,6 +14,13 @@ PASS, zero regressions or infrastructure errors, **0** pending promotions.
 Golden gates and reference-failure identities unchanged.
 Receipt: `/tmp/ooxmlsdk-repair-resume-20260912/checkpoint-batch-65-full-v708/acceptance.json`.
 
+PR #33 merge verification (2026-10-26, SDK 0.15.0): all 5,370 configurations
+rechecked against this checkpoint in 136 seconds. Counts, verdicts, diagnostic
+fields and reference-failure identities are unchanged; all 4,002 protected cases,
+including the four Office recovery fixtures, still PASS. Golden files and
+acceptance gates are unchanged. Receipt:
+`/tmp/ooxmlsdk-pr33-verification-20261026/golden-full/summary.json`.
+
 Stage closed: `rhbz988516.docx`, `sdt-2-run.docx`, `sdt-header.docx` and
 `shape-3d-effect-preservation.docx` PASS. The audit's calendar placeholder
 regression is repaired: an empty binding already showing a placeholder retains

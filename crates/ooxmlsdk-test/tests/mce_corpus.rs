@@ -1,7 +1,7 @@
 #![cfg(feature = "mce")]
 
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     fs::{self, File},
     io::{Cursor, Read},
     path::{Path, PathBuf},
@@ -33,6 +33,7 @@ const MCE_MARKERS: [&[u8]; 6] = [
 struct CorpusMceStats {
     packages_scanned: usize,
     invalid_packages_skipped: usize,
+    open_only_mce_packages: usize,
     packages_with_mce: usize,
     packages_with_alternate_content: usize,
     alternate_content_parts: usize,
@@ -118,7 +119,7 @@ fn contains_bytes(haystack: &[u8], needle: &[u8]) -> bool {
         .any(|window| window == needle)
 }
 
-fn invalid_roundtrip_files(corpus_dir: &Path) -> HashSet<String> {
+fn roundtrip_expectations(corpus_dir: &Path) -> HashMap<String, String> {
     let manifest_path = corpus_dir.join("manifest.toml");
     let manifest = fs::read_to_string(&manifest_path)
         .unwrap_or_else(|err| panic!("read corpus manifest {}: {err}", manifest_path.display()));
@@ -128,8 +129,8 @@ fn invalid_roundtrip_files(corpus_dir: &Path) -> HashSet<String> {
     manifest
         .expectation
         .into_iter()
-        .filter(|expectation| expectation.test == "roundtrip" && expectation.mode == "invalid")
-        .map(|expectation| expectation.file)
+        .filter(|expectation| expectation.test == "roundtrip")
+        .map(|expectation| (expectation.file, expectation.mode))
         .collect()
 }
 
@@ -239,7 +240,11 @@ fn package_mce_parts(path: &Path) -> Result<PackageMceInventory, String> {
     })
 }
 
-fn process_package(path: &Path, version: FileFormatVersion) -> Result<Vec<u8>, String> {
+fn process_package(
+    path: &Path,
+    version: FileFormatVersion,
+    open_only: bool,
+) -> Result<Option<Vec<u8>>, String> {
     let settings = OpenSettings {
         open_mode: PackageOpenMode::Lazy,
         markup_compatibility_process_settings: MarkupCompatibilityProcessSettings {
@@ -259,6 +264,11 @@ fn process_package(path: &Path, version: FileFormatVersion) -> Result<Vec<u8>, S
         "docx" | "dotx" | "docm" | "dotm" => {
             let package = WordprocessingDocument::new_from_file_with_settings(path, settings)
                 .map_err(|err| format!("open wordprocessing package: {err:?}"))?;
+            // ProcessAllParts runs on open, including for recovery fixtures
+            // whose manifest does not require a lossless package save.
+            if open_only {
+                return Ok(None);
+            }
             package
                 .save(&mut output)
                 .map_err(|err| format!("save wordprocessing package: {err:?}"))?;
@@ -266,6 +276,9 @@ fn process_package(path: &Path, version: FileFormatVersion) -> Result<Vec<u8>, S
         "xlsx" | "xltx" | "xlsm" | "xltm" => {
             let package = SpreadsheetDocument::new_from_file_with_settings(path, settings)
                 .map_err(|err| format!("open spreadsheet package: {err:?}"))?;
+            if open_only {
+                return Ok(None);
+            }
             package
                 .save(&mut output)
                 .map_err(|err| format!("save spreadsheet package: {err:?}"))?;
@@ -273,6 +286,9 @@ fn process_package(path: &Path, version: FileFormatVersion) -> Result<Vec<u8>, S
         "pptx" | "potx" | "pptm" | "potm" | "ppsx" | "ppsm" => {
             let package = PresentationDocument::new_from_file_with_settings(path, settings)
                 .map_err(|err| format!("open presentation package: {err:?}"))?;
+            if open_only {
+                return Ok(None);
+            }
             package
                 .save(&mut output)
                 .map_err(|err| format!("save presentation package: {err:?}"))?;
@@ -280,7 +296,7 @@ fn process_package(path: &Path, version: FileFormatVersion) -> Result<Vec<u8>, S
         _ => return Err(format!("unsupported package extension {extension}")),
     }
 
-    Ok(output.into_inner())
+    Ok(Some(output.into_inner()))
 }
 
 fn mce_output_failures(
@@ -327,7 +343,7 @@ fn assert_corpus_mce_is_fully_processed(corpus_name: &str) {
     let mut packages = Vec::new();
     collect_office_packages(&corpus_dir, &mut packages);
     packages.sort();
-    let invalid_files = invalid_roundtrip_files(&corpus_dir);
+    let expectations = roundtrip_expectations(&corpus_dir);
 
     let mut stats = CorpusMceStats::default();
     let mut failures = Vec::new();
@@ -339,7 +355,8 @@ fn assert_corpus_mce_is_fully_processed(corpus_name: &str) {
             .unwrap_or(&path)
             .display()
             .to_string();
-        if invalid_files.contains(&corpus_relative) {
+        let expectation = expectations.get(&corpus_relative).map(String::as_str);
+        if expectation == Some("invalid") {
             stats.invalid_packages_skipped += 1;
             continue;
         }
@@ -359,6 +376,8 @@ fn assert_corpus_mce_is_fully_processed(corpus_name: &str) {
             continue;
         }
         stats.packages_with_mce += 1;
+        let open_only = expectation == Some("open_only");
+        stats.open_only_mce_packages += usize::from(open_only);
         let alternate_content_part_count = inventory.typed_alternate_content_parts.len()
             + inventory.opaque_alternate_content_parts.len();
         if alternate_content_part_count > 0 {
@@ -372,8 +391,9 @@ fn assert_corpus_mce_is_fully_processed(corpus_name: &str) {
             FileFormatVersion::Office2007,
             FileFormatVersion::Microsoft365,
         ] {
-            let processed = match process_package(&path, version) {
-                Ok(processed) => processed,
+            let processed = match process_package(&path, version, open_only) {
+                Ok(Some(processed)) => processed,
+                Ok(None) => continue,
                 Err(err) => {
                     failures.push(format!("{relative} [{version:?}]: {err}"));
                     continue;
@@ -403,12 +423,14 @@ fn assert_corpus_mce_is_fully_processed(corpus_name: &str) {
     assert!(
         failures.is_empty(),
         "{corpus_name} MCE corpus gate failed with {} failure(s); \
-         scanned {} package(s), skipped {} manifest-invalid package(s), found {} MCE package(s), \
+         scanned {} package(s), skipped {} manifest-invalid package(s), found {} MCE package(s) \
+         ({} open-only), \
          {} package(s)/{} XML part(s) with AlternateContent ({} typed, {} opaque):\n{}",
         failures.len(),
         stats.packages_scanned,
         stats.invalid_packages_skipped,
         stats.packages_with_mce,
+        stats.open_only_mce_packages,
         stats.packages_with_alternate_content,
         stats.alternate_content_parts,
         stats.typed_alternate_content_parts,

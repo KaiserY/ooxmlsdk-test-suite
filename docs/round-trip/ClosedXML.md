@@ -38,11 +38,11 @@ cargo test -p ooxmlsdk-roundtrip-tests --test closedxml_roundtrip -- --ignored
 ## Last Run
 
 ```text
-test result: ok. 286 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.60s
+test result: ok. 286 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.62s
 ```
 
-Rechecked after the Visio integration in PR #31 on 2026-10-26, using
-ooxmlsdk 0.14.0 and zip 9.0.5: original-package comparison
+Rechecked after the MCE field-routing fix in PR #33 on 2026-10-26, using
+ooxmlsdk 0.15.0 and zip 9.0.5: original-package comparison
 and second-save stability both pass, with no new comparison relaxations or
 manifest exceptions. The ZIP dependency enables `unreserved` to preserve
 registered Unix extra fields when raw-copying package entries.
