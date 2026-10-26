@@ -12,7 +12,7 @@
 
 | Total files | Round-trip candidates | Open-only | Invalid | Known failures | Last run | Passed | Failed |
 | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: |
-| 682 | 612 | 6 | 64 | 0 | 2026-10-11 | 682 | 0 |
+| 682 | 612 | 6 | 64 | 0 | 2026-10-19 | 682 | 0 |
 
 The current scaffold generates one ignored test per supported Office package
 fixture.
@@ -26,12 +26,13 @@ cargo test -p ooxmlsdk-roundtrip-tests --test apache_poi_roundtrip -- --ignored
 Result:
 
 ```text
-test result: ok. 682 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 23.93s
+test result: ok. 682 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 24.13s
 ```
 
-Rechecked after correcting single-occurrence wildcard fields: original-package
-comparison and second-save stability both pass, with no new comparison
-relaxations or manifest exceptions.
+Rechecked with ooxmlsdk 0.14.0 and zip 9.0.5: original-package comparison
+and second-save stability both pass, with no new comparison relaxations or
+manifest exceptions. The ZIP dependency enables `unreserved` to preserve
+registered Unix extra fields when raw-copying package entries.
 
 `test-data/document/unicode-path.docx` now uses `open_only`: the SDK must eagerly
 parse its main document, without requiring a lossless package save. Its existing

@@ -193,6 +193,7 @@ function Export-WithWord {
         if ($null -ne $RenderEnvironment) { $RenderEnvironment.clock = Start-OfficeExportClock }
         $document = $Application.Documents.Open($InputPath, $false, $true, $false)
         if ($null -ne $RenderEnvironment) {
+            $RenderEnvironment['opened_file_path'] = [string]$document.FullName
             $RenderEnvironment.clock.refresh_started_at_utc = [DateTime]::UtcNow.ToString('o')
             Update-OfficeWordClockFields $document
             $RenderEnvironment.clock.refresh_completed_at_utc = [DateTime]::UtcNow.ToString('o')

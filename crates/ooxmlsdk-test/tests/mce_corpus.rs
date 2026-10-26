@@ -209,10 +209,13 @@ fn package_mce_parts(path: &Path) -> Result<PackageMceInventory, String> {
         let mut entry = archive
             .by_index(index)
             .map_err(|err| format!("read ZIP entry {index}: {err}"))?;
-        if !entry.name().ends_with(".xml") {
+        let entry_name = entry
+            .name()
+            .map_err(|err| format!("read ZIP entry {index} name: {err}"))?;
+        if !entry_name.ends_with(".xml") {
             continue;
         }
-        let entry_name = entry.name().to_owned();
+        let entry_name = entry_name.into_owned();
         let mut bytes = Vec::new();
         entry
             .read_to_end(&mut bytes)

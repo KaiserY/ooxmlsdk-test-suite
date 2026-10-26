@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "configuration_id": "f0ca4e825e39d5fc218079b8dcb3ef75ff49819acd2fc42e591ef616329243b8",
+  "corpus": "LibreOffice",
+  "file": "sw/qa/extras/ooxmlexport/data/2129393649.docx",
+  "source_sha256": "e4f1d701032a333e3f413be0ec9cd5d3edc54b7d4aee8edb7d237137f35ec728",
+  "output_sha256": "be51f62509b3e371bab8146bc6f48effe2fe06dd7ef7e76c5a0ac37d22726028",
+  "opened_file_path": "C:\\Users\\kazeno\\AppData\\Local\\Temp\\ooxmlsdk-pdf-options-probe-5b22b49077b24880bd52bf1dc1b26aca\\case-000\\2129393649.docx",
+  "evidence": {
+    "kind": "fixed-output-storage-name-observation",
+    "source_field": "FILENAME \\p",
+    "source_parts": [
+      "word/footer2.xml",
+      "word/footer3.xml"
+    ],
+    "observed_pdf_pages": [
+      1,
+      2,
+      3
+    ],
+    "extraction": "Original fixed-output PDF text; physical line break after case- joined. Three independent footer occurrences agree.",
+    "exporter": "scripts/probe_office_pdf_options.ps1",
+    "exporter_sha256": "4fcff8c539a0d43b2cf264c26274ccbb31f9fa8d339978d3094332be47674c2b",
+    "staging_contract": "Windows TEMP/ooxmlsdk-pdf-options-probe-{Guid:N}/case-{index:D3}/source-name; Word opens this copied source.",
+    "field_spec": "ECMA-376 Part 1 17.16.5.17; https://support.microsoft.com/en-us/word/field-codes-filename-field",
+    "reason": "Backfill missing historical input context, equivalent to the recorded refresh clock; original source, reference bytes, configured options and acceptance gates are unchanged. Runtime evaluation consumes this frozen record and does not read golden text."
+  }
+}

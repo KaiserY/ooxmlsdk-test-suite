@@ -25,6 +25,7 @@ const STRICT_WORD_NAMESPACE: &[u8] = b"http://purl.oclc.org/ooxml/wordprocessing
 #[derive(Clone, Debug)]
 pub(crate) struct SourceSemanticReport {
     pub authored_characters: usize,
+    pub authored_coverage_pages: usize,
     pub layout_characters: usize,
     pub candidate_authored_missing: usize,
     pub golden_authored_missing: usize,
@@ -36,6 +37,7 @@ pub(crate) struct SourceSemanticReport {
 impl SourceSemanticReport {
     pub(crate) fn verified(&self) -> bool {
         self.authored_characters > 0
+            && self.authored_coverage_pages > 0
             && self.layout_characters > 0
             && self.candidate_authored_missing == 0
             && self.golden_authored_missing > 0
@@ -50,17 +52,48 @@ pub(crate) fn inspect_docx_semantics(
     candidate_pdf: &[u8],
     golden_pdf: &[u8],
     diagnostics: &PdfConversionDiagnostics,
+    full_document_pdf: Option<&[u8]>,
 ) -> Result<SourceSemanticReport, String> {
     let authored = authored_word_text(source_path)?;
-    let authored_bag = semantic_bag(&authored);
     let candidate_pages = pdftotext_pages(candidate_pdf)?;
     let golden_pages = pdftotext_pages(golden_pdf)?;
-    if candidate_pages.len() != diagnostics.pages.len()
-        || golden_pages.len() != diagnostics.pages.len()
-    {
+    let full_document_pages = full_document_pdf.map(pdftotext_pages).transpose()?;
+    let mut layout_pages = Vec::with_capacity(diagnostics.pages.len());
+    for (page_index, layout) in diagnostics.pages.iter().enumerate() {
+        if layout.page_index != page_index {
+            return Err(format!(
+                "layout semantic page index {} is out of order at {page_index}",
+                layout.page_index
+            ));
+        }
+        layout_pages.push(
+            layout
+                .text_runs
+                .iter()
+                .map(|run| run.pdf_text.as_str())
+                .collect::<String>(),
+        );
+    }
+    inspect_page_semantics(
+        &authored,
+        &candidate_pages,
+        &golden_pages,
+        &layout_pages,
+        full_document_pages.as_deref(),
+    )
+}
+
+fn inspect_page_semantics(
+    authored: &str,
+    candidate_pages: &[String],
+    golden_pages: &[String],
+    layout_pages: &[String],
+    full_document_pages: Option<&[String]>,
+) -> Result<SourceSemanticReport, String> {
+    if candidate_pages.len() != layout_pages.len() || golden_pages.len() != layout_pages.len() {
         return Err(format!(
             "semantic page counts disagree: layout={} candidate={} golden={}",
-            diagnostics.pages.len(),
+            layout_pages.len(),
             candidate_pages.len(),
             golden_pages.len()
         ));
@@ -72,25 +105,9 @@ pub(crate) fn inspect_docx_semantics(
     let mut candidate_layout_missing = 0;
     let mut candidate_layout_extra = 0;
     let mut unexpected_layout_extra = 0;
-    for (page_index, ((layout, candidate), golden)) in diagnostics
-        .pages
-        .iter()
-        .zip(&candidate_pages)
-        .zip(&golden_pages)
-        .enumerate()
+    for ((layout, candidate), golden) in layout_pages.iter().zip(candidate_pages).zip(golden_pages)
     {
-        if layout.page_index != page_index {
-            return Err(format!(
-                "layout semantic page index {} is out of order at {page_index}",
-                layout.page_index
-            ));
-        }
-        let layout_text = layout
-            .text_runs
-            .iter()
-            .map(|run| run.pdf_text.as_str())
-            .collect::<String>();
-        let layout_bag = semantic_bag(&layout_text);
+        let layout_bag = semantic_bag(layout);
         let candidate_page_bag = semantic_bag(candidate);
         let golden_page_bag = semantic_bag(golden);
         layout_characters += layout_bag.values().sum::<usize>();
@@ -105,8 +122,20 @@ pub(crate) fn inspect_docx_semantics(
         merge_bag(&mut candidate_bag, &candidate_page_bag);
         merge_bag(&mut golden_bag, &golden_page_bag);
     }
+    // A configured page range excludes authored text on unselected pages.
+    // Prove full-document authorship with a companion SDK export, while the
+    // selected PDF must still cover its own selected layout on every page.
+    let authored_coverage_pages = full_document_pages.map_or(candidate_pages.len(), <[_]>::len);
+    if let Some(pages) = full_document_pages {
+        candidate_bag.clear();
+        for page in pages {
+            merge_bag(&mut candidate_bag, &semantic_bag(page));
+        }
+    }
+    let authored_bag = semantic_bag(authored);
     Ok(SourceSemanticReport {
         authored_characters: authored_bag.values().sum(),
+        authored_coverage_pages,
         layout_characters,
         candidate_authored_missing: missing_count(&authored_bag, &candidate_bag),
         golden_authored_missing: missing_count(&authored_bag, &golden_bag),
@@ -177,7 +206,7 @@ fn authored_word_text(source_path: &Path) -> Result<String, String> {
     let mut found_document = false;
     for index in 0..archive.len() {
         let entry = archive.by_index(index).map_err(|error| error.to_string())?;
-        let name = entry.name().to_owned();
+        let name = entry.name().map_err(|error| error.to_string())?;
         if !is_word_text_part(&name, note_references) {
             continue;
         }
@@ -281,6 +310,8 @@ fn word_text_in_part(
     let mut buffer = Vec::new();
     let mut text = String::new();
     let mut in_word_text = false;
+    let mut in_instruction = false;
+    let mut fields = Vec::<SourceField>::new();
     let mut parents = Vec::new();
     let mut runs = Vec::<(usize, bool, Option<bool>)>::new();
     let mut paragraphs = Vec::<bool>::new();
@@ -291,6 +322,24 @@ fn word_text_in_part(
         let is_word = matches!(namespace, ResolveResult::Bound(ns)
             if ns.as_ref() == WORD_NAMESPACE || ns.as_ref() == STRICT_WORD_NAMESPACE);
         if let Event::Start(element) | Event::Empty(element) = &event {
+            if is_word && element.local_name().as_ref() == b"fldChar" {
+                match word_attribute(&reader, element, b"fldCharType")?.as_deref() {
+                    Some("begin") => fields.push(SourceField {
+                        locked: word_attribute(&reader, element, b"fldLock")?
+                            .is_some_and(|value| matches!(value.as_str(), "1" | "true" | "on")),
+                        ..SourceField::default()
+                    }),
+                    Some("separate") => {
+                        if let Some(field) = fields.last_mut() {
+                            field.begin_result();
+                        }
+                    }
+                    Some("end") if fields.pop().is_none_or(|field| field.simple) => {
+                        return Err("unmatched complex Word field end".into());
+                    }
+                    _ => {}
+                }
+            }
             if is_word
                 && element.local_name().as_ref() == b"pStyle"
                 && parents.ends_with(&[Some("p"), Some("pPr")])
@@ -331,6 +380,18 @@ fn word_text_in_part(
         match event {
             Event::Start(element) => {
                 let name = element.local_name();
+                if is_word && name.as_ref() == b"fldSimple" {
+                    let mut field = SourceField {
+                        simple: true,
+                        instruction: word_attribute(&reader, &element, b"instr")?
+                            .unwrap_or_default(),
+                        locked: word_attribute(&reader, &element, b"fldLock")?
+                            .is_some_and(|value| matches!(value.as_str(), "1" | "true" | "on")),
+                        ..SourceField::default()
+                    };
+                    field.begin_result();
+                    fields.push(field);
+                }
                 if is_word && name.as_ref() == b"p" {
                     paragraphs.push(
                         styles.default_hidden
@@ -352,10 +413,20 @@ fn word_text_in_part(
                     (true, b"rPr") => Some("rPr"),
                     _ => None,
                 });
-                in_word_text = is_word && name.as_ref() == b"t";
+                in_word_text = is_word
+                    && name.as_ref() == b"t"
+                    && !fields.iter().any(|field| field.omit_cached_result);
+                in_instruction = is_word && name.as_ref() == b"instrText";
             }
             Event::End(element) => {
                 in_word_text = false;
+                in_instruction = false;
+                if is_word
+                    && element.local_name().as_ref() == b"fldSimple"
+                    && fields.pop().is_none_or(|field| !field.simple)
+                {
+                    return Err("unmatched simple Word field end".into());
+                }
                 parents.pop();
                 if is_word
                     && element.local_name().as_ref() == b"r"
@@ -374,6 +445,21 @@ fn word_text_in_part(
                     quick_xml::escape::unescape(&decoded).map_err(|error| error.to_string())?;
                 text.push_str(&unescaped);
             }
+            Event::Text(value) if in_instruction => {
+                if let Some(field) = fields.last_mut() {
+                    let decoded = value.xml10_content().map_err(|error| error.to_string())?;
+                    let unescaped =
+                        quick_xml::escape::unescape(&decoded).map_err(|error| error.to_string())?;
+                    field.instruction.push_str(&unescaped);
+                }
+            }
+            Event::CData(value) if in_instruction => {
+                if let Some(field) = fields.last_mut() {
+                    field
+                        .instruction
+                        .push_str(&value.decode().map_err(|error| error.to_string())?);
+                }
+            }
             Event::CData(value) if in_word_text => {
                 text.push_str(&value.decode().map_err(|error| error.to_string())?);
             }
@@ -390,12 +476,39 @@ fn word_text_in_part(
                     text.push_str(expanded);
                 }
             }
-            Event::Eof => break,
+            Event::Eof => {
+                if !fields.is_empty() {
+                    return Err("unterminated Word field in source proof".into());
+                }
+                break;
+            }
             _ => {}
         }
         buffer.clear();
     }
     Ok(text)
+}
+
+#[derive(Default)]
+struct SourceField {
+    instruction: String,
+    simple: bool,
+    locked: bool,
+    omit_cached_result: bool,
+}
+
+impl SourceField {
+    fn begin_result(&mut self) {
+        // ISO 29500-1 §17.16.5.44: PAGE evaluates to the current page number.
+        // Its unlocked cached w:t is not fixed authored text. The selected
+        // layout/transport and strict golden glyph checks still owe its output.
+        self.omit_cached_result = !self.locked
+            && self
+                .instruction
+                .split_whitespace()
+                .next()
+                .is_some_and(|kind| kind.eq_ignore_ascii_case("PAGE"));
+    }
 }
 
 fn is_transport_direction_control(ch: char) -> bool {
@@ -450,8 +563,8 @@ fn missing_count(source: &BTreeMap<char, usize>, observed: &BTreeMap<char, usize
 #[cfg(test)]
 mod tests {
     use super::{
-        SourceSemanticReport, VisibilityStyles, is_word_text_part, semantic_bag,
-        word_note_references, word_text_in_part,
+        SourceSemanticReport, VisibilityStyles, inspect_page_semantics, is_word_text_part,
+        semantic_bag, word_note_references, word_text_in_part,
     };
     use ooxmlsdk::{
         schemas::schemas_openxmlformats_org_wordprocessingml_2006_main as w, sdk::SdkType,
@@ -538,6 +651,68 @@ mod tests {
     }
 
     #[test]
+    fn source_authorship_separates_unlocked_page_caches_from_literal_text() {
+        for namespace in [super::WORD_NAMESPACE, super::STRICT_WORD_NAMESPACE] {
+            for (instruction, locked, expected) in [
+                ("PAGE", "0", "A2B"),
+                ("page \\* ROMAN", "false", "A2B"),
+                ("PAGE", "true", "A292B"),
+                ("NUMPAGES", "0", "A292B"),
+                ("QUOTE PAGE", "0", "A292B"),
+            ] {
+                let xml = format!(
+                    r#"<w:hdr xmlns:w="{}"><w:p>
+<w:r><w:t>A2</w:t></w:r>
+<w:r><w:fldChar w:fldCharType="begin" w:fldLock="{locked}"/></w:r>
+<w:r><w:instrText>{instruction}</w:instrText></w:r>
+<w:r><w:fldChar w:fldCharType="separate"/></w:r>
+<w:r><w:t>9</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r>
+<w:fldSimple w:instr="{instruction}" w:fldLock="{locked}"><w:r><w:t>2</w:t></w:r></w:fldSimple>
+<w:r><w:t>B</w:t></w:r></w:p></w:hdr>"#,
+                    std::str::from_utf8(namespace).unwrap()
+                );
+                assert_eq!(
+                    word_text_in_part(xml.as_bytes(), &Default::default()).unwrap(),
+                    expected,
+                    "{instruction} / {locked}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn full_document_coverage_does_not_replace_selected_page_obligations() {
+        let selected = vec!["AB".to_owned()];
+        let golden = vec!["A?".to_owned()];
+        let full = vec!["AB".to_owned(), "C".to_owned()];
+        let report = inspect_page_semantics("ABC", &selected, &golden, &selected, None).unwrap();
+        assert_eq!(report.candidate_authored_missing, 1);
+        assert!(!report.verified());
+        let report =
+            inspect_page_semantics("ABC", &selected, &golden, &selected, Some(&full)).unwrap();
+        assert_eq!(report.authored_coverage_pages, 2);
+        assert_eq!(report.candidate_authored_missing, 0);
+        assert!(report.verified());
+        for incomplete in [vec!["AB".to_owned()], Vec::new()] {
+            let report =
+                inspect_page_semantics("ABC", &selected, &golden, &selected, Some(&incomplete))
+                    .unwrap();
+            assert!(!report.verified());
+        }
+        let missing = vec!["A".to_owned()];
+        let report =
+            inspect_page_semantics("ABC", &missing, &golden, &selected, Some(&full)).unwrap();
+        assert_eq!(report.candidate_layout_missing, 1);
+        assert!(!report.verified());
+        let extra = vec!["ABX".to_owned()];
+        let report =
+            inspect_page_semantics("ABC", &extra, &golden, &selected, Some(&full)).unwrap();
+        assert_eq!(report.unexpected_layout_extra, 1);
+        assert!(!report.verified());
+        assert!(inspect_page_semantics("ABC", &full, &golden, &selected, Some(&full)).is_err());
+    }
+
+    #[test]
     fn hidden_style_inheritance_preserves_toggles_and_direct_overrides() {
         let styles = w::Styles::from_bytes(br#"<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
 <w:style w:type="paragraph" w:styleId="hidden"><w:rPr><w:vanish/></w:rPr></w:style>
@@ -562,6 +737,7 @@ mod tests {
     fn source_proof_requires_candidate_and_layout_coverage() {
         let report = SourceSemanticReport {
             authored_characters: 1000,
+            authored_coverage_pages: 1,
             layout_characters: 1000,
             candidate_authored_missing: 0,
             golden_authored_missing: 1,

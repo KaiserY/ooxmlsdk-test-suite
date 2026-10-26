@@ -59,7 +59,7 @@ unicode-bidi = "0.3.18"
 unicode-bidi-mirroring = "0.4.0"
 unicode-normalization = "0.1.25"
 walkdir = "2.5.0"
-zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
+zip = { version = "9.0.5", default-features = false, features = ["deflate"] }
 
 [patch.crates-io]
 # Sibling adapters such as olecfsdk-ooxml publish against crates.io, but this

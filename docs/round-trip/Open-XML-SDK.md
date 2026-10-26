@@ -12,7 +12,7 @@
 
 | Total files | Round-trip candidates | Open-only | Invalid | Known failures | Last run | Passed | Failed |
 | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: |
-| 886 | 880 | 3 | 3 | 0 | 2026-10-11 | 886 | 0 |
+| 886 | 880 | 3 | 3 | 0 | 2026-10-19 | 886 | 0 |
 
 The current scaffold generates one ignored test per supported Office package
 fixture. Encrypted and intentionally invalid fixtures are classified as
@@ -27,12 +27,13 @@ cargo test -p ooxmlsdk-roundtrip-tests --test open_xml_sdk_roundtrip -- --ignore
 Result:
 
 ```text
-test result: ok. 886 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 16.49s
+test result: ok. 886 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 14.72s
 ```
 
-Rechecked after correcting single-occurrence wildcard fields: original-package
-comparison and second-save stability both pass, with no new comparison
-relaxations or manifest exceptions.
+Rechecked with ooxmlsdk 0.14.0 and zip 9.0.5: original-package comparison
+and second-save stability both pass, with no new comparison relaxations or
+manifest exceptions. The ZIP dependency enables `unreserved` to preserve
+registered Unix extra fields when raw-copying package entries.
 
 The round-trip check eagerly opens, saves, and reopens each package before
 comparing its public part graph, complete relationship edge graph, ZIP entries,

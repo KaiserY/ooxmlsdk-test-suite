@@ -77,7 +77,16 @@ pub fn scan_campaign_font_references(
         let mut archive = ZipArchive::new(source).map_err(|error| {
             format!("could not read {} as OOXML: {error}", source_path.display())
         })?;
-        let has_embedded_fonts = archive.file_names().any(is_embedded_font_part);
+        let mut has_embedded_fonts = false;
+        for name in archive.file_names() {
+            let name = name.map_err(|error| {
+                format!("could not read ZIP entry name in {source_key}: {error}")
+            })?;
+            if is_embedded_font_part(&name) {
+                has_embedded_fonts = true;
+                break;
+            }
+        }
         if has_embedded_fonts {
             packages_with_embedded_fonts += 1;
         }
@@ -86,10 +95,13 @@ pub fn scan_campaign_font_references(
             let mut entry = archive.by_index(index).map_err(|error| {
                 format!("could not read ZIP entry {index} in {source_key}: {error}")
             })?;
-            if !entry.name().to_ascii_lowercase().ends_with(".xml") {
+            let entry_name = entry.name().map_err(|error| {
+                format!("could not read ZIP entry {index} name in {source_key}: {error}")
+            })?;
+            if !entry_name.to_ascii_lowercase().ends_with(".xml") {
                 continue;
             }
-            let entry_name = entry.name().to_string();
+            let entry_name = entry_name.into_owned();
             let mut xml = Vec::new();
             entry
                 .by_ref()

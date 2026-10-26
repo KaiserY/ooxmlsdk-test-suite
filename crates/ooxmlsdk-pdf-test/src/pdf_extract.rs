@@ -1240,16 +1240,18 @@ fn pdfium_summary(pdf: &[u8]) -> Result<PdfiumSummary, String> {
             match object.object_type() {
                 PdfPageObjectType::Text => {
                     object_summary.text_objects += 1;
-                    if let Some(text) = object.as_text_object() {
-                        let font = text.font();
+                    if let Some(text_object) = object.as_text_object() {
+                        let font = text_object.font();
                         text_objects.push(TextObjectSummary {
                             page_index,
-                            text: normalize_extracted_text(&text.text()),
+                            // Reuse this page's parsed text. PdfPageTextObject::text()
+                            // loads and parses the entire page again for every object.
+                            text: normalize_extracted_text(&text.for_object(text_object)),
                             font_name: normalize_pdf_font_name(&font.name()),
                             font_family: normalize_pdf_font_name(&font.family()),
-                            scaled_font_size: format_points(text.scaled_font_size(), 2),
-                            unscaled_font_size: format_points(text.unscaled_font_size(), 2),
-                            render_mode: format_text_render_mode(text.render_mode()),
+                            scaled_font_size: format_points(text_object.scaled_font_size(), 2),
+                            unscaled_font_size: format_points(text_object.unscaled_font_size(), 2),
+                            render_mode: format_text_render_mode(text_object.render_mode()),
                             fill_color: object.fill_color().ok().map(format_color),
                             stroke_color: object.stroke_color().ok().map(format_color),
                             bounds: object
@@ -2727,6 +2729,86 @@ impl PdfBytesExt for [u8] {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reused_text_page_preserves_each_objects_text() {
+        use lopdf::dictionary;
+
+        let mut pdf = LopdfDocument::new();
+        let pages_id = pdf.new_object_id();
+        let font = pdf.add_object(dictionary! {
+            "Type" => "Font", "Subtype" => "Type1", "BaseFont" => "Helvetica",
+            "Encoding" => "WinAnsiEncoding",
+        });
+        let mut page_ids = Vec::new();
+        for page_index in 0..2 {
+            // Distinct objects overlap, contain spaces/non-ASCII WinAnsi text,
+            // use invisible paint, or have no characters. Page-local extraction
+            // must retain object identity instead of using a bounding-box query.
+            let mut content = String::new();
+            for object_index in 0..24 {
+                let text = match object_index % 4 {
+                    0 => format!("page {page_index} object {object_index}"),
+                    1 => "caf\\351 spaced text".to_string(),
+                    2 => "invisible".to_string(),
+                    _ => String::new(),
+                };
+                let mode = if object_index % 4 == 2 { 3 } else { 0 };
+                content.push_str(&format!(
+                    "BT /F1 12 Tf {mode} Tr 1 0 0 1 20 {} Tm ({text}) Tj ET\n",
+                    300 - object_index / 4 * 20,
+                ));
+            }
+            let contents = pdf.add_object(lopdf::Stream::new(
+                lopdf::Dictionary::new(),
+                content.into_bytes(),
+            ));
+            page_ids.push(LopdfObject::Reference(pdf.add_object(dictionary! {
+                "Type" => "Page", "Parent" => pages_id,
+                "MediaBox" => vec![0.into(), 0.into(), 400.into(), 400.into()],
+                "Resources" => dictionary! { "Font" => dictionary! { "F1" => font } },
+                "Contents" => contents,
+            })));
+        }
+        pdf.objects.insert(
+            pages_id,
+            dictionary! {
+                "Type" => "Pages", "Kids" => page_ids, "Count" => 2,
+            }
+            .into(),
+        );
+        let catalog = pdf.add_object(dictionary! { "Type" => "Catalog", "Pages" => pages_id });
+        pdf.trailer.set("Root", catalog);
+        let mut bytes = Vec::new();
+        pdf.save_to(&mut bytes).unwrap();
+
+        let summary = pdfium_summary(&bytes).unwrap();
+        let _guard = pdfium_lock().lock().unwrap();
+        let pdfium = bind_pdfium().unwrap();
+        let document = pdfium.load_pdf_from_byte_slice(&bytes, None).unwrap();
+        let mut old_texts = Vec::new();
+        for (page_index, page) in document.pages().iter().enumerate() {
+            let text = page.text().unwrap();
+            for object in page.objects().iter() {
+                if let Some(object) = object.as_text_object() {
+                    let old = object.text();
+                    assert_eq!(text.for_object(object), old);
+                    old_texts.push((page_index, normalize_extracted_text(&old)));
+                }
+            }
+        }
+        assert!(old_texts.len() >= 36);
+        assert!(old_texts.iter().any(|(_, text)| text.contains('é')));
+        assert!(old_texts.iter().any(|(_, text)| text == "invisible"));
+        assert_eq!(
+            summary
+                .text_objects
+                .iter()
+                .map(|object| (object.page_index, object.text.clone()))
+                .collect::<Vec<_>>(),
+            old_texts,
+        );
+    }
 
     #[test]
     fn pdfium_utf16_surrogate_pair_decodes_to_one_unicode_scalar() {

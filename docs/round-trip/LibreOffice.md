@@ -12,7 +12,7 @@
 
 | Total files | Round-trip candidates | Open-only | Invalid | Known failures | Last run | Passed | Failed |
 | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: |
-| 3388 | 3355 | 7 | 26 | 0 | 2026-10-11 | 3388 | 0 |
+| 3388 | 3355 | 7 | 26 | 0 | 2026-10-19 | 3388 | 0 |
 
 The imported corpus preserves LibreOffice core-relative paths for supported
 Office package fixtures only.
@@ -40,12 +40,13 @@ cargo test -p ooxmlsdk-roundtrip-tests --test libreoffice_roundtrip -- --ignored
 ## Last Run
 
 ```text
-test result: ok. 3388 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 34.54s
+test result: ok. 3388 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 33.11s
 ```
 
-Rechecked after correcting single-occurrence wildcard fields: original-package
-comparison and second-save stability both pass, with no new comparison
-relaxations or manifest exceptions.
+Rechecked with ooxmlsdk 0.14.0 and zip 9.0.5: original-package comparison
+and second-save stability both pass, with no new comparison relaxations or
+manifest exceptions. The ZIP dependency enables `unreserved` to preserve
+registered Unix extra fields when raw-copying package entries.
 
 Three malformed packages now use `open_only`, which requires successful eager
 parsing and main-part lookup. Their existing lossless-save failures were:

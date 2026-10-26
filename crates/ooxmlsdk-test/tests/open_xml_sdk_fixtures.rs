@@ -44,7 +44,14 @@ fn package_entry_names(bytes: Vec<u8>) -> Vec<String> {
     let mut archive = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
     let mut names = Vec::new();
     for index in 0..archive.len() {
-        names.push(archive.by_index(index).unwrap().name().to_string());
+        names.push(
+            archive
+                .by_index(index)
+                .unwrap()
+                .name()
+                .unwrap()
+                .into_owned(),
+        );
     }
     names.sort();
     names

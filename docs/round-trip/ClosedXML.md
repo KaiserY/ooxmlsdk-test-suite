@@ -12,7 +12,7 @@
 
 | Total files | Round-trip candidates | Open-only | Invalid | Known failures | Last run | Passed | Failed |
 | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: |
-| 286 | 284 | 0 | 2 | 0 | 2026-10-11 | 286 | 0 |
+| 286 | 284 | 0 | 2 | 0 | 2026-10-19 | 286 | 0 |
 
 The imported corpus contains 287 OOXML package paths. The generated lane
 excludes the transient `~$LoadPivotTables.xlsx` lock file, leaving these 286
@@ -38,12 +38,13 @@ cargo test -p ooxmlsdk-roundtrip-tests --test closedxml_roundtrip -- --ignored
 ## Last Run
 
 ```text
-test result: ok. 286 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.70s
+test result: ok. 286 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.59s
 ```
 
-Rechecked after correcting single-occurrence wildcard fields: original-package
-comparison and second-save stability both pass, with no new comparison
-relaxations or manifest exceptions.
+Rechecked with ooxmlsdk 0.14.0 and zip 9.0.5: original-package comparison
+and second-save stability both pass, with no new comparison relaxations or
+manifest exceptions. The ZIP dependency enables `unreserved` to preserve
+registered Unix extra fields when raw-copying package entries.
 
 Current failures: none.
 

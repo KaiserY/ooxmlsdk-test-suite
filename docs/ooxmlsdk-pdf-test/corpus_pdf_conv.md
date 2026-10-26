@@ -8,24 +8,32 @@ belongs under `/tmp/`.
 
 ## Current progress and next step
 
-Accepted **batch59 full, v395c**: **5,370 = 3,848 PASS / 1,391 FAIL /
-131 REFERENCE_FAIL**. **+13 DOCX PASSes** from batch58; zero protected regressions
-or infrastructure errors. Protected union **3,848**, pending promotions **0**;
-reference-failure identities and golden acceptance gates unchanged.
-Receipt: `/tmp/ooxmlsdk-repair-resume-20260912/checkpoint-batch-59-full-final-v395c/acceptance.json`.
+Accepted **batch65 full, v708**: **5,370 = 4,002 PASS / 1,237 FAIL /
+131 REFERENCE_FAIL**. **+4 PASSes** from batch64; all **4,002** protected cases
+PASS, zero regressions or infrastructure errors, **0** pending promotions.
+Golden gates and reference-failure identities unchanged.
+Receipt: `/tmp/ooxmlsdk-repair-resume-20260912/checkpoint-batch-65-full-v708/acceptance.json`.
 
-Latest repair: **`tdf147485-forcepoint.docx` PASS**. Office native observations
-and dev GDB pin WPG WordArt allocation, curve sampling and paragraph-frame
-origin. Evidence: `/tmp/ooxmlsdk-tdf147485-forcepoint-20261019/verification-current.json`.
-Fresh comparison: `/tmp/ab.png`; identity, version and hashes: `/tmp/ab.json`.
-Full audit **190.3s**, batch58 **191.1s** (same12workers/180s);
-Clippy passed for implementation, test suite and emfsdk.
-Closure: `/tmp/ooxmlsdk-batch59-closure-20261019/verification-current.json`.
+Stage closed: `rhbz988516.docx`, `sdt-2-run.docx`, `sdt-header.docx` and
+`shape-3d-effect-preservation.docx` PASS. The audit's calendar placeholder
+regression is repaired: an empty binding already showing a placeholder retains
+cached text/formatting. Final dev GDB, 256 affected private tests and Clippy in
+implementation/test-suite/emfsdk passed. Receipts and case references:
+`/tmp/ooxmlsdk-batch65-audit-preparation-20261026/closure-final.json`.
 
-**This batch is ready for the user's commit.** Then continue DOCX FAILs in order,
-excluding the protected union. Next: `LibreOffice/sw/qa/extras/layout/data/tdf150200.docx`
-(`text-line-count`; not yet investigated). Accumulate about20 repairs before
-another full audit. Keep subagents stopped unless authorized.
+Full audit132s; no material timing regression signal. Cross-run timing reductions
+are not a causal speedup claim. Review:
+`/tmp/ooxmlsdk-batch65-audit-preparation-20261026/performance-review-v708.json`.
+One compiled comparison baseline retained: v708; obsolete v681 ELF removed.
+Current `/tmp/ab.png` is the final 3D case, v708; provenance: `/tmp/ab.json`.
+
+Next after commit: `LibreOffice/sw/qa/extras/ooxmlexport/data/shape-effect-preservation.docx`
+(visible-output FAIL; not started), then continue DOCX failures in order.
+Repair provenance: `ledger/pending-golden-repairs.json`; case evidence, native
+probes and source contracts remain under `/tmp/`.
+Current work is single-agent; runtime lanes remain serial. Accumulate about20
+repairs before routine full audit/performance comparison; investigate actual
+material slowdowns earlier. Implementation0.14.0.
 
 Font dependencies: Parley/Fontique0.12.0, ICU4X2.3.x, Skrifa0.46.2;
 assessment: `/tmp/ooxmlsdk-font-dependencies-20261015/assessment.md`.
@@ -47,9 +55,14 @@ do not change golden verdicts. Original Astra84 is completed and accepted.
 4. Use release checks and meaningful affected private tests. Protect every new
    PASS immediately. Public layout/XLSX reruns are optional stage audits; run
    Clippy when requested for closure. Never relax gates or drop protected cases.
+   Batch routine performance comparisons with about20 repairs; investigate
+   earlier when actual timings indicate a material slowdown. Keep one owned
+   comparison baseline when needed and remove obsolete compiled copies.
 5. Keep Cargo, GDB, Office and campaigns serial. Run from the owning workspace
    with its default `target/`; never set `CARGO_TARGET_DIR`. Use workspace
-   formatting. Preserve unrelated edits; the user commits.
+   formatting. Parallelize independent reading, probe preparation and artifact
+   work; combine checks by affected subsystem and reuse established evidence.
+   Preserve unrelated edits; the user commits.
 6. Prefer pure Rust; upstream references, especially `../fontations/`, are
    read-only. Stop on a failed crate update or major dependency issue. Assess
    `Arc`/locks against actual sharing; reuse local caches. Do not add `unsafe`
@@ -111,12 +124,13 @@ repair_stage=/tmp/ooxmlsdk-repair-resume-20260912
 cp "$repair_stage/ledger/current-pass-union.jsonl" /tmp/frozen-protected-union.jsonl
 python3 scripts/audit_office_pdf_pass_union.py --full --build \
   --baseline /tmp/frozen-protected-union.jsonl \
-  --previous-results "$repair_stage/checkpoint-batch-59-full-final-v395c/results.jsonl" \
+  --previous-results "$repair_stage/checkpoint-batch-65-full-v708/results.jsonl" \
   --output-root /tmp/fresh-golden-audit --jobs 12
 ```
 
 Omit `--build` only for a current binary. Scoped audits omit `--full` and add
 `--require-all-pass`; reuse the archived baseline, checking row count/hash.
+If supplied, `--previous-results` must contain exactly the scoped identities.
 Native `--configuration-ids` requires compact JSONL identity objects. Campaign
 subcommands have no `--help`; inspect CLI source or the wrapper's help.
 `summary.json` must show exact identities, no infrastructure errors and every
@@ -146,6 +160,9 @@ already exist and be empty. Match all locale/time-zone fields and the recorded
 recovery adapter. Export before intrusive COM/page-break diagnostics. Keep input
 read-only, macros disabled, snapshot/restore application options and terminate
 only the owned Office process. Actual PDF/XPS supersedes COM page coordinates.
+For Word fields/TOCs, pin `UpdateFieldsAtPrint` and `UpdateLinksAtPrint`:
+application defaults can preserve caches that the configured print route rebuilds.
+Use explicit on/off controls and restore the observed original values.
 
 Syntax-check PowerShell via `Parser.ParseFile` and C# observers via `Add-Type`
 before a queue; verify observed counts and normal process exit. If Office never
@@ -178,7 +195,9 @@ for a local breakpoint failure. Assert nonempty owner captures, no script errors
 inferior normal exit and final dev/release PDF agreement. Break after assignments,
 check resolved locations and committed caller values. Bound hot callbacks and
 large-array reads; use actual Rust enum/slice/String layouts. Debugger elapsed
-time is not renderer performance. More examples remain in the detailed guide.
+time is not renderer performance. Use separate GDB processes for interventions
+and final observations: CLI `delete breakpoints` can retain Python internal
+breakpoints. More examples remain in the detailed guide.
 
 ## Diagnostic essentials
 

@@ -1695,8 +1695,17 @@ fn package_part_cases(
         let archive = ZipArchive::new(source).map_err(|error| {
             format!("could not read {} as OOXML: {error}", source_path.display())
         })?;
-        if archive.file_names().any(|name| name.contains(needle)) {
-            cases.insert((candidate.corpus.clone(), candidate.record.file.clone()));
+        for name in archive.file_names() {
+            let name = name.map_err(|error| {
+                format!(
+                    "could not read ZIP entry name in {}: {error}",
+                    source_path.display()
+                )
+            })?;
+            if name.contains(needle) {
+                cases.insert((candidate.corpus.clone(), candidate.record.file.clone()));
+                break;
+            }
         }
     }
     Ok(cases)
@@ -1742,7 +1751,13 @@ fn archive_contains_ole_or_metafile(
     let mut relationship_indices = Vec::new();
     let mut binary_part_indices = Vec::new();
     for (index, name) in archive.file_names().enumerate() {
-        if package_part_is_metafile(name) {
+        let name = name.map_err(|error| {
+            format!(
+                "could not read ZIP entry {index} name in {}: {error}",
+                source_path.display()
+            )
+        })?;
+        if package_part_is_metafile(&name) {
             return Ok(true);
         }
         let lower = name.to_ascii_lowercase();

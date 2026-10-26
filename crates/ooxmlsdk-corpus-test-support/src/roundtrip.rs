@@ -255,8 +255,11 @@ fn has_ambiguous_dot_path_zip_entry(path: &Path, file_name: &str) -> bool {
             continue;
         }
 
-        let normalized = normalize_dot_path_zip_entry_name(file.name());
-        if names.insert(normalized, file.name().to_string()).is_some() {
+        let Ok(name) = file.name() else {
+            return false;
+        };
+        let normalized = normalize_dot_path_zip_entry_name(&name);
+        if names.insert(normalized, name.into_owned()).is_some() {
             return true;
         }
     }
@@ -609,6 +612,13 @@ fn read_zip_entries(bytes: &[u8], file_name: &str) -> BTreeMap<String, Vec<u8>> 
             continue;
         }
 
+        let entry_name = file
+            .name()
+            .unwrap_or_else(|err| {
+                panic!("failed to decode zip entry {idx} name for {file_name}: {err}");
+            })
+            .into_owned();
+
         // Some legacy Office packages encode logically empty entries as Deflate
         // while storing no Deflate stream at all. Newer flate2 versions reject
         // those entries as truncated, so recognize only the unambiguous empty
@@ -618,7 +628,7 @@ fn read_zip_entries(bytes: &[u8], file_name: &str) -> BTreeMap<String, Vec<u8>> 
             && file.size() == 0
             && file.crc32() == 0
         {
-            entries.insert(file.name().to_string(), Vec::new());
+            entries.insert(entry_name, Vec::new());
             continue;
         }
 
@@ -626,11 +636,11 @@ fn read_zip_entries(bytes: &[u8], file_name: &str) -> BTreeMap<String, Vec<u8>> 
         file.read_to_end(&mut data).unwrap_or_else(|err| {
             panic!(
                 "failed to read zip entry {} for {file_name}: {err}",
-                file.name()
+                entry_name
             );
         });
 
-        entries.insert(file.name().to_string(), data);
+        entries.insert(entry_name, data);
     }
 
     entries

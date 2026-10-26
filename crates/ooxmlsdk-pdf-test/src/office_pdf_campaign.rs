@@ -636,8 +636,82 @@ impl CampaignAssignment {
         if let Some(name) = reference_opened_file_name(&crate::workspace_root(), self, record)? {
             options.source_file_name = Some(name);
         }
+        options.source_file_path = reference_opened_file_path(
+            &crate::workspace_root(),
+            self,
+            record,
+            options.source_file_name.as_deref().unwrap_or_default(),
+        )?;
         Ok(options)
     }
+}
+
+// Storage location is input context, like the observed refresh clock. Replay
+// only a recorded native location; never derive it from the candidate or read
+// expected PDF text while evaluating a golden case.
+fn reference_opened_file_path(
+    root: &Path,
+    assignment: &CampaignAssignment,
+    record: &CampaignConversionRecord,
+    expected_name: &str,
+) -> Result<Option<String>, String> {
+    let path = record
+        .render_environment
+        .as_ref()
+        .and_then(|environment| environment.opened_file_path.as_deref());
+    let mut context_annotations = record
+        .annotations
+        .iter()
+        .filter(|annotation| annotation["kind"] == "reference-input-context");
+    let annotation = context_annotations.next();
+    if context_annotations.next().is_some() {
+        return Err("ambiguous reference input context".into());
+    }
+    let Some(path) = path else {
+        if annotation.is_some() {
+            return Err("reference input context has no recorded storage path".into());
+        }
+        return Ok(None);
+    };
+    validate_reference_opened_file_path(path, expected_name)?;
+    if let Some(annotation) = annotation {
+        let relative = format!(
+            "reference-input-context/{}.json",
+            assignment.configuration_id
+        );
+        let bytes = fs::read(root.join("corpus_pdf_conv").join(&relative))
+            .map_err(|error| format!("could not read reference input context: {error}"))?;
+        let context: serde_json::Value = serde_json::from_slice(&bytes)
+            .map_err(|error| format!("invalid reference input context: {error}"))?;
+        if annotation["path"] != relative
+            || annotation["sha256"] != sha256_bytes(&bytes)
+            || context["schema_version"] != 1
+            || context["configuration_id"] != assignment.configuration_id
+            || context["source_sha256"] != record.source_sha256
+            || context["output_sha256"] != record.output_sha256
+            || context["opened_file_path"] != path
+        {
+            return Err("reference input context provenance drift".into());
+        }
+    }
+    Ok(Some(path.to_string()))
+}
+
+fn validate_reference_opened_file_path(path: &str, expected_name: &str) -> Result<(), String> {
+    let bytes = path.as_bytes();
+    let absolute = path.starts_with(r"\\")
+        || (bytes.len() >= 3
+            && bytes[0].is_ascii_alphabetic()
+            && bytes[1] == b':'
+            && matches!(bytes[2], b'\\' | b'/'));
+    if !absolute
+        || path.contains('\0')
+        || path.rsplit(['\\', '/']).next() != Some(expected_name)
+        || expected_name.is_empty()
+    {
+        return Err("reference storage path does not match the opened filename".into());
+    }
+    Ok(())
 }
 
 // A recovery adapter may change only the temporary open filename to match the
@@ -786,6 +860,8 @@ pub struct OfficeRenderEnvironment {
     document_language: String,
     time_zone: String,
     windows_time_zone: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    opened_file_path: Option<String>,
     clock: OfficeReferenceClock,
 }
 
@@ -4183,6 +4259,7 @@ mod tests {
             document_language: request.document_language.clone(),
             time_zone: request.time_zone.clone(),
             windows_time_zone: "China Standard Time".into(),
+            opened_file_path: None,
             clock: OfficeReferenceClock {
                 opened_at_utc: "2026-09-11T06:54:54Z".into(),
                 refresh_started_at_utc: "2026-09-11T06:54:55Z".into(),
@@ -4279,6 +4356,81 @@ mod tests {
         unscoped.annotations[0]["environment_id"] = serde_json::json!(unscoped.environment_id);
         validate_conversion_record(assignment, &unscoped).unwrap();
         assert!(validate_audit_reference_environment(&environments, &unscoped).is_err());
+    }
+
+    #[test]
+    fn reference_input_paths_require_the_native_opened_filename() {
+        for path in [
+            r"C:\Temp\MiXeD.docx",
+            r"\\Server\Share\MiXeD.docx",
+            "C:/Temp/MiXeD.docx",
+        ] {
+            validate_reference_opened_file_path(path, "MiXeD.docx").unwrap();
+        }
+        for path in [
+            "",
+            "MiXeD.docx",
+            r"Temp\MiXeD.docx",
+            "/tmp/MiXeD.docx",
+            r"C:\Temp\Other.docx",
+            "C:\\Temp\\\0MiXeD.docx",
+            r"C:\Temp\",
+        ] {
+            assert!(validate_reference_opened_file_path(path, "MiXeD.docx").is_err());
+        }
+    }
+
+    #[test]
+    fn reference_input_context_binds_storage_to_the_original_source_and_output() {
+        let root = crate::workspace_root();
+        let assignment = read_plan(&root.join("corpus_pdf_conv/plan.jsonl"))
+            .unwrap()
+            .into_iter()
+            .find(|assignment| assignment.file == "sw/qa/extras/ooxmlexport/data/2129393649.docx")
+            .unwrap();
+        let records = read_conversion_records(&root).unwrap();
+        let record = &records[&(assignment.corpus.clone(), assignment.file.clone())];
+        let options = assignment.reference_pdf_options(record).unwrap();
+        let path = options.source_file_path.as_deref().unwrap();
+        assert!(path.ends_with(r"\case-000\2129393649.docx"));
+        assert_eq!(options.source_file_name.as_deref(), Some("2129393649.docx"));
+        for drift in 0..5 {
+            let mut altered = record.clone();
+            match drift {
+                0 => {
+                    altered
+                        .render_environment
+                        .as_mut()
+                        .unwrap()
+                        .opened_file_path = None
+                }
+                1 => {
+                    altered
+                        .render_environment
+                        .as_mut()
+                        .unwrap()
+                        .opened_file_path = Some(r"C:\Other\2129393649.docx".to_string())
+                }
+                2 => altered.source_sha256 = "0".repeat(64),
+                3 => altered.output_sha256 = "0".repeat(64),
+                4 => altered.annotations[0]["sha256"] = serde_json::json!("0".repeat(64)),
+                _ => unreachable!(),
+            }
+            assert!(
+                assignment.reference_pdf_options(&altered).is_err(),
+                "{drift}"
+            );
+        }
+        let mut legacy = record.clone();
+        legacy.render_environment.as_mut().unwrap().opened_file_path = None;
+        legacy.annotations.clear();
+        assert!(
+            assignment
+                .reference_pdf_options(&legacy)
+                .unwrap()
+                .source_file_path
+                .is_none()
+        );
     }
 
     #[test]

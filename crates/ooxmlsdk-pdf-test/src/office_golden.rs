@@ -1624,7 +1624,31 @@ fn glyph_backed_text_contract(
         let CandidateDiagnosticsState::Collected(layout) = diagnostics else {
             return Err("candidate layout diagnostics are unavailable".into());
         };
-        let semantic = inspect_docx_semantics(source_path, candidate_pdf, golden_pdf, layout)?;
+        let mut semantic =
+            inspect_docx_semantics(source_path, candidate_pdf, golden_pdf, layout, None)?;
+        if !semantic.verified()
+            && semantic.candidate_authored_missing > 0
+            && semantic.candidate_layout_missing == 0
+            && semantic.unexpected_layout_extra == 0
+            && options.general.page_range.is_some()
+        {
+            // Page selection is applied after layout. Keep every configured
+            // option except selection, and prove complete XML authorship with
+            // an SDK companion export. The original selected PDF still owes
+            // its per-page layout transport, strict glyphs and graphics.
+            let mut full_options = options.clone();
+            full_options.general.page_range = None;
+            let full_document_pdf =
+                crate::render::render_fixture_pdf_with_options(source_path, full_options)
+                    .map_err(|error| format!("full-document source proof failed: {error}"))?;
+            semantic = inspect_docx_semantics(
+                source_path,
+                candidate_pdf,
+                golden_pdf,
+                layout,
+                Some(&full_document_pdf),
+            )?;
+        }
         if !semantic.verified() {
             return Err(format!(
                 "candidate source/transport text proof failed: {semantic:?}"

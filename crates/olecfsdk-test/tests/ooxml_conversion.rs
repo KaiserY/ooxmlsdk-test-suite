@@ -8743,7 +8743,8 @@ fn assert_package_entry_family_contains(
                 .by_index(index)
                 .expect("read converted OOXML ZIP entry")
                 .name()
-                .to_owned()
+                .expect("decode converted OOXML ZIP entry name")
+                .into_owned()
         })
         .collect::<Vec<_>>();
     let names = all_names
