@@ -12,6 +12,7 @@ members = [
   "crates/ooxmlsdk-layout-test",
   "crates/ooxmlsdk-pdf-test",
   "crates/ooxmlsdk-test",
+  "crates/ooxmlsdk-visio-test",
   "crates/ooxmlsdk-roundtrip-tests",
 ]
 
@@ -31,6 +32,7 @@ ooxmlsdk-fonts = { path = "../ooxmlsdk/crates/ooxmlsdk-fonts" }
 ooxmlsdk-formula = { path = "../ooxmlsdk/crates/ooxmlsdk-formula" }
 ooxmlsdk-layout = { path = "../ooxmlsdk/crates/ooxmlsdk-layout" }
 ooxmlsdk-pdf = { path = "../ooxmlsdk/crates/ooxmlsdk-pdf" }
+ooxmlsdk-visio = { path = "../ooxmlsdk/crates/ooxmlsdk-visio" }
 ooxmlsdk-corpus-test-support = { path = "crates/ooxmlsdk-corpus-test-support" }
 olecfsdk-corpus-test-support = { path = "crates/olecfsdk-corpus-test-support" }
 criterion = "0.7.0"
