@@ -1,0 +1,5 @@
+using System;using System.IO;using System.Collections.Generic;using System.Reflection;
+public static class BibliographySnapshot {
+ static object Get(object o,string key){try{return o.GetType().InvokeMember(key,BindingFlags.GetProperty,null,o,null);}catch(Exception e){return "ERROR:"+e.GetType().Name;}}
+ public static Dictionary<string,object> Capture(object document,string path){dynamic d=document;File.WriteAllText(path,(string)d.WordOpenXML);var frames=new List<object>();for(int i=1;i<=(int)d.Frames.Count;i++){dynamic f=d.Frames.Item(i);var r=new Dictionary<string,object>();foreach(var k in new[]{"Height","HeightRule","Width","WidthRule","HorizontalDistanceFromText","VerticalDistanceFromText","TextWrap","HorizontalPosition","VerticalPosition"})r[k]=Get(f,k);r["text"]=(string)f.Range.Text;frames.Add(r);}return new Dictionary<string,object>{{"frames",frames}};}
+}

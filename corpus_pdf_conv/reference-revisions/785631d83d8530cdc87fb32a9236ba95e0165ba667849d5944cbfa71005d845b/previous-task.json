@@ -1,0 +1,279 @@
+{
+  "assignment": {
+    "schema_version": 2,
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "seed": "ooxmlsdk-office-pdf-environments-2026-09-11-v2",
+    "corpus": "LibreOffice",
+    "file": "sw/qa/extras/ooxmlexport/data/tdf153964_topMarginAfterBreak15.docx",
+    "family": "word",
+    "source_extension": "docx",
+    "source_bytes": 14358,
+    "source_sha256": "1a3cdf29ec7fe0c4539b00426ededab0e9a8e4b836078dbd8575b7a7243f6886",
+    "configuration_id": "785631d83d8530cdc87fb32a9236ba95e0165ba667849d5944cbfa71005d845b",
+    "reference_environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "reference_time_zone": "Asia/Shanghai",
+    "pilot_300": false,
+    "requested": {
+      "standards": [
+        "pdf14"
+      ],
+      "compress_content_streams": false,
+      "ui_language": "en-US",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "field_update": null,
+      "tagged_pdf": false,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": false,
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "images": {
+        "use_lossless_compression": false,
+        "jpeg_quality": 90,
+        "reduce_resolution": true,
+        "max_resolution_dpi": 150
+      },
+      "link_action": "uri",
+      "export_form_fields": false,
+      "viewer": {
+        "page_mode": "default",
+        "page_layout": "continuous",
+        "magnification": "fit_in_window",
+        "initial_page": 1,
+        "hide_toolbar": true,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": false,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "creator": null,
+        "producer": null,
+        "creation_date": null
+      },
+      "embed_campaign_attachment": true
+    },
+    "effective": {
+      "standards": [
+        "pdf14"
+      ],
+      "compress_content_streams": false,
+      "ui_language": "en-US",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "field_update": null,
+      "tagged_pdf": false,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": false,
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "images": {
+        "use_lossless_compression": false,
+        "jpeg_quality": 90,
+        "reduce_resolution": true,
+        "max_resolution_dpi": 150
+      },
+      "link_action": "uri",
+      "export_form_fields": false,
+      "viewer": {
+        "page_mode": "default",
+        "page_layout": "continuous",
+        "magnification": "fit_in_window",
+        "initial_page": 1,
+        "hide_toolbar": true,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": false,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "creator": null,
+        "producer": null,
+        "creation_date": null
+      },
+      "embed_campaign_attachment": true
+    },
+    "adjustments": [],
+    "office": {
+      "quality": "print",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "tagged_pdf": false,
+      "bookmarks": "none",
+      "pdf_a_1": false,
+      "bitmap_missing_fonts": false,
+      "print_hidden_slides": false
+    }
+  },
+  "conversion": {
+    "schema_version": 4,
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "file": "sw/qa/extras/ooxmlexport/data/tdf153964_topMarginAfterBreak15.docx",
+    "family": "word",
+    "source_extension": "docx",
+    "source_bytes": 14358,
+    "source_sha256": "1a3cdf29ec7fe0c4539b00426ededab0e9a8e4b836078dbd8575b7a7243f6886",
+    "configuration_id": "785631d83d8530cdc87fb32a9236ba95e0165ba667849d5944cbfa71005d845b",
+    "requested": {
+      "standards": [
+        "pdf14"
+      ],
+      "compress_content_streams": false,
+      "ui_language": "en-US",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "field_update": null,
+      "tagged_pdf": false,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": false,
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "images": {
+        "use_lossless_compression": false,
+        "jpeg_quality": 90,
+        "reduce_resolution": true,
+        "max_resolution_dpi": 150
+      },
+      "link_action": "uri",
+      "export_form_fields": false,
+      "viewer": {
+        "page_mode": "default",
+        "page_layout": "continuous",
+        "magnification": "fit_in_window",
+        "initial_page": 1,
+        "hide_toolbar": true,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": false,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "creator": null,
+        "producer": null,
+        "creation_date": null
+      },
+      "embed_campaign_attachment": true
+    },
+    "effective": {
+      "standards": [
+        "pdf14"
+      ],
+      "compress_content_streams": false,
+      "ui_language": "en-US",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "field_update": null,
+      "tagged_pdf": false,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": false,
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "images": {
+        "use_lossless_compression": false,
+        "jpeg_quality": 90,
+        "reduce_resolution": true,
+        "max_resolution_dpi": 150
+      },
+      "link_action": "uri",
+      "export_form_fields": false,
+      "viewer": {
+        "page_mode": "default",
+        "page_layout": "continuous",
+        "magnification": "fit_in_window",
+        "initial_page": 1,
+        "hide_toolbar": true,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": false,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "creator": null,
+        "producer": null,
+        "creation_date": null
+      },
+      "embed_campaign_attachment": true
+    },
+    "adjustments": [],
+    "office_options": {
+      "quality": "print",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "tagged_pdf": false,
+      "bookmarks": "none",
+      "pdf_a_1": false,
+      "bitmap_missing_fonts": false,
+      "print_hidden_slides": false
+    },
+    "status": "converted",
+    "reference_engine": "Microsoft Office",
+    "environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "application": "Word",
+    "application_version": "16.0",
+    "application_build": "16.0.20326",
+    "output": "sw/qa/extras/ooxmlexport/data/tdf153964_topMarginAfterBreak15.docx.pdf",
+    "output_bytes": 99495,
+    "output_sha256": "4bac8b394f6ecadd8de7f9d039f79d1ec431bdde2d9f561b0f405d70945371c6",
+    "observed_pdf": {
+      "header_version": "1.7",
+      "page_count": 7,
+      "tagged_pdf": false,
+      "has_outlines": false,
+      "pdf_a_part": null,
+      "pdf_a_conformance": null
+    },
+    "render_environment": {
+      "ui_language": "en-US",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "time_zone": "Asia/Shanghai",
+      "windows_time_zone": "China Standard Time",
+      "clock": {
+        "opened_at_utc": "2026-09-11T12:00:13.4376534Z",
+        "refresh_started_at_utc": "2026-09-11T12:00:13.5468975Z",
+        "refresh_completed_at_utc": "2026-09-11T12:00:13.7485225Z",
+        "export_started_at_utc": "2026-09-11T12:00:13.7702858Z",
+        "export_completed_at_utc": "2026-09-11T12:00:14.2277755Z"
+      }
+    },
+    "converted_at_utc": "2026-09-11T12:00:16.800248982Z",
+    "elapsed_ms": 4707,
+    "attempts": 1,
+    "annotations": [],
+    "failure_class": "",
+    "error_code": "",
+    "error": ""
+  }
+}

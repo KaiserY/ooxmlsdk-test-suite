@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "environment_id": "2745802959e232d8be20849cd3bfcf29ef3e2b50f2256ca6c04af917e15cbf35",
+  "path": "reference-adapters/2745802959e232d8be20849cd3bfcf29ef3e2b50f2256ca6c04af917e15cbf35",
+  "role": "Versioned Office export adapter shared by references from this environment. Required PowerShell and CSharp sources are retained byte-for-byte there; unreferenced experiment attachments are excluded."
+}

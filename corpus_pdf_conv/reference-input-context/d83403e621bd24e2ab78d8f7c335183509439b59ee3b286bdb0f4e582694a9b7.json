@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "configuration_id": "d83403e621bd24e2ab78d8f7c335183509439b59ee3b286bdb0f4e582694a9b7",
+  "source_sha256": "53030342fd28f515d0723bc9b2b52c8794e68c6bdd9a8ccb041e80b2562ce9b1",
+  "output_sha256": "8d8c0de4db8fae1607c70be1c1a47b155f758f31584108111be411328704ac41",
+  "linked_styles_template": {
+    "path": "reference-input-context/templates/0d438ad4d2fac99b28d84ce4e613537249c6d0ddb92b36b99d2aff670219aa38.dotx",
+    "sha256": "0d438ad4d2fac99b28d84ce4e613537249c6d0ddb92b36b99d2aff670219aa38"
+  },
+  "evidence": {
+    "kind": "CONTROLLED_RECONSTRUCTED_TEMPLATE_INPUT",
+    "historical_qualification": "The historical Normal.dotm was not retained. This owned profile reconstructs observable template inputs: Calibri11, paragraph after8pt/line278, kerning enabled. An 8pt kerning threshold is a tested profile value; the exact historical threshold is not identifiable from this 11pt source. It is not a claim of a contemporaneous template snapshot.",
+    "native_comparison": {
+      "index": 0,
+      "same_text_layout": true,
+      "significant_pixel_fraction": 0.0013391942149993733,
+      "mean_absolute_channel_delta": 0.06478277394282257,
+      "native_pdf": "/tmp/ooxmlsdk-tdf166141_linkedStyles2-20261101/native-kerning-profiles-v3/jobs/00/output/case-000.pdf",
+      "native_pdf_sha256": "e6658eaa275b5419629c7b8bda8f29dc9ecd4f66419c0bf369581aa725562e26"
+    },
+    "source_contract": "ECMA-376 17.15.1.55; Word Document.UpdateStyles copies styles by primary name. Native template-size/kerning/link/explicit-missing/direct-format/ID-parent controls retained under this owner.",
+    "sources": [
+      "https://learn.microsoft.com/en-us/office/vba/api/word.document.updatestyles",
+      "https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.wordprocessing.linkstyles"
+    ],
+    "qualification": "Saved source and golden unchanged. Complete template/proofing inputs frozen independently; runtime never reads expected PDF text. Snapshot was prepared before production verification; current SDK results are recorded separately in the case verification ledger.",
+    "dictionary_intervention": {
+      "kind": "DIAGNOSTIC_GDB_INTERVENTION_NOT_PRODUCTION",
+      "result": "PASS",
+      "actual_runtime": "v1042-dev",
+      "captures": 18,
+      "no_errors": true,
+      "description": "The complete dictionary reader supplied all English candidates in GDB. Full unchanged original golden gate passed; production wiring is still pending verification."
+    }
+  },
+  "english_hyphenation_dictionary": {
+    "format": "mshy7en-resource-prm",
+    "path": "reference-input-context/proofing/87e01d15884bcb18949f85394b77066a953e55a535995111d00b952b2e83df54.prm",
+    "sha256": "87e01d15884bcb18949f85394b77066a953e55a535995111d00b952b2e83df54",
+    "bytes": 472756,
+    "provenance": {
+      "kind": "LOCAL_APPLICATION_PROOFING_INPUT",
+      "source_module_windows_path": "C:\\Program Files\\Microsoft Office\\root\\Office16\\PROOF\\MSHY7EN.LEX",
+      "source_module_sha256": "adabeacb3629127587c5f0f4311f96365fb88b5650479b2f0314d288897f0429",
+      "source_resource": "RESOURCE_PRM/1/0",
+      "usage": "Captured local reference input. Office resource bytes are not bundled in implementation crates; caller supplies its own licensed application data.",
+      "historical_qualification": "Historical proofing module bytes were not captured. Current complete dictionary resource matches observed Word input storage and 29+170 independent candidate sets. It is used as an explicit reconstructed rendering input, not a claim of a contemporaneous snapshot or a table fitted to expected PDF text.",
+      "native_verification": "native-english-rules-v6, native-english-storage-v9, native-english-vocabulary-v10",
+      "whole_dictionary": true,
+      "rust_verification": {
+        "unique_words": 191,
+        "matched": 191,
+        "qualification": "Actual native dictionary callback points from declared vocabulary/case/language controls, converted to matching UTF8 source boundaries and compared against the current Rust reader. No word exceptions."
+      }
+    }
+  }
+}

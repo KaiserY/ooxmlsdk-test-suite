@@ -1,0 +1,41 @@
+{
+  "schema_version": 2,
+  "file": "control-00.docx",
+  "application": "Word",
+  "application_version": "16.0",
+  "application_build": "16.0.20527",
+  "options": {
+    "quality": "print",
+    "include_document_properties": true,
+    "page_from": null,
+    "page_to": null,
+    "tagged_pdf": true,
+    "bookmarks": "headings",
+    "pdf_a_1": false,
+    "bitmap_missing_fonts": true,
+    "print_hidden_slides": false
+  },
+  "source_sha256": "cbb7657ef8f2075537e2ed93881d18053352f63bc222caf283ff6fbcd4814c20",
+  "output": "case-000.pdf",
+  "output_bytes": 101626,
+  "output_sha256": "f53f857438e514a817f5a5ce52202c3cb760a40da26ea78c48ca89f337bbd181",
+  "elapsed_ms": 1490,
+  "environment": {
+    "ui_language": "zh-TW",
+    "format_locale": "zh-CN",
+    "document_language": "zh-CN",
+    "time_zone": "Asia/Shanghai",
+    "windows_time_zone": "China Standard Time",
+    "clock": {
+      "opened_at_utc": "2026-10-31T01:27:21.9213252Z",
+      "refresh_started_at_utc": "2026-10-31T01:27:22.0518069Z",
+      "refresh_completed_at_utc": "2026-10-31T01:27:22.2462993Z",
+      "export_started_at_utc": "2026-10-31T01:27:22.2692224Z",
+      "export_completed_at_utc": "2026-10-31T01:27:22.8040176Z"
+    },
+    "user_name": "yang yue",
+    "user_initials": "yy",
+    "update_fields_at_print": true,
+    "update_links_at_print": false
+  }
+}

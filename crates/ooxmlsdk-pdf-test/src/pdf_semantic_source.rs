@@ -21,6 +21,7 @@ use crate::pdf_extract::pdftotext_pages;
 
 const WORD_NAMESPACE: &[u8] = b"http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 const STRICT_WORD_NAMESPACE: &[u8] = b"http://purl.oclc.org/ooxml/wordprocessingml/main";
+const MCE_NAMESPACE: &[u8] = b"http://schemas.openxmlformats.org/markup-compatibility/2006";
 
 #[derive(Clone, Debug)]
 pub(crate) struct SourceSemanticReport {
@@ -35,6 +36,21 @@ pub(crate) struct SourceSemanticReport {
 }
 
 impl SourceSemanticReport {
+    /// Required before treating extra reference-only join controls as PDF
+    /// transport padding. Authored controls remain in the source/transport
+    /// bags; unlike the broken-reference path, both PDFs must cover all source
+    /// characters and the candidate must match its layout without any extras.
+    pub(crate) fn complete_transport_coverage(&self) -> bool {
+        self.authored_characters > 0
+            && self.authored_coverage_pages > 0
+            && self.layout_characters > 0
+            && self.candidate_authored_missing == 0
+            && self.golden_authored_missing == 0
+            && self.candidate_layout_missing == 0
+            && self.candidate_layout_extra == 0
+            && self.unexpected_layout_extra == 0
+    }
+
     pub(crate) fn verified(&self) -> bool {
         self.authored_characters > 0
             && self.authored_coverage_pages > 0
@@ -315,12 +331,74 @@ fn word_text_in_part(
     let mut parents = Vec::new();
     let mut runs = Vec::<(usize, bool, Option<bool>)>::new();
     let mut paragraphs = Vec::<bool>::new();
+    let mut alternatives = Vec::<SourceAlternatives>::new();
     loop {
         let (namespace, event) = reader
             .read_resolved_event_into(&mut buffer)
             .map_err(|error| error.to_string())?;
-        let is_word = matches!(namespace, ResolveResult::Bound(ns)
+        let is_word = matches!(&namespace, ResolveResult::Bound(ns)
             if ns.as_ref() == WORD_NAMESPACE || ns.as_ref() == STRICT_WORD_NAMESPACE);
+        let is_mce = matches!(&namespace, ResolveResult::Bound(ns)
+            if ns.as_ref() == MCE_NAMESPACE);
+        if let Event::Start(element) | Event::Empty(element) = &event {
+            if is_word && matches!(element.local_name().as_ref(), b"fldChar" | b"fldSimple") {
+                // Field state can cross XML boundaries. Do not infer branch
+                // equivalence from cached results or a shared field stack.
+                for alternative in &mut alternatives {
+                    alternative.invariant = false;
+                }
+            }
+            if is_mce {
+                match element.local_name().as_ref() {
+                    b"AlternateContent" if matches!(event, Event::Start(_)) => {
+                        alternatives.push(SourceAlternatives {
+                            depth: parents.len(),
+                            text_start: text.len(),
+                            invariant: fields.is_empty(),
+                            ..Default::default()
+                        });
+                    }
+                    b"Choice" | b"Fallback" => {
+                        if let Some(alternative) = alternatives.last_mut()
+                            && parents.len() == alternative.depth + 1
+                        {
+                            alternative.invariant &= !alternative.fallback;
+                            if element.local_name().as_ref() == b"Fallback" {
+                                alternative.fallback = true;
+                            } else {
+                                alternative.choices += 1;
+                            }
+                            if matches!(event, Event::Empty(_)) {
+                                alternative.branches.push(text.len()..text.len());
+                            } else {
+                                alternative.branch_start = Some(text.len());
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+        if let Event::End(element) = &event
+            && is_mce
+        {
+            match element.local_name().as_ref() {
+                b"Choice" | b"Fallback" => {
+                    if let Some(alternative) = alternatives.last_mut()
+                        && parents.len() == alternative.depth + 2
+                        && let Some(start) = alternative.branch_start.take()
+                    {
+                        alternative.branches.push(start..text.len());
+                    }
+                }
+                b"AlternateContent" => {
+                    if let Some(alternative) = alternatives.pop() {
+                        alternative.collapse_invariant_text(&mut text);
+                    }
+                }
+                _ => {}
+            }
+        }
         if let Event::Start(element) | Event::Empty(element) = &event {
             if is_word && element.local_name().as_ref() == b"fldChar" {
                 match word_attribute(&reader, element, b"fldCharType")?.as_deref() {
@@ -490,6 +568,49 @@ fn word_text_in_part(
 }
 
 #[derive(Default)]
+struct SourceAlternatives {
+    depth: usize,
+    text_start: usize,
+    branch_start: Option<usize>,
+    branches: Vec<std::ops::Range<usize>>,
+    choices: usize,
+    fallback: bool,
+    invariant: bool,
+}
+
+impl SourceAlternatives {
+    fn collapse_invariant_text(self, text: &mut String) {
+        // ISO 29500-3 §9.3 selects exactly one Choice/Fallback. When every
+        // branch has identical visible text and a fallback exists, that text
+        // is owed exactly once, independently of the consumer's capabilities.
+        // Otherwise retain the conservative complete source obligation; do
+        // not guess a supported namespace or reuse the renderer's selection.
+        let Some(first) = self.branches.first() else {
+            return;
+        };
+        if self.invariant
+            && self.choices > 0
+            && self.fallback
+            && first.start == self.text_start
+            && self
+                .branches
+                .last()
+                .is_some_and(|last| last.end == text.len())
+            && self
+                .branches
+                .windows(2)
+                .all(|pair| pair[0].end == pair[1].start)
+            && self
+                .branches
+                .iter()
+                .all(|branch| text[branch.clone()] == text[first.clone()])
+        {
+            text.truncate(first.end);
+        }
+    }
+}
+
+#[derive(Default)]
 struct SourceField {
     instruction: String,
     simple: bool,
@@ -576,6 +697,98 @@ mod tests {
         assert_eq!(
             word_text_in_part(xml.as_slice(), &Default::default()).unwrap(),
             "A&B"
+        );
+    }
+
+    fn source_with_alternatives(body: &str) -> String {
+        format!(
+            r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:compat="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:shape="urn:shape"><w:p><w:r>{body}</w:r></w:p></w:document>"#
+        )
+    }
+
+    #[test]
+    fn source_alternatives_count_identical_text_once_without_selecting_a_capability() {
+        let branch = r#"<compat:AlternateContent><compat:Choice Requires="shape"><w:p><w:r><w:t>GAB</w:t></w:r></w:p></compat:Choice><compat:Fallback><w:p><w:r><w:t>G</w:t></w:r><w:r><w:t>AB</w:t></w:r></w:p></compat:Fallback></compat:AlternateContent>"#;
+        let xml = source_with_alternatives(branch);
+        let authored = word_text_in_part(xml.as_bytes(), &Default::default()).unwrap();
+        assert_eq!(authored, "GAB");
+        // This deduplicates representations, never repeated authored content.
+        let repeated = source_with_alternatives(&format!("{branch}<w:t>GAB</w:t>{branch}"));
+        assert_eq!(
+            word_text_in_part(repeated.as_bytes(), &Default::default()).unwrap(),
+            "GABGABGAB"
+        );
+        let layout = vec!["GAB".to_owned()];
+        let golden = vec!["AB".to_owned()];
+        assert!(
+            inspect_page_semantics(&authored, &layout, &golden, &layout, None)
+                .unwrap()
+                .verified()
+        );
+        let incomplete = vec!["GA".to_owned()];
+        assert!(
+            !inspect_page_semantics(&authored, &incomplete, &golden, &incomplete, None)
+                .unwrap()
+                .verified()
+        );
+        let strict = xml.replace(
+            std::str::from_utf8(super::WORD_NAMESPACE).unwrap(),
+            std::str::from_utf8(super::STRICT_WORD_NAMESPACE).unwrap(),
+        );
+        assert_eq!(
+            word_text_in_part(strict.as_bytes(), &Default::default()).unwrap(),
+            "GAB"
+        );
+    }
+
+    #[test]
+    fn source_alternatives_preserve_ambiguous_or_non_mce_obligations() {
+        for (body, expected) in [
+            (
+                r#"<compat:AlternateContent><compat:Choice Requires="shape"><w:t>A</w:t></compat:Choice><compat:Fallback><w:t>B</w:t></compat:Fallback></compat:AlternateContent>"#,
+                "AB",
+            ),
+            (
+                r#"<compat:AlternateContent><compat:Choice Requires="shape"><w:t>A</w:t></compat:Choice><compat:Choice Requires="shape"><w:t>A</w:t></compat:Choice></compat:AlternateContent>"#,
+                "AA",
+            ),
+            (
+                r#"<compat:AlternateContent><compat:Choice Requires="shape"><w:t>A</w:t></compat:Choice><compat:Fallback/></compat:AlternateContent>"#,
+                "A",
+            ),
+            (
+                r#"<compat:AlternateContent><compat:Choice Requires="shape"/><compat:Choice Requires="shape"><w:t>A</w:t></compat:Choice><compat:Fallback><w:t>A</w:t></compat:Fallback></compat:AlternateContent>"#,
+                "AA",
+            ),
+            (
+                r#"<shape:AlternateContent><shape:Choice><w:t>A</w:t></shape:Choice><shape:Fallback><w:t>A</w:t></shape:Fallback></shape:AlternateContent>"#,
+                "AA",
+            ),
+        ] {
+            let xml = source_with_alternatives(body);
+            assert_eq!(
+                word_text_in_part(xml.as_bytes(), &Default::default()).unwrap(),
+                expected
+            );
+        }
+    }
+
+    #[test]
+    fn source_alternatives_are_nested_and_keep_field_boundaries_conservative() {
+        let nested = r#"<compat:AlternateContent><compat:Choice Requires="shape"><w:t>A</w:t><compat:AlternateContent><compat:Choice Requires="shape"><w:t>B</w:t></compat:Choice><compat:Fallback><w:t>B</w:t></compat:Fallback></compat:AlternateContent></compat:Choice><compat:Fallback><w:t>AB</w:t></compat:Fallback></compat:AlternateContent>"#;
+        let xml = source_with_alternatives(nested);
+        assert_eq!(
+            word_text_in_part(xml.as_bytes(), &Default::default()).unwrap(),
+            "AB"
+        );
+        let field =
+            r#"<w:fldSimple w:instr="PAGE" w:fldLock="true"><w:r><w:t>7</w:t></w:r></w:fldSimple>"#;
+        let xml = source_with_alternatives(&format!(
+            r#"<compat:AlternateContent><compat:Choice Requires="shape">{field}</compat:Choice><compat:Fallback>{field}</compat:Fallback></compat:AlternateContent>"#
+        ));
+        assert_eq!(
+            word_text_in_part(xml.as_bytes(), &Default::default()).unwrap(),
+            "77"
         );
     }
 
@@ -731,6 +944,24 @@ mod tests {
 <w:p><w:r><w:t>D</w:t></w:r><w:r><w:rPr><w:rStyle w:val="toggle"/></w:rPr><w:t>hidden</w:t></w:r></w:p>
 </w:document>"#;
         assert_eq!(word_text_in_part(xml.as_slice(), &styles).unwrap(), "ABCD");
+    }
+
+    #[test]
+    fn reference_join_padding_still_requires_authored_controls_and_exact_layout() {
+        let candidate = vec!["AأB".to_owned()];
+        let golden = vec!["A\u{200c}أB".to_owned()];
+        let report = inspect_page_semantics("AB", &candidate, &golden, &candidate, None).unwrap();
+        assert!(report.complete_transport_coverage());
+        assert!(!report.verified());
+        let authored_join =
+            inspect_page_semantics("A\u{200c}أB", &candidate, &golden, &candidate, None).unwrap();
+        assert!(!authored_join.complete_transport_coverage());
+        let extra = vec!["AأB1".to_owned()];
+        let report = inspect_page_semantics("AB", &extra, &golden, &candidate, None).unwrap();
+        assert!(!report.complete_transport_coverage());
+        let missing = vec!["AB".to_owned()];
+        let report = inspect_page_semantics("AB", &missing, &golden, &candidate, None).unwrap();
+        assert!(!report.complete_transport_coverage());
     }
 
     #[test]

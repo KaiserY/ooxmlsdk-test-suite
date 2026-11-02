@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "configuration_id": "646197889e6fbee4c7f11a40379885ee4d6f0cbce6b8f4ded3e70a4a31317f6b",
+  "source_sha256": "863d03000e2b92cca4e2e63cc5d42016698984855158563e9179cb2c3e00f258",
+  "output_sha256": "ae360b063a5bc3368f5c5785600ddd4a9695901166abcf15360631e00b9282d6",
+  "linked_styles_template": {
+    "path": "reference-input-context/templates/0d438ad4d2fac99b28d84ce4e613537249c6d0ddb92b36b99d2aff670219aa38.dotx",
+    "sha256": "0d438ad4d2fac99b28d84ce4e613537249c6d0ddb92b36b99d2aff670219aa38"
+  },
+  "evidence": {
+    "kind": "REUSED_CONTROLLED_RECONSTRUCTED_TEMPLATE_INPUT",
+    "historical_qualification": "The historical Normal.dotm was not retained. Reuse the complete, unmodified independently controlled Calibri11/after8pt/line278/kerning profile already recorded for another source from the same reference environment. This is a reconstructed input, not a contemporaneous snapshot. No per-document template properties were tuned.",
+    "reused_reference_context": "reference-input-context/d83403e621bd24e2ab78d8f7c335183509439b59ee3b286bdb0f4e582694a9b7.json",
+    "reused_reference_context_sha256": "3906a460ddf1fc310304da73161ed1c16fc6dd4ea6e3522517b710dbb4ac93aa",
+    "shared_reference_environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "native_comparison": {
+      "kind": "CHANGED_SOURCE_EXPLICIT_ATTACHMENT",
+      "source_sha256": "a451181788144812cc86fd3a3e06010906675a691561a27f8916d5f8bd26236b",
+      "native_pdf_sha256": "cc5f8065bd4bed88c3ade36ddc8faa3324b3c9e5638676ee418617335842c097",
+      "pages": 8,
+      "all_pages_same_ordered_nonwhitespace_text": true,
+      "all_pages_raw_rgb_equal": true,
+      "renderer": {
+        "name": "PDFium",
+        "width": 1333,
+        "flags": 17
+      },
+      "system_normal_unchanged": true,
+      "options_and_locales_verified": true,
+      "opposite_controls": [
+        "same-template-link-off",
+        "explicit-missing-template-on"
+      ]
+    },
+    "source_contract": "ECMA-376 17.15.1.55; Word Document.UpdateStyles copies styles by primary name. Original source/golden unchanged; runtime never reads expected text or the current host Normal template.",
+    "sources": [
+      "https://learn.microsoft.com/en-us/office/vba/api/word.document.updatestyles",
+      "https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.wordprocessing.linkstyles"
+    ]
+  }
+}

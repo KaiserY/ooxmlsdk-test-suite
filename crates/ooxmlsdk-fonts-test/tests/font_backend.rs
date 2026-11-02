@@ -1667,6 +1667,7 @@ fn shaped_glyphs_mark_cjk_and_arabic_as_justifiable() {
         resolved_family: Cow::Borrowed("Approx"),
         source: FontSource::System,
         face_index: 0,
+        named_instance: None,
         synthetic_bold: false,
         synthetic_italic: false,
         metrics: FontMetrics::default(),

@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "environment_id": "09707cbf51b06e89c88ce0e25c3d99a568d9fff50bc8d66ff924c6ca3e4241c8",
+  "observed_at_utc": "2026-10-30T06:39:58.0736181Z",
+  "environment": {
+    "schema_version": 1,
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "converter_version": 2,
+    "probe_script_sha256": "23f8e7cd7550ce80e862dfd94dd4aaa6b6a117af8022bbbf89fb450cd12a495e",
+    "controller_script_sha256": "a33a2697c363d68c5dd8e76db16b99223839357f6469a1101004421cf8b7eb66",
+    "environment_helper_sha256": "16f0694a8b9c0c11223263f16c3158fa96d312eaf9affe6dc3d312671eb9dcc2",
+    "reference_engine": "Microsoft Office",
+    "windows": {
+      "product_name": "Windows 10 Pro",
+      "display_version": "25H2",
+      "full_build": "26200.9711"
+    },
+    "office": {
+      "ui_languages": [
+        "de-DE",
+        "en-US",
+        "es-MX",
+        "fr-CA",
+        "ja-JP",
+        "ko-KR",
+        "zh-CN",
+        "zh-TW"
+      ],
+      "applications": [
+        {
+          "name": "Word",
+          "ui_language": "de-DE",
+          "version": "16.0"
+        },
+        {
+          "name": "Excel",
+          "ui_language": "de-DE",
+          "version": "16.0"
+        },
+        {
+          "name": "PowerPoint",
+          "ui_language": "de-DE",
+          "version": "16.0"
+        }
+      ],
+      "platform": "x64",
+      "product_release_ids": "O365ProPlusRetail",
+      "version_to_report": "16.0.20527.20088"
+    },
+    "locale": {
+      "culture": "zh-CN",
+      "ui_culture": "de-DE",
+      "document_language": "zh-CN",
+      "iana_time_zone": "Asia/Shanghai",
+      "time_zone": "China Standard Time"
+    },
+    "default_paper": {
+      "name": "A4",
+      "width_hundredths_inch": 827,
+      "height_hundredths_inch": 1169,
+      "landscape": false
+    },
+    "fonts": {
+      "file_count": 932,
+      "fingerprint_kind": "name-size-mtime",
+      "sha256": "d798b1247882a615681b01bba74e58bad4940c5954b6aa3041a14c9b70d0a2d7"
+    },
+    "dependencies": [
+      "probe-script",
+      "environment-controller",
+      "office-build",
+      "windows-build",
+      "installed-font-files",
+      "locale-and-time-zone",
+      "default-paper",
+      "per-source-office-export-configuration"
+    ]
+  },
+  "approved_references": [
+    {
+      "configuration_id": "082731798f644a73fc3c429b69fbaf53a28ced24efab55b196654f42f987e273",
+      "source_sha256": "4da5881ed74c6c7fd6bfe5b1eeaf65e87623458ae470bdb57002383764f61d3c",
+      "output_sha256": "df4738e0b929dc1b5e9923a7e95c891fa7fa67c5027385b397bd89f8155c04c8"
+    }
+  ]
+}

@@ -1,0 +1,555 @@
+{
+  "schema_version": 1,
+  "configuration_id": "082731798f644a73fc3c429b69fbaf53a28ced24efab55b196654f42f987e273",
+  "reason": "User-approved single reference revision: unchanged original bytes and configured export options/locales produce one page in current Word, with both print-field/link-update states; eight derivative controls corroborate terminal anchor ownership. SDK passes unchanged full comparison against both original exports. Previous reference has two pages. Office build difference is recorded without attributing the behavior solely to that difference.",
+  "user_approval": "更新这一例并保留历史；按照之前的逻辑更新 golden pdf",
+  "source_unchanged": true,
+  "office_options_unchanged": true,
+  "acceptance_gates_unchanged": true,
+  "implementation_gain": false,
+  "previous_conversion": {
+    "schema_version": 4,
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "file": "sw/qa/extras/ooxmlexport/data/tdf153613_textboxAfterPgBreak3.docx",
+    "family": "word",
+    "source_extension": "docx",
+    "source_bytes": 22616,
+    "source_sha256": "4da5881ed74c6c7fd6bfe5b1eeaf65e87623458ae470bdb57002383764f61d3c",
+    "configuration_id": "082731798f644a73fc3c429b69fbaf53a28ced24efab55b196654f42f987e273",
+    "requested": {
+      "standards": [
+        "pdf16"
+      ],
+      "compress_content_streams": false,
+      "ui_language": "fr-CA",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "field_update": null,
+      "tagged_pdf": false,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": false,
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "images": {
+        "use_lossless_compression": false,
+        "jpeg_quality": 75,
+        "reduce_resolution": true,
+        "max_resolution_dpi": 96
+      },
+      "link_action": "remove_external_links",
+      "export_form_fields": true,
+      "viewer": {
+        "page_mode": "use_outlines",
+        "page_layout": "continuous",
+        "magnification": "zoom125",
+        "initial_page": 1,
+        "hide_toolbar": false,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": true,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "creator": "ooxmlsdk-pdf",
+        "producer": "ooxmlsdk-pdf configured campaign",
+        "creation_date": null
+      },
+      "embed_campaign_attachment": true
+    },
+    "effective": {
+      "standards": [
+        "pdf16"
+      ],
+      "compress_content_streams": false,
+      "ui_language": "fr-CA",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "field_update": null,
+      "tagged_pdf": false,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": false,
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "images": {
+        "use_lossless_compression": false,
+        "jpeg_quality": 75,
+        "reduce_resolution": true,
+        "max_resolution_dpi": 96
+      },
+      "link_action": "remove_external_links",
+      "export_form_fields": true,
+      "viewer": {
+        "page_mode": "use_outlines",
+        "page_layout": "continuous",
+        "magnification": "zoom125",
+        "initial_page": 1,
+        "hide_toolbar": false,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": true,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "creator": "ooxmlsdk-pdf",
+        "producer": "ooxmlsdk-pdf configured campaign",
+        "creation_date": null
+      },
+      "embed_campaign_attachment": true
+    },
+    "adjustments": [
+      {
+        "feature": "ui-language",
+        "reason": "application-generated UI strings currently fall back to English outside English and Chinese resource packs"
+      }
+    ],
+    "office_options": {
+      "quality": "screen",
+      "include_document_properties": true,
+      "page_from": null,
+      "page_to": null,
+      "tagged_pdf": false,
+      "bookmarks": "none",
+      "pdf_a_1": false,
+      "bitmap_missing_fonts": true,
+      "print_hidden_slides": false
+    },
+    "status": "converted",
+    "reference_engine": "Microsoft Office",
+    "environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "application": "Word",
+    "application_version": "16.0",
+    "application_build": "16.0.20326",
+    "output": "sw/qa/extras/ooxmlexport/data/tdf153613_textboxAfterPgBreak3.docx.pdf",
+    "output_bytes": 52208,
+    "output_sha256": "1bcd5422e9c893975de8df887d7e4e67c7f033b6c672aa8aa053f12f662bd56d",
+    "observed_pdf": {
+      "header_version": "1.7",
+      "page_count": 2,
+      "tagged_pdf": false,
+      "has_outlines": false,
+      "pdf_a_part": null,
+      "pdf_a_conformance": null
+    },
+    "render_environment": {
+      "ui_language": "fr-CA",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "time_zone": "Asia/Shanghai",
+      "windows_time_zone": "China Standard Time",
+      "clock": {
+        "opened_at_utc": "2026-09-11T11:59:31.5578698Z",
+        "refresh_started_at_utc": "2026-09-11T11:59:31.8749534Z",
+        "refresh_completed_at_utc": "2026-09-11T11:59:32.0522665Z",
+        "export_started_at_utc": "2026-09-11T11:59:32.2086633Z",
+        "export_completed_at_utc": "2026-09-11T11:59:32.6761195Z"
+      }
+    },
+    "converted_at_utc": "2026-09-11T11:59:35.717743956Z",
+    "elapsed_ms": 6610,
+    "attempts": 1,
+    "annotations": [],
+    "failure_class": "",
+    "error_code": "",
+    "error": ""
+  },
+  "revised_conversion": {
+    "schema_version": 4,
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "file": "sw/qa/extras/ooxmlexport/data/tdf153613_textboxAfterPgBreak3.docx",
+    "family": "word",
+    "source_extension": "docx",
+    "source_bytes": 22616,
+    "source_sha256": "4da5881ed74c6c7fd6bfe5b1eeaf65e87623458ae470bdb57002383764f61d3c",
+    "configuration_id": "082731798f644a73fc3c429b69fbaf53a28ced24efab55b196654f42f987e273",
+    "requested": {
+      "standards": [
+        "pdf16"
+      ],
+      "compress_content_streams": false,
+      "ui_language": "fr-CA",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "field_update": null,
+      "tagged_pdf": false,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": false,
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "images": {
+        "use_lossless_compression": false,
+        "jpeg_quality": 75,
+        "reduce_resolution": true,
+        "max_resolution_dpi": 96
+      },
+      "link_action": "remove_external_links",
+      "export_form_fields": true,
+      "viewer": {
+        "page_mode": "use_outlines",
+        "page_layout": "continuous",
+        "magnification": "zoom125",
+        "initial_page": 1,
+        "hide_toolbar": false,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": true,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "creator": "ooxmlsdk-pdf",
+        "producer": "ooxmlsdk-pdf configured campaign",
+        "creation_date": null
+      },
+      "embed_campaign_attachment": true
+    },
+    "effective": {
+      "standards": [
+        "pdf16"
+      ],
+      "compress_content_streams": false,
+      "ui_language": "fr-CA",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "field_update": null,
+      "tagged_pdf": false,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": false,
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "images": {
+        "use_lossless_compression": false,
+        "jpeg_quality": 75,
+        "reduce_resolution": true,
+        "max_resolution_dpi": 96
+      },
+      "link_action": "remove_external_links",
+      "export_form_fields": true,
+      "viewer": {
+        "page_mode": "use_outlines",
+        "page_layout": "continuous",
+        "magnification": "zoom125",
+        "initial_page": 1,
+        "hide_toolbar": false,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": true,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "creator": "ooxmlsdk-pdf",
+        "producer": "ooxmlsdk-pdf configured campaign",
+        "creation_date": null
+      },
+      "embed_campaign_attachment": true
+    },
+    "adjustments": [
+      {
+        "feature": "ui-language",
+        "reason": "application-generated UI strings currently fall back to English outside English and Chinese resource packs"
+      }
+    ],
+    "office_options": {
+      "quality": "screen",
+      "include_document_properties": true,
+      "page_from": null,
+      "page_to": null,
+      "tagged_pdf": false,
+      "bookmarks": "none",
+      "pdf_a_1": false,
+      "bitmap_missing_fonts": true,
+      "print_hidden_slides": false
+    },
+    "status": "converted",
+    "reference_engine": "Microsoft Office",
+    "environment_id": "09707cbf51b06e89c88ce0e25c3d99a568d9fff50bc8d66ff924c6ca3e4241c8",
+    "application": "Word",
+    "application_version": "16.0",
+    "application_build": "16.0.20527",
+    "output": "sw/qa/extras/ooxmlexport/data/tdf153613_textboxAfterPgBreak3.docx.pdf",
+    "output_bytes": 51709,
+    "output_sha256": "df4738e0b929dc1b5e9923a7e95c891fa7fa67c5027385b397bd89f8155c04c8",
+    "observed_pdf": {
+      "header_version": "1.7",
+      "page_count": 1,
+      "tagged_pdf": false,
+      "has_outlines": false,
+      "pdf_a_part": null,
+      "pdf_a_conformance": null
+    },
+    "render_environment": {
+      "ui_language": "fr-CA",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "time_zone": "Asia/Shanghai",
+      "windows_time_zone": "China Standard Time",
+      "clock": {
+        "opened_at_utc": "2026-10-30T06:36:21.2356687Z",
+        "refresh_started_at_utc": "2026-10-30T06:36:21.5381718Z",
+        "refresh_completed_at_utc": "2026-10-30T06:36:21.7140546Z",
+        "export_started_at_utc": "2026-10-30T06:36:21.8681380Z",
+        "export_completed_at_utc": "2026-10-30T06:36:22.3832237Z"
+      },
+      "update_fields_at_print": true
+    },
+    "converted_at_utc": "2026-10-30T06:36:22.3832237Z",
+    "elapsed_ms": 1524,
+    "attempts": 1,
+    "annotations": [
+      {
+        "kind": "reference-revision",
+        "configuration_id": "082731798f644a73fc3c429b69fbaf53a28ced24efab55b196654f42f987e273",
+        "previous_environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+        "environment_id": "09707cbf51b06e89c88ce0e25c3d99a568d9fff50bc8d66ff924c6ca3e4241c8",
+        "source_sha256": "4da5881ed74c6c7fd6bfe5b1eeaf65e87623458ae470bdb57002383764f61d3c",
+        "output_sha256": "df4738e0b929dc1b5e9923a7e95c891fa7fa67c5027385b397bd89f8155c04c8",
+        "reason": "User-approved single reference revision: unchanged original bytes and configured export options/locales produce one page in current Word, with both print-field/link-update states; eight derivative controls corroborate terminal anchor ownership. SDK passes unchanged full comparison against both original exports. Previous reference has two pages. Office build difference is recorded without attributing the behavior solely to that difference.",
+        "approved_by": "user",
+        "previous_output_sha256": "1bcd5422e9c893975de8df887d7e4e67c7f033b6c672aa8aa053f12f662bd56d",
+        "previous_application_build": "16.0.20326",
+        "application_build": "16.0.20527",
+        "previous_page_count": 2,
+        "page_count": 1
+      }
+    ],
+    "failure_class": "",
+    "error_code": "",
+    "error": ""
+  },
+  "original_full_office_version": "16.0.20326.20144",
+  "current_full_office_version": "16.0.20527.20088",
+  "environment_capture": {
+    "schema_version": 1,
+    "environment_id": "09707cbf51b06e89c88ce0e25c3d99a568d9fff50bc8d66ff924c6ca3e4241c8",
+    "observed_at_utc": "2026-10-30T06:39:58.0736181Z",
+    "environment": {
+      "schema_version": 1,
+      "campaign_id": "office-ooxml-pdf-options-v2",
+      "converter_version": 2,
+      "probe_script_sha256": "23f8e7cd7550ce80e862dfd94dd4aaa6b6a117af8022bbbf89fb450cd12a495e",
+      "controller_script_sha256": "a33a2697c363d68c5dd8e76db16b99223839357f6469a1101004421cf8b7eb66",
+      "environment_helper_sha256": "16f0694a8b9c0c11223263f16c3158fa96d312eaf9affe6dc3d312671eb9dcc2",
+      "reference_engine": "Microsoft Office",
+      "windows": {
+        "product_name": "Windows 10 Pro",
+        "display_version": "25H2",
+        "full_build": "26200.9711"
+      },
+      "office": {
+        "ui_languages": [
+          "de-DE",
+          "en-US",
+          "es-MX",
+          "fr-CA",
+          "ja-JP",
+          "ko-KR",
+          "zh-CN",
+          "zh-TW"
+        ],
+        "applications": [
+          {
+            "name": "Word",
+            "ui_language": "de-DE",
+            "version": "16.0"
+          },
+          {
+            "name": "Excel",
+            "ui_language": "de-DE",
+            "version": "16.0"
+          },
+          {
+            "name": "PowerPoint",
+            "ui_language": "de-DE",
+            "version": "16.0"
+          }
+        ],
+        "platform": "x64",
+        "product_release_ids": "O365ProPlusRetail",
+        "version_to_report": "16.0.20527.20088"
+      },
+      "locale": {
+        "culture": "zh-CN",
+        "ui_culture": "de-DE",
+        "document_language": "zh-CN",
+        "iana_time_zone": "Asia/Shanghai",
+        "time_zone": "China Standard Time"
+      },
+      "default_paper": {
+        "name": "A4",
+        "width_hundredths_inch": 827,
+        "height_hundredths_inch": 1169,
+        "landscape": false
+      },
+      "fonts": {
+        "file_count": 932,
+        "fingerprint_kind": "name-size-mtime",
+        "sha256": "d798b1247882a615681b01bba74e58bad4940c5954b6aa3041a14c9b70d0a2d7"
+      },
+      "dependencies": [
+        "probe-script",
+        "environment-controller",
+        "office-build",
+        "windows-build",
+        "installed-font-files",
+        "locale-and-time-zone",
+        "default-paper",
+        "per-source-office-export-configuration"
+      ]
+    },
+    "approved_references": [
+      {
+        "configuration_id": "082731798f644a73fc3c429b69fbaf53a28ced24efab55b196654f42f987e273",
+        "source_sha256": "4da5881ed74c6c7fd6bfe5b1eeaf65e87623458ae470bdb57002383764f61d3c",
+        "output_sha256": "df4738e0b929dc1b5e9923a7e95c891fa7fa67c5027385b397bd89f8155c04c8"
+      }
+    ]
+  },
+  "evidence_owner": "/tmp/ooxmlsdk-tdf146984-anchorInShape-20261030",
+  "native_modules": [
+    {
+      "path": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+      "version": "16.0.20527.20088",
+      "sha256": "9be13b7adc7eda2d1b5256d7f392eb688c996a3cb0adf84bad8cb0ef9e5b871d"
+    },
+    {
+      "path": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WWLIB.DLL",
+      "version": "16.0.20527.20088",
+      "sha256": "02c829bb7730919b30a9f33120fa220e9fe98afda4dc08ef14a615c194674eae"
+    },
+    {
+      "path": "C:\\Program Files\\Microsoft Office\\root\\Office16\\CHART.DLL",
+      "version": "16.0.20527.20088",
+      "sha256": "392e6a8164125c2deade89c295f799c5996ce869d8192203d5060021cedebbe0"
+    }
+  ],
+  "original_controls": {
+    "cases": [
+      {
+        "index": 0,
+        "owner": "textboxAfterPgBreak3",
+        "original": true,
+        "fields_at_print": true,
+        "source": "/tmp/ooxmlsdk-tdf146984-anchorInShape-20261030/native-original-v6/inputs/control-00.docx",
+        "sha256": "4da5881ed74c6c7fd6bfe5b1eeaf65e87623458ae470bdb57002383764f61d3c",
+        "options": {
+          "quality": "screen",
+          "include_document_properties": true,
+          "page_from": null,
+          "page_to": null,
+          "tagged_pdf": false,
+          "bookmarks": "none",
+          "pdf_a_1": false,
+          "bitmap_missing_fonts": true,
+          "print_hidden_slides": false
+        },
+        "environment": {
+          "ui_language": "fr-CA",
+          "format_locale": "zh-CN",
+          "document_language": "zh-CN",
+          "time_zone": "Asia/Shanghai"
+        },
+        "pdf": "/tmp/ooxmlsdk-tdf146984-anchorInShape-20261030/native-original-v6/jobs/00/output/case-000.pdf",
+        "pdf_sha256": "df4738e0b929dc1b5e9923a7e95c891fa7fa67c5027385b397bd89f8155c04c8",
+        "pages": [
+          "Page 2 middle\nFirst page\nPage 2 right"
+        ],
+        "normalized_flags": []
+      },
+      {
+        "index": 1,
+        "owner": "textboxAfterPgBreak3",
+        "original": true,
+        "fields_at_print": false,
+        "source": "/tmp/ooxmlsdk-tdf146984-anchorInShape-20261030/native-original-v6/inputs/control-01.docx",
+        "sha256": "4da5881ed74c6c7fd6bfe5b1eeaf65e87623458ae470bdb57002383764f61d3c",
+        "options": {
+          "quality": "screen",
+          "include_document_properties": true,
+          "page_from": null,
+          "page_to": null,
+          "tagged_pdf": false,
+          "bookmarks": "none",
+          "pdf_a_1": false,
+          "bitmap_missing_fonts": true,
+          "print_hidden_slides": false
+        },
+        "environment": {
+          "ui_language": "fr-CA",
+          "format_locale": "zh-CN",
+          "document_language": "zh-CN",
+          "time_zone": "Asia/Shanghai"
+        },
+        "pdf": "/tmp/ooxmlsdk-tdf146984-anchorInShape-20261030/native-original-v6/jobs/01/output/case-000.pdf",
+        "pdf_sha256": "c179950d44fec288608e1009b03917ccd0aa99b8c65cd22719f44cdc7ae2b22e",
+        "pages": [
+          "Page 2 middle\nFirst page\nPage 2 right"
+        ],
+        "normalized_flags": []
+      }
+    ],
+    "checks": {
+      "count": 2,
+      "hashes": true,
+      "environment_restored": true
+    },
+    "qualification": "v1 flag appended after compatSetting: do not infer compatibility flag behavior from v1. v2 uses schema order and observes Word-normalized settings."
+  },
+  "native_vs_sdk": [
+    {
+      "corpus": "LibreOffice",
+      "file": "/tmp/ooxmlsdk-tdf146984-anchorInShape-20261030/textboxAfterPgBreak3/original-control-0/original.docx",
+      "family": "word",
+      "configuration_id": "86907b501d3abdefc51eefd0e3e3c479919f4eca99cc98cd76a212610ae2a7c1",
+      "reference_status": "converted",
+      "verdict": "PASS",
+      "layer": null,
+      "diagnostic_kind": null,
+      "page_index": null,
+      "line_index": null,
+      "elapsed_ms": 133,
+      "message": ""
+    },
+    {
+      "corpus": "LibreOffice",
+      "file": "/tmp/ooxmlsdk-tdf146984-anchorInShape-20261030/textboxAfterPgBreak3/original-control-1/original.docx",
+      "family": "word",
+      "configuration_id": "945e9761f3e9566422c58bef88b00d0a098f56f44d99fa9ba5c4a82fc7bb6f72",
+      "reference_status": "converted",
+      "verdict": "PASS",
+      "layer": null,
+      "diagnostic_kind": null,
+      "page_index": null,
+      "line_index": null,
+      "elapsed_ms": 129,
+      "message": ""
+    }
+  ]
+}

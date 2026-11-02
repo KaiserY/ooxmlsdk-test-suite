@@ -1,0 +1,2353 @@
+{
+  "schema_version": 1,
+  "configuration_id": "785631d83d8530cdc87fb32a9236ba95e0165ba667849d5944cbfa71005d845b",
+  "reason": "Single-case reference revision under the user standing instruction to use the established procedure and preserve history. First repaired modern physical-body-top deferred-before spacing and the legacy column-flag gap, preserving lower continuous-section columns. 48 actual mode/flag/page/column/continuous/plain/numbered Office controls improve34 to48 complete PASS with every prior PASS retained. Two exact-original exports, unchanged source bytes/configured options/locales, observed print-fields ON/OFF and links OFF, both produce5pages in Word16.0.20527.20088; SDK passes the unchanged complete comparison against both. Saved Word16.0.20326 golden has7pages. Versions are recorded without claiming build difference alone caused the conflict. Source/configuration/acceptance gates unchanged.",
+  "user_approval": "沿用用户既有指示：同类确证冲突按之前逻辑更新golden并保留历史；先完成原字节/配置/打印开关/完整比较证据。",
+  "approval_scope": "standing instruction; no new per-case confirmation required",
+  "implementation_gain": false,
+  "source_unchanged": true,
+  "office_options_unchanged": true,
+  "acceptance_gates_unchanged": true,
+  "previous_conversion": {
+    "schema_version": 4,
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "file": "sw/qa/extras/ooxmlexport/data/tdf153964_topMarginAfterBreak15.docx",
+    "family": "word",
+    "source_extension": "docx",
+    "source_bytes": 14358,
+    "source_sha256": "1a3cdf29ec7fe0c4539b00426ededab0e9a8e4b836078dbd8575b7a7243f6886",
+    "configuration_id": "785631d83d8530cdc87fb32a9236ba95e0165ba667849d5944cbfa71005d845b",
+    "requested": {
+      "standards": [
+        "pdf14"
+      ],
+      "compress_content_streams": false,
+      "ui_language": "en-US",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "field_update": null,
+      "tagged_pdf": false,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": false,
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "images": {
+        "use_lossless_compression": false,
+        "jpeg_quality": 90,
+        "reduce_resolution": true,
+        "max_resolution_dpi": 150
+      },
+      "link_action": "uri",
+      "export_form_fields": false,
+      "viewer": {
+        "page_mode": "default",
+        "page_layout": "continuous",
+        "magnification": "fit_in_window",
+        "initial_page": 1,
+        "hide_toolbar": true,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": false,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "creator": null,
+        "producer": null,
+        "creation_date": null
+      },
+      "embed_campaign_attachment": true
+    },
+    "effective": {
+      "standards": [
+        "pdf14"
+      ],
+      "compress_content_streams": false,
+      "ui_language": "en-US",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "field_update": null,
+      "tagged_pdf": false,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": false,
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "images": {
+        "use_lossless_compression": false,
+        "jpeg_quality": 90,
+        "reduce_resolution": true,
+        "max_resolution_dpi": 150
+      },
+      "link_action": "uri",
+      "export_form_fields": false,
+      "viewer": {
+        "page_mode": "default",
+        "page_layout": "continuous",
+        "magnification": "fit_in_window",
+        "initial_page": 1,
+        "hide_toolbar": true,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": false,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "creator": null,
+        "producer": null,
+        "creation_date": null
+      },
+      "embed_campaign_attachment": true
+    },
+    "adjustments": [],
+    "office_options": {
+      "quality": "print",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "tagged_pdf": false,
+      "bookmarks": "none",
+      "pdf_a_1": false,
+      "bitmap_missing_fonts": false,
+      "print_hidden_slides": false
+    },
+    "status": "converted",
+    "reference_engine": "Microsoft Office",
+    "environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "application": "Word",
+    "application_version": "16.0",
+    "application_build": "16.0.20326",
+    "output": "sw/qa/extras/ooxmlexport/data/tdf153964_topMarginAfterBreak15.docx.pdf",
+    "output_bytes": 99495,
+    "output_sha256": "4bac8b394f6ecadd8de7f9d039f79d1ec431bdde2d9f561b0f405d70945371c6",
+    "observed_pdf": {
+      "header_version": "1.7",
+      "page_count": 7,
+      "tagged_pdf": false,
+      "has_outlines": false,
+      "pdf_a_part": null,
+      "pdf_a_conformance": null
+    },
+    "render_environment": {
+      "ui_language": "en-US",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "time_zone": "Asia/Shanghai",
+      "windows_time_zone": "China Standard Time",
+      "clock": {
+        "opened_at_utc": "2026-09-11T12:00:13.4376534Z",
+        "refresh_started_at_utc": "2026-09-11T12:00:13.5468975Z",
+        "refresh_completed_at_utc": "2026-09-11T12:00:13.7485225Z",
+        "export_started_at_utc": "2026-09-11T12:00:13.7702858Z",
+        "export_completed_at_utc": "2026-09-11T12:00:14.2277755Z"
+      }
+    },
+    "converted_at_utc": "2026-09-11T12:00:16.800248982Z",
+    "elapsed_ms": 4707,
+    "attempts": 1,
+    "annotations": [],
+    "failure_class": "",
+    "error_code": "",
+    "error": ""
+  },
+  "revised_conversion": {
+    "schema_version": 4,
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "file": "sw/qa/extras/ooxmlexport/data/tdf153964_topMarginAfterBreak15.docx",
+    "family": "word",
+    "source_extension": "docx",
+    "source_bytes": 14358,
+    "source_sha256": "1a3cdf29ec7fe0c4539b00426ededab0e9a8e4b836078dbd8575b7a7243f6886",
+    "configuration_id": "785631d83d8530cdc87fb32a9236ba95e0165ba667849d5944cbfa71005d845b",
+    "requested": {
+      "standards": [
+        "pdf14"
+      ],
+      "compress_content_streams": false,
+      "ui_language": "en-US",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "field_update": null,
+      "tagged_pdf": false,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": false,
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "images": {
+        "use_lossless_compression": false,
+        "jpeg_quality": 90,
+        "reduce_resolution": true,
+        "max_resolution_dpi": 150
+      },
+      "link_action": "uri",
+      "export_form_fields": false,
+      "viewer": {
+        "page_mode": "default",
+        "page_layout": "continuous",
+        "magnification": "fit_in_window",
+        "initial_page": 1,
+        "hide_toolbar": true,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": false,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "creator": null,
+        "producer": null,
+        "creation_date": null
+      },
+      "embed_campaign_attachment": true
+    },
+    "effective": {
+      "standards": [
+        "pdf14"
+      ],
+      "compress_content_streams": false,
+      "ui_language": "en-US",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "field_update": null,
+      "tagged_pdf": false,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": false,
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "images": {
+        "use_lossless_compression": false,
+        "jpeg_quality": 90,
+        "reduce_resolution": true,
+        "max_resolution_dpi": 150
+      },
+      "link_action": "uri",
+      "export_form_fields": false,
+      "viewer": {
+        "page_mode": "default",
+        "page_layout": "continuous",
+        "magnification": "fit_in_window",
+        "initial_page": 1,
+        "hide_toolbar": true,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": false,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "creator": null,
+        "producer": null,
+        "creation_date": null
+      },
+      "embed_campaign_attachment": true
+    },
+    "adjustments": [],
+    "office_options": {
+      "quality": "print",
+      "include_document_properties": false,
+      "page_from": null,
+      "page_to": null,
+      "tagged_pdf": false,
+      "bookmarks": "none",
+      "pdf_a_1": false,
+      "bitmap_missing_fonts": false,
+      "print_hidden_slides": false
+    },
+    "status": "converted",
+    "reference_engine": "Microsoft Office",
+    "environment_id": "a72ce9c43f7e078c1acb4dc72b3d834c5fc4ea76b924df71c29fa249a3c0a3de",
+    "application": "Word",
+    "application_version": "16.0",
+    "application_build": "16.0.20527",
+    "output": "sw/qa/extras/ooxmlexport/data/tdf153964_topMarginAfterBreak15.docx.pdf",
+    "output_bytes": 98172,
+    "output_sha256": "6a8e0db3c4ba01c3c899f5db712923979f963a753082a28be8fbb26eca50ee0e",
+    "observed_pdf": {
+      "header_version": "1.7",
+      "page_count": 5,
+      "tagged_pdf": false,
+      "has_outlines": false,
+      "pdf_a_part": null,
+      "pdf_a_conformance": null
+    },
+    "render_environment": {
+      "ui_language": "en-US",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "time_zone": "Asia/Shanghai",
+      "windows_time_zone": "China Standard Time",
+      "clock": {
+        "opened_at_utc": "2026-10-31T02:07:15.3173238Z",
+        "refresh_started_at_utc": "2026-10-31T02:07:15.4449991Z",
+        "refresh_completed_at_utc": "2026-10-31T02:07:15.6621338Z",
+        "export_started_at_utc": "2026-10-31T02:07:15.6882693Z",
+        "export_completed_at_utc": "2026-10-31T02:07:16.2948007Z"
+      },
+      "user_name": "yang yue",
+      "user_initials": "yy",
+      "update_fields_at_print": true
+    },
+    "converted_at_utc": "2026-10-31T02:07:16.2948007Z",
+    "elapsed_ms": 1713,
+    "attempts": 1,
+    "annotations": [
+      {
+        "kind": "reference-revision",
+        "configuration_id": "785631d83d8530cdc87fb32a9236ba95e0165ba667849d5944cbfa71005d845b",
+        "previous_environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+        "environment_id": "a72ce9c43f7e078c1acb4dc72b3d834c5fc4ea76b924df71c29fa249a3c0a3de",
+        "source_sha256": "1a3cdf29ec7fe0c4539b00426ededab0e9a8e4b836078dbd8575b7a7243f6886",
+        "output_sha256": "6a8e0db3c4ba01c3c899f5db712923979f963a753082a28be8fbb26eca50ee0e",
+        "reason": "Single-case reference revision under the user standing instruction to use the established procedure and preserve history. First repaired modern physical-body-top deferred-before spacing and the legacy column-flag gap, preserving lower continuous-section columns. 48 actual mode/flag/page/column/continuous/plain/numbered Office controls improve34 to48 complete PASS with every prior PASS retained. Two exact-original exports, unchanged source bytes/configured options/locales, observed print-fields ON/OFF and links OFF, both produce5pages in Word16.0.20527.20088; SDK passes the unchanged complete comparison against both. Saved Word16.0.20326 golden has7pages. Versions are recorded without claiming build difference alone caused the conflict. Source/configuration/acceptance gates unchanged.",
+        "approved_by": "user",
+        "previous_output_sha256": "4bac8b394f6ecadd8de7f9d039f79d1ec431bdde2d9f561b0f405d70945371c6",
+        "previous_application_build": "16.0.20326",
+        "application_build": "16.0.20527",
+        "previous_page_count": 7,
+        "page_count": 5
+      }
+    ],
+    "failure_class": "",
+    "error_code": "",
+    "error": ""
+  },
+  "derivative_controls": {
+    "runtime": "v977",
+    "count": 48,
+    "previous_pass": 34,
+    "current_pass": 48,
+    "no_prior_pass_lost": true,
+    "prior_pass_losses": [],
+    "cases": [
+      {
+        "owner": "native-leading-spacing-v2",
+        "index": 0,
+        "configuration_id": "1a7156cb888a27cde57d8959ecff350faaf8a70e09121f21d9ee08174aa6e78a",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-leading-spacing-v2",
+        "index": 1,
+        "configuration_id": "d5590666211fc4328f330f59ccdac0cd27c81be81f17da4aa0423d11c6467910",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-leading-spacing-v2",
+        "index": 2,
+        "configuration_id": "8cf0a986b362b5550e81b2958cb83284fc776814b224ef25faced4cd643d44ec",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-leading-spacing-v2",
+        "index": 3,
+        "configuration_id": "4b03b039b7b98701fb5f8a1db39410cc98d17cb538976199ae558f54e791695b",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-leading-spacing-v2",
+        "index": 4,
+        "configuration_id": "d5b61958353776c02f70934df30ec28aa86ec0aa8ecb3c4e93149f2b4e7cef51",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-leading-spacing-v2",
+        "index": 5,
+        "configuration_id": "d5caee8bdda6b1f384341c8983585542277b703a18cb2583c8d6f5895f4056fc",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-leading-spacing-v2",
+        "index": 6,
+        "configuration_id": "9d5dc78d7c940954a963a8b2099591a4fe4aa657d995eac9f52afa1a0ee0d7b2",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-leading-spacing-v2",
+        "index": 7,
+        "configuration_id": "9ff2676bcb09cc249e7329acb39cc8860996d2614d3b03183efe4101585eb425",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-leading-spacing-v2",
+        "index": 8,
+        "configuration_id": "6f86d88b02f326c651ff6b61a92e7149c9dc723c1e49ad9b9bb30d91334b95db",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-leading-spacing-v2",
+        "index": 9,
+        "configuration_id": "0103e152b146b3dd38381d4f09767b3518650244f4df369c904dc6ac7259b6df",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-leading-spacing-v2",
+        "index": 10,
+        "configuration_id": "a02ba6ad03a282bd0ecb7fc2e41c170e88a3816e81f3b6bbda947b9d81441b1f",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "text-baseline"
+      },
+      {
+        "owner": "native-leading-spacing-v2",
+        "index": 11,
+        "configuration_id": "673d32f268adc0a086391143605547c3a4264847ec8efb67b61766636ce2d7f1",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "text-baseline"
+      },
+      {
+        "owner": "native-leading-spacing-v2",
+        "index": 12,
+        "configuration_id": "46093c0724ed9f8eac89bd8129803c1b69ac2e4c2af89d38a8a47852311f77ec",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-leading-spacing-v2",
+        "index": 13,
+        "configuration_id": "8767086741bcdf19a2ff81c525a031052576a846c8849371a1ea5f337d319a8d",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-leading-spacing-v2",
+        "index": 14,
+        "configuration_id": "d7237000dc3cdc86d8a36f43f11e19599042c4938378a04ce5625b9fc1905ae4",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "text-baseline"
+      },
+      {
+        "owner": "native-leading-spacing-v2",
+        "index": 15,
+        "configuration_id": "8e9c788ac3b346e313c2d4e21c48fcc639772961dcafe6440de017a130562dcc",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "text-baseline"
+      },
+      {
+        "owner": "native-leading-spacing-v2",
+        "index": 16,
+        "configuration_id": "d30ba1c81a4f23ac9c5289dbef02129dd2d6ea7d2f86b8e14bb7cac5ab885c74",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-leading-spacing-v2",
+        "index": 17,
+        "configuration_id": "cd293c103c6c21463cd7ae9334f7309ea3fe5d5aeb7b5f4d35a5aeab957d3a38",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-leading-spacing-v2",
+        "index": 18,
+        "configuration_id": "7a1cfb8ee2c251555ec3be1d9765548033cdd3392d27361544f1f786219393ad",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-leading-spacing-v2",
+        "index": 19,
+        "configuration_id": "f9df46130acf27b7da8c65a85f6b2166027c8552ec8a0ce81f799d00c41f9367",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-leading-spacing-v2",
+        "index": 20,
+        "configuration_id": "82d109b642305c65a835e4ba67e5affd8dca7ba246518e98a6c5eff17f0f257a",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-leading-spacing-v2",
+        "index": 21,
+        "configuration_id": "59530bbcad4541c6940ef0ddedc2173f3e5920922a74782331c714483ca59336",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "text-baseline"
+      },
+      {
+        "owner": "native-leading-spacing-v2",
+        "index": 22,
+        "configuration_id": "083155842f24c357a33524406afe3f4887647427077b84b429c5a7bb4a7bd793",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-leading-spacing-v2",
+        "index": 23,
+        "configuration_id": "f1bdc9ae549926df9716ad592cf2941fcef6104d11f8bfd928478fedb11520bf",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "text-baseline"
+      },
+      {
+        "owner": "native-suppress-flags-v3",
+        "index": 0,
+        "configuration_id": "6bd808dbf8fe6bbcb8ed7960d61cc7b4465bbacd465273bbdb6ea68aebce9805",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-suppress-flags-v3",
+        "index": 1,
+        "configuration_id": "fabbd94f3bc60353591a4f7939aa5f35c282ed51f949a07aad4e3adf7c884c67",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-suppress-flags-v3",
+        "index": 2,
+        "configuration_id": "ff0700986128231da160f9fa29e08ff21fce2d2fa1998c13ca67d86cdfd46aa3",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-suppress-flags-v3",
+        "index": 3,
+        "configuration_id": "eeca9f74befaff7f6f34f0b9274cf3ee76fe2552e99332338b6f623f34c8e8ca",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "text-baseline"
+      },
+      {
+        "owner": "native-suppress-flags-v3",
+        "index": 4,
+        "configuration_id": "137c1066c70f13a12237dd9f62efca0b1ea5932f489e05a5c4f299526b77f38f",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "text-baseline"
+      },
+      {
+        "owner": "native-suppress-flags-v3",
+        "index": 5,
+        "configuration_id": "434b9c89a45a5f8de034b23e89d37e47349b97e147f787a7b20fbcec2829995e",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "text-baseline"
+      },
+      {
+        "owner": "native-suppress-flags-v3",
+        "index": 6,
+        "configuration_id": "460ef84aa6bc583bca804c1b1f83783991d8b93f85b0465ae8aefe364c5dc5c2",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "text-baseline"
+      },
+      {
+        "owner": "native-suppress-flags-v3",
+        "index": 7,
+        "configuration_id": "add12fbe182660fb1550be0ccb8c3c05b05624a1a8eaf257fa9ef5956cbc2c12",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "text-baseline"
+      },
+      {
+        "owner": "native-continuous-spacing-v4",
+        "index": 0,
+        "configuration_id": "62b6e6cbc3ca90dad7e8da1a71bab5803f7fe1aa9347280933356345a02a10f5",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-continuous-spacing-v4",
+        "index": 1,
+        "configuration_id": "66ce6a2ae0d663b96c8a06e4071fc054c3519cceb21e74115f69bbb208708887",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-continuous-spacing-v4",
+        "index": 2,
+        "configuration_id": "40d5a39afdf2c60397fb1c67dbff65815c341717fab29ea43fb66ceb6f353565",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-continuous-spacing-v4",
+        "index": 3,
+        "configuration_id": "2fbb0e0f14b2c02be0f84debbb03c6a7f8df09bd673c0bcbfe5ed88602f3a951",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-continuous-spacing-v4",
+        "index": 4,
+        "configuration_id": "fc7ae012fddc0e63901e483287d8c38f5cd892e3ae8bf14a2e81ccd63449466b",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-continuous-spacing-v4",
+        "index": 5,
+        "configuration_id": "cbdc1a62247bcb775178f806b69d7f103ae2a4b7d079562e02a265284646a2b3",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-continuous-spacing-v4",
+        "index": 6,
+        "configuration_id": "bafb45e603c91cc0af060e7a3eee8da21ba374863e4c6c805d5b6c56fe113782",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-continuous-spacing-v4",
+        "index": 7,
+        "configuration_id": "a5a459a689dbcb05f024da99c975a6592777b43ddec3b359ca043c1e2eb59ccc",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "text-baseline"
+      },
+      {
+        "owner": "native-continuous-spacing-v4",
+        "index": 8,
+        "configuration_id": "9f9c7d1e12c16721d2893e40bc339de9069e331a2c782b7090c79eeb8772fd51",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "text-baseline"
+      },
+      {
+        "owner": "native-continuous-spacing-v4",
+        "index": 9,
+        "configuration_id": "38a3d3d9a95edaebc9fa4081d7deea9beb54be4ada5685072f70d2a80bed351c",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-continuous-spacing-v4",
+        "index": 10,
+        "configuration_id": "0b6a82317a1058ff0c1fafb689905607a942babaa4b23d853873a0fb2bf5dd80",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-continuous-spacing-v4",
+        "index": 11,
+        "configuration_id": "ad9789c3de56df4d80becc45bfc3eda36b2c06e811b2b5daf4c8c87e06527d6c",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-continuous-flags-v5",
+        "index": 0,
+        "configuration_id": "cb5d0bc7884b7ee67209297ace731141ab6a605a238e8ac88b065b87ca7a2033",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-continuous-flags-v5",
+        "index": 1,
+        "configuration_id": "d5bf211a75c28a411ae6b4615428d09ceabcc512a8240e27a153e1c36a70f703",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-continuous-flags-v5",
+        "index": 2,
+        "configuration_id": "dc132af1832dc3861888a1116ab0dccb45d8e8f14473a34f83cd6efbfa745758",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "text-baseline"
+      },
+      {
+        "owner": "native-continuous-flags-v5",
+        "index": 3,
+        "configuration_id": "1dea57350f6f77319f16712767c8e9e1622ac5da38ec747f2709011f50d6d891",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      }
+    ]
+  },
+  "original_full_office_version": "16.0.20326.20144",
+  "current_full_office_version": "16.0.20527.20088",
+  "environment_capture": {
+    "schema_version": 1,
+    "environment_id": "a72ce9c43f7e078c1acb4dc72b3d834c5fc4ea76b924df71c29fa249a3c0a3de",
+    "observed_at_utc": "2026-10-31T02:37:55.2511058Z",
+    "environment": {
+      "schema_version": 1,
+      "campaign_id": "office-ooxml-pdf-options-v2",
+      "converter_version": 2,
+      "probe_script_sha256": "e624fee11515c007c4ed075d500b80ad81c9c12106ddf2b8fa1efdfa58291b59",
+      "controller_script_sha256": "a33a2697c363d68c5dd8e76db16b99223839357f6469a1101004421cf8b7eb66",
+      "environment_helper_sha256": "16f0694a8b9c0c11223263f16c3158fa96d312eaf9affe6dc3d312671eb9dcc2",
+      "reference_engine": "Microsoft Office",
+      "windows": {
+        "product_name": "Windows 10 Pro",
+        "display_version": "25H2",
+        "full_build": "26200.9711"
+      },
+      "office": {
+        "ui_languages": [
+          "de-DE",
+          "en-US",
+          "es-MX",
+          "fr-CA",
+          "ja-JP",
+          "ko-KR",
+          "zh-CN",
+          "zh-TW"
+        ],
+        "applications": [
+          {
+            "name": "Word",
+            "ui_language": "de-DE",
+            "version": "16.0"
+          },
+          {
+            "name": "Excel",
+            "ui_language": "de-DE",
+            "version": "16.0"
+          },
+          {
+            "name": "PowerPoint",
+            "ui_language": "de-DE",
+            "version": "16.0"
+          }
+        ],
+        "platform": "x64",
+        "product_release_ids": "O365ProPlusRetail",
+        "version_to_report": "16.0.20527.20088"
+      },
+      "locale": {
+        "culture": "zh-CN",
+        "ui_culture": "de-DE",
+        "document_language": "zh-CN",
+        "iana_time_zone": "Asia/Shanghai",
+        "time_zone": "China Standard Time"
+      },
+      "default_paper": {
+        "name": "A4",
+        "width_hundredths_inch": 827,
+        "height_hundredths_inch": 1169,
+        "landscape": false
+      },
+      "fonts": {
+        "file_count": 932,
+        "fingerprint_kind": "name-size-mtime",
+        "sha256": "d798b1247882a615681b01bba74e58bad4940c5954b6aa3041a14c9b70d0a2d7"
+      },
+      "dependencies": [
+        "probe-script",
+        "environment-controller",
+        "office-build",
+        "windows-build",
+        "installed-font-files",
+        "locale-and-time-zone",
+        "default-paper",
+        "per-source-office-export-configuration"
+      ]
+    },
+    "approved_references": [
+      {
+        "configuration_id": "536b9740b24694698dbac73d377154e3a16c5bbc78e96f32bcbd38a07d06f087",
+        "source_sha256": "cbb7657ef8f2075537e2ed93881d18053352f63bc222caf283ff6fbcd4814c20",
+        "output_sha256": "f53f857438e514a817f5a5ce52202c3cb760a40da26ea78c48ca89f337bbd181"
+      },
+      {
+        "configuration_id": "785631d83d8530cdc87fb32a9236ba95e0165ba667849d5944cbfa71005d845b",
+        "source_sha256": "1a3cdf29ec7fe0c4539b00426ededab0e9a8e4b836078dbd8575b7a7243f6886",
+        "output_sha256": "6a8e0db3c4ba01c3c899f5db712923979f963a753082a28be8fbb26eca50ee0e"
+      }
+    ]
+  },
+  "evidence_owner": "/tmp/ooxmlsdk-tdf153964-topMarginAfterBreak15-20261031",
+  "native_modules": [
+    {
+      "path": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+      "version": "16.0.20527.20088",
+      "sha256": "9be13b7adc7eda2d1b5256d7f392eb688c996a3cb0adf84bad8cb0ef9e5b871d"
+    },
+    {
+      "path": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WWLIB.DLL",
+      "version": "16.0.20527.20088",
+      "sha256": "02c829bb7730919b30a9f33120fa220e9fe98afda4dc08ef14a615c194674eae"
+    },
+    {
+      "path": "C:\\Program Files\\Microsoft Office\\root\\Office16\\CHART.DLL",
+      "version": "16.0.20527.20088",
+      "sha256": "392e6a8164125c2deade89c295f799c5996ce869d8192203d5060021cedebbe0"
+    }
+  ],
+  "original_controls": {
+    "cases": [
+      {
+        "index": 0,
+        "original": true,
+        "fields_at_print": true,
+        "source": "/tmp/ooxmlsdk-tdf153964-topMarginAfterBreak15-20261031/native-original-v1/inputs/control-00.docx",
+        "sha256": "1a3cdf29ec7fe0c4539b00426ededab0e9a8e4b836078dbd8575b7a7243f6886",
+        "options": {
+          "quality": "print",
+          "include_document_properties": false,
+          "page_from": null,
+          "page_to": null,
+          "tagged_pdf": false,
+          "bookmarks": "none",
+          "pdf_a_1": false,
+          "bitmap_missing_fonts": false,
+          "print_hidden_slides": false
+        },
+        "environment": {
+          "ui_language": "en-US",
+          "format_locale": "zh-CN",
+          "document_language": "zh-CN",
+          "time_zone": "Asia/Shanghai"
+        },
+        "control": {
+          "fields_at_print": true,
+          "links_at_print": false,
+          "before_export": "none",
+          "refresh_clock": true,
+          "profile": null
+        },
+        "pdf": "/tmp/ooxmlsdk-tdf153964-topMarginAfterBreak15-20261031/native-original-v1/jobs/00/output/case-000.pdf",
+        "pdf_sha256": "6a8e0db3c4ba01c3c899f5db712923979f963a753082a28be8fbb26eca50ee0e",
+        "receipt": "/tmp/ooxmlsdk-tdf153964-topMarginAfterBreak15-20261031/native-original-v1/jobs/00/output/case-000.json",
+        "receipt_sha256": "5c8fa24f42e6473ec01c3f1700d615f89c7e5c11614bf8fc84d3e6c5bcc61534",
+        "normalized_xml": "/tmp/ooxmlsdk-tdf153964-topMarginAfterBreak15-20261031/native-original-v1/jobs/00/output/_worker-stage/case-000/control-00.pdf.normalized.xml",
+        "normalized_xml_sha256": "99c68b2a6b0bdc844862bf5425d1c7f125473e0a185cb6229e4dc34d1887b0fc",
+        "effective_split": false,
+        "pages": 5,
+        "words": [
+          {
+            "page": 1,
+            "text": "Spacing",
+            "x": 120.14,
+            "y": 37.58
+          },
+          {
+            "page": 1,
+            "text": "before",
+            "x": 156.82592,
+            "y": 37.58
+          },
+          {
+            "page": 1,
+            "text": "Page",
+            "x": 189.09584,
+            "y": 37.58
+          },
+          {
+            "page": 1,
+            "text": "and",
+            "x": 213.21824,
+            "y": 37.58
+          },
+          {
+            "page": 1,
+            "text": "Column",
+            "x": 232.51616,
+            "y": 37.58
+          },
+          {
+            "page": 1,
+            "text": "Breaks",
+            "x": 269.57744,
+            "y": 37.58
+          },
+          {
+            "page": 2,
+            "text": "Spacing",
+            "x": 120.14,
+            "y": 37.58
+          },
+          {
+            "page": 2,
+            "text": "before",
+            "x": 156.82592,
+            "y": 37.58
+          },
+          {
+            "page": 2,
+            "text": "Page",
+            "x": 189.09584,
+            "y": 37.58
+          },
+          {
+            "page": 2,
+            "text": "and",
+            "x": 213.21824,
+            "y": 37.58
+          },
+          {
+            "page": 2,
+            "text": "Column",
+            "x": 232.51616,
+            "y": 37.58
+          },
+          {
+            "page": 2,
+            "text": "Breaks",
+            "x": 269.57744,
+            "y": 37.58
+          },
+          {
+            "page": 2,
+            "text": "a",
+            "x": 72.024,
+            "y": 78.26
+          },
+          {
+            "page": 2,
+            "text": "w:br",
+            "x": 79.8072,
+            "y": 78.26
+          },
+          {
+            "page": 2,
+            "text": "at",
+            "x": 102.72624,
+            "y": 78.26
+          },
+          {
+            "page": 2,
+            "text": "the",
+            "x": 114.22992,
+            "y": 78.26
+          },
+          {
+            "page": 2,
+            "text": "start",
+            "x": 131.61792,
+            "y": 78.26
+          },
+          {
+            "page": 2,
+            "text": "of",
+            "x": 154.7688,
+            "y": 78.26
+          },
+          {
+            "page": 2,
+            "text": "the",
+            "x": 166.50432,
+            "y": 78.26
+          },
+          {
+            "page": 2,
+            "text": "document.",
+            "x": 72.024,
+            "y": 92.69
+          },
+          {
+            "page": 2,
+            "text": "Does",
+            "x": 123.01776,
+            "y": 92.69
+          },
+          {
+            "page": 2,
+            "text": "it",
+            "x": 147.96816,
+            "y": 92.69
+          },
+          {
+            "page": 2,
+            "text": "use",
+            "x": 156.57936,
+            "y": 92.69
+          },
+          {
+            "page": 2,
+            "text": "60",
+            "x": 174.60768,
+            "y": 92.69
+          },
+          {
+            "page": 2,
+            "text": "point",
+            "x": 72.024,
+            "y": 107.21
+          },
+          {
+            "page": 2,
+            "text": "top",
+            "x": 98.16672,
+            "y": 107.21
+          },
+          {
+            "page": 2,
+            "text": "margin?",
+            "x": 115.7976,
+            "y": 107.21
+          },
+          {
+            "page": 2,
+            "text": "column",
+            "x": 227.59,
+            "y": 74.18
+          },
+          {
+            "page": 2,
+            "text": "break1",
+            "x": 263.42584,
+            "y": 74.18
+          },
+          {
+            "page": 2,
+            "text": "60",
+            "x": 227.59,
+            "y": 148.63
+          },
+          {
+            "page": 2,
+            "text": "pt",
+            "x": 241.34584,
+            "y": 148.63
+          },
+          {
+            "page": 2,
+            "text": "followed",
+            "x": 253.22488,
+            "y": 148.63
+          },
+          {
+            "page": 2,
+            "text": "by",
+            "x": 294.86776,
+            "y": 148.63
+          },
+          {
+            "page": 2,
+            "text": "page",
+            "x": 308.04952,
+            "y": 148.63
+          },
+          {
+            "page": 2,
+            "text": "break",
+            "x": 227.59,
+            "y": 163.27
+          },
+          {
+            "page": 2,
+            "text": "60",
+            "x": 72.024,
+            "y": 181.63
+          },
+          {
+            "page": 2,
+            "text": "pt",
+            "x": 85.77984,
+            "y": 181.63
+          },
+          {
+            "page": 2,
+            "text": "spacing",
+            "x": 97.65888,
+            "y": 181.63
+          },
+          {
+            "page": 2,
+            "text": "before",
+            "x": 133.64928,
+            "y": 181.63
+          },
+          {
+            "page": 3,
+            "text": "Spacing",
+            "x": 120.14,
+            "y": 37.58
+          },
+          {
+            "page": 3,
+            "text": "before",
+            "x": 156.82592,
+            "y": 37.58
+          },
+          {
+            "page": 3,
+            "text": "Page",
+            "x": 189.09584,
+            "y": 37.58
+          },
+          {
+            "page": 3,
+            "text": "and",
+            "x": 213.21824,
+            "y": 37.58
+          },
+          {
+            "page": 3,
+            "text": "Column",
+            "x": 232.51616,
+            "y": 37.58
+          },
+          {
+            "page": 3,
+            "text": "Breaks",
+            "x": 269.57744,
+            "y": 37.58
+          },
+          {
+            "page": 3,
+            "text": "page",
+            "x": 72.024,
+            "y": 74.18
+          },
+          {
+            "page": 3,
+            "text": "break1",
+            "x": 96.2568,
+            "y": 74.18
+          },
+          {
+            "page": 3,
+            "text": "column",
+            "x": 227.59,
+            "y": 78.26
+          },
+          {
+            "page": 3,
+            "text": "break2",
+            "x": 263.42584,
+            "y": 78.26
+          },
+          {
+            "page": 4,
+            "text": "Spacing",
+            "x": 120.14,
+            "y": 37.58
+          },
+          {
+            "page": 4,
+            "text": "before",
+            "x": 156.82592,
+            "y": 37.58
+          },
+          {
+            "page": 4,
+            "text": "Page",
+            "x": 189.09584,
+            "y": 37.58
+          },
+          {
+            "page": 4,
+            "text": "and",
+            "x": 213.21824,
+            "y": 37.58
+          },
+          {
+            "page": 4,
+            "text": "Column",
+            "x": 232.51616,
+            "y": 37.58
+          },
+          {
+            "page": 4,
+            "text": "Breaks",
+            "x": 269.57744,
+            "y": 37.58
+          },
+          {
+            "page": 4,
+            "text": "page",
+            "x": 72.024,
+            "y": 74.18
+          },
+          {
+            "page": 4,
+            "text": "break2",
+            "x": 96.2568,
+            "y": 74.18
+          },
+          {
+            "page": 5,
+            "text": "Spacing",
+            "x": 120.14,
+            "y": 37.58
+          },
+          {
+            "page": 5,
+            "text": "before",
+            "x": 156.82592,
+            "y": 37.58
+          },
+          {
+            "page": 5,
+            "text": "Page",
+            "x": 189.09584,
+            "y": 37.58
+          },
+          {
+            "page": 5,
+            "text": "and",
+            "x": 213.21824,
+            "y": 37.58
+          },
+          {
+            "page": 5,
+            "text": "Column",
+            "x": 232.51616,
+            "y": 37.58
+          },
+          {
+            "page": 5,
+            "text": "Breaks",
+            "x": 269.57744,
+            "y": 37.58
+          }
+        ],
+        "fills": [
+          {
+            "page": 1,
+            "rgb": [
+              0,
+              228,
+              213
+            ],
+            "bounds": [
+              70.584,
+              94.48999000000003,
+              193.604,
+              109.01000000000002
+            ]
+          },
+          {
+            "page": 2,
+            "rgb": [
+              0,
+              228,
+              213
+            ],
+            "bounds": [
+              66.624,
+              75.14600000000002,
+              197.564,
+              90.53000000000003
+            ]
+          },
+          {
+            "page": 2,
+            "rgb": [
+              0,
+              228,
+              213
+            ],
+            "bounds": [
+              66.624,
+              90.53000000000003,
+              197.564,
+              105.05000000000004
+            ]
+          },
+          {
+            "page": 2,
+            "rgb": [
+              0,
+              228,
+              213
+            ],
+            "bounds": [
+              66.624,
+              105.05000000000004,
+              197.564,
+              127.49000000000004
+            ]
+          },
+          {
+            "page": 2,
+            "rgb": [
+              251,
+              228,
+              213
+            ],
+            "bounds": [
+              66.624,
+              127.48599000000002,
+              197.564,
+              193.99
+            ]
+          },
+          {
+            "page": 2,
+            "rgb": [
+              251,
+              228,
+              213
+            ],
+            "bounds": [
+              222.19,
+              72.02600000000004,
+              353.13,
+              94.49000000000004
+            ]
+          },
+          {
+            "page": 2,
+            "rgb": [
+              222,
+              234,
+              246
+            ],
+            "bounds": [
+              222.19,
+              94.48599000000002,
+              353.13,
+              161.11
+            ]
+          },
+          {
+            "page": 2,
+            "rgb": [
+              222,
+              234,
+              246
+            ],
+            "bounds": [
+              222.19,
+              161.11,
+              353.13,
+              183.55
+            ]
+          },
+          {
+            "page": 3,
+            "rgb": [
+              222,
+              234,
+              246
+            ],
+            "bounds": [
+              66.624,
+              20.04200000000003,
+              197.564,
+              87.53000000000003
+            ]
+          },
+          {
+            "page": 3,
+            "rgb": [
+              226,
+              239,
+              217
+            ],
+            "bounds": [
+              70.584,
+              98.56999000000002,
+              193.604,
+              113.09000000000003
+            ]
+          },
+          {
+            "page": 3,
+            "rgb": [
+              226,
+              239,
+              217
+            ],
+            "bounds": [
+              222.19,
+              75.14600000000002,
+              353.13,
+              91.61000000000001
+            ]
+          },
+          {
+            "page": 3,
+            "rgb": [
+              112,
+              48,
+              160
+            ],
+            "bounds": [
+              226.15,
+              102.53000000000003,
+              349.16999,
+              125.09000000000003
+            ]
+          },
+          {
+            "page": 4,
+            "rgb": [
+              112,
+              48,
+              160
+            ],
+            "bounds": [
+              66.624,
+              20.04200000000003,
+              197.564,
+              87.53000000000003
+            ]
+          },
+          {
+            "page": 4,
+            "rgb": [
+              255,
+              242,
+              204
+            ],
+            "bounds": [
+              70.584,
+              98.56999000000002,
+              193.604,
+              113.09000000000003
+            ]
+          },
+          {
+            "page": 4,
+            "rgb": [
+              255,
+              242,
+              204
+            ],
+            "bounds": [
+              222.19,
+              75.14600000000002,
+              353.13,
+              91.61000000000001
+            ]
+          },
+          {
+            "page": 4,
+            "rgb": [
+              226,
+              239,
+              217
+            ],
+            "bounds": [
+              226.15,
+              102.53000000000003,
+              349.16999,
+              125.09000000000003
+            ]
+          },
+          {
+            "page": 5,
+            "rgb": [
+              226,
+              239,
+              217
+            ],
+            "bounds": [
+              66.624,
+              20.04200000000003,
+              197.564,
+              87.53000000000003
+            ]
+          },
+          {
+            "page": 5,
+            "rgb": [
+              255,
+              0,
+              0
+            ],
+            "bounds": [
+              70.584,
+              98.56999000000002,
+              193.604,
+              113.09000000000003
+            ]
+          },
+          {
+            "page": 5,
+            "rgb": [
+              255,
+              0,
+              0
+            ],
+            "bounds": [
+              222.19,
+              72.02600000000004,
+              353.13,
+              87.53000000000003
+            ]
+          }
+        ]
+      },
+      {
+        "index": 1,
+        "original": true,
+        "fields_at_print": false,
+        "source": "/tmp/ooxmlsdk-tdf153964-topMarginAfterBreak15-20261031/native-original-v1/inputs/control-01.docx",
+        "sha256": "1a3cdf29ec7fe0c4539b00426ededab0e9a8e4b836078dbd8575b7a7243f6886",
+        "options": {
+          "quality": "print",
+          "include_document_properties": false,
+          "page_from": null,
+          "page_to": null,
+          "tagged_pdf": false,
+          "bookmarks": "none",
+          "pdf_a_1": false,
+          "bitmap_missing_fonts": false,
+          "print_hidden_slides": false
+        },
+        "environment": {
+          "ui_language": "en-US",
+          "format_locale": "zh-CN",
+          "document_language": "zh-CN",
+          "time_zone": "Asia/Shanghai"
+        },
+        "control": {
+          "fields_at_print": false,
+          "links_at_print": false,
+          "before_export": "none",
+          "refresh_clock": true,
+          "profile": null
+        },
+        "pdf": "/tmp/ooxmlsdk-tdf153964-topMarginAfterBreak15-20261031/native-original-v1/jobs/01/output/case-000.pdf",
+        "pdf_sha256": "0c35fc54a6e21de3d6609cdc6bfbc48da153fe3618ffde69384929353e6790d6",
+        "receipt": "/tmp/ooxmlsdk-tdf153964-topMarginAfterBreak15-20261031/native-original-v1/jobs/01/output/case-000.json",
+        "receipt_sha256": "1e649327b7e4fe7bf3cb6758bd40b743e0481df4cff369f423d31aa3705d7a19",
+        "normalized_xml": "/tmp/ooxmlsdk-tdf153964-topMarginAfterBreak15-20261031/native-original-v1/jobs/01/output/_worker-stage/case-000/control-01.pdf.normalized.xml",
+        "normalized_xml_sha256": "9a4c0f8307a5cf961397eae4501d4b1ed0c39b95ff43ea330fb5b3a7564612bb",
+        "effective_split": false,
+        "pages": 5,
+        "words": [
+          {
+            "page": 1,
+            "text": "Spacing",
+            "x": 120.14,
+            "y": 37.58
+          },
+          {
+            "page": 1,
+            "text": "before",
+            "x": 156.82592,
+            "y": 37.58
+          },
+          {
+            "page": 1,
+            "text": "Page",
+            "x": 189.09584,
+            "y": 37.58
+          },
+          {
+            "page": 1,
+            "text": "and",
+            "x": 213.21824,
+            "y": 37.58
+          },
+          {
+            "page": 1,
+            "text": "Column",
+            "x": 232.51616,
+            "y": 37.58
+          },
+          {
+            "page": 1,
+            "text": "Breaks",
+            "x": 269.57744,
+            "y": 37.58
+          },
+          {
+            "page": 2,
+            "text": "Spacing",
+            "x": 120.14,
+            "y": 37.58
+          },
+          {
+            "page": 2,
+            "text": "before",
+            "x": 156.82592,
+            "y": 37.58
+          },
+          {
+            "page": 2,
+            "text": "Page",
+            "x": 189.09584,
+            "y": 37.58
+          },
+          {
+            "page": 2,
+            "text": "and",
+            "x": 213.21824,
+            "y": 37.58
+          },
+          {
+            "page": 2,
+            "text": "Column",
+            "x": 232.51616,
+            "y": 37.58
+          },
+          {
+            "page": 2,
+            "text": "Breaks",
+            "x": 269.57744,
+            "y": 37.58
+          },
+          {
+            "page": 2,
+            "text": "a",
+            "x": 72.024,
+            "y": 78.26
+          },
+          {
+            "page": 2,
+            "text": "w:br",
+            "x": 79.8072,
+            "y": 78.26
+          },
+          {
+            "page": 2,
+            "text": "at",
+            "x": 102.72624,
+            "y": 78.26
+          },
+          {
+            "page": 2,
+            "text": "the",
+            "x": 114.22992,
+            "y": 78.26
+          },
+          {
+            "page": 2,
+            "text": "start",
+            "x": 131.61792,
+            "y": 78.26
+          },
+          {
+            "page": 2,
+            "text": "of",
+            "x": 154.7688,
+            "y": 78.26
+          },
+          {
+            "page": 2,
+            "text": "the",
+            "x": 166.50432,
+            "y": 78.26
+          },
+          {
+            "page": 2,
+            "text": "document.",
+            "x": 72.024,
+            "y": 92.69
+          },
+          {
+            "page": 2,
+            "text": "Does",
+            "x": 123.01776,
+            "y": 92.69
+          },
+          {
+            "page": 2,
+            "text": "it",
+            "x": 147.96816,
+            "y": 92.69
+          },
+          {
+            "page": 2,
+            "text": "use",
+            "x": 156.57936,
+            "y": 92.69
+          },
+          {
+            "page": 2,
+            "text": "60",
+            "x": 174.60768,
+            "y": 92.69
+          },
+          {
+            "page": 2,
+            "text": "point",
+            "x": 72.024,
+            "y": 107.21
+          },
+          {
+            "page": 2,
+            "text": "top",
+            "x": 98.16672,
+            "y": 107.21
+          },
+          {
+            "page": 2,
+            "text": "margin?",
+            "x": 115.7976,
+            "y": 107.21
+          },
+          {
+            "page": 2,
+            "text": "column",
+            "x": 227.59,
+            "y": 74.18
+          },
+          {
+            "page": 2,
+            "text": "break1",
+            "x": 263.42584,
+            "y": 74.18
+          },
+          {
+            "page": 2,
+            "text": "60",
+            "x": 227.59,
+            "y": 148.63
+          },
+          {
+            "page": 2,
+            "text": "pt",
+            "x": 241.34584,
+            "y": 148.63
+          },
+          {
+            "page": 2,
+            "text": "followed",
+            "x": 253.22488,
+            "y": 148.63
+          },
+          {
+            "page": 2,
+            "text": "by",
+            "x": 294.86776,
+            "y": 148.63
+          },
+          {
+            "page": 2,
+            "text": "page",
+            "x": 308.04952,
+            "y": 148.63
+          },
+          {
+            "page": 2,
+            "text": "break",
+            "x": 227.59,
+            "y": 163.27
+          },
+          {
+            "page": 2,
+            "text": "60",
+            "x": 72.024,
+            "y": 181.63
+          },
+          {
+            "page": 2,
+            "text": "pt",
+            "x": 85.77984,
+            "y": 181.63
+          },
+          {
+            "page": 2,
+            "text": "spacing",
+            "x": 97.65888,
+            "y": 181.63
+          },
+          {
+            "page": 2,
+            "text": "before",
+            "x": 133.64928,
+            "y": 181.63
+          },
+          {
+            "page": 3,
+            "text": "Spacing",
+            "x": 120.14,
+            "y": 37.58
+          },
+          {
+            "page": 3,
+            "text": "before",
+            "x": 156.82592,
+            "y": 37.58
+          },
+          {
+            "page": 3,
+            "text": "Page",
+            "x": 189.09584,
+            "y": 37.58
+          },
+          {
+            "page": 3,
+            "text": "and",
+            "x": 213.21824,
+            "y": 37.58
+          },
+          {
+            "page": 3,
+            "text": "Column",
+            "x": 232.51616,
+            "y": 37.58
+          },
+          {
+            "page": 3,
+            "text": "Breaks",
+            "x": 269.57744,
+            "y": 37.58
+          },
+          {
+            "page": 3,
+            "text": "page",
+            "x": 72.024,
+            "y": 74.18
+          },
+          {
+            "page": 3,
+            "text": "break1",
+            "x": 96.2568,
+            "y": 74.18
+          },
+          {
+            "page": 3,
+            "text": "column",
+            "x": 227.59,
+            "y": 78.26
+          },
+          {
+            "page": 3,
+            "text": "break2",
+            "x": 263.42584,
+            "y": 78.26
+          },
+          {
+            "page": 4,
+            "text": "Spacing",
+            "x": 120.14,
+            "y": 37.58
+          },
+          {
+            "page": 4,
+            "text": "before",
+            "x": 156.82592,
+            "y": 37.58
+          },
+          {
+            "page": 4,
+            "text": "Page",
+            "x": 189.09584,
+            "y": 37.58
+          },
+          {
+            "page": 4,
+            "text": "and",
+            "x": 213.21824,
+            "y": 37.58
+          },
+          {
+            "page": 4,
+            "text": "Column",
+            "x": 232.51616,
+            "y": 37.58
+          },
+          {
+            "page": 4,
+            "text": "Breaks",
+            "x": 269.57744,
+            "y": 37.58
+          },
+          {
+            "page": 4,
+            "text": "page",
+            "x": 72.024,
+            "y": 74.18
+          },
+          {
+            "page": 4,
+            "text": "break2",
+            "x": 96.2568,
+            "y": 74.18
+          },
+          {
+            "page": 5,
+            "text": "Spacing",
+            "x": 120.14,
+            "y": 37.58
+          },
+          {
+            "page": 5,
+            "text": "before",
+            "x": 156.82592,
+            "y": 37.58
+          },
+          {
+            "page": 5,
+            "text": "Page",
+            "x": 189.09584,
+            "y": 37.58
+          },
+          {
+            "page": 5,
+            "text": "and",
+            "x": 213.21824,
+            "y": 37.58
+          },
+          {
+            "page": 5,
+            "text": "Column",
+            "x": 232.51616,
+            "y": 37.58
+          },
+          {
+            "page": 5,
+            "text": "Breaks",
+            "x": 269.57744,
+            "y": 37.58
+          }
+        ],
+        "fills": [
+          {
+            "page": 1,
+            "rgb": [
+              0,
+              228,
+              213
+            ],
+            "bounds": [
+              70.584,
+              94.48999000000003,
+              193.604,
+              109.01000000000002
+            ]
+          },
+          {
+            "page": 2,
+            "rgb": [
+              0,
+              228,
+              213
+            ],
+            "bounds": [
+              66.624,
+              75.14600000000002,
+              197.564,
+              90.53000000000003
+            ]
+          },
+          {
+            "page": 2,
+            "rgb": [
+              0,
+              228,
+              213
+            ],
+            "bounds": [
+              66.624,
+              90.53000000000003,
+              197.564,
+              105.05000000000004
+            ]
+          },
+          {
+            "page": 2,
+            "rgb": [
+              0,
+              228,
+              213
+            ],
+            "bounds": [
+              66.624,
+              105.05000000000004,
+              197.564,
+              127.49000000000004
+            ]
+          },
+          {
+            "page": 2,
+            "rgb": [
+              251,
+              228,
+              213
+            ],
+            "bounds": [
+              66.624,
+              127.48599000000002,
+              197.564,
+              193.99
+            ]
+          },
+          {
+            "page": 2,
+            "rgb": [
+              251,
+              228,
+              213
+            ],
+            "bounds": [
+              222.19,
+              72.02600000000004,
+              353.13,
+              94.49000000000004
+            ]
+          },
+          {
+            "page": 2,
+            "rgb": [
+              222,
+              234,
+              246
+            ],
+            "bounds": [
+              222.19,
+              94.48599000000002,
+              353.13,
+              161.11
+            ]
+          },
+          {
+            "page": 2,
+            "rgb": [
+              222,
+              234,
+              246
+            ],
+            "bounds": [
+              222.19,
+              161.11,
+              353.13,
+              183.55
+            ]
+          },
+          {
+            "page": 3,
+            "rgb": [
+              222,
+              234,
+              246
+            ],
+            "bounds": [
+              66.624,
+              20.04200000000003,
+              197.564,
+              87.53000000000003
+            ]
+          },
+          {
+            "page": 3,
+            "rgb": [
+              226,
+              239,
+              217
+            ],
+            "bounds": [
+              70.584,
+              98.56999000000002,
+              193.604,
+              113.09000000000003
+            ]
+          },
+          {
+            "page": 3,
+            "rgb": [
+              226,
+              239,
+              217
+            ],
+            "bounds": [
+              222.19,
+              75.14600000000002,
+              353.13,
+              91.61000000000001
+            ]
+          },
+          {
+            "page": 3,
+            "rgb": [
+              112,
+              48,
+              160
+            ],
+            "bounds": [
+              226.15,
+              102.53000000000003,
+              349.16999,
+              125.09000000000003
+            ]
+          },
+          {
+            "page": 4,
+            "rgb": [
+              112,
+              48,
+              160
+            ],
+            "bounds": [
+              66.624,
+              20.04200000000003,
+              197.564,
+              87.53000000000003
+            ]
+          },
+          {
+            "page": 4,
+            "rgb": [
+              255,
+              242,
+              204
+            ],
+            "bounds": [
+              70.584,
+              98.56999000000002,
+              193.604,
+              113.09000000000003
+            ]
+          },
+          {
+            "page": 4,
+            "rgb": [
+              255,
+              242,
+              204
+            ],
+            "bounds": [
+              222.19,
+              75.14600000000002,
+              353.13,
+              91.61000000000001
+            ]
+          },
+          {
+            "page": 4,
+            "rgb": [
+              226,
+              239,
+              217
+            ],
+            "bounds": [
+              226.15,
+              102.53000000000003,
+              349.16999,
+              125.09000000000003
+            ]
+          },
+          {
+            "page": 5,
+            "rgb": [
+              226,
+              239,
+              217
+            ],
+            "bounds": [
+              66.624,
+              20.04200000000003,
+              197.564,
+              87.53000000000003
+            ]
+          },
+          {
+            "page": 5,
+            "rgb": [
+              255,
+              0,
+              0
+            ],
+            "bounds": [
+              70.584,
+              98.56999000000002,
+              193.604,
+              113.09000000000003
+            ]
+          },
+          {
+            "page": 5,
+            "rgb": [
+              255,
+              0,
+              0
+            ],
+            "bounds": [
+              222.19,
+              72.02600000000004,
+              353.13,
+              87.53000000000003
+            ]
+          }
+        ]
+      }
+    ],
+    "checks": {
+      "count": 2,
+      "hashes_options_locales": true,
+      "normal_exits": true,
+      "restored": true,
+      "no_office_processes": true,
+      "observed_source_parameters": true,
+      "effective_split_observed": true
+    },
+    "native_modules_sha256": "046aa11a6e3d5a48a00c2cbdc0731ac7fbb8bf1c731211516aa60e9a26c0579e"
+  },
+  "native_vs_sdk": {
+    "runtime": "v977",
+    "count": 2,
+    "cases": [
+      {
+        "owner": "native-original-v1",
+        "index": 0,
+        "configuration_id": "521660fa5322bb50e4ebc03aec00d4b9f52882d5c76c0785a4f916747baba107",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": ""
+      },
+      {
+        "owner": "native-original-v1",
+        "index": 1,
+        "configuration_id": "b648f267c947438ff4d0a653195a7589360d344dc114132e5906a98ab879f830",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": ""
+      }
+    ],
+    "binary_sha256": "bc1f960d021833e90449b9b63e10256ce27c2cb042e5c23c45f7e43de62cf604",
+    "normal_exit": true
+  }
+}

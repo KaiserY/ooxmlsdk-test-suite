@@ -1649,7 +1649,22 @@ fn glyph_backed_text_contract(
                 Some(&full_document_pdf),
             )?;
         }
-        if !semantic.verified() {
+        // Office can map an empty Western space glyph before a generated RTL
+        // note label to ZWNJ. Do not insert that PDF transport artifact into
+        // the document, or ignore join controls in ordinary text comparison.
+        // This branch follows the complete, unchanged painted-glyph proof,
+        // preserves all authored controls, and independently checks ordered
+        // Poppler text on every page. Only extra reference-side ZWNJs may go.
+        let reference_join_padding = !semantic.verified()
+            && semantic.complete_transport_coverage()
+            && pdftotext_ordered_text_matches_with(
+                candidate_pdf,
+                golden_pdf,
+                candidate.page_count,
+                reference_join_padding_equivalent,
+            )
+            .map_err(|error| error.message)?;
+        if !semantic.verified() && !reference_join_padding {
             return Err(format!(
                 "candidate source/transport text proof failed: {semantic:?}"
             ));
@@ -2881,6 +2896,39 @@ fn pdftotext_ordered_text_matches(
     golden_pdf: &[u8],
     page_count: usize,
 ) -> DetailedResult<bool> {
+    pdftotext_ordered_text_matches_with(
+        candidate_pdf,
+        golden_pdf,
+        page_count,
+        legacy_symbol_ordered_text_equivalent,
+    )
+}
+
+fn reference_join_padding_equivalent(candidate: &str, golden: &str) -> bool {
+    let mut candidate = candidate
+        .chars()
+        .filter(|character| !is_extracted_whitespace(*character))
+        .peekable();
+    for character in golden
+        .chars()
+        .filter(|character| !is_extracted_whitespace(*character))
+    {
+        if character == '\u{200c}' && candidate.peek() != Some(&character) {
+            continue;
+        }
+        if candidate.next() != Some(character) {
+            return false;
+        }
+    }
+    candidate.next().is_none()
+}
+
+fn pdftotext_ordered_text_matches_with(
+    candidate_pdf: &[u8],
+    golden_pdf: &[u8],
+    page_count: usize,
+    equivalent: impl Fn(&str, &str) -> bool,
+) -> DetailedResult<bool> {
     for page_index in 0..page_count {
         let candidate = pdftotext_page(candidate_pdf, page_index).map_err(|error| {
             OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::PdfExtraction, error)
@@ -2890,7 +2938,7 @@ fn pdftotext_ordered_text_matches(
             OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::PdfExtraction, error)
                 .at(page_index, None)
         })?;
-        if legacy_symbol_ordered_text_equivalent(&candidate, &golden) {
+        if equivalent(&candidate, &golden) {
             continue;
         }
         let candidate_raw = pdftotext_page_raw(candidate_pdf, page_index).map_err(|error| {
@@ -2901,7 +2949,7 @@ fn pdftotext_ordered_text_matches(
             OfficeGoldenFailure::new(OfficeGoldenComparisonLayer::PdfExtraction, error)
                 .at(page_index, None)
         })?;
-        if !legacy_symbol_ordered_text_equivalent(&candidate_raw, &golden_raw) {
+        if !equivalent(&candidate_raw, &golden_raw) {
             return Ok(false);
         }
     }
@@ -3188,6 +3236,9 @@ fn exact_decoded_image_match(
             raster_width_px,
             raster_height_px,
         );
+    if !same_identity {
+        return false;
+    }
     // The cheap PDFium bitmap hash omits /SMask. Equal RGB samples cannot
     // establish visible identity for two differently shaped black shadows.
     // An unavailable/budget-limited mask must take the pixel comparison, not
@@ -3204,25 +3255,19 @@ fn exact_decoded_image_match(
     let both_opaque = page_object_raw_image(candidate_summary, candidate)
         .is_some_and(identity_alpha)
         && page_object_raw_image(golden_summary, golden).is_some_and(identity_alpha);
-    same_identity
-        && ((both_opaque && decoded_image_samples_match(candidate, golden))
-            || semantic_soft_mask_images_match(
-                candidate_summary,
-                golden_summary,
-                candidate,
-                golden,
-            )
-            || affine_decoded_image_match(
-                candidate_summary,
-                golden_summary,
-                candidate,
-                golden,
-                [
-                    f64::from(raster_width_px) / f64::from(page_bounds.width()),
-                    f64::from(raster_height_px) / f64::from(page_bounds.height()),
-                ],
-                both_opaque,
-            ))
+    (both_opaque && decoded_image_samples_match(candidate, golden))
+        || semantic_soft_mask_images_match(candidate_summary, golden_summary, candidate, golden)
+        || affine_decoded_image_match(
+            candidate_summary,
+            golden_summary,
+            candidate,
+            golden,
+            [
+                f64::from(raster_width_px) / f64::from(page_bounds.width()),
+                f64::from(raster_height_px) / f64::from(page_bounds.height()),
+            ],
+            both_opaque,
+        )
 }
 
 fn affine_decoded_image_match(
@@ -4809,10 +4854,11 @@ mod tests {
         legacy_symbol_semantic_text, legacy_symbol_unordered_text_equivalent,
         localized_stencil_diff_metrics, localized_visual_diff_metrics, normalize_extracted_text,
         normalized_page_text_from_parts, parse_utc_datetime_in_reference_time_zone,
-        pdf_style_colors_equivalent, same_text_line, same_writing_axis, text_characters_share_line,
-        text_edge_tolerance_pt, text_line_topology_differs, text_mask_x_spans_by_row,
-        type0_base_font_matches_descendant, unmatched_image_requires_localized_comparison,
-        unordered_extracted_text_content, validate_candidate_font_contract, visual_diff_metrics,
+        pdf_style_colors_equivalent, reference_join_padding_equivalent, same_text_line,
+        same_writing_axis, text_characters_share_line, text_edge_tolerance_pt,
+        text_line_topology_differs, text_mask_x_spans_by_row, type0_base_font_matches_descendant,
+        unmatched_image_requires_localized_comparison, unordered_extracted_text_content,
+        validate_candidate_font_contract, visual_diff_metrics,
     };
 
     #[test]
@@ -5356,6 +5402,30 @@ mod tests {
         assert!(!legacy_symbol_unordered_text_equivalent(
             "\u{2192}", "\u{f0e7}"
         ));
+    }
+
+    #[test]
+    fn reference_join_padding_keeps_every_candidate_character_in_order() {
+        assert!(reference_join_padding_equivalent(
+            "A\u{202b}أ\u{202c} B",
+            "A\u{202b}\u{200c}أ\u{202c}\nB"
+        ));
+        assert!(reference_join_padding_equivalent(
+            "A\u{200c}B",
+            "A\u{200c}\u{200c}B"
+        ));
+        for (candidate, golden) in [
+            ("AأB", "A\u{200c}بB"),
+            ("AأB", "B\u{200c}أA"),
+            ("AأB", "A\u{200c}أأB"),
+            ("A\u{200c}B", "AB"),
+            ("A\u{200c}B", "AB\u{200c}"),
+            ("AأB", "A\u{200d}أB"),
+            ("AأB", "A\u{200f}أB"),
+            ("Aأ]", "A\u{200c}أ["),
+        ] {
+            assert!(!reference_join_padding_equivalent(candidate, golden));
+        }
     }
 
     #[test]

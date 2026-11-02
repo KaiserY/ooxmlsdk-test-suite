@@ -224,6 +224,8 @@ pub struct CampaignPdfOptions {
     pub format_locale: String,
     pub document_language: String,
     pub field_update: Option<CampaignFieldUpdate>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub update_fields_at_print: Option<bool>,
     pub tagged_pdf: bool,
     pub pdf_ua_compliance: bool,
     pub export_bookmarks: bool,
@@ -246,6 +248,7 @@ impl CampaignPdfOptions {
             format_locale: "zh-CN".to_string(),
             document_language: "zh-CN".to_string(),
             field_update: None,
+            update_fields_at_print: None,
             tagged_pdf: false,
             pdf_ua_compliance: false,
             export_bookmarks: true,
@@ -294,6 +297,7 @@ impl CampaignPdfOptions {
             ui_language: Some(self.ui_language.clone()),
             format_locale: Some(self.format_locale.clone()),
             default_document_language: Some(self.document_language.clone()),
+            update_fields_at_print: self.update_fields_at_print,
             field_update_datetime: self.field_update.as_ref().map(|value| FieldUpdateDateTime {
                 year: value.year,
                 month: value.month,
@@ -406,6 +410,7 @@ impl CampaignPdfOptions {
                     ));
                 }
             },
+            update_fields_at_print: options.update_fields_at_print,
             tagged_pdf: options.general.tagged_pdf,
             pdf_ua_compliance: options.general.pdf_ua_compliance,
             export_bookmarks: options.general.export_bookmarks,
@@ -521,6 +526,8 @@ pub struct CampaignAdjustment {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct OfficeExportOptions {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub update_fields_at_print: Option<bool>,
     pub quality: String,
     pub include_document_properties: bool,
     pub page_from: Option<u32>,
@@ -624,6 +631,14 @@ impl CampaignAssignment {
         })?;
         observed.validate(&self.environment_request())?;
         let mut options = self.requested_pdf_options()?;
+        if self.office.update_fields_at_print.is_some()
+            && observed.update_fields_at_print != self.office.update_fields_at_print
+        {
+            return Err("Office did not apply the requested print-time field update option".into());
+        }
+        options.update_fields_at_print = observed
+            .update_fields_at_print
+            .or(options.update_fields_at_print);
         options.field_update_datetime = Some(
             crate::office_golden::parse_utc_datetime_in_reference_time_zone(
                 &observed.clock.refresh_started_at_utc,
@@ -642,6 +657,13 @@ impl CampaignAssignment {
             record,
             options.source_file_name.as_deref().unwrap_or_default(),
         )?;
+        validate_reference_user_profile(&crate::workspace_root(), self, record)?;
+        options.field_user_name = observed.user_name.clone();
+        options.field_user_initials = observed.user_initials.clone();
+        options.linked_styles_template =
+            reference_linked_styles_template(&crate::workspace_root(), self, record)?;
+        options.english_hyphenation_dictionary =
+            reference_english_hyphenation_dictionary(&crate::workspace_root(), self, record)?;
         Ok(options)
     }
 }
@@ -659,21 +681,136 @@ fn reference_opened_file_path(
         .render_environment
         .as_ref()
         .and_then(|environment| environment.opened_file_path.as_deref());
-    let mut context_annotations = record
-        .annotations
-        .iter()
-        .filter(|annotation| annotation["kind"] == "reference-input-context");
-    let annotation = context_annotations.next();
-    if context_annotations.next().is_some() {
-        return Err("ambiguous reference input context".into());
-    }
+    let context = reference_input_context(root, assignment, record, "reference-input-context")?;
     let Some(path) = path else {
-        if annotation.is_some() {
+        if context.is_some() {
             return Err("reference input context has no recorded storage path".into());
         }
         return Ok(None);
     };
     validate_reference_opened_file_path(path, expected_name)?;
+    if context.is_some_and(|context| context["opened_file_path"] != path) {
+        return Err("reference input context storage path drift".into());
+    }
+    Ok(Some(path.to_string()))
+}
+
+fn validate_reference_user_profile(
+    root: &Path,
+    assignment: &CampaignAssignment,
+    record: &CampaignConversionRecord,
+) -> Result<(), String> {
+    let Some(context) =
+        reference_input_context(root, assignment, record, "reference-user-profile")?
+    else {
+        return Ok(());
+    };
+    let observed = record
+        .render_environment
+        .as_ref()
+        .ok_or("reference user profile has no rendering environment")?;
+    if (observed.user_name.is_none() && observed.user_initials.is_none())
+        || context["user_name"] != serde_json::json!(observed.user_name)
+        || context["user_initials"] != serde_json::json!(observed.user_initials)
+    {
+        return Err("reference input context user profile drift".into());
+    }
+    Ok(())
+}
+
+// Template packages are application input, independent of the expected PDF.
+// Freeze both the package and its source/output-bound provenance; never read
+// Normal.dotm from the current rendering host during a golden comparison.
+fn reference_linked_styles_template(
+    root: &Path,
+    assignment: &CampaignAssignment,
+    record: &CampaignConversionRecord,
+) -> Result<Option<std::sync::Arc<[u8]>>, String> {
+    let Some(context) =
+        reference_input_context(root, assignment, record, "reference-linked-styles-template")?
+    else {
+        return Ok(None);
+    };
+    let template = &context["linked_styles_template"];
+    let hash = template["sha256"]
+        .as_str()
+        .filter(|hash| {
+            hash.len() == 64
+                && hash
+                    .bytes()
+                    .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+        })
+        .ok_or("invalid reference template identity")?;
+    let relative = format!("reference-input-context/templates/{hash}.dotx");
+    if template["path"] != relative {
+        return Err("reference template path drift".into());
+    }
+    let bytes = fs::read(root.join("corpus_pdf_conv").join(relative))
+        .map_err(|error| format!("could not read reference template: {error}"))?;
+    if sha256_bytes(&bytes) != hash {
+        return Err("reference template package drift".into());
+    }
+    Ok(Some(bytes.into()))
+}
+
+fn reference_english_hyphenation_dictionary(
+    root: &Path,
+    assignment: &CampaignAssignment,
+    record: &CampaignConversionRecord,
+) -> Result<
+    Option<std::sync::Arc<ooxmlsdk_layout::hyphenation::EnglishHyphenationDictionary>>,
+    String,
+> {
+    let Some(context) =
+        reference_input_context(root, assignment, record, "reference-linked-styles-template")?
+    else {
+        return Ok(None);
+    };
+    let Some(dictionary) = context.get("english_hyphenation_dictionary") else {
+        return Ok(None);
+    };
+    let hash = dictionary["sha256"]
+        .as_str()
+        .filter(|hash| {
+            hash.len() == 64
+                && hash
+                    .bytes()
+                    .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+        })
+        .ok_or("invalid reference English dictionary identity")?;
+    let relative = format!("reference-input-context/proofing/{hash}.prm");
+    if dictionary["path"] != relative || dictionary["format"] != "mshy7en-resource-prm" {
+        return Err("reference English dictionary path/format drift".into());
+    }
+    let data = fs::read(root.join("corpus_pdf_conv").join(relative))
+        .map_err(|error| format!("could not read reference English dictionary: {error}"))?;
+    if sha256_bytes(&data) != hash {
+        return Err("reference English dictionary data drift".into());
+    }
+    let dictionary =
+        ooxmlsdk_layout::hyphenation::EnglishHyphenationDictionary::from_microsoft_resource(
+            data.into(),
+        )
+        .ok_or("unsupported reference English dictionary resource")?;
+    Ok(Some(std::sync::Arc::new(dictionary)))
+}
+
+// Historical environment observations may be backfilled only with frozen,
+// source/output-bound evidence. Runtime replay never extracts expected text.
+fn reference_input_context(
+    root: &Path,
+    assignment: &CampaignAssignment,
+    record: &CampaignConversionRecord,
+    kind: &str,
+) -> Result<Option<serde_json::Value>, String> {
+    let mut context_annotations = record
+        .annotations
+        .iter()
+        .filter(|annotation| annotation["kind"] == kind);
+    let annotation = context_annotations.next();
+    if context_annotations.next().is_some() {
+        return Err("ambiguous reference input context".into());
+    }
     if let Some(annotation) = annotation {
         let relative = format!(
             "reference-input-context/{}.json",
@@ -689,12 +826,12 @@ fn reference_opened_file_path(
             || context["configuration_id"] != assignment.configuration_id
             || context["source_sha256"] != record.source_sha256
             || context["output_sha256"] != record.output_sha256
-            || context["opened_file_path"] != path
         {
             return Err("reference input context provenance drift".into());
         }
+        return Ok(Some(context));
     }
-    Ok(Some(path.to_string()))
+    Ok(None)
 }
 
 fn validate_reference_opened_file_path(path: &str, expected_name: &str) -> Result<(), String> {
@@ -855,6 +992,8 @@ pub struct OfficeReferenceClock {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct OfficeRenderEnvironment {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    update_fields_at_print: Option<bool>,
     ui_language: String,
     format_locale: String,
     document_language: String,
@@ -862,6 +1001,10 @@ pub struct OfficeRenderEnvironment {
     windows_time_zone: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     opened_file_path: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    user_name: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    user_initials: Option<String>,
     clock: OfficeReferenceClock,
 }
 
@@ -1071,6 +1214,7 @@ pub fn generate_campaign_assignments(root: &Path) -> Result<Vec<CampaignAssignme
                 source,
                 requested: CampaignPdfOptions::baseline(&source_key),
                 office: OfficeExportOptions {
+                    update_fields_at_print: None,
                     quality: "print".to_string(),
                     include_document_properties: false,
                     page_from: None,
@@ -1795,6 +1939,14 @@ pub fn validate_assignments(
 
 fn validate_office_options(assignment: &CampaignAssignment) -> Result<(), String> {
     let options = &assignment.office;
+    if options.update_fields_at_print != assignment.effective.update_fields_at_print
+        || (assignment.family != OfficeFamily::Word && options.update_fields_at_print.is_some())
+    {
+        return Err(format!(
+            "Office/candidate print field update mismatch for {}",
+            assignment.source_key()
+        ));
+    }
     if (options.page_from, options.page_to)
         != office_page_range(assignment.effective.page_range.as_deref())?
     {
@@ -4084,6 +4236,38 @@ mod tests {
     use super::*;
 
     #[test]
+    fn print_field_update_round_trips_without_changing_legacy_assignments() {
+        let root = crate::workspace_root();
+        let mut assignment = read_plan(&root.join("corpus_pdf_conv/plan.jsonl"))
+            .unwrap()
+            .into_iter()
+            .find(|value| value.family == OfficeFamily::Word)
+            .unwrap();
+        let legacy = serde_json::to_value(&assignment).unwrap();
+        for section in ["requested", "effective", "office"] {
+            assert!(legacy[section].get("update_fields_at_print").is_none());
+        }
+        for enabled in [false, true] {
+            assignment.requested.update_fields_at_print = Some(enabled);
+            assignment.effective.update_fields_at_print = Some(enabled);
+            assignment.office.update_fields_at_print = Some(enabled);
+            validate_office_options(&assignment).unwrap();
+            assert_eq!(
+                assignment
+                    .requested_pdf_options()
+                    .unwrap()
+                    .update_fields_at_print,
+                Some(enabled)
+            );
+            let round_trip: CampaignAssignment =
+                serde_json::from_value(serde_json::to_value(&assignment).unwrap()).unwrap();
+            assert_eq!(round_trip, assignment);
+            assignment.office.update_fields_at_print = Some(!enabled);
+            assert!(validate_office_options(&assignment).is_err());
+        }
+    }
+
+    #[test]
     fn audit_history_keeps_passed_slow_cases_parallel() {
         let root = crate::workspace_root();
         let conversions = read_conversion_records(&root).unwrap();
@@ -4254,12 +4438,15 @@ mod tests {
             time_zone: "Asia/Shanghai".into(),
         };
         let observed = OfficeRenderEnvironment {
+            update_fields_at_print: None,
             ui_language: request.ui_language.clone(),
             format_locale: request.format_locale.clone(),
             document_language: request.document_language.clone(),
             time_zone: request.time_zone.clone(),
             windows_time_zone: "China Standard Time".into(),
             opened_file_path: None,
+            user_name: None,
+            user_initials: None,
             clock: OfficeReferenceClock {
                 opened_at_utc: "2026-09-11T06:54:54Z".into(),
                 refresh_started_at_utc: "2026-09-11T06:54:55Z".into(),
@@ -4431,6 +4618,60 @@ mod tests {
                 .source_file_path
                 .is_none()
         );
+    }
+
+    #[test]
+    fn reference_user_profile_context_is_bound_and_legacy_receipts_stay_unspecified() {
+        let root = crate::workspace_root();
+        let assignment = read_plan(&root.join("corpus_pdf_conv/plan.jsonl"))
+            .unwrap()
+            .into_iter()
+            .find(|assignment| {
+                assignment.file == "sw/qa/extras/ooxmlexport/data/tdf148380_usernameField.docx"
+            })
+            .unwrap();
+        let records = read_conversion_records(&root).unwrap();
+        let record = &records[&(assignment.corpus.clone(), assignment.file.clone())];
+        let options = assignment.reference_pdf_options(record).unwrap();
+        let observed = record.render_environment.as_ref().unwrap();
+        assert!(options.field_user_name.is_some());
+        assert!(options.field_user_initials.is_some());
+        assert_eq!(options.field_user_name, observed.user_name);
+        assert_eq!(options.field_user_initials, observed.user_initials);
+        for drift in 0..7 {
+            let mut altered = record.clone();
+            match drift {
+                0 => altered.render_environment.as_mut().unwrap().user_name = None,
+                1 => {
+                    altered.render_environment.as_mut().unwrap().user_initials =
+                        Some("other".into())
+                }
+                2 => altered.source_sha256 = "0".repeat(64),
+                3 => altered.output_sha256 = "0".repeat(64),
+                4 => altered.annotations[0]["sha256"] = serde_json::json!("0".repeat(64)),
+                5 => altered.annotations.push(altered.annotations[0].clone()),
+                6 => altered.annotations[0]["path"] = serde_json::json!("other.json"),
+                _ => unreachable!(),
+            }
+            assert!(
+                assignment.reference_pdf_options(&altered).is_err(),
+                "{drift}"
+            );
+        }
+        let mut legacy = record.clone();
+        legacy.annotations.clear();
+        let observed = legacy.render_environment.as_mut().unwrap();
+        observed.user_name = None;
+        observed.user_initials = None;
+        let options = assignment.reference_pdf_options(&legacy).unwrap();
+        assert_eq!(options.field_user_name, None);
+        assert_eq!(options.field_user_initials, None);
+        // New receipts can record either independent profile value directly,
+        // without needing a historical backfill annotation.
+        legacy.render_environment.as_mut().unwrap().user_initials = Some("".into());
+        let options = assignment.reference_pdf_options(&legacy).unwrap();
+        assert_eq!(options.field_user_name, None);
+        assert_eq!(options.field_user_initials.as_deref(), Some(""));
     }
 
     #[test]

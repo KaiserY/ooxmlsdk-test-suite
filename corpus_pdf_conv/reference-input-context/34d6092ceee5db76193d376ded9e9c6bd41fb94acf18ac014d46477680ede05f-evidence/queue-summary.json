@@ -1,0 +1,79 @@
+{
+  "cases": [
+    {
+      "index": 0,
+      "file": "control-00.docx",
+      "exit_code": 0,
+      "remaining_office_processes": []
+    },
+    {
+      "index": 1,
+      "file": "control-01.docx",
+      "exit_code": 0,
+      "remaining_office_processes": []
+    },
+    {
+      "index": 2,
+      "file": "control-02.docx",
+      "exit_code": 0,
+      "remaining_office_processes": []
+    },
+    {
+      "index": 3,
+      "file": "control-03.docx",
+      "exit_code": 0,
+      "remaining_office_processes": []
+    },
+    {
+      "index": 4,
+      "file": "control-04.docx",
+      "exit_code": 0,
+      "remaining_office_processes": []
+    },
+    {
+      "index": 5,
+      "file": "control-05.docx",
+      "exit_code": 0,
+      "remaining_office_processes": []
+    },
+    {
+      "index": 6,
+      "file": "control-06.docx",
+      "exit_code": 0,
+      "remaining_office_processes": []
+    },
+    {
+      "index": 7,
+      "file": "control-07.docx",
+      "exit_code": 0,
+      "remaining_office_processes": []
+    },
+    {
+      "index": 8,
+      "file": "control-08.docx",
+      "exit_code": 0,
+      "remaining_office_processes": []
+    },
+    {
+      "index": 9,
+      "file": "control-09.docx",
+      "exit_code": 0,
+      "remaining_office_processes": []
+    },
+    {
+      "index": 10,
+      "file": "control-10.docx",
+      "exit_code": 0,
+      "remaining_office_processes": []
+    },
+    {
+      "index": 11,
+      "file": "control-11.docx",
+      "exit_code": 0,
+      "remaining_office_processes": []
+    }
+  ],
+  "language_snapshot_equal": true,
+  "host_snapshot_equal": true,
+  "remaining_office_processes": []
+}

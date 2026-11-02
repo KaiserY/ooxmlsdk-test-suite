@@ -1,0 +1,787 @@
+{
+  "schema_version": 1,
+  "configuration_id": "d7b1ffa7a5fc5bd2a36ebadd1b5d7e6f7e92ea0b2e9df4f43b3d403cf67d785b",
+  "reason": "Single-case reference revision under the user standing instruction to use the established procedure and preserve history. Implementation first repaired compatibility15 finite Kashida priorities, complex and ordinary printer advances, semantic trailing blanks across formatting boundaries and RTL extender paint order. Actual Office arrays establish all10modern allocation/device lines and207join/319extender offsets; 31private tests,2725protected Word cases and final dev GDB pass. Two exact-original exports, unchanged source bytes/configured options/locales, observed print-fields ON/OFF and links OFF, both have2pages in Word16.0.20527.20088 and SDK passes the unchanged complete comparison against both. Saved Word16.0.20326.20144 reference also has2pages but differs in Latin expansion, Arabic connection selection and glyph mappings. The build difference alone is not established as the cause. Source/configuration/acceptance gates unchanged; separate compatibility derivatives retain qualified preexisting failures. This revision is not an additional implementation gain.",
+  "user_approval": "沿用用户既有指示：同类确证冲突按之前逻辑更新golden并保留历史；先完成原字节/配置/打印开关/完整比较证据。",
+  "approval_scope": "standing instruction; no new per-case confirmation required",
+  "implementation_gain": false,
+  "source_unchanged": true,
+  "office_options_unchanged": true,
+  "acceptance_gates_unchanged": true,
+  "previous_conversion": {
+    "schema_version": 4,
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "file": "sw/qa/extras/ooxmlexport/data/tdf155707.docx",
+    "family": "word",
+    "source_extension": "docx",
+    "source_bytes": 13012,
+    "source_sha256": "af36644e14e94c0e1a42509d31687727720f3cf2bf22eca039e00694808b45af",
+    "configuration_id": "d7b1ffa7a5fc5bd2a36ebadd1b5d7e6f7e92ea0b2e9df4f43b3d403cf67d785b",
+    "requested": {
+      "standards": [
+        "pdf20"
+      ],
+      "compress_content_streams": true,
+      "ui_language": "de-DE",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "field_update": null,
+      "tagged_pdf": true,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": false,
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "images": {
+        "use_lossless_compression": false,
+        "jpeg_quality": 60,
+        "reduce_resolution": false,
+        "max_resolution_dpi": 600
+      },
+      "link_action": "remove_external_links",
+      "export_form_fields": false,
+      "viewer": {
+        "page_mode": "use_outlines",
+        "page_layout": "single_page",
+        "magnification": "default",
+        "initial_page": 1,
+        "hide_toolbar": false,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": true,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "creator": "ooxmlsdk-pdf",
+        "producer": "ooxmlsdk-pdf configured campaign",
+        "creation_date": null
+      },
+      "embed_campaign_attachment": true
+    },
+    "effective": {
+      "standards": [
+        "pdf20"
+      ],
+      "compress_content_streams": true,
+      "ui_language": "de-DE",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "field_update": null,
+      "tagged_pdf": true,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": false,
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "images": {
+        "use_lossless_compression": false,
+        "jpeg_quality": 60,
+        "reduce_resolution": false,
+        "max_resolution_dpi": null
+      },
+      "link_action": "remove_external_links",
+      "export_form_fields": false,
+      "viewer": {
+        "page_mode": "use_outlines",
+        "page_layout": "single_page",
+        "magnification": "default",
+        "initial_page": 1,
+        "hide_toolbar": false,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": true,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "creator": "ooxmlsdk-pdf",
+        "producer": "ooxmlsdk-pdf configured campaign",
+        "creation_date": null
+      },
+      "embed_campaign_attachment": true
+    },
+    "adjustments": [
+      {
+        "feature": "ui-language",
+        "reason": "application-generated UI strings currently fall back to English outside English and Chinese resource packs"
+      },
+      {
+        "feature": "image-downsampling",
+        "reason": "maximum image resolution is inactive when downsampling is disabled"
+      }
+    ],
+    "office_options": {
+      "quality": "print",
+      "include_document_properties": true,
+      "page_from": null,
+      "page_to": null,
+      "tagged_pdf": true,
+      "bookmarks": "none",
+      "pdf_a_1": false,
+      "bitmap_missing_fonts": true,
+      "print_hidden_slides": false
+    },
+    "status": "converted",
+    "reference_engine": "Microsoft Office",
+    "environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "application": "Word",
+    "application_version": "16.0",
+    "application_build": "16.0.20326",
+    "output": "sw/qa/extras/ooxmlexport/data/tdf155707.docx.pdf",
+    "output_bytes": 50261,
+    "output_sha256": "e6a1f51d19fbcc369ba7f4010ce45dc142a608853eb7ee6eed3b74d96325572a",
+    "observed_pdf": {
+      "header_version": "1.7",
+      "page_count": 2,
+      "tagged_pdf": true,
+      "has_outlines": false,
+      "pdf_a_part": null,
+      "pdf_a_conformance": null
+    },
+    "render_environment": {
+      "ui_language": "de-DE",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "time_zone": "Asia/Shanghai",
+      "windows_time_zone": "China Standard Time",
+      "clock": {
+        "opened_at_utc": "2026-09-11T12:01:09.4426725Z",
+        "refresh_started_at_utc": "2026-09-11T12:01:09.5822932Z",
+        "refresh_completed_at_utc": "2026-09-11T12:01:09.7806142Z",
+        "export_started_at_utc": "2026-09-11T12:01:09.8069317Z",
+        "export_completed_at_utc": "2026-09-11T12:01:10.1019747Z"
+      }
+    },
+    "converted_at_utc": "2026-09-11T12:01:12.755199105Z",
+    "elapsed_ms": 4705,
+    "attempts": 1,
+    "annotations": [],
+    "failure_class": "",
+    "error_code": "",
+    "error": ""
+  },
+  "revised_conversion": {
+    "schema_version": 4,
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "file": "sw/qa/extras/ooxmlexport/data/tdf155707.docx",
+    "family": "word",
+    "source_extension": "docx",
+    "source_bytes": 13012,
+    "source_sha256": "af36644e14e94c0e1a42509d31687727720f3cf2bf22eca039e00694808b45af",
+    "configuration_id": "d7b1ffa7a5fc5bd2a36ebadd1b5d7e6f7e92ea0b2e9df4f43b3d403cf67d785b",
+    "requested": {
+      "standards": [
+        "pdf20"
+      ],
+      "compress_content_streams": true,
+      "ui_language": "de-DE",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "field_update": null,
+      "tagged_pdf": true,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": false,
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "images": {
+        "use_lossless_compression": false,
+        "jpeg_quality": 60,
+        "reduce_resolution": false,
+        "max_resolution_dpi": 600
+      },
+      "link_action": "remove_external_links",
+      "export_form_fields": false,
+      "viewer": {
+        "page_mode": "use_outlines",
+        "page_layout": "single_page",
+        "magnification": "default",
+        "initial_page": 1,
+        "hide_toolbar": false,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": true,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "creator": "ooxmlsdk-pdf",
+        "producer": "ooxmlsdk-pdf configured campaign",
+        "creation_date": null
+      },
+      "embed_campaign_attachment": true
+    },
+    "effective": {
+      "standards": [
+        "pdf20"
+      ],
+      "compress_content_streams": true,
+      "ui_language": "de-DE",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "field_update": null,
+      "tagged_pdf": true,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": false,
+      "open_bookmark_levels": null,
+      "page_range": null,
+      "images": {
+        "use_lossless_compression": false,
+        "jpeg_quality": 60,
+        "reduce_resolution": false,
+        "max_resolution_dpi": null
+      },
+      "link_action": "remove_external_links",
+      "export_form_fields": false,
+      "viewer": {
+        "page_mode": "use_outlines",
+        "page_layout": "single_page",
+        "magnification": "default",
+        "initial_page": 1,
+        "hide_toolbar": false,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": true,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "creator": "ooxmlsdk-pdf",
+        "producer": "ooxmlsdk-pdf configured campaign",
+        "creation_date": null
+      },
+      "embed_campaign_attachment": true
+    },
+    "adjustments": [
+      {
+        "feature": "ui-language",
+        "reason": "application-generated UI strings currently fall back to English outside English and Chinese resource packs"
+      },
+      {
+        "feature": "image-downsampling",
+        "reason": "maximum image resolution is inactive when downsampling is disabled"
+      }
+    ],
+    "office_options": {
+      "quality": "print",
+      "include_document_properties": true,
+      "page_from": null,
+      "page_to": null,
+      "tagged_pdf": true,
+      "bookmarks": "none",
+      "pdf_a_1": false,
+      "bitmap_missing_fonts": true,
+      "print_hidden_slides": false
+    },
+    "status": "converted",
+    "reference_engine": "Microsoft Office",
+    "environment_id": "8f5d880a2724c96254ab0872bd8fe54fa05b3c539314c9d156fc4f88b23c273d",
+    "application": "Word",
+    "application_version": "16.0",
+    "application_build": "16.0.20527",
+    "output": "sw/qa/extras/ooxmlexport/data/tdf155707.docx.pdf",
+    "output_bytes": 53588,
+    "output_sha256": "db4c6ba5e770783ec31911d440b156f3c47a75cd8baf3f535dfba572fc02f0ed",
+    "observed_pdf": {
+      "header_version": "1.7",
+      "page_count": 2,
+      "tagged_pdf": true,
+      "has_outlines": false,
+      "pdf_a_part": null,
+      "pdf_a_conformance": null
+    },
+    "render_environment": {
+      "ui_language": "de-DE",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "time_zone": "Asia/Shanghai",
+      "windows_time_zone": "China Standard Time",
+      "clock": {
+        "opened_at_utc": "2026-10-31T06:17:10.1528913Z",
+        "refresh_started_at_utc": "2026-10-31T06:17:10.2874855Z",
+        "refresh_completed_at_utc": "2026-10-31T06:17:10.4591437Z",
+        "export_started_at_utc": "2026-10-31T06:17:10.4987825Z",
+        "export_completed_at_utc": "2026-10-31T06:17:10.8384279Z"
+      },
+      "user_name": "yang yue",
+      "user_initials": "yy",
+      "update_fields_at_print": true
+    },
+    "converted_at_utc": "2026-10-31T06:17:10.8384279Z",
+    "elapsed_ms": 1355,
+    "attempts": 1,
+    "annotations": [
+      {
+        "kind": "reference-revision",
+        "configuration_id": "d7b1ffa7a5fc5bd2a36ebadd1b5d7e6f7e92ea0b2e9df4f43b3d403cf67d785b",
+        "previous_environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+        "environment_id": "8f5d880a2724c96254ab0872bd8fe54fa05b3c539314c9d156fc4f88b23c273d",
+        "source_sha256": "af36644e14e94c0e1a42509d31687727720f3cf2bf22eca039e00694808b45af",
+        "output_sha256": "db4c6ba5e770783ec31911d440b156f3c47a75cd8baf3f535dfba572fc02f0ed",
+        "reason": "Single-case reference revision under the user standing instruction to use the established procedure and preserve history. Implementation first repaired compatibility15 finite Kashida priorities, complex and ordinary printer advances, semantic trailing blanks across formatting boundaries and RTL extender paint order. Actual Office arrays establish all10modern allocation/device lines and207join/319extender offsets; 31private tests,2725protected Word cases and final dev GDB pass. Two exact-original exports, unchanged source bytes/configured options/locales, observed print-fields ON/OFF and links OFF, both have2pages in Word16.0.20527.20088 and SDK passes the unchanged complete comparison against both. Saved Word16.0.20326.20144 reference also has2pages but differs in Latin expansion, Arabic connection selection and glyph mappings. The build difference alone is not established as the cause. Source/configuration/acceptance gates unchanged; separate compatibility derivatives retain qualified preexisting failures. This revision is not an additional implementation gain.",
+        "approved_by": "user",
+        "previous_output_sha256": "e6a1f51d19fbcc369ba7f4010ce45dc142a608853eb7ee6eed3b74d96325572a",
+        "previous_application_build": "16.0.20326",
+        "application_build": "16.0.20527",
+        "previous_page_count": 2,
+        "page_count": 2
+      }
+    ],
+    "failure_class": "",
+    "error_code": "",
+    "error": ""
+  },
+  "protected_word": {
+    "manifest": {
+      "started_utc": "2026-10-31T09:55:58.778639+00:00",
+      "baseline_sha256": "7b1c650d6965ecc47b9515ad28ec3ab552f5f241aa0c67254df1847a60583359",
+      "binary_sha256": "b1129b44750ae4dc75d0612ffd74559e918f0313e09ec9f13b26167107eb1d51",
+      "scope": "union",
+      "count": 2725,
+      "jobs": 12,
+      "timeout_seconds": 180,
+      "comparison": "canonical batch audit; original configured golden tolerance",
+      "previous_results_sha256": null
+    },
+    "counts": {
+      "PASS": 2725
+    },
+    "accepted": true,
+    "union_counts": {
+      "PASS": 2725
+    },
+    "results_sha256": "ce5f28748246fa479de6573230f48d0f0ec85c92c6141f5b15b0ade756b0cce7",
+    "finished_utc": "2026-10-31T09:56:53.561791+00:00",
+    "elapsed_seconds": 54.7922846520014,
+    "campaign_seconds": 53.68562297999597,
+    "wrapper_seconds": 1.1066616720054299,
+    "build_seconds": 0.0,
+    "changes": null,
+    "unresolved_union": []
+  },
+  "private_tests": {
+    "command": [
+      "cargo",
+      "test",
+      "-p",
+      "ooxmlsdk-layout",
+      "--release",
+      "--lib",
+      "--",
+      "kashida",
+      "complex_script_line_balance",
+      "--nocapture"
+    ],
+    "cwd": "/home/kazeno/git/ooxmlsdk",
+    "started_utc": "2026-10-31T09:58:32.259449+00:00",
+    "finished_utc": "2026-10-31T10:01:07.617460+00:00",
+    "elapsed_seconds": 155.35800977799954,
+    "exit_code": 0,
+    "diagnostics": [],
+    "logs": {
+      "/tmp/ooxmlsdk-tdf155707-20261031/private-v1006/stdout.jsonl": "3612d14a63653ca8320f826d1434afdd1b6ba74c9640226182d6ebaddad3c777",
+      "/tmp/ooxmlsdk-tdf155707-20261031/private-v1006/stderr.log": "6dec9bc4a54da5ec4085fe2400f6c37918b086953992dc41c37ecfe753aa1ea3"
+    },
+    "tests": {
+      "status": "ok",
+      "passed": 31,
+      "failed": 0,
+      "ignored": 0
+    }
+  },
+  "final_gdb_checks": {
+    "pins_stable": true,
+    "normal_exit": true,
+    "no_errors": true,
+    "owners_captured": true,
+    "dev_release_equal": true,
+    "native_extender_visual_order": true
+  },
+  "extender_contract": {
+    "nonempty": true,
+    "all_offsets_equal": true
+  },
+  "compatibility_derivatives": {
+    "status": "ACTUAL_DIAGNOSTIC_DERIVATIVE_AUDITS",
+    "runtime": "v1006",
+    "count": 6,
+    "cases": [
+      {
+        "index": 0,
+        "kind": "compat11-w970",
+        "source": "/tmp/ooxmlsdk-tdf155707-20261031/native-compat-v7-sdk-v1006/00/control.docx",
+        "source_sha256": "a0ca310be4326f1f220c98e385187f5c3be1702327f0bfd9da5b15844671a21b",
+        "golden": "/tmp/ooxmlsdk-tdf155707-20261031/native-compat-v7-sdk-v1006/00/control.docx.pdf",
+        "golden_sha256": "95b9e5084c90b17521cf631e5858bb00c6c54045c3daa38407c95708137c80b0",
+        "candidate": "/tmp/ooxmlsdk-tdf155707-20261031/native-compat-v7-sdk-v1006/00/candidate.pdf",
+        "candidate_sha256": "5c549d33a603d79429a7a9856e46a50ec9096f74dc0868260e3ae8ad07e17e17",
+        "task": "/tmp/ooxmlsdk-tdf155707-20261031/native-compat-v7-sdk-v1006/00/task.json",
+        "result": "/tmp/ooxmlsdk-tdf155707-20261031/native-compat-v7-sdk-v1006/00/result.json",
+        "verdict": "FAIL"
+      },
+      {
+        "index": 1,
+        "kind": "compat11-w971",
+        "source": "/tmp/ooxmlsdk-tdf155707-20261031/native-compat-v7-sdk-v1006/01/control.docx",
+        "source_sha256": "6308420500b48c58c4cb2c36e537f7652fc61736bcd74dbe7ac1d8cac5d825a5",
+        "golden": "/tmp/ooxmlsdk-tdf155707-20261031/native-compat-v7-sdk-v1006/01/control.docx.pdf",
+        "golden_sha256": "b0ce9e873c43aeecc035eab5ebb44ac9ed07f88b82856005a523e44c94d2539b",
+        "candidate": "/tmp/ooxmlsdk-tdf155707-20261031/native-compat-v7-sdk-v1006/01/candidate.pdf",
+        "candidate_sha256": "e2395866fd201cec262cb4c373af6c224cd362a10e2e8a4b6b47e8b275793b33",
+        "task": "/tmp/ooxmlsdk-tdf155707-20261031/native-compat-v7-sdk-v1006/01/task.json",
+        "result": "/tmp/ooxmlsdk-tdf155707-20261031/native-compat-v7-sdk-v1006/01/result.json",
+        "verdict": "FAIL"
+      },
+      {
+        "index": 2,
+        "kind": "compat14-w970",
+        "source": "/tmp/ooxmlsdk-tdf155707-20261031/native-compat-v7-sdk-v1006/02/control.docx",
+        "source_sha256": "941fbc55bed54ffd1109a2b2ad5870d67262af822dac1011da1de1d5a19994ae",
+        "golden": "/tmp/ooxmlsdk-tdf155707-20261031/native-compat-v7-sdk-v1006/02/control.docx.pdf",
+        "golden_sha256": "54b8d1585f0e2573fd09e8df1b40eca94e5b6ae56e2e6de086b27dc19e800f79",
+        "candidate": "/tmp/ooxmlsdk-tdf155707-20261031/native-compat-v7-sdk-v1006/02/candidate.pdf",
+        "candidate_sha256": "da3ce6384041e011bc7444dabb83dd812146092096c14be1fc91a1e2b1eeb6d9",
+        "task": "/tmp/ooxmlsdk-tdf155707-20261031/native-compat-v7-sdk-v1006/02/task.json",
+        "result": "/tmp/ooxmlsdk-tdf155707-20261031/native-compat-v7-sdk-v1006/02/result.json",
+        "verdict": "FAIL"
+      },
+      {
+        "index": 3,
+        "kind": "compat14-w971",
+        "source": "/tmp/ooxmlsdk-tdf155707-20261031/native-compat-v7-sdk-v1006/03/control.docx",
+        "source_sha256": "adca87f33155f450c1e466ad51b0afafda78c89a011672200573dffd72a784d1",
+        "golden": "/tmp/ooxmlsdk-tdf155707-20261031/native-compat-v7-sdk-v1006/03/control.docx.pdf",
+        "golden_sha256": "b06a3cd98a32f7919339667ebc9445e9b17a46e0e48b14cdf5fd3ae02c4a2bfc",
+        "candidate": "/tmp/ooxmlsdk-tdf155707-20261031/native-compat-v7-sdk-v1006/03/candidate.pdf",
+        "candidate_sha256": "57ca65f2f724a73c84613bd1a7b94601aca659725b3b0c43e5ede64ef61898a4",
+        "task": "/tmp/ooxmlsdk-tdf155707-20261031/native-compat-v7-sdk-v1006/03/task.json",
+        "result": "/tmp/ooxmlsdk-tdf155707-20261031/native-compat-v7-sdk-v1006/03/result.json",
+        "verdict": "FAIL"
+      },
+      {
+        "index": 4,
+        "kind": "compat15-w970",
+        "source": "/tmp/ooxmlsdk-tdf155707-20261031/native-compat-v7-sdk-v1006/04/control.docx",
+        "source_sha256": "23387dbacc6ce0a3ed58d6f490254dcc5b4573ee431e560fa12f2d69834e18c0",
+        "golden": "/tmp/ooxmlsdk-tdf155707-20261031/native-compat-v7-sdk-v1006/04/control.docx.pdf",
+        "golden_sha256": "68f31f9ad98b91d1c84629e191a58e18cf66f842ff0584b7ccfb075c2ec11841",
+        "candidate": "/tmp/ooxmlsdk-tdf155707-20261031/native-compat-v7-sdk-v1006/04/candidate.pdf",
+        "candidate_sha256": "4dc0dfbe4665caee1ce82511d30f9d09e30a177255429b02d7395e0212ce7f7a",
+        "task": "/tmp/ooxmlsdk-tdf155707-20261031/native-compat-v7-sdk-v1006/04/task.json",
+        "result": "/tmp/ooxmlsdk-tdf155707-20261031/native-compat-v7-sdk-v1006/04/result.json",
+        "verdict": "FAIL"
+      },
+      {
+        "index": 5,
+        "kind": "compat15-w971",
+        "source": "/tmp/ooxmlsdk-tdf155707-20261031/native-compat-v7-sdk-v1006/05/control.docx",
+        "source_sha256": "c7b67525d63cdb8d19e18a160a0caf249ea8ff5b1ad745112547e7a9f54eae67",
+        "golden": "/tmp/ooxmlsdk-tdf155707-20261031/native-compat-v7-sdk-v1006/05/control.docx.pdf",
+        "golden_sha256": "a4e74f5cbb4893b9ba57be03dee67de084a40503f113689ee1956ae20d5c4ddf",
+        "candidate": "/tmp/ooxmlsdk-tdf155707-20261031/native-compat-v7-sdk-v1006/05/candidate.pdf",
+        "candidate_sha256": "aa9196133c57b34191b3f01494afebad831f0ed4d4210474746002f3b1a06b5c",
+        "task": "/tmp/ooxmlsdk-tdf155707-20261031/native-compat-v7-sdk-v1006/05/task.json",
+        "result": "/tmp/ooxmlsdk-tdf155707-20261031/native-compat-v7-sdk-v1006/05/result.json",
+        "verdict": "FAIL"
+      }
+    ],
+    "build": {
+      "runtime": "v1006",
+      "mode": "release",
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "ooxmlsdk-pdf-test",
+        "--bin",
+        "office_pdf_campaign",
+        "--release"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 167.67966008099756,
+      "binary": "/home/kazeno/git/ooxmlsdk-test-suite/target/release/office_pdf_campaign",
+      "binary_sha256": "b1129b44750ae4dc75d0612ffd74559e918f0313e09ec9f13b26167107eb1d51",
+      "source_manifest": "/tmp/ooxmlsdk-batch63-20261023/source-v1006/manifest.json",
+      "source_manifest_sha256": "f700cb431396215833d38da1bf57a5df764726bb5ba35899328bb24e1a13abb5",
+      "command_receipt": {
+        "path": "/tmp/ooxmlsdk-batch63-20261023/build-release-v1006/receipt.json",
+        "sha256": "1bab3fb6b8d1a586358c267eed1d8113b2fc9cee0fcc99c463ae9029098d8533"
+      }
+    }
+  },
+  "original_full_office_version": "16.0.20326.20144",
+  "current_full_office_version": "16.0.20527.20088",
+  "environment_capture": {
+    "schema_version": 1,
+    "environment_id": "8f5d880a2724c96254ab0872bd8fe54fa05b3c539314c9d156fc4f88b23c273d",
+    "observed_at_utc": "2026-10-31T09:57:59.1467706Z",
+    "environment": {
+      "schema_version": 1,
+      "campaign_id": "office-ooxml-pdf-options-v2",
+      "converter_version": 2,
+      "probe_script_sha256": "3b6f7198657284625413088422544d360d8ece6b60805e8a994553da7b2a423f",
+      "controller_script_sha256": "a33a2697c363d68c5dd8e76db16b99223839357f6469a1101004421cf8b7eb66",
+      "environment_helper_sha256": "16f0694a8b9c0c11223263f16c3158fa96d312eaf9affe6dc3d312671eb9dcc2",
+      "reference_engine": "Microsoft Office",
+      "windows": {
+        "product_name": "Windows 10 Pro",
+        "display_version": "25H2",
+        "full_build": "26200.9711"
+      },
+      "office": {
+        "ui_languages": [
+          "de-DE",
+          "en-US",
+          "es-MX",
+          "fr-CA",
+          "ja-JP",
+          "ko-KR",
+          "zh-CN",
+          "zh-TW"
+        ],
+        "applications": [
+          {
+            "name": "Word",
+            "ui_language": "de-DE",
+            "version": "16.0"
+          },
+          {
+            "name": "Excel",
+            "ui_language": "de-DE",
+            "version": "16.0"
+          },
+          {
+            "name": "PowerPoint",
+            "ui_language": "de-DE",
+            "version": "16.0"
+          }
+        ],
+        "platform": "x64",
+        "product_release_ids": "O365ProPlusRetail",
+        "version_to_report": "16.0.20527.20088"
+      },
+      "locale": {
+        "culture": "zh-CN",
+        "ui_culture": "de-DE",
+        "document_language": "zh-CN",
+        "iana_time_zone": "Asia/Shanghai",
+        "time_zone": "China Standard Time"
+      },
+      "default_paper": {
+        "name": "A4",
+        "width_hundredths_inch": 827,
+        "height_hundredths_inch": 1169,
+        "landscape": false
+      },
+      "fonts": {
+        "file_count": 932,
+        "fingerprint_kind": "name-size-mtime",
+        "sha256": "d798b1247882a615681b01bba74e58bad4940c5954b6aa3041a14c9b70d0a2d7"
+      },
+      "dependencies": [
+        "probe-script",
+        "environment-controller",
+        "office-build",
+        "windows-build",
+        "installed-font-files",
+        "locale-and-time-zone",
+        "default-paper",
+        "per-source-office-export-configuration"
+      ]
+    },
+    "approved_references": [
+      {
+        "configuration_id": "d7b1ffa7a5fc5bd2a36ebadd1b5d7e6f7e92ea0b2e9df4f43b3d403cf67d785b",
+        "source_sha256": "af36644e14e94c0e1a42509d31687727720f3cf2bf22eca039e00694808b45af",
+        "output_sha256": "db4c6ba5e770783ec31911d440b156f3c47a75cd8baf3f535dfba572fc02f0ed"
+      }
+    ]
+  },
+  "evidence_owner": "/tmp/ooxmlsdk-tdf155707-20261031",
+  "native_modules": [
+    {
+      "path": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+      "version": "16.0.20527.20088",
+      "sha256": "9be13b7adc7eda2d1b5256d7f392eb688c996a3cb0adf84bad8cb0ef9e5b871d"
+    },
+    {
+      "path": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WWLIB.DLL",
+      "version": "16.0.20527.20088",
+      "sha256": "02c829bb7730919b30a9f33120fa220e9fe98afda4dc08ef14a615c194674eae"
+    },
+    {
+      "path": "C:\\Program Files\\Microsoft Office\\root\\Office16\\CHART.DLL",
+      "version": "16.0.20527.20088",
+      "sha256": "392e6a8164125c2deade89c295f799c5996ce869d8192203d5060021cedebbe0"
+    }
+  ],
+  "original_controls": {
+    "cases": [
+      {
+        "index": 0,
+        "kind": "original-print-fields-true",
+        "original_source": true,
+        "source": "/tmp/ooxmlsdk-tdf155707-20261031/native-original-v4/inputs/control-00.docx",
+        "sha256": "af36644e14e94c0e1a42509d31687727720f3cf2bf22eca039e00694808b45af",
+        "options": {
+          "quality": "print",
+          "include_document_properties": true,
+          "page_from": null,
+          "page_to": null,
+          "tagged_pdf": true,
+          "bookmarks": "none",
+          "pdf_a_1": false,
+          "bitmap_missing_fonts": true,
+          "print_hidden_slides": false
+        },
+        "environment": {
+          "ui_language": "de-DE",
+          "format_locale": "zh-CN",
+          "document_language": "zh-CN",
+          "time_zone": "Asia/Shanghai"
+        },
+        "control": {
+          "fields_at_print": true,
+          "links_at_print": false,
+          "before_export": "none",
+          "refresh_clock": true,
+          "profile": null,
+          "observe_gdi": false
+        },
+        "pdf": "/tmp/ooxmlsdk-tdf155707-20261031/native-original-v4/jobs/00/output/case-000.pdf",
+        "pdf_sha256": "db4c6ba5e770783ec31911d440b156f3c47a75cd8baf3f535dfba572fc02f0ed",
+        "receipt": "/tmp/ooxmlsdk-tdf155707-20261031/native-original-v4/jobs/00/output/case-000.json",
+        "receipt_sha256": "33c5666e52e7aac38d3bf6538cbaa615f4ba700582245f94906010825f76c0c3",
+        "normalized_xml": "/tmp/ooxmlsdk-tdf155707-20261031/native-original-v4/jobs/00/output/_worker-stage/case-000/control-00.pdf.normalized.xml",
+        "normalized_xml_sha256": "68b78e5c96c4d7bddbcc6c8159b8afecc67891381dafe95d8ac748beb1907a6c"
+      },
+      {
+        "index": 1,
+        "kind": "original-print-fields-false",
+        "original_source": true,
+        "source": "/tmp/ooxmlsdk-tdf155707-20261031/native-original-v4/inputs/control-01.docx",
+        "sha256": "af36644e14e94c0e1a42509d31687727720f3cf2bf22eca039e00694808b45af",
+        "options": {
+          "quality": "print",
+          "include_document_properties": true,
+          "page_from": null,
+          "page_to": null,
+          "tagged_pdf": true,
+          "bookmarks": "none",
+          "pdf_a_1": false,
+          "bitmap_missing_fonts": true,
+          "print_hidden_slides": false
+        },
+        "environment": {
+          "ui_language": "de-DE",
+          "format_locale": "zh-CN",
+          "document_language": "zh-CN",
+          "time_zone": "Asia/Shanghai"
+        },
+        "control": {
+          "fields_at_print": false,
+          "links_at_print": false,
+          "before_export": "none",
+          "refresh_clock": true,
+          "profile": null,
+          "observe_gdi": false
+        },
+        "pdf": "/tmp/ooxmlsdk-tdf155707-20261031/native-original-v4/jobs/01/output/case-000.pdf",
+        "pdf_sha256": "04dae09a8dd43ac3f4f5b94cb7683e5c4bfd5712967000ecf813ef165177500e",
+        "receipt": "/tmp/ooxmlsdk-tdf155707-20261031/native-original-v4/jobs/01/output/case-000.json",
+        "receipt_sha256": "f052e4b4c90b5c23a0afcb057b361b79be5a9450ba64567a22dcdda1ca6b57e8",
+        "normalized_xml": "/tmp/ooxmlsdk-tdf155707-20261031/native-original-v4/jobs/01/output/_worker-stage/case-000/control-01.pdf.normalized.xml",
+        "normalized_xml_sha256": "1dc45c9dd3de4c4e7648f0bff14b197ab9708b789d6bd008183af8f9a35d416c"
+      }
+    ],
+    "native_modules_sha256": "046aa11a6e3d5a48a00c2cbdc0731ac7fbb8bf1c731211516aa60e9a26c0579e",
+    "checks": {
+      "count": 2,
+      "hashes_options_environment": true,
+      "actual_observations": true,
+      "normal_exits": true,
+      "restored": true,
+      "no_remaining_office_processes": true
+    }
+  },
+  "native_vs_sdk": {
+    "status": "ACTUAL_DIAGNOSTIC_DERIVATIVE_AUDITS",
+    "runtime": "v1006",
+    "count": 2,
+    "cases": [
+      {
+        "index": 0,
+        "kind": "original-print-fields-true",
+        "source": "/tmp/ooxmlsdk-tdf155707-20261031/native-original-v4-sdk-v1006/00/control.docx",
+        "source_sha256": "af36644e14e94c0e1a42509d31687727720f3cf2bf22eca039e00694808b45af",
+        "golden": "/tmp/ooxmlsdk-tdf155707-20261031/native-original-v4-sdk-v1006/00/control.docx.pdf",
+        "golden_sha256": "db4c6ba5e770783ec31911d440b156f3c47a75cd8baf3f535dfba572fc02f0ed",
+        "candidate": "/tmp/ooxmlsdk-tdf155707-20261031/native-original-v4-sdk-v1006/00/candidate.pdf",
+        "candidate_sha256": "b4aad35269d14a51a72b8d281e4510ad3a79318160366ad57b1798decf041ca1",
+        "task": "/tmp/ooxmlsdk-tdf155707-20261031/native-original-v4-sdk-v1006/00/task.json",
+        "result": "/tmp/ooxmlsdk-tdf155707-20261031/native-original-v4-sdk-v1006/00/result.json",
+        "verdict": "PASS"
+      },
+      {
+        "index": 1,
+        "kind": "original-print-fields-false",
+        "source": "/tmp/ooxmlsdk-tdf155707-20261031/native-original-v4-sdk-v1006/01/control.docx",
+        "source_sha256": "af36644e14e94c0e1a42509d31687727720f3cf2bf22eca039e00694808b45af",
+        "golden": "/tmp/ooxmlsdk-tdf155707-20261031/native-original-v4-sdk-v1006/01/control.docx.pdf",
+        "golden_sha256": "04dae09a8dd43ac3f4f5b94cb7683e5c4bfd5712967000ecf813ef165177500e",
+        "candidate": "/tmp/ooxmlsdk-tdf155707-20261031/native-original-v4-sdk-v1006/01/candidate.pdf",
+        "candidate_sha256": "0d8f515dbea12a89d0ca59e5821b32606c8fc3fdb9f7d133cafb441e597f41f4",
+        "task": "/tmp/ooxmlsdk-tdf155707-20261031/native-original-v4-sdk-v1006/01/task.json",
+        "result": "/tmp/ooxmlsdk-tdf155707-20261031/native-original-v4-sdk-v1006/01/result.json",
+        "verdict": "PASS"
+      }
+    ],
+    "build": {
+      "runtime": "v1006",
+      "mode": "release",
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "ooxmlsdk-pdf-test",
+        "--bin",
+        "office_pdf_campaign",
+        "--release"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 167.67966008099756,
+      "binary": "/home/kazeno/git/ooxmlsdk-test-suite/target/release/office_pdf_campaign",
+      "binary_sha256": "b1129b44750ae4dc75d0612ffd74559e918f0313e09ec9f13b26167107eb1d51",
+      "source_manifest": "/tmp/ooxmlsdk-batch63-20261023/source-v1006/manifest.json",
+      "source_manifest_sha256": "f700cb431396215833d38da1bf57a5df764726bb5ba35899328bb24e1a13abb5",
+      "command_receipt": {
+        "path": "/tmp/ooxmlsdk-batch63-20261023/build-release-v1006/receipt.json",
+        "sha256": "1bab3fb6b8d1a586358c267eed1d8113b2fc9cee0fcc99c463ae9029098d8533"
+      }
+    }
+  }
+}

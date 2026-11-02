@@ -12,6 +12,50 @@ use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
 #[test]
+fn print_field_update_is_explicit_and_word_specific() {
+    assert_eq!(PdfOptions::default().update_fields_at_print, None);
+    for enabled in [false, true] {
+        let options = PdfOptions {
+            update_fields_at_print: Some(enabled),
+            ..Default::default()
+        };
+        let resolved = resolve_pdf_options(PdfDocumentKind::Docx, &options).unwrap();
+        assert_eq!(
+            resolved.effective.layout_options().update_fields_at_print,
+            Some(enabled)
+        );
+        for kind in [PdfDocumentKind::Xlsx, PdfDocumentKind::Pptx] {
+            assert!(matches!(
+                resolve_pdf_options(kind, &options),
+                Err(PdfError::UnsupportedOption {
+                    feature: PdfOptionFeature::UpdateFieldsAtPrint,
+                    ..
+                })
+            ));
+        }
+    }
+}
+
+#[test]
+fn print_field_update_selects_word_toc_pagination() {
+    // Native Word controls on identical source bytes: print update OFF=8,
+    // ON=9; locking the TOC restores the cached 8-page layout. The original
+    // configured reference uses ON. See reference-revisions.md for provenance.
+    let fixture = libreoffice_fixture("sw/qa/extras/docbookexport/data/tdf91095.docx");
+    for (update_fields_at_print, expected_pages) in [(Some(false), 8), (Some(true), 9), (None, 9)] {
+        let options = PdfOptions {
+            update_fields_at_print,
+            ..Default::default()
+        };
+        let bytes = ooxmlsdk_pdf::convert_docx(fs::File::open(&fixture).unwrap(), options).unwrap();
+        assert_eq!(
+            PdfSummary::from_bytes(&bytes).unwrap().page_count,
+            expected_pages
+        );
+    }
+}
+
+#[test]
 fn empty_xlsx_print_output_returns_no_pdf_instead_of_a_synthetic_blank_page() {
     let path = libreoffice_fixture("sc/qa/unit/data/xlsx/empty-noconf.xlsx");
     let result = ooxmlsdk_pdf::convert_xlsx(fs::File::open(path).unwrap(), PdfOptions::default());

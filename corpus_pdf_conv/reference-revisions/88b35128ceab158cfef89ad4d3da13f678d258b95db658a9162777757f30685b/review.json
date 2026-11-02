@@ -1,0 +1,2286 @@
+{
+  "schema_version": 1,
+  "configuration_id": "88b35128ceab158cfef89ad4d3da13f678d258b95db658a9162777757f30685b",
+  "reason": "Single-case reference revision under the user standing instruction to use the established procedure and preserve history. Implementation first repaired independently aligned modern wrapNone picture effect axes and the source-device paint of modern body empty-break-master shading, including the independently observed A6 reference DC. Native58 comparisons improve19 to58 complete PASS without losing a prior PASS; all24 source-axis controls and8legacy picture transforms are retained. Actual PDF EMF28orange rectangles across12A6/A4 pages establish the device replay, and all10empty-master source rectangles reconstruct exactly. Final private tests,2733protected Word cases and read-only dev GDB pass. Two exact-original exports retain source bytes, assigned PDF options and languages; observed print-field update ON/OFF and links OFF both yield6pages and both pass the unchanged complete SDK comparison. Saved Word16.0.20326.20144 reference also has6pages but retains paragraph-before space after manual page breaks, unlike current Word16.0.20527.20088. The build difference alone is not established as the cause. Source/configuration/acceptance gates unchanged. The A4 auxiliary control retains a separately qualified preexisting Through-wrap text baseline difference; it is not claimed repaired. This reference revision is not an additional implementation gain.",
+  "user_approval": "沿用用户既有指示：同类确证冲突按之前逻辑更新golden并保留历史；原字节、配置、打印开关、完整比较均已验证。",
+  "approval_scope": "standing instruction; no new per-case confirmation required",
+  "implementation_gain": false,
+  "source_unchanged": true,
+  "office_options_unchanged": true,
+  "acceptance_gates_unchanged": true,
+  "previous_conversion": {
+    "schema_version": 4,
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "file": "sw/qa/extras/ooxmlexport/data/tdf160049_anchorMargin15.docx",
+    "family": "word",
+    "source_extension": "docx",
+    "source_bytes": 79017,
+    "source_sha256": "bbaf7404b09b94e52514dcd8070e5c954adc3a812c1b940b3b6fe23aa57fc834",
+    "configuration_id": "88b35128ceab158cfef89ad4d3da13f678d258b95db658a9162777757f30685b",
+    "requested": {
+      "standards": [
+        "pdf15"
+      ],
+      "compress_content_streams": false,
+      "ui_language": "de-DE",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "field_update": null,
+      "tagged_pdf": true,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": true,
+      "open_bookmark_levels": 2,
+      "page_range": null,
+      "images": {
+        "use_lossless_compression": true,
+        "jpeg_quality": 90,
+        "reduce_resolution": false,
+        "max_resolution_dpi": 600
+      },
+      "link_action": "remove_external_links",
+      "export_form_fields": true,
+      "viewer": {
+        "page_mode": "use_thumbs",
+        "page_layout": "default",
+        "magnification": "fit_in_window",
+        "initial_page": 1,
+        "hide_toolbar": false,
+        "hide_menubar": true,
+        "hide_window_controls": false,
+        "fit_window": false,
+        "center_window": false,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "creator": null,
+        "producer": null,
+        "creation_date": null
+      },
+      "embed_campaign_attachment": true
+    },
+    "effective": {
+      "standards": [
+        "pdf15"
+      ],
+      "compress_content_streams": false,
+      "ui_language": "de-DE",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "field_update": null,
+      "tagged_pdf": true,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": true,
+      "open_bookmark_levels": 2,
+      "page_range": null,
+      "images": {
+        "use_lossless_compression": true,
+        "jpeg_quality": null,
+        "reduce_resolution": false,
+        "max_resolution_dpi": null
+      },
+      "link_action": "remove_external_links",
+      "export_form_fields": true,
+      "viewer": {
+        "page_mode": "use_thumbs",
+        "page_layout": "default",
+        "magnification": "fit_in_window",
+        "initial_page": 1,
+        "hide_toolbar": false,
+        "hide_menubar": true,
+        "hide_window_controls": false,
+        "fit_window": false,
+        "center_window": false,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "creator": null,
+        "producer": null,
+        "creation_date": null
+      },
+      "embed_campaign_attachment": true
+    },
+    "adjustments": [
+      {
+        "feature": "ui-language",
+        "reason": "application-generated UI strings currently fall back to English outside English and Chinese resource packs"
+      },
+      {
+        "feature": "image-compression",
+        "reason": "lossless image compression makes JPEG quality inapplicable"
+      },
+      {
+        "feature": "image-downsampling",
+        "reason": "maximum image resolution is inactive when downsampling is disabled"
+      }
+    ],
+    "office_options": {
+      "quality": "screen",
+      "include_document_properties": true,
+      "page_from": null,
+      "page_to": null,
+      "tagged_pdf": true,
+      "bookmarks": "word-bookmarks",
+      "pdf_a_1": false,
+      "bitmap_missing_fonts": false,
+      "print_hidden_slides": false
+    },
+    "status": "converted",
+    "reference_engine": "Microsoft Office",
+    "environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "application": "Word",
+    "application_version": "16.0",
+    "application_build": "16.0.20326",
+    "output": "sw/qa/extras/ooxmlexport/data/tdf160049_anchorMargin15.docx.pdf",
+    "output_bytes": 25757,
+    "output_sha256": "d97e710e5b09771f6e1520592dc5dcaaa8a7f487c85440349178b26fa7c0113f",
+    "observed_pdf": {
+      "header_version": "1.7",
+      "page_count": 6,
+      "tagged_pdf": true,
+      "has_outlines": false,
+      "pdf_a_part": null,
+      "pdf_a_conformance": null
+    },
+    "render_environment": {
+      "ui_language": "de-DE",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "time_zone": "Asia/Shanghai",
+      "windows_time_zone": "China Standard Time",
+      "clock": {
+        "opened_at_utc": "2026-09-11T12:04:06.5893894Z",
+        "refresh_started_at_utc": "2026-09-11T12:04:06.7160934Z",
+        "refresh_completed_at_utc": "2026-09-11T12:04:06.9244196Z",
+        "export_started_at_utc": "2026-09-11T12:04:06.9441981Z",
+        "export_completed_at_utc": "2026-09-11T12:04:07.4379810Z"
+      }
+    },
+    "converted_at_utc": "2026-09-11T12:04:10.358348672Z",
+    "elapsed_ms": 5206,
+    "attempts": 1,
+    "annotations": [],
+    "failure_class": "",
+    "error_code": "",
+    "error": ""
+  },
+  "revised_conversion": {
+    "schema_version": 4,
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "file": "sw/qa/extras/ooxmlexport/data/tdf160049_anchorMargin15.docx",
+    "family": "word",
+    "source_extension": "docx",
+    "source_bytes": 79017,
+    "source_sha256": "bbaf7404b09b94e52514dcd8070e5c954adc3a812c1b940b3b6fe23aa57fc834",
+    "configuration_id": "88b35128ceab158cfef89ad4d3da13f678d258b95db658a9162777757f30685b",
+    "requested": {
+      "standards": [
+        "pdf15"
+      ],
+      "compress_content_streams": false,
+      "ui_language": "de-DE",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "field_update": null,
+      "tagged_pdf": true,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": true,
+      "open_bookmark_levels": 2,
+      "page_range": null,
+      "images": {
+        "use_lossless_compression": true,
+        "jpeg_quality": 90,
+        "reduce_resolution": false,
+        "max_resolution_dpi": 600
+      },
+      "link_action": "remove_external_links",
+      "export_form_fields": true,
+      "viewer": {
+        "page_mode": "use_thumbs",
+        "page_layout": "default",
+        "magnification": "fit_in_window",
+        "initial_page": 1,
+        "hide_toolbar": false,
+        "hide_menubar": true,
+        "hide_window_controls": false,
+        "fit_window": false,
+        "center_window": false,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "creator": null,
+        "producer": null,
+        "creation_date": null
+      },
+      "embed_campaign_attachment": true
+    },
+    "effective": {
+      "standards": [
+        "pdf15"
+      ],
+      "compress_content_streams": false,
+      "ui_language": "de-DE",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "field_update": null,
+      "tagged_pdf": true,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": true,
+      "open_bookmark_levels": 2,
+      "page_range": null,
+      "images": {
+        "use_lossless_compression": true,
+        "jpeg_quality": null,
+        "reduce_resolution": false,
+        "max_resolution_dpi": null
+      },
+      "link_action": "remove_external_links",
+      "export_form_fields": true,
+      "viewer": {
+        "page_mode": "use_thumbs",
+        "page_layout": "default",
+        "magnification": "fit_in_window",
+        "initial_page": 1,
+        "hide_toolbar": false,
+        "hide_menubar": true,
+        "hide_window_controls": false,
+        "fit_window": false,
+        "center_window": false,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "creator": null,
+        "producer": null,
+        "creation_date": null
+      },
+      "embed_campaign_attachment": true
+    },
+    "adjustments": [
+      {
+        "feature": "ui-language",
+        "reason": "application-generated UI strings currently fall back to English outside English and Chinese resource packs"
+      },
+      {
+        "feature": "image-compression",
+        "reason": "lossless image compression makes JPEG quality inapplicable"
+      },
+      {
+        "feature": "image-downsampling",
+        "reason": "maximum image resolution is inactive when downsampling is disabled"
+      }
+    ],
+    "office_options": {
+      "quality": "screen",
+      "include_document_properties": true,
+      "page_from": null,
+      "page_to": null,
+      "tagged_pdf": true,
+      "bookmarks": "word-bookmarks",
+      "pdf_a_1": false,
+      "bitmap_missing_fonts": false,
+      "print_hidden_slides": false
+    },
+    "status": "converted",
+    "reference_engine": "Microsoft Office",
+    "environment_id": "2745802959e232d8be20849cd3bfcf29ef3e2b50f2256ca6c04af917e15cbf35",
+    "application": "Word",
+    "application_version": "16.0",
+    "application_build": "16.0.20527",
+    "output": "sw/qa/extras/ooxmlexport/data/tdf160049_anchorMargin15.docx.pdf",
+    "output_bytes": 25768,
+    "output_sha256": "f11d2c5774702535ff4d7ca8b71b89ea6dad7df14326d32a342ee0c92ee3470c",
+    "observed_pdf": {
+      "header_version": "1.7",
+      "page_count": 6,
+      "tagged_pdf": true,
+      "has_outlines": false,
+      "pdf_a_part": null,
+      "pdf_a_conformance": null
+    },
+    "render_environment": {
+      "ui_language": "de-DE",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "time_zone": "Asia/Shanghai",
+      "windows_time_zone": "China Standard Time",
+      "clock": {
+        "opened_at_utc": "2026-10-31T14:52:23.7136686Z",
+        "refresh_started_at_utc": "2026-10-31T14:52:23.8649661Z",
+        "refresh_completed_at_utc": "2026-10-31T14:52:24.0754215Z",
+        "export_started_at_utc": "2026-10-31T14:52:24.1035614Z",
+        "export_completed_at_utc": "2026-10-31T14:52:24.7358966Z"
+      },
+      "user_name": "yang yue",
+      "user_initials": "yy",
+      "update_fields_at_print": true
+    },
+    "converted_at_utc": "2026-10-31T14:52:24.7358966Z",
+    "elapsed_ms": 1863,
+    "attempts": 1,
+    "annotations": [
+      {
+        "kind": "reference-revision",
+        "configuration_id": "88b35128ceab158cfef89ad4d3da13f678d258b95db658a9162777757f30685b",
+        "previous_environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+        "environment_id": "2745802959e232d8be20849cd3bfcf29ef3e2b50f2256ca6c04af917e15cbf35",
+        "source_sha256": "bbaf7404b09b94e52514dcd8070e5c954adc3a812c1b940b3b6fe23aa57fc834",
+        "output_sha256": "f11d2c5774702535ff4d7ca8b71b89ea6dad7df14326d32a342ee0c92ee3470c",
+        "reason": "Single-case reference revision under the user standing instruction to use the established procedure and preserve history. Implementation first repaired independently aligned modern wrapNone picture effect axes and the source-device paint of modern body empty-break-master shading, including the independently observed A6 reference DC. Native58 comparisons improve19 to58 complete PASS without losing a prior PASS; all24 source-axis controls and8legacy picture transforms are retained. Actual PDF EMF28orange rectangles across12A6/A4 pages establish the device replay, and all10empty-master source rectangles reconstruct exactly. Final private tests,2733protected Word cases and read-only dev GDB pass. Two exact-original exports retain source bytes, assigned PDF options and languages; observed print-field update ON/OFF and links OFF both yield6pages and both pass the unchanged complete SDK comparison. Saved Word16.0.20326.20144 reference also has6pages but retains paragraph-before space after manual page breaks, unlike current Word16.0.20527.20088. The build difference alone is not established as the cause. Source/configuration/acceptance gates unchanged. The A4 auxiliary control retains a separately qualified preexisting Through-wrap text baseline difference; it is not claimed repaired. This reference revision is not an additional implementation gain.",
+        "approved_by": "user",
+        "previous_output_sha256": "d97e710e5b09771f6e1520592dc5dcaaa8a7f487c85440349178b26fa7c0113f",
+        "previous_application_build": "16.0.20326",
+        "application_build": "16.0.20527",
+        "previous_page_count": 6,
+        "page_count": 6
+      }
+    ],
+    "failure_class": "",
+    "error_code": "",
+    "error": ""
+  },
+  "protected_word": {
+    "manifest": {
+      "started_utc": "2026-10-31T14:58:39.367542+00:00",
+      "baseline_sha256": "41b6d8bae8c9a808bf791eebd3a993fc77d673a5a95ec21f1147873575538e67",
+      "binary_sha256": "2b176cb2959c5b5a773521b326e8d619285476cec07c6d7603dbabb34db1cc4e",
+      "scope": "union",
+      "count": 2733,
+      "jobs": 12,
+      "timeout_seconds": 180,
+      "comparison": "canonical batch audit; original configured golden tolerance",
+      "previous_results_sha256": null
+    },
+    "counts": {
+      "PASS": 2733
+    },
+    "accepted": true,
+    "union_counts": {
+      "PASS": 2733
+    },
+    "results_sha256": "b9c7d0d575cc79ccfffc16c7232a95b5fc58b606252d9e795c57291ae9d71399",
+    "finished_utc": "2026-10-31T14:59:32.862592+00:00",
+    "elapsed_seconds": 53.504296127997804,
+    "campaign_seconds": 52.3788887710034,
+    "wrapper_seconds": 1.1254073569944012,
+    "build_seconds": 0.0,
+    "changes": null,
+    "unresolved_union": []
+  },
+  "private_tests": {
+    "command": [
+      "cargo",
+      "test",
+      "-p",
+      "ooxmlsdk-layout",
+      "--release",
+      "--lib",
+      "--",
+      "wordprocessing_device::",
+      "paragraph_shading",
+      "empty_master",
+      "explicit_break",
+      "modern_nowrap",
+      "--nocapture"
+    ],
+    "cwd": "/home/kazeno/git/ooxmlsdk",
+    "started_utc": "2026-10-31T14:54:08.216015+00:00",
+    "finished_utc": "2026-10-31T14:56:34.125896+00:00",
+    "elapsed_seconds": 145.90987244700227,
+    "exit_code": 0,
+    "diagnostics": [],
+    "logs": {
+      "/tmp/ooxmlsdk-tdf160049-anchorMargin15-20261031/private-v1017/stdout.jsonl": "c647661324bcfd9b5965bc03bb31858b5ec3e1f18483b6d0a2c67927f5217188",
+      "/tmp/ooxmlsdk-tdf160049-anchorMargin15-20261031/private-v1017/stderr.log": "51e1901ed0da2e1cbf7db130c99cf7c5fc9852d740be4bc56fa0fec16ca12875"
+    },
+    "tests": {
+      "status": "ok",
+      "passed": 23,
+      "failed": 0,
+      "ignored": 0
+    }
+  },
+  "final_gdb_checks": {
+    "pins_stable": true,
+    "normal_exit": true,
+    "no_errors": true,
+    "actual_axis_captures": true,
+    "actual_position_captures": true,
+    "actual_empty_source_captures": true,
+    "actual_empty_paint_captures": true,
+    "dev_release_byte_equal": true
+  },
+  "native_transition": {
+    "runtime": "v1017",
+    "checks": {
+      "count58": true,
+      "all_complete_pass": true,
+      "no_prior_pass_losses": true,
+      "legacy_picture_geometry_unchanged": true
+    },
+    "before_pass": 19,
+    "after_pass": 58,
+    "cases": [
+      {
+        "owner": "native-upper-full-bridge-v2",
+        "index": 0,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "b77a7cedea206954c7b2c1717896927415984807bcc8fae4cff654357de25b68",
+        "candidate_sha256": "77450e8db58dbc3fe3a750ba965987dc5deddbfef01e5ccc5724d9fc4e7e8590"
+      },
+      {
+        "owner": "native-upper-full-bridge-v2",
+        "index": 1,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "df1349a9f3ea5dd4a0489aa85a6ec8d2fc3ec27456af5a35e262315e0b3ff1ec",
+        "candidate_sha256": "7939b689da80a91b2752d9edfa48f370dc507631637a8df95fdfac208aaa88fd"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 0,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "656ba66a38612a7bf02fe31bcdb287cf86391d6c81f275296a82c12c461529da",
+        "candidate_sha256": "b10bf9707d44d7077f1507268e9009580916d08711a98d4334319674ed413154"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 1,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "50bf99e7c552ebfd2e74e71bda05606713e7b7f928de6c28e0e7989c1254d805",
+        "candidate_sha256": "b5953c9da53577a9714560c513d65ed76f83b306bee123297972ec8bc76c3cb5"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 2,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "1e770e7fc483f3ab9194150ed1a2955aad38212768b31de6e55e8d2d67fe0620",
+        "candidate_sha256": "ce9a525ba9c9881bc30c5d70ebb4541994d04fc398dc52855d17a31a6b467997"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 3,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "4e39c80ff7260e4390b7bbea23ea12503fb32f99fc49486764d1de56cea344ea",
+        "candidate_sha256": "0882eb86b270326b2b1270b35046ae4d84235c2fb942f10fc2f953fdad3d9edb"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 4,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "aad5d3a57e20ea2ca2f18575fd916ba1872053e13ac190593cbf2999b9f6c0f5",
+        "candidate_sha256": "b021f96b89a42969f75e698f2b029f4630294c47e9b7d66537ba4227c52edfe8"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 5,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "87d74b23b0a8780d2f62a57c4855a762606e8f554cee4ea321898a7e8347d2f7",
+        "candidate_sha256": "66c4be063a70ad610ed603a5e36400f4f1ca293a238b09936d10c1253d8b6cd0"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 6,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "5f5be62bde2703fb9b8c29a69793f7826b96c54c3272e2153646137d63ba84ee",
+        "candidate_sha256": "f469a5ac3a0d75f5d04a35579c66f8c2f16fa4aa1ef9a0b3e41d27491da652e0"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 7,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "8ef6c4dd7bac75e2b320a916e2e4b7c934defa02a43b9f3b039ddabcc2cee2af",
+        "candidate_sha256": "b9d5a0fc1b3b6c9019bb98b03f4762f1229713a3d1b66528588a8a2cfd55d014"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 8,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "561b1d30368c6aa406d3fb9b3cd9ba079f26e70bbad6124d5218cdcdf61352b2",
+        "candidate_sha256": "c739f61c41b2d11aacb6ccb776d6ec488d2c5bcc67817f941d0039b49e5e873b"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 9,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "2bed1edd261c735b819d6a8bac8735db64aad33ba971db814ceeb6e3acebb551",
+        "candidate_sha256": "cf58d230dfe4b60f4eb52603592abdce473a8c9805c63a7e0ee96d7e0b00a0f6"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 10,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "95f6d4ee03cb14ea986c5d49d6f0915d8009af8b9246e11be19b4c891d616419",
+        "candidate_sha256": "119449b6a3927e801daeddaddaa9712f60c3406274e80feb9982907b56e3deaa"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 11,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "559992fb57318039e99ea21e98deba2c21d1216de9a43ba27b08c977554874a6",
+        "candidate_sha256": "f688c19288cb0235570c780c01beeef7c66b4e0726751557403c672674c4b28c"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 12,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "d9353501074dacb24d81373f2e8925b494ae6efe2764cd0e61d4984762757147",
+        "candidate_sha256": "b5f8d64f5d1eb804bdc08fda6abfb28b9dc0a3319380e9d774de20203c7769d4"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 13,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "9eef77040a4b314da924f1166235c45fa1606f1f657cd0b9cae3548a9e086d19",
+        "candidate_sha256": "db114626e62fc17c21806d21c0d815320f7be4483234a96954175f6a9a0df4f1"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 14,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "689c9c74f8dd7693f9f7d7c0d4e5c4d8177d0490af161006c3dc0d7cb3ec5f7d",
+        "candidate_sha256": "b2f68bb66ad7852cc5dcf8666c68f16e3d6e00a1b55a7726aeb4474d72bc9111"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 15,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "a5a934bf756b39b4b6dd86e820f14c18c07a0daa7d2a5ce3e90db1397bc41ede",
+        "candidate_sha256": "11af924371ac0bf6ba9ee78e021908eed5e54fc20574e69b627bd41c2faf6009"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 16,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "7ed9a2bf107f088bd7fbbec30558f83e626fa9ffa97f4879b40f364d12f69817",
+        "candidate_sha256": "7cb4900e49ab4b768d0bc24cafb3fabfce217b01ce9ff94ec480d722bea15a5c"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 17,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "676796b4ea0b5f542866df58331355af7923c8c3564271d44d9f31d8a6b64f21",
+        "candidate_sha256": "2f61679d705b180ee73d4d2b919ad727822c13baafe5dd4c7b2080365c76171e"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 18,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "eaba56493a26b2262733db48d39b784016404fc0fdf28aaa9d90c6447063786a",
+        "candidate_sha256": "24e9444911dc019cdfeaca06444fe04bf0997ecccfcacf17f480eefae7779864"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 19,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "db7a9648ad4e37238f29951b5ec5c68f97ec01bd963f2599503e622ae6595fb3",
+        "candidate_sha256": "f3eb1687c2568e3a2e1b3f62672fbb477111e0d73b323f96e9cb796e4b8dd049"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 20,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "694b22b87eb350b8365d96a6c5fab743ae19435cf2d713aa7f8704569d3fe58b",
+        "candidate_sha256": "ad2293ab9cdbe9d4270db7c9f4434c155267327f67057d1c061d94c9ffdf4243"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 21,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "314397b11f17c8a78172e9d6c327a3447c878f8a841f34715b7d31cfef010e04",
+        "candidate_sha256": "ac2477db34f3f7474c2c3c719081b427ca17f7e625ba96fffce7c07f5a17fd11"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 22,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "066c2d82c3b1da34ac1a5818c9c54c0814375a34febc26da2ce8ed412e9da8a1",
+        "candidate_sha256": "8c8c623690cc817d42624ca56845131c8446fab46085afb2bcb29c4e24b885b5"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 23,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "aac96446a4be54fc013ca76a0853f103ce174af29d60ed16bd7070047d4b577e",
+        "candidate_sha256": "b06749f3260184d7bdabc758b95868b94d857dfd993fa3e370a8a5929750f12d"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 24,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "c41e666c7eea27a7a7f825de4f22c89629c25c4f307a2130fb570a637b7a0b31",
+        "candidate_sha256": "b46c32fe41bfa823d0a0ca89baba0a0c20d0ed0e25a8ff74e7c766d582434cbd"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 25,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "ffda0893dc32cd90320497a6f5a5aa6f0a8c5ef9815bd16fe54b179d5e820919",
+        "candidate_sha256": "d9a3071fd6f23757d49af7caccd224f003dd55a3dfc8ce2139b19a9b07fb4a79"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 26,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "da336156bcc08144a1bc0fb79727e4a8e259ac5d47b22b353b2c169ad1a5d941",
+        "candidate_sha256": "d9d1d94e4432643e490db10e0cce97142d7c90e37584d795fc3d6038b39ecf13"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 27,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "151f168c3a8b19ca95bf1b01852cdc50ae971602eff4ba9dfceea1d043a3459f",
+        "candidate_sha256": "bbd041a8ee0596f25a85be047c6b1e5da33576e051d6589414bd8115124916b7"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 28,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "9cd8dd2af666ed3cd90a479535f87e99642d2af9fa58566e91f1f5b86987ba0e",
+        "candidate_sha256": "5b8bc5e82776e2bab7a502b25f422210ddbd8dae8e724e55da7b85c1828e2e17"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 29,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "ff699c1d623109cfd207cb1b7a51670da905cbbbcb1bcfc77f3b183d1b774270",
+        "candidate_sha256": "a5ca35d8c2c0093c8776aeb1cb929632168b5d9dfb2db5cc839b5bd1e0f607d8"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 30,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "9a980836a58ce6ca67ec8924870aba249cf5ff2dbcdf9d9c763be792def81c8c",
+        "candidate_sha256": "0fd9ba90395b8ec90e12c8458544a085c8b1bdf0d12d3b2e5892bb708182d607"
+      },
+      {
+        "owner": "native-upper-factors-v1",
+        "index": 31,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "7370fda71c3ef24d842ea4b45c09aee0127ff08df324457a8b406d2d8ad280a6",
+        "candidate_sha256": "ab4236f6277c154c056a0c715b5a5cc6492ad027c2f90409221221ceaa31d2c3"
+      },
+      {
+        "owner": "native-picture-axes-v3",
+        "index": 0,
+        "before": "PASS",
+        "after": "PASS",
+        "old_candidate_sha256": "e176b660b39d21b212a0138c043338f723ce0c0cb2b837e74e1e9404c7bf1b29",
+        "candidate_sha256": "9f9250ddc4b74e7c340584d344a01b7b2cd16cc812087e0024674dfed7c0abc0"
+      },
+      {
+        "owner": "native-picture-axes-v3",
+        "index": 1,
+        "before": "PASS",
+        "after": "PASS",
+        "old_candidate_sha256": "41b1e5fa6c78c012ce4cad75b8cea1bfbcfe11a2e62f9b8848c6dc7c477c7603",
+        "candidate_sha256": "edc1f690a2326f6a9056d0b8b9473ad4abc3e0f9c60c50d2eb1acf6376710c07"
+      },
+      {
+        "owner": "native-picture-axes-v3",
+        "index": 2,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "bdfe96e9b0a6ad7cd5f5b79afefea0fb8eff8a380b968c378e40ae6403e08389",
+        "candidate_sha256": "abcc44f35ca75b8b0b6b36834066b2a1f146319d720dcdf107a4d38292dde244"
+      },
+      {
+        "owner": "native-picture-axes-v3",
+        "index": 3,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "9f94b58800c879b27f95748ae7b6300002530330eaffd2669896216e07cb9358",
+        "candidate_sha256": "7b42d39613a2eb95f997f8c58cf1339f70a0d9cead9a1668766b89f65766df84"
+      },
+      {
+        "owner": "native-picture-axes-v3",
+        "index": 4,
+        "before": "PASS",
+        "after": "PASS",
+        "old_candidate_sha256": "fe4328bff3fc8df94bff826402dee1a724afddbdbd3a9f9d42f36f4bcc5aaf4f",
+        "candidate_sha256": "fa889c0950c17f10c5238917d7ada63faa09bf8cfa025205305edf6f07cad1e8"
+      },
+      {
+        "owner": "native-picture-axes-v3",
+        "index": 5,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "a4157858a8ebb5ec909438385c34ca4f1f95968b713883d3ad0a3af48ce123eb",
+        "candidate_sha256": "3e3fea623e0a12b2d6b1909c51c7f32785c9684b237804baaa7fd787202a56f9"
+      },
+      {
+        "owner": "native-picture-axes-v3",
+        "index": 6,
+        "before": "PASS",
+        "after": "PASS",
+        "old_candidate_sha256": "00857af0c1db5059085e833bc8db8427182f0c1c6cf159a9e6a669796ff339e1",
+        "candidate_sha256": "661a183df418a555c64b79541ec7987e82c2ebaf8c990eb6874520fde26c7525"
+      },
+      {
+        "owner": "native-picture-axes-v3",
+        "index": 7,
+        "before": "PASS",
+        "after": "PASS",
+        "old_candidate_sha256": "fc51550245ddd11a26af54256fb4a247b9e335bd212dec1824537c255cd3a89e",
+        "candidate_sha256": "276cb4808cdf1f882fccdd6418a68807abb3c598366b8daaf8676dfdffbd9e50"
+      },
+      {
+        "owner": "native-picture-axes-v3",
+        "index": 8,
+        "before": "PASS",
+        "after": "PASS",
+        "old_candidate_sha256": "1f560f477a1c78624334eb91524d0e980db396c8a7a2911416167d559c19ca08",
+        "candidate_sha256": "280a227be90ebf541d7a8a60753268e8f3399b1213c3cbb5c06ac2be77f7a708"
+      },
+      {
+        "owner": "native-picture-axes-v3",
+        "index": 9,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "299c93659db61e5b5f983b0dcecf4867b8ba04040b0917515c7497cd619125c1",
+        "candidate_sha256": "09418e71895efed07f0bcf79f82de338cc878e479e949ffb246047627577b2ba"
+      },
+      {
+        "owner": "native-picture-axes-v3",
+        "index": 10,
+        "before": "PASS",
+        "after": "PASS",
+        "old_candidate_sha256": "e77898a76386fc53cf4fad17fe58beb39afab52a80ad8487d04c111265ce3605",
+        "candidate_sha256": "467c7253d4e8be73c45b0868b575ed4e4880e44f101dde11b200b5b9a325b10e"
+      },
+      {
+        "owner": "native-picture-axes-v3",
+        "index": 11,
+        "before": "PASS",
+        "after": "PASS",
+        "old_candidate_sha256": "c8e14bec41e4f2f8c6fa14e335d38fb54544de74fd4dddae085c6c1ecc96afa0",
+        "candidate_sha256": "5b54c0bbe0a4d2dcbcb44e1b3f97ff77f0da078891f1ed59dfe147739b8856ce"
+      },
+      {
+        "owner": "native-picture-axes-v3",
+        "index": 12,
+        "before": "PASS",
+        "after": "PASS",
+        "old_candidate_sha256": "b4ee97e554b5b66a407fea72e9ef3b3805180c55ba38c2a9b57cdc166c006999",
+        "candidate_sha256": "90810362b2772411946d1776ad72a871aa773ea7aee4de88266a936ce4d2bbe6"
+      },
+      {
+        "owner": "native-picture-axes-v3",
+        "index": 13,
+        "before": "FAIL",
+        "after": "PASS",
+        "old_candidate_sha256": "f4650dd4854b2b9132926cce46029da0ae553d8a61546be0c3d39efe8ddcbacd",
+        "candidate_sha256": "ca331d483c209b815b7d7e25ea0345201169f956d82de6cf7547005c8ea46b4f"
+      },
+      {
+        "owner": "native-picture-axes-v3",
+        "index": 14,
+        "before": "PASS",
+        "after": "PASS",
+        "old_candidate_sha256": "c5a27897644d023b922452b36e481c7e363803a9b2a5d8a016362b6ca457ee90",
+        "candidate_sha256": "b9edb5d5d70afb77a8ca19d3e9d44677b150ccea6f404214ea585577c0f1a4a3"
+      },
+      {
+        "owner": "native-picture-axes-v3",
+        "index": 15,
+        "before": "PASS",
+        "after": "PASS",
+        "old_candidate_sha256": "5eed6a91ca3b77ec57108ca14c2c74a40ae28e827f4bb81a67ba24f39c97dd84",
+        "candidate_sha256": "5add765f5fbcd52277ad92344aa0539c04e2fd8d2184f88f76ed1e17b4a1cfd7"
+      },
+      {
+        "owner": "native-picture-legacy-axes-v4",
+        "index": 0,
+        "before": "PASS",
+        "after": "PASS",
+        "old_candidate_sha256": "6726c13988b2d7ec810d90b4bdb6e278b68360e506b73b36951fbd9670348f24",
+        "candidate_sha256": "cb208b7afd2f1946165c3928ccab9d3efa07b354ba42415d791d7c491b0176b2"
+      },
+      {
+        "owner": "native-picture-legacy-axes-v4",
+        "index": 1,
+        "before": "PASS",
+        "after": "PASS",
+        "old_candidate_sha256": "fcac6659ae41c174bbf65780ec3651f71a97c2d65e3ff7af09950c654fcee7c3",
+        "candidate_sha256": "fee55b446dd4861b28008445a2ca8da6a501bb177f72adf13e6a9646915a62c0"
+      },
+      {
+        "owner": "native-picture-legacy-axes-v4",
+        "index": 2,
+        "before": "PASS",
+        "after": "PASS",
+        "old_candidate_sha256": "bd870be0030bd53981fd6ecb38002a477e66dcd78fc6880f5d4920468981891c",
+        "candidate_sha256": "f5019f42202477d138021326a3e264b4bea1191286e13c14a217ca98d28d81e5"
+      },
+      {
+        "owner": "native-picture-legacy-axes-v4",
+        "index": 3,
+        "before": "PASS",
+        "after": "PASS",
+        "old_candidate_sha256": "6d4b674640c2e6be2645146e837ed58f76060355be0219c162c179f9ddee9106",
+        "candidate_sha256": "1e22fc3576fee460df5d28fe32a22f32838496586b1e20d092f3e66634a3b182"
+      },
+      {
+        "owner": "native-picture-legacy-axes-v4",
+        "index": 4,
+        "before": "PASS",
+        "after": "PASS",
+        "old_candidate_sha256": "4054f3105facde8cf4e5ee5e8f02915ccd7f76852b7a221b922f647c83aa6177",
+        "candidate_sha256": "317a453159e2f07adc3f62d4f2cd43d6d09ccfca084fbd919a2281293d60ac8a"
+      },
+      {
+        "owner": "native-picture-legacy-axes-v4",
+        "index": 5,
+        "before": "PASS",
+        "after": "PASS",
+        "old_candidate_sha256": "bfcdb3740daad9e521ea416cfb669deb341baa911f33c94babd38e731a6838cf",
+        "candidate_sha256": "e6839e161fb7cbca56d6d42efd754558cfc020e8099077f6b56b487287b25d62"
+      },
+      {
+        "owner": "native-picture-legacy-axes-v4",
+        "index": 6,
+        "before": "PASS",
+        "after": "PASS",
+        "old_candidate_sha256": "b938e31f52a5956ebede0143a1bb051a28a3b701de255f5fd4ab7f6a2e2ee8f9",
+        "candidate_sha256": "b3471a9e3e584d74695c5eb72b20501bfdfa611bfdb1484f537e03d4446ed6a0"
+      },
+      {
+        "owner": "native-picture-legacy-axes-v4",
+        "index": 7,
+        "before": "PASS",
+        "after": "PASS",
+        "old_candidate_sha256": "8c9a21e119abd6bd855c4d1ad66bc1979f93719307600ef7d3b4119eac4b8766",
+        "candidate_sha256": "1b638f4e207c58e88d8a0687b752c512d706f2177f4c7af6c08b3e2f87af88b7"
+      }
+    ],
+    "legacy_picture_geometry": [
+      {
+        "index": 0,
+        "before": [
+          [
+            117.75,
+            0.0,
+            0.0,
+            117.75,
+            72.0,
+            89.850009
+          ]
+        ],
+        "after": [
+          [
+            117.75,
+            0.0,
+            0.0,
+            117.75,
+            72.0,
+            89.850009
+          ]
+        ],
+        "unchanged": true
+      },
+      {
+        "index": 1,
+        "before": [
+          [
+            117.75,
+            0.0,
+            0.0,
+            117.75,
+            73.5,
+            92.850009
+          ]
+        ],
+        "after": [
+          [
+            117.75,
+            0.0,
+            0.0,
+            117.75,
+            73.5,
+            92.850009
+          ]
+        ],
+        "unchanged": true
+      },
+      {
+        "index": 2,
+        "before": [
+          [
+            117.75,
+            0.0,
+            0.0,
+            117.75,
+            158.55,
+            92.850009
+          ]
+        ],
+        "after": [
+          [
+            117.75,
+            0.0,
+            0.0,
+            117.75,
+            158.55,
+            92.850009
+          ]
+        ],
+        "unchanged": true
+      },
+      {
+        "index": 3,
+        "before": [
+          [
+            117.75,
+            0.0,
+            0.0,
+            117.75,
+            158.55,
+            92.850009
+          ]
+        ],
+        "after": [
+          [
+            117.75,
+            0.0,
+            0.0,
+            117.75,
+            158.55,
+            92.850009
+          ]
+        ],
+        "unchanged": true
+      },
+      {
+        "index": 4,
+        "before": [
+          [
+            117.75,
+            0.0,
+            0.0,
+            117.75,
+            72.0,
+            89.850009
+          ]
+        ],
+        "after": [
+          [
+            117.75,
+            0.0,
+            0.0,
+            117.75,
+            72.0,
+            89.850009
+          ]
+        ],
+        "unchanged": true
+      },
+      {
+        "index": 5,
+        "before": [
+          [
+            117.75,
+            0.0,
+            0.0,
+            117.75,
+            73.5,
+            92.850009
+          ]
+        ],
+        "after": [
+          [
+            117.75,
+            0.0,
+            0.0,
+            117.75,
+            73.5,
+            92.850009
+          ]
+        ],
+        "unchanged": true
+      },
+      {
+        "index": 6,
+        "before": [
+          [
+            117.75,
+            0.0,
+            0.0,
+            117.75,
+            158.55,
+            92.850009
+          ]
+        ],
+        "after": [
+          [
+            117.75,
+            0.0,
+            0.0,
+            117.75,
+            158.55,
+            92.850009
+          ]
+        ],
+        "unchanged": true
+      },
+      {
+        "index": 7,
+        "before": [
+          [
+            117.75,
+            0.0,
+            0.0,
+            117.75,
+            158.55,
+            92.850009
+          ]
+        ],
+        "after": [
+          [
+            117.75,
+            0.0,
+            0.0,
+            117.75,
+            158.55,
+            92.850009
+          ]
+        ],
+        "unchanged": true
+      }
+    ],
+    "legacy_candidate_bytes_identical": false,
+    "build": {
+      "runtime": "v1017",
+      "mode": "release",
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "ooxmlsdk-pdf-test",
+        "--bin",
+        "office_pdf_campaign",
+        "--release",
+        "--message-format=json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 171.93869414200162,
+      "binary": "/home/kazeno/git/ooxmlsdk-test-suite/target/release/office_pdf_campaign",
+      "binary_sha256": "2b176cb2959c5b5a773521b326e8d619285476cec07c6d7603dbabb34db1cc4e",
+      "source_manifest": "/tmp/ooxmlsdk-batch63-20261023/source-v1017/manifest.json",
+      "source_manifest_sha256": "a45327c3a0f3fc0382c11dfc0047892ee8e72ca12c656e098ced6681d7141933",
+      "command_receipt": {
+        "path": "/tmp/ooxmlsdk-batch63-20261023/build-release-v1017/receipt.json",
+        "sha256": "b75db837ce3bd86b1e9faba874f7125f18829773d6c5e1d3efe198fcca1fc621"
+      }
+    }
+  },
+  "original_full_office_version": "16.0.20326.20144",
+  "current_full_office_version": "16.0.20527.20088",
+  "environment_capture": {
+    "schema_version": 1,
+    "environment_id": "2745802959e232d8be20849cd3bfcf29ef3e2b50f2256ca6c04af917e15cbf35",
+    "observed_at_utc": "2026-10-31T14:53:25.7855348Z",
+    "environment": {
+      "schema_version": 1,
+      "campaign_id": "office-ooxml-pdf-options-v2",
+      "converter_version": 2,
+      "probe_script_sha256": "b86211b68d1586bc72d17b3abc030218a7c7b361327f2a8969fd2b376310500f",
+      "controller_script_sha256": "a33a2697c363d68c5dd8e76db16b99223839357f6469a1101004421cf8b7eb66",
+      "environment_helper_sha256": "16f0694a8b9c0c11223263f16c3158fa96d312eaf9affe6dc3d312671eb9dcc2",
+      "reference_engine": "Microsoft Office",
+      "windows": {
+        "product_name": "Windows 10 Pro",
+        "display_version": "25H2",
+        "full_build": "26200.9711"
+      },
+      "office": {
+        "ui_languages": [
+          "de-DE",
+          "en-US",
+          "es-MX",
+          "fr-CA",
+          "ja-JP",
+          "ko-KR",
+          "zh-CN",
+          "zh-TW"
+        ],
+        "applications": [
+          {
+            "name": "Word",
+            "ui_language": "de-DE",
+            "version": "16.0"
+          },
+          {
+            "name": "Excel",
+            "ui_language": "de-DE",
+            "version": "16.0"
+          },
+          {
+            "name": "PowerPoint",
+            "ui_language": "de-DE",
+            "version": "16.0"
+          }
+        ],
+        "platform": "x64",
+        "product_release_ids": "O365ProPlusRetail",
+        "version_to_report": "16.0.20527.20088"
+      },
+      "locale": {
+        "culture": "zh-CN",
+        "ui_culture": "de-DE",
+        "document_language": "zh-CN",
+        "iana_time_zone": "Asia/Shanghai",
+        "time_zone": "China Standard Time"
+      },
+      "default_paper": {
+        "name": "A4",
+        "width_hundredths_inch": 827,
+        "height_hundredths_inch": 1169,
+        "landscape": false
+      },
+      "fonts": {
+        "file_count": 932,
+        "fingerprint_kind": "name-size-mtime",
+        "sha256": "d798b1247882a615681b01bba74e58bad4940c5954b6aa3041a14c9b70d0a2d7"
+      },
+      "dependencies": [
+        "probe-script",
+        "environment-controller",
+        "office-build",
+        "windows-build",
+        "installed-font-files",
+        "locale-and-time-zone",
+        "default-paper",
+        "per-source-office-export-configuration"
+      ]
+    },
+    "approved_references": [
+      {
+        "configuration_id": "88b35128ceab158cfef89ad4d3da13f678d258b95db658a9162777757f30685b",
+        "source_sha256": "bbaf7404b09b94e52514dcd8070e5c954adc3a812c1b940b3b6fe23aa57fc834",
+        "output_sha256": "f11d2c5774702535ff4d7ca8b71b89ea6dad7df14326d32a342ee0c92ee3470c"
+      }
+    ]
+  },
+  "evidence_owner": "/tmp/ooxmlsdk-tdf160049-anchorMargin15-20261031",
+  "native_modules": [
+    {
+      "path": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+      "version": "16.0.20527.20088",
+      "sha256": "9be13b7adc7eda2d1b5256d7f392eb688c996a3cb0adf84bad8cb0ef9e5b871d"
+    },
+    {
+      "path": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WWLIB.DLL",
+      "version": "16.0.20527.20088",
+      "sha256": "02c829bb7730919b30a9f33120fa220e9fe98afda4dc08ef14a615c194674eae"
+    },
+    {
+      "path": "C:\\Program Files\\Microsoft Office\\root\\Office16\\CHART.DLL",
+      "version": "16.0.20527.20088",
+      "sha256": "392e6a8164125c2deade89c295f799c5996ce869d8192203d5060021cedebbe0"
+    }
+  ],
+  "original_controls": {
+    "cases": [
+      {
+        "index": 0,
+        "kind": "original-print-fields-true",
+        "original_source": true,
+        "source": "/tmp/ooxmlsdk-tdf160049-anchorMargin15-20261031/native-original-v7/inputs/control-00.docx",
+        "sha256": "bbaf7404b09b94e52514dcd8070e5c954adc3a812c1b940b3b6fe23aa57fc834",
+        "options": {
+          "quality": "screen",
+          "include_document_properties": true,
+          "page_from": null,
+          "page_to": null,
+          "tagged_pdf": true,
+          "bookmarks": "word-bookmarks",
+          "pdf_a_1": false,
+          "bitmap_missing_fonts": false,
+          "print_hidden_slides": false
+        },
+        "environment": {
+          "ui_language": "de-DE",
+          "format_locale": "zh-CN",
+          "document_language": "zh-CN",
+          "time_zone": "Asia/Shanghai"
+        },
+        "control": {
+          "fields_at_print": true,
+          "links_at_print": false,
+          "before_export": "none",
+          "refresh_clock": true,
+          "profile": null,
+          "observe_gdi": false
+        },
+        "pdf": "/tmp/ooxmlsdk-tdf160049-anchorMargin15-20261031/native-original-v7/jobs/00/output/case-000.pdf",
+        "pdf_sha256": "f11d2c5774702535ff4d7ca8b71b89ea6dad7df14326d32a342ee0c92ee3470c",
+        "receipt": "/tmp/ooxmlsdk-tdf160049-anchorMargin15-20261031/native-original-v7/jobs/00/output/case-000.json",
+        "receipt_sha256": "7a1faa883136bbb0b04d0419c7da4f2c12d87dd54b0e9297bab388340cdb52e0",
+        "normalized_xml": "/tmp/ooxmlsdk-tdf160049-anchorMargin15-20261031/native-original-v7/jobs/00/output/_worker-stage/case-000/control-00.pdf.normalized.xml",
+        "normalized_xml_sha256": "3550406548ce6c9f42f498b81f9b6639f40172c9b280027979ea8a00bca3f9a9"
+      },
+      {
+        "index": 1,
+        "kind": "original-print-fields-false",
+        "original_source": true,
+        "source": "/tmp/ooxmlsdk-tdf160049-anchorMargin15-20261031/native-original-v7/inputs/control-01.docx",
+        "sha256": "bbaf7404b09b94e52514dcd8070e5c954adc3a812c1b940b3b6fe23aa57fc834",
+        "options": {
+          "quality": "screen",
+          "include_document_properties": true,
+          "page_from": null,
+          "page_to": null,
+          "tagged_pdf": true,
+          "bookmarks": "word-bookmarks",
+          "pdf_a_1": false,
+          "bitmap_missing_fonts": false,
+          "print_hidden_slides": false
+        },
+        "environment": {
+          "ui_language": "de-DE",
+          "format_locale": "zh-CN",
+          "document_language": "zh-CN",
+          "time_zone": "Asia/Shanghai"
+        },
+        "control": {
+          "fields_at_print": false,
+          "links_at_print": false,
+          "before_export": "none",
+          "refresh_clock": true,
+          "profile": null,
+          "observe_gdi": false
+        },
+        "pdf": "/tmp/ooxmlsdk-tdf160049-anchorMargin15-20261031/native-original-v7/jobs/01/output/case-000.pdf",
+        "pdf_sha256": "5f506de04f1d2d3726315be686fcd92c7e68aa4e1fae28dc7fbfdc7e9838bf38",
+        "receipt": "/tmp/ooxmlsdk-tdf160049-anchorMargin15-20261031/native-original-v7/jobs/01/output/case-000.json",
+        "receipt_sha256": "3810c6827009eba2f6f6f787b6c0d355ccfd9c3d202887ee6d031f59a719a6af",
+        "normalized_xml": "/tmp/ooxmlsdk-tdf160049-anchorMargin15-20261031/native-original-v7/jobs/01/output/_worker-stage/case-000/control-01.pdf.normalized.xml",
+        "normalized_xml_sha256": "8ecc3d63b2b226d21e2b3b1792aa35dc643ccec4abebd5bcbd77063f960f9070"
+      }
+    ],
+    "native_modules_sha256": "046aa11a6e3d5a48a00c2cbdc0731ac7fbb8bf1c731211516aa60e9a26c0579e",
+    "checks": {
+      "count": 2,
+      "hashes_options_environment": true,
+      "actual_observations": true,
+      "normal_exits": true,
+      "restored": true,
+      "no_remaining_office_processes": true
+    }
+  },
+  "native_vs_sdk": {
+    "status": "ACTUAL_DIAGNOSTIC_DERIVATIVE_AUDITS",
+    "runtime": "v1017",
+    "count": 2,
+    "cases": [
+      {
+        "index": 0,
+        "kind": "original-print-fields-true",
+        "source": "/tmp/ooxmlsdk-tdf160049-anchorMargin15-20261031/native-original-v7-sdk-v1017/00/control.docx",
+        "source_sha256": "bbaf7404b09b94e52514dcd8070e5c954adc3a812c1b940b3b6fe23aa57fc834",
+        "golden": "/tmp/ooxmlsdk-tdf160049-anchorMargin15-20261031/native-original-v7-sdk-v1017/00/control.docx.pdf",
+        "golden_sha256": "f11d2c5774702535ff4d7ca8b71b89ea6dad7df14326d32a342ee0c92ee3470c",
+        "candidate": "/tmp/ooxmlsdk-tdf160049-anchorMargin15-20261031/native-original-v7-sdk-v1017/00/candidate.pdf",
+        "candidate_sha256": "906bf9085d836505bfeac5160843c5a09a8353842e3288a4092ab741d2ecff49",
+        "task": "/tmp/ooxmlsdk-tdf160049-anchorMargin15-20261031/native-original-v7-sdk-v1017/00/task.json",
+        "result": "/tmp/ooxmlsdk-tdf160049-anchorMargin15-20261031/native-original-v7-sdk-v1017/00/result.json",
+        "verdict": "PASS"
+      },
+      {
+        "index": 1,
+        "kind": "original-print-fields-false",
+        "source": "/tmp/ooxmlsdk-tdf160049-anchorMargin15-20261031/native-original-v7-sdk-v1017/01/control.docx",
+        "source_sha256": "bbaf7404b09b94e52514dcd8070e5c954adc3a812c1b940b3b6fe23aa57fc834",
+        "golden": "/tmp/ooxmlsdk-tdf160049-anchorMargin15-20261031/native-original-v7-sdk-v1017/01/control.docx.pdf",
+        "golden_sha256": "5f506de04f1d2d3726315be686fcd92c7e68aa4e1fae28dc7fbfdc7e9838bf38",
+        "candidate": "/tmp/ooxmlsdk-tdf160049-anchorMargin15-20261031/native-original-v7-sdk-v1017/01/candidate.pdf",
+        "candidate_sha256": "9d420ece0e8be3ac230a0e1e1822c0f59708e1b126a8b625562738f8ca0b7e19",
+        "task": "/tmp/ooxmlsdk-tdf160049-anchorMargin15-20261031/native-original-v7-sdk-v1017/01/task.json",
+        "result": "/tmp/ooxmlsdk-tdf160049-anchorMargin15-20261031/native-original-v7-sdk-v1017/01/result.json",
+        "verdict": "PASS"
+      }
+    ],
+    "build": {
+      "runtime": "v1017",
+      "mode": "release",
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "ooxmlsdk-pdf-test",
+        "--bin",
+        "office_pdf_campaign",
+        "--release",
+        "--message-format=json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 171.93869414200162,
+      "binary": "/home/kazeno/git/ooxmlsdk-test-suite/target/release/office_pdf_campaign",
+      "binary_sha256": "2b176cb2959c5b5a773521b326e8d619285476cec07c6d7603dbabb34db1cc4e",
+      "source_manifest": "/tmp/ooxmlsdk-batch63-20261023/source-v1017/manifest.json",
+      "source_manifest_sha256": "a45327c3a0f3fc0382c11dfc0047892ee8e72ca12c656e098ced6681d7141933",
+      "command_receipt": {
+        "path": "/tmp/ooxmlsdk-batch63-20261023/build-release-v1017/receipt.json",
+        "sha256": "b75db837ce3bd86b1e9faba874f7125f18829773d6c5e1d3efe198fcca1fc621"
+      }
+    }
+  },
+  "source_rectangle_proof": [
+    {
+      "control": 0,
+      "page": 1,
+      "current_logical_fill": [
+        155.55,
+        171.84786,
+        292.40003,
+        184.49678
+      ],
+      "predicted_source_endpoints": [
+        1297,
+        1432,
+        2436,
+        1537
+      ],
+      "native_source_endpoints": [
+        1297,
+        1432,
+        2436,
+        1537
+      ],
+      "exact": true
+    },
+    {
+      "control": 0,
+      "page": 2,
+      "current_logical_fill": [
+        240.6,
+        115.14786,
+        349.1,
+        127.79678
+      ],
+      "predicted_source_endpoints": [
+        2006,
+        960,
+        2909,
+        1065
+      ],
+      "native_source_endpoints": [
+        2006,
+        960,
+        2909,
+        1065
+      ],
+      "exact": true
+    },
+    {
+      "control": 0,
+      "page": 3,
+      "current_logical_fill": [
+        155.55,
+        127.79678,
+        292.40003,
+        140.44571
+      ],
+      "predicted_source_endpoints": [
+        1297,
+        1065,
+        2436,
+        1170
+      ],
+      "native_source_endpoints": [
+        1297,
+        1065,
+        2436,
+        1170
+      ],
+      "exact": true
+    },
+    {
+      "control": 0,
+      "page": 4,
+      "current_logical_fill": [
+        155.55,
+        115.14786,
+        292.40003,
+        127.79678
+      ],
+      "predicted_source_endpoints": [
+        1297,
+        960,
+        2436,
+        1065
+      ],
+      "native_source_endpoints": [
+        1297,
+        960,
+        2436,
+        1065
+      ],
+      "exact": true
+    },
+    {
+      "control": 0,
+      "page": 5,
+      "current_logical_fill": [
+        155.55,
+        115.14786,
+        349.09999,
+        127.79678
+      ],
+      "predicted_source_endpoints": [
+        1297,
+        960,
+        2909,
+        1065
+      ],
+      "native_source_endpoints": [
+        1297,
+        960,
+        2909,
+        1065
+      ],
+      "exact": true
+    },
+    {
+      "control": 1,
+      "page": 1,
+      "current_logical_fill": [
+        155.55,
+        159.19893,
+        468.09999,
+        171.84786
+      ],
+      "predicted_source_endpoints": [
+        1297,
+        1327,
+        3900,
+        1432
+      ],
+      "native_source_endpoints": [
+        1297,
+        1327,
+        3900,
+        1432
+      ],
+      "exact": true
+    },
+    {
+      "control": 1,
+      "page": 2,
+      "current_logical_fill": [
+        240.6,
+        102.49893,
+        524.8,
+        115.14786
+      ],
+      "predicted_source_endpoints": [
+        2006,
+        854,
+        4373,
+        960
+      ],
+      "native_source_endpoints": [
+        2006,
+        854,
+        4373,
+        960
+      ],
+      "exact": true
+    },
+    {
+      "control": 1,
+      "page": 3,
+      "current_logical_fill": [
+        155.55,
+        102.49893,
+        468.09999,
+        115.14786
+      ],
+      "predicted_source_endpoints": [
+        1297,
+        854,
+        3900,
+        960
+      ],
+      "native_source_endpoints": [
+        1297,
+        854,
+        3900,
+        960
+      ],
+      "exact": true
+    },
+    {
+      "control": 1,
+      "page": 4,
+      "current_logical_fill": [
+        155.55,
+        102.49893,
+        468.09999,
+        115.14786
+      ],
+      "predicted_source_endpoints": [
+        1297,
+        854,
+        3900,
+        960
+      ],
+      "native_source_endpoints": [
+        1297,
+        854,
+        3900,
+        960
+      ],
+      "exact": true
+    },
+    {
+      "control": 1,
+      "page": 5,
+      "current_logical_fill": [
+        155.55,
+        102.49893,
+        524.8,
+        115.14786
+      ],
+      "predicted_source_endpoints": [
+        1297,
+        854,
+        4373,
+        960
+      ],
+      "native_source_endpoints": [
+        1297,
+        854,
+        4373,
+        960
+      ],
+      "exact": true
+    }
+  ],
+  "actual_pdf_emf_proof": {
+    "checks": {
+      "actual_pdf_emf_headers": true,
+      "all12_pages": true,
+      "all_native_source_rectangles_replay": true
+    },
+    "pages": [
+      {
+        "control": 0,
+        "page": 1,
+        "viewport": [
+          3497,
+          2481
+        ],
+        "reference_dots": [
+          3496,
+          2480
+        ],
+        "reference_mm": [
+          148,
+          105
+        ],
+        "pdf_frame": [
+          0,
+          0,
+          14800,
+          10500
+        ],
+        "source_rectangles": [
+          [
+            1297,
+            1221,
+            1612,
+            106
+          ],
+          [
+            1297,
+            1327,
+            1612,
+            105
+          ],
+          [
+            1297,
+            1432,
+            1139,
+            105
+          ]
+        ],
+        "pdf_bounds": [
+          [
+            155.69,
+            146.56600000000003,
+            349.18,
+            159.31000000000003
+          ],
+          [
+            155.69,
+            159.31000000000003,
+            349.18,
+            171.91000000000003
+          ],
+          [
+            155.69,
+            171.91000000000003,
+            292.41999,
+            184.51000000000005
+          ]
+        ],
+        "endpoint_replay_error": 0.004000000000019099
+      },
+      {
+        "control": 0,
+        "page": 2,
+        "viewport": [
+          3497,
+          2481
+        ],
+        "reference_dots": [
+          3496,
+          2480
+        ],
+        "reference_mm": [
+          148,
+          105
+        ],
+        "pdf_frame": [
+          0,
+          0,
+          14800,
+          10500
+        ],
+        "source_rectangles": [
+          [
+            1297,
+            748,
+            1139,
+            106
+          ],
+          [
+            1297,
+            854,
+            1139,
+            106
+          ],
+          [
+            2006,
+            960,
+            903,
+            105
+          ]
+        ],
+        "pdf_bounds": [
+          [
+            155.69,
+            89.81000000000003,
+            292.41999,
+            102.53000000000003
+          ],
+          [
+            155.69,
+            102.53000000000003,
+            292.41999,
+            115.25000000000003
+          ],
+          [
+            240.79,
+            115.25000000000003,
+            349.16999,
+            127.85000000000002
+          ]
+        ],
+        "endpoint_replay_error": 0.0060100000000034015
+      },
+      {
+        "control": 0,
+        "page": 3,
+        "viewport": [
+          3497,
+          2481
+        ],
+        "reference_dots": [
+          3496,
+          2480
+        ],
+        "reference_mm": [
+          148,
+          105
+        ],
+        "pdf_frame": [
+          0,
+          0,
+          14800,
+          10500
+        ],
+        "source_rectangles": [
+          [
+            2006,
+            748,
+            903,
+            106
+          ],
+          [
+            2006,
+            854,
+            903,
+            106
+          ],
+          [
+            2006,
+            960,
+            903,
+            105
+          ],
+          [
+            1297,
+            1065,
+            1139,
+            105
+          ]
+        ],
+        "pdf_bounds": [
+          [
+            240.79,
+            89.81000000000003,
+            349.16999,
+            102.53000000000003
+          ],
+          [
+            240.79,
+            102.53000000000003,
+            349.16999,
+            115.25000000000003
+          ],
+          [
+            240.79,
+            115.25000000000003,
+            349.16999,
+            127.85000000000002
+          ],
+          [
+            155.69,
+            127.84999000000002,
+            292.41999,
+            140.45000000000002
+          ]
+        ],
+        "endpoint_replay_error": 0.0060100000000034015
+      },
+      {
+        "control": 0,
+        "page": 4,
+        "viewport": [
+          3497,
+          2481
+        ],
+        "reference_dots": [
+          3496,
+          2480
+        ],
+        "reference_mm": [
+          148,
+          105
+        ],
+        "pdf_frame": [
+          0,
+          0,
+          14800,
+          10500
+        ],
+        "source_rectangles": [
+          [
+            1297,
+            748,
+            1139,
+            106
+          ],
+          [
+            1297,
+            854,
+            1139,
+            106
+          ],
+          [
+            1297,
+            960,
+            1139,
+            105
+          ]
+        ],
+        "pdf_bounds": [
+          [
+            155.69,
+            89.81000000000003,
+            292.41999,
+            102.53000000000003
+          ],
+          [
+            155.69,
+            102.53000000000003,
+            292.41999,
+            115.25000000000003
+          ],
+          [
+            155.69,
+            115.25000000000003,
+            292.41999,
+            127.85000000000002
+          ]
+        ],
+        "endpoint_replay_error": 0.0039899999999875035
+      },
+      {
+        "control": 0,
+        "page": 5,
+        "viewport": [
+          3497,
+          2481
+        ],
+        "reference_dots": [
+          3496,
+          2480
+        ],
+        "reference_mm": [
+          148,
+          105
+        ],
+        "pdf_frame": [
+          0,
+          0,
+          14800,
+          10500
+        ],
+        "source_rectangles": [
+          [
+            1297,
+            748,
+            1139,
+            106
+          ],
+          [
+            1297,
+            854,
+            1139,
+            106
+          ],
+          [
+            1297,
+            960,
+            1612,
+            105
+          ]
+        ],
+        "pdf_bounds": [
+          [
+            155.69,
+            89.81000000000003,
+            292.41999,
+            102.53000000000003
+          ],
+          [
+            155.69,
+            102.53000000000003,
+            292.41999,
+            115.25000000000003
+          ],
+          [
+            155.69,
+            115.25000000000003,
+            349.18,
+            127.85000000000002
+          ]
+        ],
+        "endpoint_replay_error": 0.004000000000019099
+      },
+      {
+        "control": 0,
+        "page": 6,
+        "viewport": [
+          3497,
+          2481
+        ],
+        "reference_dots": [
+          3496,
+          2480
+        ],
+        "reference_mm": [
+          148,
+          105
+        ],
+        "pdf_frame": [
+          0,
+          0,
+          14800,
+          10500
+        ],
+        "source_rectangles": [
+          [
+            1297,
+            748,
+            1612,
+            106
+          ]
+        ],
+        "pdf_bounds": [
+          [
+            155.69,
+            89.81000000000003,
+            349.18,
+            102.53000000000003
+          ]
+        ],
+        "endpoint_replay_error": 0.004000000000019099
+      },
+      {
+        "control": 1,
+        "page": 1,
+        "viewport": [
+          4961,
+          7016
+        ],
+        "reference_dots": [
+          4961,
+          7016
+        ],
+        "reference_mm": [
+          210,
+          297
+        ],
+        "pdf_frame": [
+          0,
+          0,
+          20996,
+          29696
+        ],
+        "source_rectangles": [
+          [
+            1297,
+            1221,
+            3076,
+            106
+          ],
+          [
+            1297,
+            1327,
+            2603,
+            105
+          ]
+        ],
+        "pdf_bounds": [
+          [
+            155.66,
+            146.54003,
+            524.85,
+            159.26
+          ],
+          [
+            155.66,
+            159.26,
+            468.09,
+            171.86
+          ]
+        ],
+        "endpoint_replay_error": 0.006000000000028649
+      },
+      {
+        "control": 1,
+        "page": 2,
+        "viewport": [
+          4961,
+          7016
+        ],
+        "reference_dots": [
+          4961,
+          7016
+        ],
+        "reference_mm": [
+          210,
+          297
+        ],
+        "pdf_frame": [
+          0,
+          0,
+          20996,
+          29696
+        ],
+        "source_rectangles": [
+          [
+            1297,
+            748,
+            2603,
+            106
+          ],
+          [
+            2006,
+            854,
+            2367,
+            106
+          ]
+        ],
+        "pdf_bounds": [
+          [
+            155.66,
+            89.78001999999992,
+            468.09,
+            102.5
+          ],
+          [
+            240.77,
+            102.5,
+            524.86,
+            115.21999999999991
+          ]
+        ],
+        "endpoint_replay_error": 0.006000000000028649
+      },
+      {
+        "control": 1,
+        "page": 3,
+        "viewport": [
+          4961,
+          7016
+        ],
+        "reference_dots": [
+          4961,
+          7016
+        ],
+        "reference_mm": [
+          210,
+          297
+        ],
+        "pdf_frame": [
+          0,
+          0,
+          20996,
+          29696
+        ],
+        "source_rectangles": [
+          [
+            2006,
+            748,
+            2367,
+            106
+          ],
+          [
+            1297,
+            854,
+            2603,
+            106
+          ]
+        ],
+        "pdf_bounds": [
+          [
+            240.77,
+            89.78001999999992,
+            524.86,
+            102.5
+          ],
+          [
+            155.66,
+            102.5,
+            468.09,
+            115.21999999999991
+          ]
+        ],
+        "endpoint_replay_error": 0.006000000000028649
+      },
+      {
+        "control": 1,
+        "page": 4,
+        "viewport": [
+          4961,
+          7016
+        ],
+        "reference_dots": [
+          4961,
+          7016
+        ],
+        "reference_mm": [
+          210,
+          297
+        ],
+        "pdf_frame": [
+          0,
+          0,
+          20996,
+          29696
+        ],
+        "source_rectangles": [
+          [
+            1297,
+            748,
+            2603,
+            106
+          ],
+          [
+            1297,
+            854,
+            2603,
+            106
+          ]
+        ],
+        "pdf_bounds": [
+          [
+            155.66,
+            89.78001999999992,
+            468.09,
+            102.5
+          ],
+          [
+            155.66,
+            102.5,
+            468.09,
+            115.21999999999991
+          ]
+        ],
+        "endpoint_replay_error": 0.006000000000028649
+      },
+      {
+        "control": 1,
+        "page": 5,
+        "viewport": [
+          4961,
+          7016
+        ],
+        "reference_dots": [
+          4961,
+          7016
+        ],
+        "reference_mm": [
+          210,
+          297
+        ],
+        "pdf_frame": [
+          0,
+          0,
+          20996,
+          29696
+        ],
+        "source_rectangles": [
+          [
+            1297,
+            748,
+            2603,
+            106
+          ],
+          [
+            1297,
+            854,
+            3076,
+            106
+          ]
+        ],
+        "pdf_bounds": [
+          [
+            155.66,
+            89.78001999999992,
+            468.09,
+            102.5
+          ],
+          [
+            155.66,
+            102.5,
+            524.85,
+            115.21999999999991
+          ]
+        ],
+        "endpoint_replay_error": 0.006000000000028649
+      },
+      {
+        "control": 1,
+        "page": 6,
+        "viewport": [
+          4961,
+          7016
+        ],
+        "reference_dots": [
+          4961,
+          7016
+        ],
+        "reference_mm": [
+          210,
+          297
+        ],
+        "pdf_frame": [
+          0,
+          0,
+          20996,
+          29696
+        ],
+        "source_rectangles": [
+          [
+            1297,
+            2377,
+            3076,
+            105
+          ]
+        ],
+        "pdf_bounds": [
+          [
+            155.66,
+            285.28999999999996,
+            524.85,
+            297.89
+          ]
+        ],
+        "endpoint_replay_error": 0.005999999999971806
+      }
+    ]
+  }
+}

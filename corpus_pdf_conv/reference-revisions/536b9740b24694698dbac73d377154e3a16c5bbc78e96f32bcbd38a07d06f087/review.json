@@ -1,0 +1,2717 @@
+{
+  "schema_version": 1,
+  "configuration_id": "536b9740b24694698dbac73d377154e3a16c5bbc78e96f32bcbd38a07d06f087",
+  "reason": "Single reference revision under the user standing instruction to apply the established per-case procedure and preserve history. After first-line admission and physical decoration repairs, 74 configured changed-source controls retain every old PASS and improve28 to70PASS; the4 full-context split=false controls pass. Two exact-original exports with unchanged configured options/locales and observed print-field update ON/OFF both produce6pages in current Word16.0.20527.20088, and SDK passes the unchanged complete comparison against both. The saved Word16.0.20326 reference has7pages, including a terminal empty mark absent from the current configured outputs. The build difference is recorded without attributing the behavior solely to that difference. No source/configuration/acceptance gate change.",
+  "user_approval": "沿用用户既有指示：同类确证冲突按之前逻辑更新golden并保留历史；本例先完成原字节/配置/打印开关/完整比较证据。",
+  "approval_scope": "standing instruction; no new per-case confirmation requested",
+  "derivative_controls": {
+    "runtime": "v972",
+    "previous_runtime": "v970",
+    "count": 74,
+    "before_pass": 28,
+    "after_pass": 70,
+    "no_prior_pass_lost": true,
+    "lost": [],
+    "remaining_failures": [
+      {
+        "owner": "native-full-context-v4",
+        "index": 1,
+        "configuration_id": "54906960f156e9b127c34dd2a04c1b6df81327332ee9b7079d87ff61e40d74d9",
+        "verdict": "FAIL",
+        "diagnostic_kind": "visible-output",
+        "message": "case 54906960f156e9b127c34dd2a04c1b6df81327332ee9b7079d87ff61e40d74d9 exceeds VisualTolerance { significant_channel_delta: 16, max_significant_pixel_fraction: 0.01, max_mean_absolute_channel_delta: 1.5 }; failing pages=4 (1 of 7); maxima: significant_pixel_fraction=0.010127873659067576, mean_absolute_channel_delta=0.4866925049884123, max_channel_delta=255, localized_graphics_significant_pixel_fraction=0, localized_graphics_mean_absolute_channel_delta=0; artifacts=none",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-full-context-v4",
+        "index": 3,
+        "configuration_id": "a1554c3aebf4c70a4055ee61a8aa61c1ce94799bbc09548fca8a4db56c26352d",
+        "verdict": "FAIL",
+        "diagnostic_kind": "visible-output",
+        "message": "case a1554c3aebf4c70a4055ee61a8aa61c1ce94799bbc09548fca8a4db56c26352d exceeds VisualTolerance { significant_channel_delta: 16, max_significant_pixel_fraction: 0.01, max_mean_absolute_channel_delta: 1.5 }; failing pages=4 (1 of 7); maxima: significant_pixel_fraction=0.010127873659067576, mean_absolute_channel_delta=0.4866925049884123, max_channel_delta=255, localized_graphics_significant_pixel_fraction=0, localized_graphics_mean_absolute_channel_delta=0; artifacts=none",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-full-context-v4",
+        "index": 5,
+        "configuration_id": "6c52e8fe20fb54c96df346ddc33a9fa3e20b7e5a888412ff8b9a8cf14e676d8f",
+        "verdict": "FAIL",
+        "diagnostic_kind": "visible-output",
+        "message": "case 6c52e8fe20fb54c96df346ddc33a9fa3e20b7e5a888412ff8b9a8cf14e676d8f exceeds VisualTolerance { significant_channel_delta: 16, max_significant_pixel_fraction: 0.01, max_mean_absolute_channel_delta: 1.5 }; failing pages=4 (1 of 7); maxima: significant_pixel_fraction=0.010127873659067576, mean_absolute_channel_delta=0.4866925049884123, max_channel_delta=255, localized_graphics_significant_pixel_fraction=0, localized_graphics_mean_absolute_channel_delta=0; artifacts=none",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-full-context-v4",
+        "index": 7,
+        "configuration_id": "51a03059dd6b31650b89ced5cd75c45ec7778c7cc52f3d513c403b9daacfe30f",
+        "verdict": "FAIL",
+        "diagnostic_kind": "visible-output",
+        "message": "case 51a03059dd6b31650b89ced5cd75c45ec7778c7cc52f3d513c403b9daacfe30f exceeds VisualTolerance { significant_channel_delta: 16, max_significant_pixel_fraction: 0.01, max_mean_absolute_channel_delta: 1.5 }; failing pages=4 (1 of 7); maxima: significant_pixel_fraction=0.010127873659067576, mean_absolute_channel_delta=0.4866925049884123, max_channel_delta=255, localized_graphics_significant_pixel_fraction=0, localized_graphics_mean_absolute_channel_delta=0; artifacts=none",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      }
+    ],
+    "cases": [
+      {
+        "owner": "native-prefix-admission-v1",
+        "index": 0,
+        "configuration_id": "1c08cd1d3bcf3360fee3cc62b93d1dc2a93d76f80e02d67e38c22c5f0737e83d",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-prefix-admission-v1",
+        "index": 1,
+        "configuration_id": "82b9e8057a1dedd62913961a13a4491222771b54f85842698d2f7727cf16b5ea",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-prefix-admission-v1",
+        "index": 2,
+        "configuration_id": "c65e85e89aa5c587d3077eb40d2e70467462a50bb1bea06a350560ad4d6134ed",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-prefix-admission-v1",
+        "index": 3,
+        "configuration_id": "7fd0a46ce5e85627deefd96060305077dcf5316a0fe3807f4998557fe55d7418",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-prefix-admission-v1",
+        "index": 4,
+        "configuration_id": "dfd52b0d60af06285e913ebfa0a24300ccd4c447d7c7c22c79ef6c53e9ac3311",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-prefix-admission-v1",
+        "index": 5,
+        "configuration_id": "3e8930975a0fe4b4cb35607f7114b946c7bc1ed1be1cb508c4b177c87e970142",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-prefix-admission-v1",
+        "index": 6,
+        "configuration_id": "9da6ee7fceb637b778ed442205b1c05609d52db8add62189067d62d895ee8ed7",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-prefix-admission-v1",
+        "index": 7,
+        "configuration_id": "020e24defcf2cb9787aa584dedff547f8026c644a3756124cf2246a0344df1d6",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-prefix-admission-v1",
+        "index": 8,
+        "configuration_id": "a3b0c9bbee0a38220fba41588307dd5f3af95622cf47e51958b88197fb5cde4b",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-prefix-admission-v1",
+        "index": 9,
+        "configuration_id": "12fca5a8fe1572c46c07fa4f18f95593eb2d3fa8c49882f69427ec33db3cec5b",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-prefix-admission-v1",
+        "index": 10,
+        "configuration_id": "df75e054326cde7d1383acb83ca9302d055db9ea4a5ab096a0dc379f11367fb8",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-prefix-admission-v1",
+        "index": 11,
+        "configuration_id": "de937099d708c99ac8df4603f0c586e4273029409fd7c153b6ba66f1e36f4f17",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-prefix-admission-v1",
+        "index": 12,
+        "configuration_id": "58a6149ff549da38936442ccc72387a9f4b01e69ef4283ca2cce29ac2d34c8b0",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-prefix-admission-v1",
+        "index": 13,
+        "configuration_id": "982fb20ce42217baa2b3a64bb1fa43c5a1117435adf2b595f3dd0a53de014e87",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-prefix-admission-v1",
+        "index": 14,
+        "configuration_id": "d642842c9d36cfcfd56b9616e7173a1f61ebadd5f50a2bec346c91091f434edf",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-prefix-admission-v1",
+        "index": 15,
+        "configuration_id": "dc496ec9a1700c19fa4653b715c93c99a5a869d84c77f8cef29346ac1fec5136",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-terminal-break-v2",
+        "index": 0,
+        "configuration_id": "77dc1b9cec0b3c177f73864f5b8afeca709011c321ea64faf24ae31923d856e7",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-terminal-break-v2",
+        "index": 1,
+        "configuration_id": "20a8ddf3fb4c4db4b1799d3c4f0cc2141d4e3ae2d4bfe8913a6647347afc9762",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "text-baseline"
+      },
+      {
+        "owner": "native-terminal-break-v2",
+        "index": 2,
+        "configuration_id": "293fd04e2e34d83499f7ec08bd141db1b93409a8e22e6afeef422f1348fd1797",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-terminal-break-v2",
+        "index": 3,
+        "configuration_id": "589460356313061808316453bfcd3508fce7865e3e0b90fdc815d864f5f72619",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "text-baseline"
+      },
+      {
+        "owner": "native-terminal-break-v2",
+        "index": 4,
+        "configuration_id": "21151f48467ba029ad5c373a2a8d76af52b0214963615eef0e1f6a33d083bf65",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-terminal-break-v2",
+        "index": 5,
+        "configuration_id": "5f74e121e3563e70776b98c4ac1d9d42c2d8af5250399f76cd2b47946a1be928",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "text-baseline"
+      },
+      {
+        "owner": "native-terminal-break-v2",
+        "index": 6,
+        "configuration_id": "63b4269a88321770f0904730103085cf29f06cb7dc5577fb35e5602554f215b3",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-terminal-break-v2",
+        "index": 7,
+        "configuration_id": "abb08594fba1535fd0da7f3c83a10e08aefc47a60e350045642b37139e99eedf",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "text-baseline"
+      },
+      {
+        "owner": "native-terminal-break-v2",
+        "index": 8,
+        "configuration_id": "077afb2de49ec6a03657fa92643108bed49b4bdd549611dcba6c79dde2945e21",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-terminal-break-v2",
+        "index": 9,
+        "configuration_id": "bd71180a39cab7cd8c42ddf72dbb4c99b4e68dc0e8c48899bacbc013d99e130c",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "text-baseline"
+      },
+      {
+        "owner": "native-terminal-break-v2",
+        "index": 10,
+        "configuration_id": "4d8711c78ec81a5f063cc5182da64f5b4b558e4428c84bbd314449b9a19d3cfe",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-terminal-break-v2",
+        "index": 11,
+        "configuration_id": "d7aeab63d5df40fbb5c0d2057f9c77026510bb3937bd644d910e7225b2a76867",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "text-baseline"
+      },
+      {
+        "owner": "native-terminal-break-v2",
+        "index": 12,
+        "configuration_id": "0f5a0a40ff4790beb3cb2e4d0336819ae912d4cf656ed6919a5fac0d331c6eef",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-terminal-break-v2",
+        "index": 13,
+        "configuration_id": "94a5c2a948abba1b518a925cb55f422faa365adb5035f1f3d777239f35c6a2c1",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-terminal-break-v2",
+        "index": 14,
+        "configuration_id": "0e88172f1753e00f1e59175c0198023c6740351aabd01ca13ab9e2ded4372ac0",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-terminal-break-v2",
+        "index": 15,
+        "configuration_id": "b3d2f74b334e07b94585d700e63ac6c406c4e6cfaf9e279d950a3cad9610681d",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "text-baseline"
+      },
+      {
+        "owner": "native-terminal-break-v2",
+        "index": 16,
+        "configuration_id": "ae1bc5fda61bccfd554ad0733cd9960a8ced161e5356a48386a483855d045d2e",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-terminal-break-v2",
+        "index": 17,
+        "configuration_id": "ce71e5d2ba2c3863a85b5faace14cb016c2470ec47e55e8f5c0cd1eadfad7470",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-terminal-break-v2",
+        "index": 18,
+        "configuration_id": "847333a88a614ccb5f4e073d192bea386635fb6136b01d055b20b13c0fabf860",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-terminal-break-v2",
+        "index": 19,
+        "configuration_id": "e63e0a31820d3c4b3c4d5c15d085632f5fc233cac4e986018c1eada7244f36eb",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "text-baseline"
+      },
+      {
+        "owner": "native-terminal-break-v2",
+        "index": 20,
+        "configuration_id": "c7c0b092fa22410ccd0b3e4d020869fc447180c4cea71b6a67841cc47ba0877d",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-terminal-break-v2",
+        "index": 21,
+        "configuration_id": "228d1e7c44937252d38c14485b4b53111395ebff0e67db25f97b204a2d4096a4",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "text-baseline"
+      },
+      {
+        "owner": "native-terminal-break-v2",
+        "index": 22,
+        "configuration_id": "4fe474ae7bc8dca7a5f70b5afede9140767e74420971a1d49eaf620a2af84097",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-terminal-break-v2",
+        "index": 23,
+        "configuration_id": "dac4d8319359c030c4455e84d90ed95511f45b0d0f82d49fa6c402d4e367a1e7",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "text-baseline"
+      },
+      {
+        "owner": "native-bookmark-follow-v3",
+        "index": 0,
+        "configuration_id": "bc4457aa55dc8a65203cb649d4d326a3beccc6e958fecea790a350d5eab0d119",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-bookmark-follow-v3",
+        "index": 1,
+        "configuration_id": "07fa9bce32a9bce0bd83c89c66cd368855a1c4a7f9547403a8f0c472a495e780",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-bookmark-follow-v3",
+        "index": 2,
+        "configuration_id": "6d3d29734ae9af22728e49056300fc34d750013b81f4b3e82cd1bbf2bdaa2b51",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-bookmark-follow-v3",
+        "index": 3,
+        "configuration_id": "fc19cad910589f0ffda82a703df8b3d8f8430351dd38779b99895b68413565d8",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-bookmark-follow-v3",
+        "index": 4,
+        "configuration_id": "c0ca2648945a39b0b336797f3c5d8659823e415797e1932d72b2958b3e302df2",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-bookmark-follow-v3",
+        "index": 5,
+        "configuration_id": "b99798405f35bfe83bc5943ef81378befb84942045188228725563aaa42d5463",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-bookmark-follow-v3",
+        "index": 6,
+        "configuration_id": "9933b13ae143531a571fa8b16dbabef73db51eec3ca1df20671825a4b7453da2",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-bookmark-follow-v3",
+        "index": 7,
+        "configuration_id": "db45954f362780e391c2b5d81c77661df7f596a70a36f0303e965218df7fed81",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-bookmark-follow-v3",
+        "index": 8,
+        "configuration_id": "a46e481e9f670674d9ced2a01b722d616ed4ac30a94c83b2e18b785d8613b2c7",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-bookmark-follow-v3",
+        "index": 9,
+        "configuration_id": "a02902e8067c558fc6ad4d11a0a5f0e3802a3d8866cc5704a4752954f8a6bd59",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-bookmark-follow-v3",
+        "index": 10,
+        "configuration_id": "133f2bc682ede76197435d0bfe04f9fe7a20220617b353679bbdeb8d2b01cdeb",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-bookmark-follow-v3",
+        "index": 11,
+        "configuration_id": "f6cf6e5c84d006a1a3f278d702cd9085a14e9c2624bd25e5f544fcdf47808f96",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-bookmark-follow-v3",
+        "index": 12,
+        "configuration_id": "8a138ceb534f3ec8848f967aa3cda287f35cedafc8fc157b2674ab6c4ae84886",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-bookmark-follow-v3",
+        "index": 13,
+        "configuration_id": "62669655b69e2c56f39272548d684889a0eca92d095db3111c89ddf2b1d31d57",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-bookmark-follow-v3",
+        "index": 14,
+        "configuration_id": "4ae951a5a2346a27d0a5c1ba8bcc732ca0867da61c5a76b2bfdb1c4dc12c4e06",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-bookmark-follow-v3",
+        "index": 15,
+        "configuration_id": "09d8c8065bb5f9168e0efbfe11a88c7065066ec1d57ac4518d10e16e4b28998d",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-full-context-v4",
+        "index": 0,
+        "configuration_id": "d581c6a741d2b81079cc3cabe1a7a6f9b93ebabe6fc35da52a12a96ea1460330",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-full-context-v4",
+        "index": 1,
+        "configuration_id": "54906960f156e9b127c34dd2a04c1b6df81327332ee9b7079d87ff61e40d74d9",
+        "verdict": "FAIL",
+        "diagnostic_kind": "visible-output",
+        "message": "case 54906960f156e9b127c34dd2a04c1b6df81327332ee9b7079d87ff61e40d74d9 exceeds VisualTolerance { significant_channel_delta: 16, max_significant_pixel_fraction: 0.01, max_mean_absolute_channel_delta: 1.5 }; failing pages=4 (1 of 7); maxima: significant_pixel_fraction=0.010127873659067576, mean_absolute_channel_delta=0.4866925049884123, max_channel_delta=255, localized_graphics_significant_pixel_fraction=0, localized_graphics_mean_absolute_channel_delta=0; artifacts=none",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-full-context-v4",
+        "index": 2,
+        "configuration_id": "ba6b40dc3460148b92149dd29c87cea53e9d1fb75e5b0ff3b064b44763c72a25",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-full-context-v4",
+        "index": 3,
+        "configuration_id": "a1554c3aebf4c70a4055ee61a8aa61c1ce94799bbc09548fca8a4db56c26352d",
+        "verdict": "FAIL",
+        "diagnostic_kind": "visible-output",
+        "message": "case a1554c3aebf4c70a4055ee61a8aa61c1ce94799bbc09548fca8a4db56c26352d exceeds VisualTolerance { significant_channel_delta: 16, max_significant_pixel_fraction: 0.01, max_mean_absolute_channel_delta: 1.5 }; failing pages=4 (1 of 7); maxima: significant_pixel_fraction=0.010127873659067576, mean_absolute_channel_delta=0.4866925049884123, max_channel_delta=255, localized_graphics_significant_pixel_fraction=0, localized_graphics_mean_absolute_channel_delta=0; artifacts=none",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-full-context-v4",
+        "index": 4,
+        "configuration_id": "0b57ced0dabaf0bc5b148c982085deaa079448d125b3d587a675c4c6720f0d25",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-full-context-v4",
+        "index": 5,
+        "configuration_id": "6c52e8fe20fb54c96df346ddc33a9fa3e20b7e5a888412ff8b9a8cf14e676d8f",
+        "verdict": "FAIL",
+        "diagnostic_kind": "visible-output",
+        "message": "case 6c52e8fe20fb54c96df346ddc33a9fa3e20b7e5a888412ff8b9a8cf14e676d8f exceeds VisualTolerance { significant_channel_delta: 16, max_significant_pixel_fraction: 0.01, max_mean_absolute_channel_delta: 1.5 }; failing pages=4 (1 of 7); maxima: significant_pixel_fraction=0.010127873659067576, mean_absolute_channel_delta=0.4866925049884123, max_channel_delta=255, localized_graphics_significant_pixel_fraction=0, localized_graphics_mean_absolute_channel_delta=0; artifacts=none",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-full-context-v4",
+        "index": 6,
+        "configuration_id": "43a4545ff355e622d43e7be7af2a1b253a5f3e871a0fdcd7e068c53072a47350",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-full-context-v4",
+        "index": 7,
+        "configuration_id": "51a03059dd6b31650b89ced5cd75c45ec7778c7cc52f3d513c403b9daacfe30f",
+        "verdict": "FAIL",
+        "diagnostic_kind": "visible-output",
+        "message": "case 51a03059dd6b31650b89ced5cd75c45ec7778c7cc52f3d513c403b9daacfe30f exceeds VisualTolerance { significant_channel_delta: 16, max_significant_pixel_fraction: 0.01, max_mean_absolute_channel_delta: 1.5 }; failing pages=4 (1 of 7); maxima: significant_pixel_fraction=0.010127873659067576, mean_absolute_channel_delta=0.4866925049884123, max_channel_delta=255, localized_graphics_significant_pixel_fraction=0, localized_graphics_mean_absolute_channel_delta=0; artifacts=none",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-decoration-gaps-v5",
+        "index": 0,
+        "configuration_id": "adf87e83f951c80b1d9cb222fdb618213e018866d6d04866c3866cedf46f0a19",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-decoration-gaps-v5",
+        "index": 1,
+        "configuration_id": "87e32b9033e7e897869ce7a732db4bb5830949ac37aa099cac0bf18998f1fb11",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-decoration-gaps-v5",
+        "index": 2,
+        "configuration_id": "8b67deaf6d17cbf45491085b4be15bf5bb57b5db586f3232985fb9f2e3c16ad4",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-decoration-gaps-v5",
+        "index": 3,
+        "configuration_id": "0142bd1448f213b157299c4d8e13d07bf9da6f54fe41bbcba0b10b2a330428c9",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-decoration-gaps-v5",
+        "index": 4,
+        "configuration_id": "66a7a2593122a4c02fcaa7db6b50aa926e32035bcb38153bd7e6adb038721024",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-decoration-gaps-v5",
+        "index": 5,
+        "configuration_id": "4cc05c5390d5b6495a7895bc6200a6aa41aa159fc4de959071f503dca9441891",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-decoration-gaps-v5",
+        "index": 6,
+        "configuration_id": "a374d15f1b645bc0a06e3dc43b8a65d627a32f17b4bcd36375c431cc4d647f18",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      },
+      {
+        "owner": "native-decoration-gaps-v5",
+        "index": 7,
+        "configuration_id": "4820bbac5ffdc3a7fa1aa67219dd67f07cd557f623c66b376712ae3327f29dbf",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-decoration-gaps-v5",
+        "index": 8,
+        "configuration_id": "c5ac8ea6db380a14a688d7b129f1b51baefba786fb8f64b4e5ca281c938df649",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "PASS",
+        "previous_diagnostic_kind": null
+      },
+      {
+        "owner": "native-decoration-gaps-v5",
+        "index": 9,
+        "configuration_id": "d59bfad9b18dae2db02c483363625ecafab99e247f1403c1fe7a0d672a051f64",
+        "verdict": "PASS",
+        "diagnostic_kind": null,
+        "message": "",
+        "previous_verdict": "FAIL",
+        "previous_diagnostic_kind": "visible-output"
+      }
+    ]
+  },
+  "source_unchanged": true,
+  "office_options_unchanged": true,
+  "acceptance_gates_unchanged": true,
+  "implementation_gain": false,
+  "previous_conversion": {
+    "schema_version": 4,
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "file": "sw/qa/extras/ooxmlexport/data/tdf153964_topMarginAfterBreak14.docx",
+    "family": "word",
+    "source_extension": "docx",
+    "source_bytes": 14353,
+    "source_sha256": "cbb7657ef8f2075537e2ed93881d18053352f63bc222caf283ff6fbcd4814c20",
+    "configuration_id": "536b9740b24694698dbac73d377154e3a16c5bbc78e96f32bcbd38a07d06f087",
+    "requested": {
+      "standards": [
+        "pdf17"
+      ],
+      "compress_content_streams": false,
+      "ui_language": "zh-TW",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "field_update": null,
+      "tagged_pdf": true,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": true,
+      "open_bookmark_levels": 2,
+      "page_range": null,
+      "images": {
+        "use_lossless_compression": false,
+        "jpeg_quality": 60,
+        "reduce_resolution": true,
+        "max_resolution_dpi": 96
+      },
+      "link_action": "uri",
+      "export_form_fields": false,
+      "viewer": {
+        "page_mode": "use_outlines",
+        "page_layout": "continuous",
+        "magnification": "default",
+        "initial_page": 1,
+        "hide_toolbar": false,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": true,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "creator": "ooxmlsdk-pdf",
+        "producer": "ooxmlsdk-pdf configured campaign",
+        "creation_date": null
+      },
+      "embed_campaign_attachment": true
+    },
+    "effective": {
+      "standards": [
+        "pdf17"
+      ],
+      "compress_content_streams": false,
+      "ui_language": "zh-TW",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "field_update": null,
+      "tagged_pdf": true,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": true,
+      "open_bookmark_levels": 2,
+      "page_range": null,
+      "images": {
+        "use_lossless_compression": false,
+        "jpeg_quality": 60,
+        "reduce_resolution": true,
+        "max_resolution_dpi": 96
+      },
+      "link_action": "uri",
+      "export_form_fields": false,
+      "viewer": {
+        "page_mode": "use_outlines",
+        "page_layout": "continuous",
+        "magnification": "default",
+        "initial_page": 1,
+        "hide_toolbar": false,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": true,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "creator": "ooxmlsdk-pdf",
+        "producer": "ooxmlsdk-pdf configured campaign",
+        "creation_date": null
+      },
+      "embed_campaign_attachment": true
+    },
+    "adjustments": [],
+    "office_options": {
+      "quality": "print",
+      "include_document_properties": true,
+      "page_from": null,
+      "page_to": null,
+      "tagged_pdf": true,
+      "bookmarks": "headings",
+      "pdf_a_1": false,
+      "bitmap_missing_fonts": true,
+      "print_hidden_slides": false
+    },
+    "status": "converted",
+    "reference_engine": "Microsoft Office",
+    "environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+    "application": "Word",
+    "application_version": "16.0",
+    "application_build": "16.0.20326",
+    "output": "sw/qa/extras/ooxmlexport/data/tdf153964_topMarginAfterBreak14.docx.pdf",
+    "output_bytes": 102535,
+    "output_sha256": "6040241855cab71ddf24ddd723122899ddbd445fac66b68048aee7d59aed5bdd",
+    "observed_pdf": {
+      "header_version": "1.7",
+      "page_count": 7,
+      "tagged_pdf": true,
+      "has_outlines": false,
+      "pdf_a_part": null,
+      "pdf_a_conformance": null
+    },
+    "render_environment": {
+      "ui_language": "zh-TW",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "time_zone": "Asia/Shanghai",
+      "windows_time_zone": "China Standard Time",
+      "clock": {
+        "opened_at_utc": "2026-09-11T12:00:07.8173241Z",
+        "refresh_started_at_utc": "2026-09-11T12:00:07.9280897Z",
+        "refresh_completed_at_utc": "2026-09-11T12:00:08.1207804Z",
+        "export_started_at_utc": "2026-09-11T12:00:08.1409502Z",
+        "export_completed_at_utc": "2026-09-11T12:00:08.6074681Z"
+      }
+    },
+    "converted_at_utc": "2026-09-11T12:00:11.942472727Z",
+    "elapsed_ms": 6513,
+    "attempts": 1,
+    "annotations": [],
+    "failure_class": "",
+    "error_code": "",
+    "error": ""
+  },
+  "revised_conversion": {
+    "schema_version": 4,
+    "campaign_id": "office-ooxml-pdf-options-v2",
+    "assignment_algorithm": "sha256-balanced-marginals-v1",
+    "file": "sw/qa/extras/ooxmlexport/data/tdf153964_topMarginAfterBreak14.docx",
+    "family": "word",
+    "source_extension": "docx",
+    "source_bytes": 14353,
+    "source_sha256": "cbb7657ef8f2075537e2ed93881d18053352f63bc222caf283ff6fbcd4814c20",
+    "configuration_id": "536b9740b24694698dbac73d377154e3a16c5bbc78e96f32bcbd38a07d06f087",
+    "requested": {
+      "standards": [
+        "pdf17"
+      ],
+      "compress_content_streams": false,
+      "ui_language": "zh-TW",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "field_update": null,
+      "tagged_pdf": true,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": true,
+      "open_bookmark_levels": 2,
+      "page_range": null,
+      "images": {
+        "use_lossless_compression": false,
+        "jpeg_quality": 60,
+        "reduce_resolution": true,
+        "max_resolution_dpi": 96
+      },
+      "link_action": "uri",
+      "export_form_fields": false,
+      "viewer": {
+        "page_mode": "use_outlines",
+        "page_layout": "continuous",
+        "magnification": "default",
+        "initial_page": 1,
+        "hide_toolbar": false,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": true,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "creator": "ooxmlsdk-pdf",
+        "producer": "ooxmlsdk-pdf configured campaign",
+        "creation_date": null
+      },
+      "embed_campaign_attachment": true
+    },
+    "effective": {
+      "standards": [
+        "pdf17"
+      ],
+      "compress_content_streams": false,
+      "ui_language": "zh-TW",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "field_update": null,
+      "tagged_pdf": true,
+      "pdf_ua_compliance": false,
+      "export_bookmarks": true,
+      "open_bookmark_levels": 2,
+      "page_range": null,
+      "images": {
+        "use_lossless_compression": false,
+        "jpeg_quality": 60,
+        "reduce_resolution": true,
+        "max_resolution_dpi": 96
+      },
+      "link_action": "uri",
+      "export_form_fields": false,
+      "viewer": {
+        "page_mode": "use_outlines",
+        "page_layout": "continuous",
+        "magnification": "default",
+        "initial_page": 1,
+        "hide_toolbar": false,
+        "hide_menubar": true,
+        "hide_window_controls": true,
+        "fit_window": false,
+        "center_window": true,
+        "display_document_title": true,
+        "full_screen": false,
+        "first_page_left": false
+      },
+      "metadata": {
+        "title": null,
+        "author": null,
+        "subject": null,
+        "keywords": null,
+        "creator": "ooxmlsdk-pdf",
+        "producer": "ooxmlsdk-pdf configured campaign",
+        "creation_date": null
+      },
+      "embed_campaign_attachment": true
+    },
+    "adjustments": [],
+    "office_options": {
+      "quality": "print",
+      "include_document_properties": true,
+      "page_from": null,
+      "page_to": null,
+      "tagged_pdf": true,
+      "bookmarks": "headings",
+      "pdf_a_1": false,
+      "bitmap_missing_fonts": true,
+      "print_hidden_slides": false
+    },
+    "status": "converted",
+    "reference_engine": "Microsoft Office",
+    "environment_id": "a72ce9c43f7e078c1acb4dc72b3d834c5fc4ea76b924df71c29fa249a3c0a3de",
+    "application": "Word",
+    "application_version": "16.0",
+    "application_build": "16.0.20527",
+    "output": "sw/qa/extras/ooxmlexport/data/tdf153964_topMarginAfterBreak14.docx.pdf",
+    "output_bytes": 101626,
+    "output_sha256": "f53f857438e514a817f5a5ce52202c3cb760a40da26ea78c48ca89f337bbd181",
+    "observed_pdf": {
+      "header_version": "1.7",
+      "page_count": 6,
+      "tagged_pdf": true,
+      "has_outlines": false,
+      "pdf_a_part": null,
+      "pdf_a_conformance": null
+    },
+    "render_environment": {
+      "ui_language": "zh-TW",
+      "format_locale": "zh-CN",
+      "document_language": "zh-CN",
+      "time_zone": "Asia/Shanghai",
+      "windows_time_zone": "China Standard Time",
+      "clock": {
+        "opened_at_utc": "2026-10-31T01:27:21.9213252Z",
+        "refresh_started_at_utc": "2026-10-31T01:27:22.0518069Z",
+        "refresh_completed_at_utc": "2026-10-31T01:27:22.2462993Z",
+        "export_started_at_utc": "2026-10-31T01:27:22.2692224Z",
+        "export_completed_at_utc": "2026-10-31T01:27:22.8040176Z"
+      },
+      "user_name": "yang yue",
+      "user_initials": "yy",
+      "update_fields_at_print": true
+    },
+    "converted_at_utc": "2026-10-31T01:27:22.8040176Z",
+    "elapsed_ms": 1490,
+    "attempts": 1,
+    "annotations": [
+      {
+        "kind": "reference-revision",
+        "configuration_id": "536b9740b24694698dbac73d377154e3a16c5bbc78e96f32bcbd38a07d06f087",
+        "previous_environment_id": "11e66c0c9eadf75fe526c94ebdb71b4a5b69a2139695b0e913ff297876ec121a",
+        "environment_id": "a72ce9c43f7e078c1acb4dc72b3d834c5fc4ea76b924df71c29fa249a3c0a3de",
+        "source_sha256": "cbb7657ef8f2075537e2ed93881d18053352f63bc222caf283ff6fbcd4814c20",
+        "output_sha256": "f53f857438e514a817f5a5ce52202c3cb760a40da26ea78c48ca89f337bbd181",
+        "reason": "Single reference revision under the user standing instruction to apply the established per-case procedure and preserve history. After first-line admission and physical decoration repairs, 74 configured changed-source controls retain every old PASS and improve28 to70PASS; the4 full-context split=false controls pass. Two exact-original exports with unchanged configured options/locales and observed print-field update ON/OFF both produce6pages in current Word16.0.20527.20088, and SDK passes the unchanged complete comparison against both. The saved Word16.0.20326 reference has7pages, including a terminal empty mark absent from the current configured outputs. The build difference is recorded without attributing the behavior solely to that difference. No source/configuration/acceptance gate change.",
+        "approved_by": "user",
+        "previous_output_sha256": "6040241855cab71ddf24ddd723122899ddbd445fac66b68048aee7d59aed5bdd",
+        "previous_application_build": "16.0.20326",
+        "application_build": "16.0.20527",
+        "previous_page_count": 7,
+        "page_count": 6
+      }
+    ],
+    "failure_class": "",
+    "error_code": "",
+    "error": ""
+  },
+  "original_full_office_version": "16.0.20326.20144",
+  "current_full_office_version": "16.0.20527.20088",
+  "environment_capture": {
+    "schema_version": 1,
+    "environment_id": "a72ce9c43f7e078c1acb4dc72b3d834c5fc4ea76b924df71c29fa249a3c0a3de",
+    "observed_at_utc": "2026-10-31T01:28:09.2012453Z",
+    "environment": {
+      "schema_version": 1,
+      "campaign_id": "office-ooxml-pdf-options-v2",
+      "converter_version": 2,
+      "probe_script_sha256": "e624fee11515c007c4ed075d500b80ad81c9c12106ddf2b8fa1efdfa58291b59",
+      "controller_script_sha256": "a33a2697c363d68c5dd8e76db16b99223839357f6469a1101004421cf8b7eb66",
+      "environment_helper_sha256": "16f0694a8b9c0c11223263f16c3158fa96d312eaf9affe6dc3d312671eb9dcc2",
+      "reference_engine": "Microsoft Office",
+      "windows": {
+        "product_name": "Windows 10 Pro",
+        "display_version": "25H2",
+        "full_build": "26200.9711"
+      },
+      "office": {
+        "ui_languages": [
+          "de-DE",
+          "en-US",
+          "es-MX",
+          "fr-CA",
+          "ja-JP",
+          "ko-KR",
+          "zh-CN",
+          "zh-TW"
+        ],
+        "applications": [
+          {
+            "name": "Word",
+            "ui_language": "de-DE",
+            "version": "16.0"
+          },
+          {
+            "name": "Excel",
+            "ui_language": "de-DE",
+            "version": "16.0"
+          },
+          {
+            "name": "PowerPoint",
+            "ui_language": "de-DE",
+            "version": "16.0"
+          }
+        ],
+        "platform": "x64",
+        "product_release_ids": "O365ProPlusRetail",
+        "version_to_report": "16.0.20527.20088"
+      },
+      "locale": {
+        "culture": "zh-CN",
+        "ui_culture": "de-DE",
+        "document_language": "zh-CN",
+        "iana_time_zone": "Asia/Shanghai",
+        "time_zone": "China Standard Time"
+      },
+      "default_paper": {
+        "name": "A4",
+        "width_hundredths_inch": 827,
+        "height_hundredths_inch": 1169,
+        "landscape": false
+      },
+      "fonts": {
+        "file_count": 932,
+        "fingerprint_kind": "name-size-mtime",
+        "sha256": "d798b1247882a615681b01bba74e58bad4940c5954b6aa3041a14c9b70d0a2d7"
+      },
+      "dependencies": [
+        "probe-script",
+        "environment-controller",
+        "office-build",
+        "windows-build",
+        "installed-font-files",
+        "locale-and-time-zone",
+        "default-paper",
+        "per-source-office-export-configuration"
+      ]
+    },
+    "approved_references": [
+      {
+        "configuration_id": "536b9740b24694698dbac73d377154e3a16c5bbc78e96f32bcbd38a07d06f087",
+        "source_sha256": "cbb7657ef8f2075537e2ed93881d18053352f63bc222caf283ff6fbcd4814c20",
+        "output_sha256": "f53f857438e514a817f5a5ce52202c3cb760a40da26ea78c48ca89f337bbd181"
+      }
+    ]
+  },
+  "evidence_owner": "/tmp/ooxmlsdk-tdf153964-topMarginAfterBreak14-20261031",
+  "native_modules": [
+    {
+      "path": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+      "version": "16.0.20527.20088",
+      "sha256": "9be13b7adc7eda2d1b5256d7f392eb688c996a3cb0adf84bad8cb0ef9e5b871d"
+    },
+    {
+      "path": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WWLIB.DLL",
+      "version": "16.0.20527.20088",
+      "sha256": "02c829bb7730919b30a9f33120fa220e9fe98afda4dc08ef14a615c194674eae"
+    },
+    {
+      "path": "C:\\Program Files\\Microsoft Office\\root\\Office16\\CHART.DLL",
+      "version": "16.0.20527.20088",
+      "sha256": "392e6a8164125c2deade89c295f799c5996ce869d8192203d5060021cedebbe0"
+    }
+  ],
+  "original_controls": {
+    "cases": [
+      {
+        "index": 0,
+        "original": true,
+        "fields_at_print": true,
+        "source": "/tmp/ooxmlsdk-tdf153964-topMarginAfterBreak14-20261031/native-original-v6/inputs/control-00.docx",
+        "sha256": "cbb7657ef8f2075537e2ed93881d18053352f63bc222caf283ff6fbcd4814c20",
+        "options": {
+          "quality": "print",
+          "include_document_properties": true,
+          "page_from": null,
+          "page_to": null,
+          "tagged_pdf": true,
+          "bookmarks": "headings",
+          "pdf_a_1": false,
+          "bitmap_missing_fonts": true,
+          "print_hidden_slides": false
+        },
+        "environment": {
+          "ui_language": "zh-TW",
+          "format_locale": "zh-CN",
+          "document_language": "zh-CN",
+          "time_zone": "Asia/Shanghai"
+        },
+        "control": {
+          "fields_at_print": true,
+          "links_at_print": false,
+          "before_export": "none",
+          "refresh_clock": true,
+          "profile": null
+        },
+        "pdf": "/tmp/ooxmlsdk-tdf153964-topMarginAfterBreak14-20261031/native-original-v6/jobs/00/output/case-000.pdf",
+        "pdf_sha256": "f53f857438e514a817f5a5ce52202c3cb760a40da26ea78c48ca89f337bbd181",
+        "receipt": "/tmp/ooxmlsdk-tdf153964-topMarginAfterBreak14-20261031/native-original-v6/jobs/00/output/case-000.json",
+        "receipt_sha256": "ab650feab5b725cd8987e601eb9fd9c083395b352f3fa59de2f56573f75b8e6d",
+        "normalized_xml": "/tmp/ooxmlsdk-tdf153964-topMarginAfterBreak14-20261031/native-original-v6/jobs/00/output/_worker-stage/case-000/control-00.pdf.normalized.xml",
+        "normalized_xml_sha256": "02e155341d70fb531625399ebec146bbfdc389311cd0e90ef13d81a24231d96d",
+        "effective_split": false,
+        "pages": 6,
+        "words": [
+          {
+            "page": 1,
+            "text": "Spacing",
+            "x": 120.14,
+            "y": 37.58
+          },
+          {
+            "page": 1,
+            "text": "before",
+            "x": 156.82592,
+            "y": 37.58
+          },
+          {
+            "page": 1,
+            "text": "Page",
+            "x": 189.09584,
+            "y": 37.58
+          },
+          {
+            "page": 1,
+            "text": "and",
+            "x": 213.21824,
+            "y": 37.58
+          },
+          {
+            "page": 1,
+            "text": "Column",
+            "x": 232.51616,
+            "y": 37.58
+          },
+          {
+            "page": 1,
+            "text": "Breaks",
+            "x": 269.57744,
+            "y": 37.58
+          },
+          {
+            "page": 2,
+            "text": "Spacing",
+            "x": 120.14,
+            "y": 37.58
+          },
+          {
+            "page": 2,
+            "text": "before",
+            "x": 156.82592,
+            "y": 37.58
+          },
+          {
+            "page": 2,
+            "text": "Page",
+            "x": 189.09584,
+            "y": 37.58
+          },
+          {
+            "page": 2,
+            "text": "and",
+            "x": 213.21824,
+            "y": 37.58
+          },
+          {
+            "page": 2,
+            "text": "Column",
+            "x": 232.51616,
+            "y": 37.58
+          },
+          {
+            "page": 2,
+            "text": "Breaks",
+            "x": 269.57744,
+            "y": 37.58
+          },
+          {
+            "page": 2,
+            "text": "60",
+            "x": 227.59,
+            "y": 74.18
+          },
+          {
+            "page": 2,
+            "text": "pt",
+            "x": 241.34584,
+            "y": 74.18
+          },
+          {
+            "page": 2,
+            "text": "spacing",
+            "x": 253.22488,
+            "y": 74.18
+          },
+          {
+            "page": 2,
+            "text": "before",
+            "x": 289.21528,
+            "y": 74.18
+          },
+          {
+            "page": 2,
+            "text": "a",
+            "x": 72.024,
+            "y": 138.17
+          },
+          {
+            "page": 2,
+            "text": "w:br",
+            "x": 79.8072,
+            "y": 138.17
+          },
+          {
+            "page": 2,
+            "text": "at",
+            "x": 102.72624,
+            "y": 138.17
+          },
+          {
+            "page": 2,
+            "text": "the",
+            "x": 114.22992,
+            "y": 138.17
+          },
+          {
+            "page": 2,
+            "text": "start",
+            "x": 131.61792,
+            "y": 138.17
+          },
+          {
+            "page": 2,
+            "text": "of",
+            "x": 154.7688,
+            "y": 138.17
+          },
+          {
+            "page": 2,
+            "text": "the",
+            "x": 166.50432,
+            "y": 138.17
+          },
+          {
+            "page": 2,
+            "text": "document.",
+            "x": 72.024,
+            "y": 152.71
+          },
+          {
+            "page": 2,
+            "text": "Does",
+            "x": 123.01776,
+            "y": 152.71
+          },
+          {
+            "page": 2,
+            "text": "it",
+            "x": 147.96816,
+            "y": 152.71
+          },
+          {
+            "page": 2,
+            "text": "use",
+            "x": 156.57936,
+            "y": 152.71
+          },
+          {
+            "page": 2,
+            "text": "60",
+            "x": 174.60768,
+            "y": 152.71
+          },
+          {
+            "page": 2,
+            "text": "point",
+            "x": 72.024,
+            "y": 167.23
+          },
+          {
+            "page": 2,
+            "text": "top",
+            "x": 98.16672,
+            "y": 167.23
+          },
+          {
+            "page": 2,
+            "text": "margin?",
+            "x": 115.7976,
+            "y": 167.23
+          },
+          {
+            "page": 3,
+            "text": "Spacing",
+            "x": 120.14,
+            "y": 37.58
+          },
+          {
+            "page": 3,
+            "text": "before",
+            "x": 156.82592,
+            "y": 37.58
+          },
+          {
+            "page": 3,
+            "text": "Page",
+            "x": 189.09584,
+            "y": 37.58
+          },
+          {
+            "page": 3,
+            "text": "and",
+            "x": 213.21824,
+            "y": 37.58
+          },
+          {
+            "page": 3,
+            "text": "Column",
+            "x": 232.51616,
+            "y": 37.58
+          },
+          {
+            "page": 3,
+            "text": "Breaks",
+            "x": 269.57744,
+            "y": 37.58
+          },
+          {
+            "page": 3,
+            "text": "column",
+            "x": 72.024,
+            "y": 74.18
+          },
+          {
+            "page": 3,
+            "text": "break1",
+            "x": 107.85984,
+            "y": 74.18
+          },
+          {
+            "page": 3,
+            "text": "60",
+            "x": 72.024,
+            "y": 148.63
+          },
+          {
+            "page": 3,
+            "text": "pt",
+            "x": 85.77984,
+            "y": 148.63
+          },
+          {
+            "page": 3,
+            "text": "followed",
+            "x": 97.65888,
+            "y": 148.63
+          },
+          {
+            "page": 3,
+            "text": "by",
+            "x": 139.30176,
+            "y": 148.63
+          },
+          {
+            "page": 3,
+            "text": "page",
+            "x": 152.48352,
+            "y": 148.63
+          },
+          {
+            "page": 3,
+            "text": "break",
+            "x": 72.024,
+            "y": 163.27
+          },
+          {
+            "page": 4,
+            "text": "Spacing",
+            "x": 120.14,
+            "y": 37.58
+          },
+          {
+            "page": 4,
+            "text": "before",
+            "x": 156.82592,
+            "y": 37.58
+          },
+          {
+            "page": 4,
+            "text": "Page",
+            "x": 189.09584,
+            "y": 37.58
+          },
+          {
+            "page": 4,
+            "text": "and",
+            "x": 213.21824,
+            "y": 37.58
+          },
+          {
+            "page": 4,
+            "text": "Column",
+            "x": 232.51616,
+            "y": 37.58
+          },
+          {
+            "page": 4,
+            "text": "Breaks",
+            "x": 269.57744,
+            "y": 37.58
+          },
+          {
+            "page": 4,
+            "text": "page",
+            "x": 72.024,
+            "y": 74.18
+          },
+          {
+            "page": 4,
+            "text": "break1",
+            "x": 96.2568,
+            "y": 74.18
+          },
+          {
+            "page": 4,
+            "text": "column",
+            "x": 227.59,
+            "y": 130.25
+          },
+          {
+            "page": 4,
+            "text": "break2",
+            "x": 263.42584,
+            "y": 130.25
+          },
+          {
+            "page": 5,
+            "text": "Spacing",
+            "x": 120.14,
+            "y": 37.58
+          },
+          {
+            "page": 5,
+            "text": "before",
+            "x": 156.82592,
+            "y": 37.58
+          },
+          {
+            "page": 5,
+            "text": "Page",
+            "x": 189.09584,
+            "y": 37.58
+          },
+          {
+            "page": 5,
+            "text": "and",
+            "x": 213.21824,
+            "y": 37.58
+          },
+          {
+            "page": 5,
+            "text": "Column",
+            "x": 232.51616,
+            "y": 37.58
+          },
+          {
+            "page": 5,
+            "text": "Breaks",
+            "x": 269.57744,
+            "y": 37.58
+          },
+          {
+            "page": 5,
+            "text": "page",
+            "x": 72.024,
+            "y": 74.18
+          },
+          {
+            "page": 5,
+            "text": "break2",
+            "x": 96.2568,
+            "y": 74.18
+          },
+          {
+            "page": 6,
+            "text": "Spacing",
+            "x": 120.14,
+            "y": 37.58
+          },
+          {
+            "page": 6,
+            "text": "before",
+            "x": 156.82592,
+            "y": 37.58
+          },
+          {
+            "page": 6,
+            "text": "Page",
+            "x": 189.09584,
+            "y": 37.58
+          },
+          {
+            "page": 6,
+            "text": "and",
+            "x": 213.21824,
+            "y": 37.58
+          },
+          {
+            "page": 6,
+            "text": "Column",
+            "x": 232.51616,
+            "y": 37.58
+          },
+          {
+            "page": 6,
+            "text": "Breaks",
+            "x": 269.57744,
+            "y": 37.58
+          }
+        ],
+        "fills": [
+          {
+            "page": 1,
+            "rgb": [
+              0,
+              228,
+              213
+            ],
+            "bounds": [
+              70.584,
+              72.02000000000004,
+              193.604,
+              86.54000000000002
+            ]
+          },
+          {
+            "page": 2,
+            "rgb": [
+              0,
+              228,
+              213
+            ],
+            "bounds": [
+              66.624,
+              135.04600000000002,
+              197.564,
+              150.55000000000004
+            ]
+          },
+          {
+            "page": 2,
+            "rgb": [
+              0,
+              228,
+              213
+            ],
+            "bounds": [
+              66.624,
+              150.55000000000004,
+              197.564,
+              165.07000000000002
+            ]
+          },
+          {
+            "page": 2,
+            "rgb": [
+              0,
+              228,
+              213
+            ],
+            "bounds": [
+              66.624,
+              165.07000000000002,
+              197.564,
+              187.51000000000005
+            ]
+          },
+          {
+            "page": 2,
+            "rgb": [
+              251,
+              228,
+              213
+            ],
+            "bounds": [
+              222.19,
+              20.036,
+              353.13,
+              86.54000000000002
+            ]
+          },
+          {
+            "page": 3,
+            "rgb": [
+              251,
+              228,
+              213
+            ],
+            "bounds": [
+              66.624,
+              72.02600000000004,
+              197.564,
+              94.49000000000004
+            ]
+          },
+          {
+            "page": 3,
+            "rgb": [
+              222,
+              234,
+              246
+            ],
+            "bounds": [
+              66.624,
+              94.48599000000002,
+              197.564,
+              161.11
+            ]
+          },
+          {
+            "page": 3,
+            "rgb": [
+              222,
+              234,
+              246
+            ],
+            "bounds": [
+              66.624,
+              161.11,
+              197.564,
+              183.55
+            ]
+          },
+          {
+            "page": 4,
+            "rgb": [
+              222,
+              234,
+              246
+            ],
+            "bounds": [
+              66.624,
+              20.04200000000003,
+              197.564,
+              87.53000000000003
+            ]
+          },
+          {
+            "page": 4,
+            "rgb": [
+              226,
+              239,
+              217
+            ],
+            "bounds": [
+              70.584,
+              98.56999000000002,
+              193.604,
+              113.09000000000003
+            ]
+          },
+          {
+            "page": 4,
+            "rgb": [
+              226,
+              239,
+              217
+            ],
+            "bounds": [
+              222.19,
+              127.13000000000002,
+              353.13,
+              143.57000000000002
+            ]
+          },
+          {
+            "page": 4,
+            "rgb": [
+              112,
+              48,
+              160
+            ],
+            "bounds": [
+              226.15,
+              154.51000000000002,
+              349.16999,
+              177.07000000000002
+            ]
+          },
+          {
+            "page": 5,
+            "rgb": [
+              112,
+              48,
+              160
+            ],
+            "bounds": [
+              66.624,
+              20.04200000000003,
+              197.564,
+              87.53000000000003
+            ]
+          },
+          {
+            "page": 5,
+            "rgb": [
+              255,
+              242,
+              204
+            ],
+            "bounds": [
+              70.584,
+              98.56999000000002,
+              193.604,
+              113.09000000000003
+            ]
+          },
+          {
+            "page": 5,
+            "rgb": [
+              255,
+              242,
+              204
+            ],
+            "bounds": [
+              222.19,
+              127.13000000000002,
+              353.13,
+              143.57000000000002
+            ]
+          },
+          {
+            "page": 5,
+            "rgb": [
+              226,
+              239,
+              217
+            ],
+            "bounds": [
+              226.15,
+              154.51000000000002,
+              349.16999,
+              177.07000000000002
+            ]
+          },
+          {
+            "page": 6,
+            "rgb": [
+              226,
+              239,
+              217
+            ],
+            "bounds": [
+              66.624,
+              20.04200000000003,
+              197.564,
+              87.53000000000003
+            ]
+          },
+          {
+            "page": 6,
+            "rgb": [
+              255,
+              0,
+              0
+            ],
+            "bounds": [
+              70.584,
+              98.56999000000002,
+              193.604,
+              113.09000000000003
+            ]
+          },
+          {
+            "page": 6,
+            "rgb": [
+              255,
+              0,
+              0
+            ],
+            "bounds": [
+              222.19,
+              72.02600000000004,
+              353.13,
+              87.53000000000003
+            ]
+          }
+        ]
+      },
+      {
+        "index": 1,
+        "original": true,
+        "fields_at_print": false,
+        "source": "/tmp/ooxmlsdk-tdf153964-topMarginAfterBreak14-20261031/native-original-v6/inputs/control-01.docx",
+        "sha256": "cbb7657ef8f2075537e2ed93881d18053352f63bc222caf283ff6fbcd4814c20",
+        "options": {
+          "quality": "print",
+          "include_document_properties": true,
+          "page_from": null,
+          "page_to": null,
+          "tagged_pdf": true,
+          "bookmarks": "headings",
+          "pdf_a_1": false,
+          "bitmap_missing_fonts": true,
+          "print_hidden_slides": false
+        },
+        "environment": {
+          "ui_language": "zh-TW",
+          "format_locale": "zh-CN",
+          "document_language": "zh-CN",
+          "time_zone": "Asia/Shanghai"
+        },
+        "control": {
+          "fields_at_print": false,
+          "links_at_print": false,
+          "before_export": "none",
+          "refresh_clock": true,
+          "profile": null
+        },
+        "pdf": "/tmp/ooxmlsdk-tdf153964-topMarginAfterBreak14-20261031/native-original-v6/jobs/01/output/case-000.pdf",
+        "pdf_sha256": "3b23c4b4def62c03ee10b47598f7852a1c2079ddf6b93c1c4b8eb733d04ebdc9",
+        "receipt": "/tmp/ooxmlsdk-tdf153964-topMarginAfterBreak14-20261031/native-original-v6/jobs/01/output/case-000.json",
+        "receipt_sha256": "a076a2912ff03c6b2ad688b30a275f4d94eb0b7b1c5d68cc774b9e165fceecb6",
+        "normalized_xml": "/tmp/ooxmlsdk-tdf153964-topMarginAfterBreak14-20261031/native-original-v6/jobs/01/output/_worker-stage/case-000/control-01.pdf.normalized.xml",
+        "normalized_xml_sha256": "bc212065d2dd5b673b076257de6c55bde33cc3baf545a5d75ef19e32e32c1607",
+        "effective_split": false,
+        "pages": 6,
+        "words": [
+          {
+            "page": 1,
+            "text": "Spacing",
+            "x": 120.14,
+            "y": 37.58
+          },
+          {
+            "page": 1,
+            "text": "before",
+            "x": 156.82592,
+            "y": 37.58
+          },
+          {
+            "page": 1,
+            "text": "Page",
+            "x": 189.09584,
+            "y": 37.58
+          },
+          {
+            "page": 1,
+            "text": "and",
+            "x": 213.21824,
+            "y": 37.58
+          },
+          {
+            "page": 1,
+            "text": "Column",
+            "x": 232.51616,
+            "y": 37.58
+          },
+          {
+            "page": 1,
+            "text": "Breaks",
+            "x": 269.57744,
+            "y": 37.58
+          },
+          {
+            "page": 2,
+            "text": "Spacing",
+            "x": 120.14,
+            "y": 37.58
+          },
+          {
+            "page": 2,
+            "text": "before",
+            "x": 156.82592,
+            "y": 37.58
+          },
+          {
+            "page": 2,
+            "text": "Page",
+            "x": 189.09584,
+            "y": 37.58
+          },
+          {
+            "page": 2,
+            "text": "and",
+            "x": 213.21824,
+            "y": 37.58
+          },
+          {
+            "page": 2,
+            "text": "Column",
+            "x": 232.51616,
+            "y": 37.58
+          },
+          {
+            "page": 2,
+            "text": "Breaks",
+            "x": 269.57744,
+            "y": 37.58
+          },
+          {
+            "page": 2,
+            "text": "60",
+            "x": 227.59,
+            "y": 74.18
+          },
+          {
+            "page": 2,
+            "text": "pt",
+            "x": 241.34584,
+            "y": 74.18
+          },
+          {
+            "page": 2,
+            "text": "spacing",
+            "x": 253.22488,
+            "y": 74.18
+          },
+          {
+            "page": 2,
+            "text": "before",
+            "x": 289.21528,
+            "y": 74.18
+          },
+          {
+            "page": 2,
+            "text": "a",
+            "x": 72.024,
+            "y": 138.17
+          },
+          {
+            "page": 2,
+            "text": "w:br",
+            "x": 79.8072,
+            "y": 138.17
+          },
+          {
+            "page": 2,
+            "text": "at",
+            "x": 102.72624,
+            "y": 138.17
+          },
+          {
+            "page": 2,
+            "text": "the",
+            "x": 114.22992,
+            "y": 138.17
+          },
+          {
+            "page": 2,
+            "text": "start",
+            "x": 131.61792,
+            "y": 138.17
+          },
+          {
+            "page": 2,
+            "text": "of",
+            "x": 154.7688,
+            "y": 138.17
+          },
+          {
+            "page": 2,
+            "text": "the",
+            "x": 166.50432,
+            "y": 138.17
+          },
+          {
+            "page": 2,
+            "text": "document.",
+            "x": 72.024,
+            "y": 152.71
+          },
+          {
+            "page": 2,
+            "text": "Does",
+            "x": 123.01776,
+            "y": 152.71
+          },
+          {
+            "page": 2,
+            "text": "it",
+            "x": 147.96816,
+            "y": 152.71
+          },
+          {
+            "page": 2,
+            "text": "use",
+            "x": 156.57936,
+            "y": 152.71
+          },
+          {
+            "page": 2,
+            "text": "60",
+            "x": 174.60768,
+            "y": 152.71
+          },
+          {
+            "page": 2,
+            "text": "point",
+            "x": 72.024,
+            "y": 167.23
+          },
+          {
+            "page": 2,
+            "text": "top",
+            "x": 98.16672,
+            "y": 167.23
+          },
+          {
+            "page": 2,
+            "text": "margin?",
+            "x": 115.7976,
+            "y": 167.23
+          },
+          {
+            "page": 3,
+            "text": "Spacing",
+            "x": 120.14,
+            "y": 37.58
+          },
+          {
+            "page": 3,
+            "text": "before",
+            "x": 156.82592,
+            "y": 37.58
+          },
+          {
+            "page": 3,
+            "text": "Page",
+            "x": 189.09584,
+            "y": 37.58
+          },
+          {
+            "page": 3,
+            "text": "and",
+            "x": 213.21824,
+            "y": 37.58
+          },
+          {
+            "page": 3,
+            "text": "Column",
+            "x": 232.51616,
+            "y": 37.58
+          },
+          {
+            "page": 3,
+            "text": "Breaks",
+            "x": 269.57744,
+            "y": 37.58
+          },
+          {
+            "page": 3,
+            "text": "column",
+            "x": 72.024,
+            "y": 74.18
+          },
+          {
+            "page": 3,
+            "text": "break1",
+            "x": 107.85984,
+            "y": 74.18
+          },
+          {
+            "page": 3,
+            "text": "60",
+            "x": 72.024,
+            "y": 148.63
+          },
+          {
+            "page": 3,
+            "text": "pt",
+            "x": 85.77984,
+            "y": 148.63
+          },
+          {
+            "page": 3,
+            "text": "followed",
+            "x": 97.65888,
+            "y": 148.63
+          },
+          {
+            "page": 3,
+            "text": "by",
+            "x": 139.30176,
+            "y": 148.63
+          },
+          {
+            "page": 3,
+            "text": "page",
+            "x": 152.48352,
+            "y": 148.63
+          },
+          {
+            "page": 3,
+            "text": "break",
+            "x": 72.024,
+            "y": 163.27
+          },
+          {
+            "page": 4,
+            "text": "Spacing",
+            "x": 120.14,
+            "y": 37.58
+          },
+          {
+            "page": 4,
+            "text": "before",
+            "x": 156.82592,
+            "y": 37.58
+          },
+          {
+            "page": 4,
+            "text": "Page",
+            "x": 189.09584,
+            "y": 37.58
+          },
+          {
+            "page": 4,
+            "text": "and",
+            "x": 213.21824,
+            "y": 37.58
+          },
+          {
+            "page": 4,
+            "text": "Column",
+            "x": 232.51616,
+            "y": 37.58
+          },
+          {
+            "page": 4,
+            "text": "Breaks",
+            "x": 269.57744,
+            "y": 37.58
+          },
+          {
+            "page": 4,
+            "text": "page",
+            "x": 72.024,
+            "y": 74.18
+          },
+          {
+            "page": 4,
+            "text": "break1",
+            "x": 96.2568,
+            "y": 74.18
+          },
+          {
+            "page": 4,
+            "text": "column",
+            "x": 227.59,
+            "y": 130.25
+          },
+          {
+            "page": 4,
+            "text": "break2",
+            "x": 263.42584,
+            "y": 130.25
+          },
+          {
+            "page": 5,
+            "text": "Spacing",
+            "x": 120.14,
+            "y": 37.58
+          },
+          {
+            "page": 5,
+            "text": "before",
+            "x": 156.82592,
+            "y": 37.58
+          },
+          {
+            "page": 5,
+            "text": "Page",
+            "x": 189.09584,
+            "y": 37.58
+          },
+          {
+            "page": 5,
+            "text": "and",
+            "x": 213.21824,
+            "y": 37.58
+          },
+          {
+            "page": 5,
+            "text": "Column",
+            "x": 232.51616,
+            "y": 37.58
+          },
+          {
+            "page": 5,
+            "text": "Breaks",
+            "x": 269.57744,
+            "y": 37.58
+          },
+          {
+            "page": 5,
+            "text": "page",
+            "x": 72.024,
+            "y": 74.18
+          },
+          {
+            "page": 5,
+            "text": "break2",
+            "x": 96.2568,
+            "y": 74.18
+          },
+          {
+            "page": 6,
+            "text": "Spacing",
+            "x": 120.14,
+            "y": 37.58
+          },
+          {
+            "page": 6,
+            "text": "before",
+            "x": 156.82592,
+            "y": 37.58
+          },
+          {
+            "page": 6,
+            "text": "Page",
+            "x": 189.09584,
+            "y": 37.58
+          },
+          {
+            "page": 6,
+            "text": "and",
+            "x": 213.21824,
+            "y": 37.58
+          },
+          {
+            "page": 6,
+            "text": "Column",
+            "x": 232.51616,
+            "y": 37.58
+          },
+          {
+            "page": 6,
+            "text": "Breaks",
+            "x": 269.57744,
+            "y": 37.58
+          }
+        ],
+        "fills": [
+          {
+            "page": 1,
+            "rgb": [
+              0,
+              228,
+              213
+            ],
+            "bounds": [
+              70.584,
+              72.02000000000004,
+              193.604,
+              86.54000000000002
+            ]
+          },
+          {
+            "page": 2,
+            "rgb": [
+              0,
+              228,
+              213
+            ],
+            "bounds": [
+              66.624,
+              135.04600000000002,
+              197.564,
+              150.55000000000004
+            ]
+          },
+          {
+            "page": 2,
+            "rgb": [
+              0,
+              228,
+              213
+            ],
+            "bounds": [
+              66.624,
+              150.55000000000004,
+              197.564,
+              165.07000000000002
+            ]
+          },
+          {
+            "page": 2,
+            "rgb": [
+              0,
+              228,
+              213
+            ],
+            "bounds": [
+              66.624,
+              165.07000000000002,
+              197.564,
+              187.51000000000005
+            ]
+          },
+          {
+            "page": 2,
+            "rgb": [
+              251,
+              228,
+              213
+            ],
+            "bounds": [
+              222.19,
+              20.036,
+              353.13,
+              86.54000000000002
+            ]
+          },
+          {
+            "page": 3,
+            "rgb": [
+              251,
+              228,
+              213
+            ],
+            "bounds": [
+              66.624,
+              72.02600000000004,
+              197.564,
+              94.49000000000004
+            ]
+          },
+          {
+            "page": 3,
+            "rgb": [
+              222,
+              234,
+              246
+            ],
+            "bounds": [
+              66.624,
+              94.48599000000002,
+              197.564,
+              161.11
+            ]
+          },
+          {
+            "page": 3,
+            "rgb": [
+              222,
+              234,
+              246
+            ],
+            "bounds": [
+              66.624,
+              161.11,
+              197.564,
+              183.55
+            ]
+          },
+          {
+            "page": 4,
+            "rgb": [
+              222,
+              234,
+              246
+            ],
+            "bounds": [
+              66.624,
+              20.04200000000003,
+              197.564,
+              87.53000000000003
+            ]
+          },
+          {
+            "page": 4,
+            "rgb": [
+              226,
+              239,
+              217
+            ],
+            "bounds": [
+              70.584,
+              98.56999000000002,
+              193.604,
+              113.09000000000003
+            ]
+          },
+          {
+            "page": 4,
+            "rgb": [
+              226,
+              239,
+              217
+            ],
+            "bounds": [
+              222.19,
+              127.13000000000002,
+              353.13,
+              143.57000000000002
+            ]
+          },
+          {
+            "page": 4,
+            "rgb": [
+              112,
+              48,
+              160
+            ],
+            "bounds": [
+              226.15,
+              154.51000000000002,
+              349.16999,
+              177.07000000000002
+            ]
+          },
+          {
+            "page": 5,
+            "rgb": [
+              112,
+              48,
+              160
+            ],
+            "bounds": [
+              66.624,
+              20.04200000000003,
+              197.564,
+              87.53000000000003
+            ]
+          },
+          {
+            "page": 5,
+            "rgb": [
+              255,
+              242,
+              204
+            ],
+            "bounds": [
+              70.584,
+              98.56999000000002,
+              193.604,
+              113.09000000000003
+            ]
+          },
+          {
+            "page": 5,
+            "rgb": [
+              255,
+              242,
+              204
+            ],
+            "bounds": [
+              222.19,
+              127.13000000000002,
+              353.13,
+              143.57000000000002
+            ]
+          },
+          {
+            "page": 5,
+            "rgb": [
+              226,
+              239,
+              217
+            ],
+            "bounds": [
+              226.15,
+              154.51000000000002,
+              349.16999,
+              177.07000000000002
+            ]
+          },
+          {
+            "page": 6,
+            "rgb": [
+              226,
+              239,
+              217
+            ],
+            "bounds": [
+              66.624,
+              20.04200000000003,
+              197.564,
+              87.53000000000003
+            ]
+          },
+          {
+            "page": 6,
+            "rgb": [
+              255,
+              0,
+              0
+            ],
+            "bounds": [
+              70.584,
+              98.56999000000002,
+              193.604,
+              113.09000000000003
+            ]
+          },
+          {
+            "page": 6,
+            "rgb": [
+              255,
+              0,
+              0
+            ],
+            "bounds": [
+              222.19,
+              72.02600000000004,
+              353.13,
+              87.53000000000003
+            ]
+          }
+        ]
+      }
+    ],
+    "checks": {
+      "count": 2,
+      "hashes_options_locales": true,
+      "normal_exits": true,
+      "restored": true,
+      "no_office_processes": true,
+      "observed_source_parameters": true,
+      "effective_split_observed": true
+    },
+    "native_modules_sha256": "046aa11a6e3d5a48a00c2cbdc0731ac7fbb8bf1c731211516aa60e9a26c0579e"
+  },
+  "native_vs_sdk": [
+    {
+      "owner": "native-original-v6",
+      "index": 0,
+      "configuration_id": "987274ea5a43e8a971481d79a3be74208190a4eeb2dae64062556195d7a69b37",
+      "verdict": "PASS",
+      "diagnostic_kind": null,
+      "message": ""
+    },
+    {
+      "owner": "native-original-v6",
+      "index": 1,
+      "configuration_id": "f4beedf6d4fd390d8490ef659d9b25c641d4ebe22b7a90ab14fbb00ff4ffdf20",
+      "verdict": "PASS",
+      "diagnostic_kind": null,
+      "message": ""
+    }
+  ]
+}

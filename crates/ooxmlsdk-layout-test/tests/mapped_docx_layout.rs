@@ -822,7 +822,7 @@ const CASES: &[DocxCase] = &[
         tdf165354_hyphenation_flow,
         source: "../core/sw/qa/extras/ooxmlexport/ooxmlexport23.cxx:testTdf165354",
         file: "tdf165354.docx",
-        contains: [pt!(0, "except that it has an at-"), pt!(1, "mosphere. The Earth")],
+        contains: [pt!(0, "except that it has an"), pt!(1, "atmosphere. The Earth")],
     ),
     case!(
         tdf166544_no_top_margin_fields,

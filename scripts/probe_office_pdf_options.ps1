@@ -90,7 +90,7 @@ function Get-ApplicationFamily {
 function Assert-ProbeOptions {
     param($Options, [string]$Family, [int]$PageCount)
 
-    Assert-ExactProperties $Options @(
+    $optionNames = @(
         "bitmap_missing_fonts",
         "bookmarks",
         "include_document_properties",
@@ -100,7 +100,13 @@ function Assert-ProbeOptions {
         "print_hidden_slides",
         "quality",
         "tagged_pdf"
-    ) "options"
+    )
+    if ($null -ne $Options.PSObject.Properties['update_fields_at_print']) {
+        $optionNames += 'update_fields_at_print'
+        Assert-Boolean $Options.update_fields_at_print 'options.update_fields_at_print'
+        if ($Family -ne 'Word') { throw 'update_fields_at_print applies only to Word.' }
+    }
+    Assert-ExactProperties $Options $optionNames 'options'
     foreach ($name in @(
         "bitmap_missing_fonts",
         "include_document_properties",
@@ -189,7 +195,21 @@ function Export-WithWord {
         [switch]$IncludeDiagnosticXps, [switch]$IncludeDiagnosticEmf, $RenderEnvironment)
 
     $document = $null
+    $wordOptions = $Application.Options
+    $previousUpdateFields = [bool]$wordOptions.UpdateFieldsAtPrint
     try {
+        if ($null -ne $Options.PSObject.Properties['update_fields_at_print']) {
+            Assert-Boolean $Options.update_fields_at_print 'options.update_fields_at_print'
+            $wordOptions.UpdateFieldsAtPrint = $Options.update_fields_at_print
+            if ([bool]$wordOptions.UpdateFieldsAtPrint -ne $Options.update_fields_at_print) {
+                throw 'Word did not apply update_fields_at_print.'
+            }
+        }
+        if ($null -ne $RenderEnvironment) {
+            $RenderEnvironment['update_fields_at_print'] = [bool]$wordOptions.UpdateFieldsAtPrint
+            $RenderEnvironment['user_name'] = [string]$Application.UserName
+            $RenderEnvironment['user_initials'] = [string]$Application.UserInitials
+        }
         if ($null -ne $RenderEnvironment) { $RenderEnvironment.clock = Start-OfficeExportClock }
         $document = $Application.Documents.Open($InputPath, $false, $true, $false)
         if ($null -ne $RenderEnvironment) {
@@ -240,9 +260,20 @@ function Export-WithWord {
         }
     }
     finally {
-        if ($null -ne $document) {
-            $document.Close(0)
-            Release-ComObject $document
+        try {
+            if ($null -ne $document) {
+                try { $document.Close(0) }
+                finally { Release-ComObject $document }
+            }
+        }
+        finally {
+            try {
+                $wordOptions.UpdateFieldsAtPrint = $previousUpdateFields
+                if ([bool]$wordOptions.UpdateFieldsAtPrint -ne $previousUpdateFields) {
+                    throw 'Word print field update option was not restored.'
+                }
+            }
+            finally { Release-ComObject $wordOptions }
         }
     }
 }

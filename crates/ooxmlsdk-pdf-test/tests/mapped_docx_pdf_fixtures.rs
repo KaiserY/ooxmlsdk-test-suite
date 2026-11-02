@@ -2923,11 +2923,11 @@ fn mapped_fixture_tdf146346_keeps_footnote_tables_on_first_page() {
 // Source: ../core/sw/qa/extras/ooxmlexport/ooxmlexport23.cxx:testTdf165354
 fn mapped_fixture_tdf165354_preserves_bottom_of_page_hyphenation_flow() {
     let summary = render_summary("tdf165354.docx");
-    // The Office fixed PDF breaks "atmosphere" at the page boundary. PDFium
-    // keeps that cross-page line-end hyphen as U+002D and starts page two with
-    // the resumed suffix (same-page automatic hyphens extract as U+0002).
-    assert_page_contains(&summary, 0, "except that it has an at-");
-    assert_page_contains(&summary, 1, "mosphere. The Earth");
+    // The configured Office golden and native allow/track controls keep the
+    // preceding words on page one and move the complete hyphenated word.
+    assert_page_contains(&summary, 0, "except that it has an");
+    assert_page_not_contains(&summary, 0, "except that it has an at");
+    assert_page_contains(&summary, 1, "atmosphere. The Earth");
 }
 
 #[test]

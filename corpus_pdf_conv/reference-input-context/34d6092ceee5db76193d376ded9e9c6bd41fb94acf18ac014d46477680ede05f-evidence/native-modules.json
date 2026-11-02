@@ -1,0 +1,17 @@
+[
+  {
+    "path": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+    "version": "16.0.20527.20088",
+    "sha256": "9be13b7adc7eda2d1b5256d7f392eb688c996a3cb0adf84bad8cb0ef9e5b871d"
+  },
+  {
+    "path": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WWLIB.DLL",
+    "version": "16.0.20527.20088",
+    "sha256": "02c829bb7730919b30a9f33120fa220e9fe98afda4dc08ef14a615c194674eae"
+  },
+  {
+    "path": "C:\\Program Files\\Microsoft Office\\root\\Office16\\CHART.DLL",
+    "version": "16.0.20527.20088",
+    "sha256": "392e6a8164125c2deade89c295f799c5996ce869d8192203d5060021cedebbe0"
+  }
+]

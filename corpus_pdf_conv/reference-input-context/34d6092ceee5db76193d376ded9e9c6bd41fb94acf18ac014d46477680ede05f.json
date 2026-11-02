@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "configuration_id": "34d6092ceee5db76193d376ded9e9c6bd41fb94acf18ac014d46477680ede05f",
+  "corpus": "LibreOffice",
+  "file": "sw/qa/extras/ooxmlexport/data/tdf148380_usernameField.docx",
+  "source_sha256": "c32c2de07303496d20c61093b9bad4f24484477aab602c48f9bb499b1b743907",
+  "output_sha256": "d9aae02adcfc61630b37eb3a14817313b7dc307473c48c82d6202560c5013531",
+  "user_name": "yang yue",
+  "user_initials": "yy",
+  "evidence": {
+    "kind": "application-user-profile-observation",
+    "captured_at_utc": "2026-10-30T08:02:31.5591285Z",
+    "profile_receipt": {
+      "path": "reference-input-context/34d6092ceee5db76193d376ded9e9c6bd41fb94acf18ac014d46477680ede05f-evidence/current-application-profile.json",
+      "sha256": "2e35d995989c3f2ac83b1f9e155de0cf5df22ad940869b77886d4b5eb39bd64f"
+    },
+    "native_modules_sha256": "046aa11a6e3d5a48a00c2cbdc0731ac7fbb8bf1c731211516aa60e9a26c0579e",
+    "historical_qualification": "The 2026-09-11 exporter did not record the application profile. Values are independently read from Word COM on 2026-10-30 and corroborated by the two original golden field outputs; this is a backfilled input observation, not a claim of a contemporaneous historical capture.",
+    "contract": "ECMA-376 Part 1 17.16.5.70-71; Word Application.UserName and UserInitials. A supplied field argument affects only the field. Native 12 controls confirm simple/complex fields, locks, print OFF/ON, and independent initials; profiles and application options restored.",
+    "reason": "Record previously omitted rendering input, as with FILENAME storage context. Source, golden PDF, assignment, original environment ID, and acceptance gates are unchanged. Runtime never reads expected text to select profile values.",
+    "sources": [
+      "https://learn.microsoft.com/en-us/office/vba/api/word.application.username",
+      "https://learn.microsoft.com/en-us/office/vba/api/word.application.userinitials",
+      "https://support.microsoft.com/en-us/word/field-codes-userinitials-field"
+    ]
+  }
+}

@@ -8,45 +8,34 @@ belongs under `/tmp/`.
 
 ## Current progress and next step
 
-Accepted **batch65 full, v708**: **5,370 = 4,002 PASS / 1,237 FAIL /
-131 REFERENCE_FAIL**. **+4 PASSes** from batch64; all **4,002** protected cases
-PASS, zero regressions or infrastructure errors, **0** pending promotions.
-Golden gates and reference-failure identities unchanged.
-Receipt: `/tmp/ooxmlsdk-repair-resume-20260912/checkpoint-batch-65-full-v708/acceptance.json`.
+Accepted full **batch74/v1105: 5,370 = 4,150 PASS / 1,089 FAIL /
+131 REFERENCE_FAIL**, zero protected regressions/infra.
+Protected union **4,150**, pending **0**; 19 direct repairs plus
+3 additional gains accepted since batch73.
+Full 236.979s; serial retained/current ratios
+0.632–1.237, no sustained material performance regression.
+Full duration includes isolated slow-case scheduling; serial pairs measure
+renderer performance. The 180s per-case deadline is unchanged.
+Full/performance/Clippy: `/tmp/ooxmlsdk-batch74-audit-preparation-20261102/closure-current.json`.
+Acceptance: `/tmp/ooxmlsdk-repair-resume-20260912/checkpoint-batch-74-full-v1105/acceptance.json`.
 
-PR #33 merge verification (2026-10-26, SDK 0.15.0): all 5,370 configurations
-rechecked against this checkpoint in 136 seconds. Counts, verdicts, diagnostic
-fields and reference-failure identities are unchanged; all 4,002 protected cases,
-including the four Office recovery fixtures, still PASS. Golden files and
-acceptance gates are unchanged. Receipt:
-`/tmp/ooxmlsdk-pr33-verification-20261026/golden-full/summary.json`.
+Latest: **`tdf61000.docx` original golden PASS**. Fixed tracked Latin shaping,
+absolute pitch/device realization and dotted table grids. Reused complete,
+explicitly qualified reconstructed template input from the same environment;
+original source/golden/options/gates unchanged, no original Office re-export.
+Final dev GDB: 47 observations; dev/release PDF bytes match; all 8 pages reviewed.
+Source/native/private receipts: `/tmp/ooxmlsdk-tdf61000-20261102/verification-current.json`.
+Reusable: `/tmp/ooxmlsdk-knowledge/word-tracked-latin-and-dotted-cell-grid.md`.
 
-Stage closed: `rhbz988516.docx`, `sdt-2-run.docx`, `sdt-header.docx` and
-`shape-3d-effect-preservation.docx` PASS. The audit's calendar placeholder
-regression is repaired: an empty binding already showing a placeholder retains
-cached text/formatting. Final dev GDB, 256 affected private tests and Clippy in
-implementation/test-suite/emfsdk passed. Receipts and case references:
-`/tmp/ooxmlsdk-batch65-audit-preparation-20261026/closure-final.json`.
+**Stage closed; next: `tdf66039.docx` (not started)**, then ordered DOCX failures.
+Keep about 20 repairs between routine full/performance audits. `/tmp/ab.json` pins
+the live image/runtime. Detailed history and qualified auxiliary residuals stay
+under `/tmp/`, indexed by `/tmp/ooxmlsdk-knowledge/README.md` and the ledger.
 
-Full audit132s; no material timing regression signal. Cross-run timing reductions
-are not a causal speedup claim. Review:
-`/tmp/ooxmlsdk-batch65-audit-preparation-20261026/performance-review-v708.json`.
-One compiled comparison baseline retained: v708; obsolete v681 ELF removed.
-Current `/tmp/ab.png` is the final 3D case, v708; provenance: `/tmp/ab.json`.
-
-Next after commit: `LibreOffice/sw/qa/extras/ooxmlexport/data/shape-effect-preservation.docx`
-(visible-output FAIL; not started), then continue DOCX failures in order.
-Repair provenance: `ledger/pending-golden-repairs.json`; case evidence, native
-probes and source contracts remain under `/tmp/`.
-Current work is single-agent; runtime lanes remain serial. Accumulate about20
-repairs before routine full audit/performance comparison; investigate actual
-material slowdowns earlier. Implementation0.14.0.
-
-Font dependencies: Parley/Fontique0.12.0, ICU4X2.3.x, Skrifa0.46.2;
-assessment: `/tmp/ooxmlsdk-font-dependencies-20261015/assessment.md`.
-Approved golden revision/version provenance: [reference-revisions.md](reference-revisions.md).
-Round-trip source/recovery identities retain all5,370 configurations; save failures
-do not change golden verdicts. Original Astra84 is completed and accepted.
+Single-agent; Cargo/GDB/Office/campaign lanes serial. Implementation 0.15.0.
+Clippy: implementation/suite clean at v1105; emfsdk last requested closure v831.
+Font assessment: `/tmp/ooxmlsdk-font-dependencies-20261015/assessment.md`.
+Original Astra84 is complete. Pending/scoped gains never replace an accepted full.
 
 ## Repair workflow
 
@@ -60,7 +49,9 @@ do not change golden verdicts. Original Astra84 is completed and accepted.
    locales, native module hashes and actual observed output. An API request,
    prepared script or exit0 alone is not a verified observation.
 4. Use release checks and meaningful affected private tests. Protect every new
-   PASS immediately. Public layout/XLSX reruns are optional stage audits; run
+   PASS immediately, then confirm with actual GDB and image review before closure.
+   Extractable text can survive while glyph paint is clipped or culled; inspect
+   visible ink and its clip/culling owners. Public layout/XLSX reruns are optional stage audits; run
    Clippy when requested for closure. Never relax gates or drop protected cases.
    Batch routine performance comparisons with about20 repairs; investigate
    earlier when actual timings indicate a material slowdown. Keep one owned
@@ -106,9 +97,13 @@ target/release/office_pdf_campaign render-one \
 
 Use fresh paths. `render-one` does not overwrite; a PASS may leave an old failure
 artifact in `target/office-golden/`. Campaign page indices are **zero-based**.
+For render-only derivatives, retain the configured task and pass the changed
+source with `--input`; rewriting task identities is unnecessary.
 Keep `/tmp/ab.json` with source/PDF/binary hashes, page and renderer settings.
 Reuse PDFium width1333/flags17, white-background raw x6 diff; inspect x1 too.
 Red glyph contours alone do not prove wrong outlines or configured failure.
+For exact byte comparisons, reuse the identical task/input path: the configured
+campaign attachment contains that path and affects PDF identifiers.
 
 Private libtest filters after `--` are ORed; assert a positive selected count.
 Use `xlsx::display::` for private XLSX filters. Run closure checks serially:
@@ -131,7 +126,7 @@ repair_stage=/tmp/ooxmlsdk-repair-resume-20260912
 cp "$repair_stage/ledger/current-pass-union.jsonl" /tmp/frozen-protected-union.jsonl
 python3 scripts/audit_office_pdf_pass_union.py --full --build \
   --baseline /tmp/frozen-protected-union.jsonl \
-  --previous-results "$repair_stage/checkpoint-batch-65-full-v708/results.jsonl" \
+  --previous-results "$repair_stage/checkpoint-batch-74-full-v1105/results.jsonl" \
   --output-root /tmp/fresh-golden-audit --jobs 12
 ```
 
@@ -183,6 +178,9 @@ cargo build -p ooxmlsdk-pdf-test --bin office_pdf_campaign
 gdb -q -batch -x /tmp/case.gdb --args target/debug/office_pdf_campaign
 ```
 
+If ptrace is denied, use the authorized `require_escalated` tool mode with the
+`gdb` prefix. Do not retry through wrappers or count startup failure as a trace.
+
 ```gdb
 set pagination off
 set confirm off
@@ -208,9 +206,14 @@ breakpoints. More examples remain in the detailed guide.
 
 ## Diagnostic essentials
 
-- Separate source layout, device grids and PDF paint. Inspect transforms,
+- Pin each geometry fact to its actual PDF owner/hash: a current Office probe
+  is distinct from the saved golden. Separate source layout, device grids and PDF paint. Inspect transforms,
   clipping, operation grouping and paint order before adjusting coordinates.
   Capture native rounding mode for device math.
+- For glyph differences, compare actual font versions/glyph sets as well as
+  family names. A stale local mirror can change GSUB with identical OS/2 metrics.
+  Isolate font selection first; proven one-font syncs retain backups/receipts.
+  Route: `/tmp/ooxmlsdk-knowledge/word-mixed-vertical-shape-columns.md`.
 - PDF extraction can omit clipped text or merge overlaps. Check raw PDF
   operators, font maps, PDFium boxes and transformed MuPDF traces before
   declaring glyph loss. Trace `metatext@txt` can contain raw `<`/`>`; escape

@@ -1,0 +1,15 @@
+{
+  "before": {
+    "fields": false,
+    "links": false
+  },
+  "observed": {
+    "fields": true,
+    "links": false
+  },
+  "after": {
+    "fields": false,
+    "links": false
+  },
+  "restored": true
+}
