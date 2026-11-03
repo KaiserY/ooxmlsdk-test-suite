@@ -22,7 +22,7 @@ macro_rules! part_root_test {
             let prefix = qname.split_once(':').unwrap().0;
             let namespace = $namespace;
             let body = $body;
-            let xml = format!(r#"<{qname} xmlns:{prefix}="{namespace}" xmlns:mc="{MC}" xmlns:u="urn:preserve" mc:PreserveElements="u:note u:*">{body}</{qname}>"#);
+            let xml = format!(r#"<{qname} xmlns:{prefix}="{namespace}" xmlns:mc="{MC}" xmlns:u="urn:preserve" mc:Ignorable="u" mc:PreserveElements="u:note u:*">{body}</{qname}>"#);
             let (parsed, serialized, reparsed) = assert_stable_roundtrip::<$ty>(&xml);
 
             for root in [&parsed, &reparsed] {
@@ -103,7 +103,7 @@ fn document_preserve_elements_can_be_empty_or_absent() {
 #[test]
 fn document_preserve_elements_can_be_changed_and_removed() {
     let xml = format!(
-        r#"<w:document xmlns:w="{W}" xmlns:mc="{MC}" xmlns:u="urn:preserve" mc:PreserveElements="u:note"><w:body/></w:document>"#
+        r#"<w:document xmlns:w="{W}" xmlns:mc="{MC}" xmlns:u="urn:preserve" mc:Ignorable="u" mc:PreserveElements="u:note"><w:body/></w:document>"#
     );
     let mut document = xml.parse::<Document>().unwrap();
     document.mc_preserve_elements = Some(b"u:*".as_slice().into());
@@ -131,7 +131,7 @@ fn document_preserve_elements_survives_package_edit_save_reopen() {
     use std::io::Cursor;
 
     let xml = format!(
-        r#"<w:document xmlns:w="{W}" xmlns:mc="{MC}" xmlns:u="urn:preserve" mc:PreserveElements="u:note"><w:body/></w:document>"#
+        r#"<w:document xmlns:w="{W}" xmlns:mc="{MC}" xmlns:u="urn:preserve" mc:Ignorable="u" mc:PreserveElements="u:note"><w:body/></w:document>"#
     );
     let mut package =
         WordprocessingDocument::new_from_file(fixtures::doc_sample_path("HelloWorld.docx"))
@@ -150,4 +150,27 @@ fn document_preserve_elements_survives_package_edit_save_reopen() {
         Some(b"u:note".as_slice())
     );
     assert_eq!(document.space, Some(SpaceProcessingModeValues::Preserve));
+}
+
+#[cfg(feature = "mce")]
+#[test]
+fn preserve_elements_keeps_modeled_ignorable_children_for_older_office() {
+    use ooxmlsdk::sdk::{
+        FileFormatVersion, MarkupCompatibilityProcessMode, MarkupCompatibilityProcessSettings,
+    };
+
+    let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" mc:Ignorable="w14" mc:PreserveElements="w14:checkbox"><w:body><w:sdt><w:sdtPr><w14:checkbox/></w:sdtPr><w:sdtContent><w:p/></w:sdtContent></w:sdt></w:body></w:document>"#;
+    let settings = MarkupCompatibilityProcessSettings {
+        process_mode: MarkupCompatibilityProcessMode::ProcessAllParts,
+        target_file_format_version: FileFormatVersion::Office2007,
+    };
+    let mut preserved = Document::from_bytes(xml.as_bytes()).unwrap();
+    let mut ignored = preserved.clone();
+    ignored.mc_preserve_elements = None;
+
+    preserved.process_mce(&settings).unwrap();
+    ignored.process_mce(&settings).unwrap();
+
+    assert!(preserved.to_xml().unwrap().contains("<w14:checkbox"));
+    assert!(!ignored.to_xml().unwrap().contains("<w14:checkbox"));
 }

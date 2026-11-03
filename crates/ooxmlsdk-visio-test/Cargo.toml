@@ -9,5 +9,5 @@ license.workspace = true
 [dev-dependencies]
 ooxmlsdk = { workspace = true, features = ["parts"] }
 ooxmlsdk-visio = { workspace = true }
-roxmltree = "0.21.1"
+roxmltree = "0.21.2"
 zip = { workspace = true }

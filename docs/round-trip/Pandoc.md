@@ -12,7 +12,7 @@
 
 | Total files | Round-trip candidates | Open-only | Invalid | Known failures | Last run | Passed | Failed |
 | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: |
-| 235 | 235 | 0 | 0 | 0 | 2026-10-26 | 235 | 0 |
+| 235 | 235 | 0 | 0 | 0 | 2026-11-03 | 235 | 0 |
 
 The imported corpus covers Pandoc's DOCX, PPTX, and XLSX reader/writer fixtures:
 
@@ -37,14 +37,15 @@ cargo test -p ooxmlsdk-roundtrip-tests --test pandoc_roundtrip -- --ignored
 ## Last Run
 
 ```text
-test result: ok. 235 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.16s
+test result: ok. 235 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.19s
 ```
 
-Rechecked after the MCE field-routing fix in PR #33 on 2026-10-26, using
-ooxmlsdk 0.15.0 and zip 9.0.5: original-package comparison
-and second-save stability both pass, with no new comparison relaxations or
-manifest exceptions. The ZIP dependency enables `unreserved` to preserve
-registered Unix extra fields when raw-copying package entries.
+Rechecked for ooxmlsdk 0.15.0 on 2026-11-03 with zip 9.2.2 and the default
+thread stack. Original-package comparison and second-save stability both pass.
+The comparator now retains significant Unicode whitespace, leading text before
+entities, and inherited `xml:space` content. Existing schema-container formatting
+tolerance and manifest classifications are unchanged. Registered Unix extra
+fields survive raw copying without the former `unreserved` workaround.
 
 Current failures: none.
 

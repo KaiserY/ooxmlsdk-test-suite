@@ -12,7 +12,7 @@
 
 | Total files | Round-trip candidates | Open-only | Invalid | Known failures | Last run | Passed | Failed |
 | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: |
-| 886 | 880 | 3 | 3 | 0 | 2026-10-26 | 886 | 0 |
+| 886 | 880 | 3 | 3 | 0 | 2026-11-03 | 886 | 0 |
 
 The current scaffold generates one ignored test per supported Office package
 fixture. Encrypted and intentionally invalid fixtures are classified as
@@ -27,14 +27,15 @@ cargo test -p ooxmlsdk-roundtrip-tests --test open_xml_sdk_roundtrip -- --ignore
 Result:
 
 ```text
-test result: ok. 886 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 14.32s
+test result: ok. 886 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 14.91s
 ```
 
-Rechecked after the MCE field-routing fix in PR #33 on 2026-10-26, using
-ooxmlsdk 0.15.0 and zip 9.0.5: original-package comparison
-and second-save stability both pass, with no new comparison relaxations or
-manifest exceptions. The ZIP dependency enables `unreserved` to preserve
-registered Unix extra fields when raw-copying package entries.
+Rechecked for ooxmlsdk 0.15.0 on 2026-11-03 with zip 9.2.2 and the default
+thread stack. Original-package comparison and second-save stability both pass.
+The comparator now retains significant Unicode whitespace, leading text before
+entities, and inherited `xml:space` content. Existing schema-container formatting
+tolerance and manifest classifications are unchanged. Registered Unix extra
+fields survive raw copying without the former `unreserved` workaround.
 
 The five-corpus MCE lane also passes with `ProcessAllParts` targeting both
 Office 2007 and Microsoft 365. It honors the existing `open_only` expectations:
@@ -49,6 +50,19 @@ and producer-compatible canonical XML. It then saves and eagerly reopens the
 SDK output a second time, requiring the public graph and exact entry set to stay
 stable, XML to remain strictly canonically equivalent, and binary payloads to
 remain byte-identical.
+
+The 2026-11-03 comparator audit checks significant NBSP and other non-XML
+whitespace, whitespace before escaped text, inherited `xml:space`, literal
+entity-like strings, and unexpected content in nominally empty relationship
+parts. These controls exercise both original-versus-save and strict
+save-versus-save comparisons. The first comparison still reads the untouched
+source archive; it never substitutes SDK-normalized input.
+
+ZIP reading explicitly tries a zero archive base before automatic offset
+detection, preserving the pre-upgrade package-selection policy. The independent
+real-fixture package test requires `two-zips.docx` to retain the Office golden's
+text `1`, including after save/reopen, so matching the SDK and comparator readers
+cannot silently make a shared selection of the competing text `2` pass.
 
 XML whitespace is normalized once during parsing. Literal attribute TAB, LF,
 and CR become spaces, while their character references retain distinct decoded

@@ -51,17 +51,17 @@ lopdf = "0.41.0"
 pdfium-render = "0.9.3"
 quick-xml = "0.40.1"
 rayon = "1.12.0"
-serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.150"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
 sha2 = "0.10.9"
 skrifa = "0.46.0"
-thiserror = "2.0.18"
-toml = "0.9.8"
+thiserror = "2.0.21"
+toml = "0.9.12"
 unicode-bidi = "0.3.18"
 unicode-bidi-mirroring = "0.4.0"
 unicode-normalization = "0.1.25"
 walkdir = "2.5.0"
-zip = { version = "9.0.5", default-features = false, features = ["deflate"] }
+zip = { version = "9.2.2", default-features = false, features = ["deflate"] }
 
 [patch.crates-io]
 # Sibling adapters such as olecfsdk-ooxml publish against crates.io, but this

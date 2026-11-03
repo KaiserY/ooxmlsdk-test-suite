@@ -37,6 +37,22 @@ Clippy: implementation/suite clean at v1105; emfsdk last requested closure v831.
 Font assessment: `/tmp/ooxmlsdk-font-dependencies-20261015/assessment.md`.
 Original Astra84 is complete. Pending/scoped gains never replace an accepted full.
 
+## 0.15.0 release verification (2026-11-03)
+
+Full recheck after the derive rollback and zip 9.2.2 upgrade: **5,370 =
+4,150 PASS / 1,089 FAIL / 131 REFERENCE_FAIL**; all 4,150 protected PASSes
+retained, no verdict or diagnostic changes from batch74/v1105. Campaign
+164.329s; the 180s per-case deadline, configured
+sources, references and acceptance gates are unchanged. This is a release
+recheck, with no new repair promotions; batch74 remains the accepted stage.
+The SDK keeps zero-offset-first ZIP recovery so the concatenated
+`two-zips.docx` selects the Office document containing text `1`.
+Evidence: `/tmp/ooxmlsdk-015-release-20261103/zip-recovery/golden-full/summary.json`;
+source freeze: `../golden-check.json` in that evidence owner.
+Implementation and suite strict Clippy passed. Core default/no-default/all-feature
+checks passed, as did the five-corpus MCE lane. Visio real-file import remains a
+separate publication blocker; its schema inputs were not changed in this recheck.
+
 ## Repair workflow
 
 1. Inspect one configured failure and its XML. Separate missing content,

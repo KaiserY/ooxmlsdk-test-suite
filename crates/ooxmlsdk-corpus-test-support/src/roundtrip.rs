@@ -598,7 +598,17 @@ fn assert_sdk_saved_package_stable(first_saved: &[u8], second_saved: &[u8], file
 }
 
 fn read_zip_entries(bytes: &[u8], file_name: &str) -> BTreeMap<String, Vec<u8>> {
-    let mut archive = ZipArchive::new(Cursor::new(bytes)).unwrap_or_else(|err| {
+    // Read the original bytes using Office-compatible zero-offset-first
+    // recovery. zip 9.2's automatic detection selects a different document in
+    // concatenated packages than zip 9.0 did. No SDK output is used here.
+    let mut archive = ZipArchive::with_config(
+        zip::read::Config {
+            archive_offset: zip::read::ArchiveOffset::Known(0),
+        },
+        Cursor::new(bytes),
+    )
+    .or_else(|_| ZipArchive::new(Cursor::new(bytes)))
+    .unwrap_or_else(|err| {
         panic!("failed to open zip for {file_name}: {err}");
     });
 
@@ -707,7 +717,7 @@ fn relationship_graph_signature(
             .filter_map(|node| match node {
                 XmlNode::Element(element) => Some(element),
                 XmlNode::Declaration(_) => None,
-                XmlNode::Text(text) if text.trim().is_empty() => None,
+                XmlNode::Text(text) if is_xml_whitespace(text) => None,
                 XmlNode::Text(text) => panic!(
                     "non-whitespace root text in {side} relationship entry for {file_name}:{entry_name}: {text:?}"
                 ),
@@ -727,7 +737,7 @@ fn relationship_graph_signature(
         for child in &root.children {
             let relationship = match child {
                 XmlNode::Element(element) if element.name == RELATIONSHIP_NAME => element,
-                XmlNode::Text(text) if text.trim().is_empty() => continue,
+                XmlNode::Text(text) if is_xml_whitespace(text) => continue,
                 XmlNode::Declaration(_) => panic!(
                     "nested declaration in {side} relationship entry for {file_name}:{entry_name}"
                 ),
@@ -847,20 +857,22 @@ fn is_psmdcp_entry(name: &str) -> bool {
 fn is_empty_relationships_entry(name: &str, bytes: &[u8]) -> bool {
     const RELATIONSHIPS_NAME: &str =
         "{http://schemas.openxmlformats.org/package/2006/relationships}Relationships";
-    const RELATIONSHIP_NAME: &str =
-        "{http://schemas.openxmlformats.org/package/2006/relationships}Relationship";
-
     if !name.ends_with(".rels") {
         return false;
     }
 
     let nodes = canonicalize_xml(bytes, CanonicalOptions::strict(), name, name);
+    if nodes
+        .iter()
+        .any(|node| matches!(node, XmlNode::Text(text) if !is_xml_whitespace(text)))
+    {
+        return false;
+    }
     let element_roots: Vec<_> = nodes
         .iter()
         .filter_map(|node| match node {
             XmlNode::Element(element) => Some(element),
             XmlNode::Declaration(_) => None,
-            XmlNode::Text(text) if text.trim().is_empty() => None,
             XmlNode::Text(_) => None,
         })
         .collect();
@@ -870,10 +882,10 @@ fn is_empty_relationships_entry(name: &str, bytes: &[u8]) -> bool {
     };
 
     root.name == RELATIONSHIPS_NAME
-        && !root.children.iter().any(|child| match child {
-            XmlNode::Element(element) => element.name == RELATIONSHIP_NAME,
-            XmlNode::Declaration(_) | XmlNode::Text(_) => false,
-        })
+        && root
+            .children
+            .iter()
+            .all(|child| matches!(child, XmlNode::Text(text) if is_xml_whitespace(text)))
 }
 
 fn format_doc_sample_errors(errors: &[String]) -> String {
@@ -1091,6 +1103,7 @@ struct XmlFrame {
     raw_attrs: Vec<(String, String)>,
     children: Vec<XmlNode>,
     ns: BTreeMap<String, String>,
+    preserved_whitespace: Vec<usize>,
 }
 
 struct ParsedXmlNode {
@@ -1582,6 +1595,7 @@ fn canonicalize_xml(
                     raw_attrs: parsed.raw_attrs,
                     children: Vec::new(),
                     ns: parsed.ns,
+                    preserved_whitespace: Vec::new(),
                 };
                 stack.push(frame);
             }
@@ -1605,9 +1619,10 @@ fn canonicalize_xml(
                 push_xml_node(&mut roots, &mut stack, node);
             }
             Event::End(_) => {
-                let frame = stack.pop().unwrap_or_else(|| {
+                let mut frame = stack.pop().unwrap_or_else(|| {
                     panic!("unexpected xml end event for {file_name}:{entry_name}")
                 });
+                remove_preserved_container_indentation(&mut frame);
                 let node = XmlNode::Element(XmlElement {
                     name: frame.name,
                     raw_name: frame.raw_name,
@@ -1623,17 +1638,18 @@ fn canonicalize_xml(
                         panic!("failed to decode xml text for {file_name}:{entry_name}: {err}");
                     })
                     .into_owned();
-                if raw.chars().all(|ch| ch.is_whitespace()) && should_skip_whitespace_text(&stack) {
+                if is_xml_whitespace(&raw) && should_skip_whitespace_text(&stack) {
                     // Skip formatting-only whitespace.
                 } else {
+                    mark_preserved_whitespace(&mut stack, &raw);
                     let text = normalize_xml_text(&raw, options, &stack);
                     push_xml_node(&mut roots, &mut stack, XmlNode::Text(text));
                 }
             }
             Event::CData(event) => {
                 let raw = String::from_utf8_lossy(event.as_ref());
-                if !raw.chars().all(|ch| ch.is_whitespace()) || !should_skip_whitespace_text(&stack)
-                {
+                if !is_xml_whitespace(&raw) || !should_skip_whitespace_text(&stack) {
+                    mark_preserved_whitespace(&mut stack, raw.as_ref());
                     let text = normalize_xml_text(raw.as_ref(), options, &stack);
                     push_xml_node(&mut roots, &mut stack, XmlNode::Text(text));
                 }
@@ -1850,9 +1866,9 @@ fn normalize_xml_nodes_for_entry(
                 if options.ignore_core_property_whitespace_text_nodes
                     && is_core_property_whitespace_text_relaxed_root(&element.name)
                 {
-                    element.children.retain(|child| {
-                        !matches!(child, XmlNode::Text(text) if text.chars().all(char::is_whitespace))
-                    });
+                    element.children.retain(
+                        |child| !matches!(child, XmlNode::Text(text) if is_xml_whitespace(text)),
+                    );
                 }
                 if options.ignore_spreadsheet_fills_text_nodes
                     && is_spreadsheet_fills_root(&element.name)
@@ -3499,20 +3515,73 @@ fn should_skip_whitespace_text(stack: &[XmlFrame]) -> bool {
         return true;
     };
 
-    if frame.attrs.iter().any(|(name, value)| {
-        name == "{http://www.w3.org/XML/1998/namespace}space" && value == "preserve"
-    }) && is_text_content_element(&frame.name)
-    {
+    if is_text_content_element(&frame.name) {
         return false;
+    }
+
+    for ancestor in stack.iter().rev() {
+        if let Some((_, value)) = ancestor
+            .attrs
+            .iter()
+            .find(|(name, _)| name == "{http://www.w3.org/XML/1998/namespace}space")
+        {
+            match value.as_str() {
+                "preserve" => return false,
+                "default" => break,
+                _ => {}
+            }
+        }
     }
 
     !matches!(frame.children.last(), Some(XmlNode::Text(_)))
 }
 
+fn mark_preserved_whitespace(stack: &mut [XmlFrame], text: &str) {
+    if is_xml_whitespace(text)
+        && let Some(frame) = stack.last_mut()
+        && (!matches!(frame.children.last(), Some(XmlNode::Text(_)))
+            || frame
+                .preserved_whitespace
+                .last()
+                .is_some_and(|index| *index + 1 == frame.children.len()))
+    {
+        frame.preserved_whitespace.push(frame.children.len());
+    }
+}
+
+fn remove_preserved_container_indentation(frame: &mut XmlFrame) {
+    let (namespace, _) = split_expanded_name(&frame.name);
+    if frame.preserved_whitespace.is_empty()
+        || ooxmlsdk::namespaces::XmlKnownNamespace::from_uri(namespace).is_none()
+        || frame.name == "{http://schemas.microsoft.com/office/visio/2012/main}Text"
+        || !frame
+            .children
+            .iter()
+            .any(|child| matches!(child, XmlNode::Element(_)))
+        || frame
+            .children
+            .iter()
+            .any(|child| matches!(child, XmlNode::Text(text) if !is_xml_whitespace(text)))
+    {
+        return;
+    }
+
+    // Retain the existing formatting tolerance for known schema containers.
+    // Names such as dgm:t identify containers rather than text leaves. Only
+    // provisional literal whitespace is a candidate here; character references
+    // and mixed text are always significant.
+    let mut index = 0;
+    frame.children.retain(|_| {
+        let keep = frame.preserved_whitespace.binary_search(&index).is_err();
+        index += 1;
+        keep
+    });
+}
+
 fn is_text_content_element(name: &str) -> bool {
     matches!(
         xml_local_name(name),
-        "t" | "instrText" | "delText" | "fldSimple" | "templateCode" | "text" | "posText"
+        "t" | "instrText" | "delText" | "templateCode" | "text" | "Text" | "posText"
     )
 }
 
@@ -4434,8 +4503,8 @@ mod tests {
     use std::{collections::BTreeMap, io::Read};
 
     use super::{
-        read_zip_entries, relationship_graph_signature, relationship_source_path,
-        strict_xml_equivalence_errors, xml_equivalence_errors,
+        is_empty_relationships_entry, read_zip_entries, relationship_graph_signature,
+        relationship_source_path, strict_xml_equivalence_errors, xml_equivalence_errors,
     };
     use zip::{CompressionMethod, ZipArchive, ZipWriter, write::SimpleFileOptions};
 
@@ -4443,6 +4512,177 @@ mod tests {
     const ENTRY_NAME: &str = "xl/charts/chart1.xml";
     const WORD_FILE_NAME: &str = "Pandoc/test/docx/sample.docx";
     const PANDOC_NS0_FILE_NAME: &str = "Pandoc/test/docx/ns0-reference.docx";
+
+    #[test]
+    fn xml_space_preserves_extension_text_but_not_schema_container_indentation() {
+        let formatted = br#"<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xml:space="preserve">
+            <sheets><sheet name="Sheet1" sheetId="1"/></sheets>
+        </workbook>"#;
+        let compact = br#"<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xml:space="preserve"><sheets><sheet name="Sheet1" sheetId="1"/></sheets></workbook>"#;
+        assert!(
+            strict_xml_equivalence_errors(formatted, compact, FILE_NAME, "xl/workbook.xml")
+                .is_empty()
+        );
+
+        let referenced = br#"<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xml:space="preserve">&#32;<sheets><sheet name="Sheet1" sheetId="1"/></sheets></workbook>"#;
+        assert!(
+            !strict_xml_equivalence_errors(referenced, compact, FILE_NAME, "xl/workbook.xml")
+                .is_empty()
+        );
+
+        let extension = br#"<root xmlns="urn:extension" xml:space="preserve"> <child/> </root>"#;
+        let lost = br#"<root xmlns="urn:extension" xml:space="preserve"><child/></root>"#;
+        assert!(!xml_equivalence_errors(extension, lost, FILE_NAME, ENTRY_NAME).is_empty());
+
+        let body = br#"<dgm:t xmlns:dgm="http://schemas.openxmlformats.org/drawingml/2006/diagram" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+            <a:bodyPr/><a:lstStyle/><a:p/>
+        </dgm:t>"#;
+        let compact = br#"<dgm:t xmlns:dgm="http://schemas.openxmlformats.org/drawingml/2006/diagram" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:bodyPr/><a:lstStyle/><a:p/></dgm:t>"#;
+        assert!(strict_xml_equivalence_errors(body, compact, FILE_NAME, ENTRY_NAME).is_empty());
+
+        let text = br#"<visio:Text xmlns:visio="http://schemas.microsoft.com/office/visio/2012/main"> <visio:cp IX="0"/> </visio:Text>"#;
+        let lost = br#"<visio:Text xmlns:visio="http://schemas.microsoft.com/office/visio/2012/main"><visio:cp IX="0"/></visio:Text>"#;
+        assert!(!strict_xml_equivalence_errors(text, lost, FILE_NAME, ENTRY_NAME).is_empty());
+    }
+
+    #[test]
+    fn canonical_comparison_keeps_non_xml_whitespace_in_core_properties() {
+        let empty = br#"<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title/></cp:coreProperties>"#;
+        for text in ["\u{a0}", "&#160;"] {
+            let original = format!(
+                r#"<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>{text}</dc:title></cp:coreProperties>"#
+            );
+            assert!(
+                !xml_equivalence_errors(
+                    original.as_bytes(),
+                    empty,
+                    WORD_FILE_NAME,
+                    "docProps/core.xml"
+                )
+                .is_empty()
+            );
+        }
+    }
+
+    #[test]
+    fn empty_relationship_entries_have_no_significant_content() {
+        let namespace = "http://schemas.openxmlformats.org/package/2006/relationships";
+        let empty = format!(r#"<Relationships xmlns="{namespace}"/>"#);
+        assert!(is_empty_relationships_entry(
+            "_rels/.rels",
+            empty.as_bytes()
+        ));
+        for content in ["\u{a0}", "&#160;", "<unexpected/>"] {
+            let xml = format!(r#"<Relationships xmlns="{namespace}">{content}</Relationships>"#);
+            assert!(
+                !is_empty_relationships_entry("_rels/.rels", xml.as_bytes()),
+                "{content:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn canonical_comparison_keeps_whitespace_before_escaped_text() {
+        let original = br#"<w:t xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"> &amp;value</w:t>"#;
+        let lost = br#"<w:t xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">&amp;value</w:t>"#;
+        assert!(
+            !xml_equivalence_errors(original, lost, WORD_FILE_NAME, "word/document.xml").is_empty()
+        );
+        assert!(
+            !strict_xml_equivalence_errors(original, lost, WORD_FILE_NAME, "word/document.xml")
+                .is_empty()
+        );
+
+        for equivalent in [
+            br#"<w:t xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">&#32;&amp;value</w:t>"#.as_slice(),
+            br#"<w:t xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><![CDATA[ &value]]></w:t>"#.as_slice(),
+        ] {
+            assert!(xml_equivalence_errors(original, equivalent, WORD_FILE_NAME, "word/document.xml").is_empty());
+        }
+    }
+
+    #[test]
+    fn canonical_comparison_keeps_non_xml_whitespace() {
+        for text in ["\u{a0}", "\u{202f}", "\u{2003}"] {
+            for original in [
+                format!("<probe>{text}</probe>"),
+                format!("<probe><![CDATA[{text}]]></probe>"),
+            ] {
+                assert!(
+                    !xml_equivalence_errors(
+                        original.as_bytes(),
+                        b"<probe/>",
+                        FILE_NAME,
+                        ENTRY_NAME
+                    )
+                    .is_empty(),
+                    "{original:?}"
+                );
+                let reference = format!(
+                    "<probe>&#x{:X};</probe>",
+                    text.chars().next().unwrap() as u32
+                );
+                assert!(
+                    strict_xml_equivalence_errors(
+                        original.as_bytes(),
+                        reference.as_bytes(),
+                        FILE_NAME,
+                        ENTRY_NAME
+                    )
+                    .is_empty(),
+                    "{original:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn canonical_comparison_honors_inherited_xml_space() {
+        for (original, lost) in [
+            (
+                br#"<probe xml:space="preserve"> </probe>"#.as_slice(),
+                br#"<probe xml:space="preserve"/>"#.as_slice(),
+            ),
+            (
+                br#"<root xml:space="preserve"><probe> </probe></root>"#.as_slice(),
+                br#"<root xml:space="preserve"><probe/></root>"#.as_slice(),
+            ),
+        ] {
+            assert!(!xml_equivalence_errors(original, lost, FILE_NAME, ENTRY_NAME).is_empty());
+        }
+        let original = br#"<root xml:space="preserve"><probe xml:space="default"> </probe></root>"#;
+        let compact = br#"<root xml:space="preserve"><probe xml:space="default"/></root>"#;
+        assert!(xml_equivalence_errors(original, compact, FILE_NAME, ENTRY_NAME).is_empty());
+    }
+
+    #[test]
+    fn canonical_comparison_does_not_decode_entities_twice() {
+        for (original, lost) in [
+            (
+                b"<probe>&amp;lt;</probe>".as_slice(),
+                b"<probe>&lt;</probe>".as_slice(),
+            ),
+            (
+                b"<probe>&amp;#13;</probe>".as_slice(),
+                b"<probe>&#13;</probe>".as_slice(),
+            ),
+            (
+                br#"<probe a="&amp;quot;"/>"#.as_slice(),
+                br#"<probe a="&quot;"/>"#.as_slice(),
+            ),
+        ] {
+            assert!(!xml_equivalence_errors(original, lost, FILE_NAME, ENTRY_NAME).is_empty());
+        }
+        assert!(
+            strict_xml_equivalence_errors(
+                b"<probe><![CDATA[&lt;]]></probe>",
+                b"<probe>&amp;lt;</probe>",
+                FILE_NAME,
+                ENTRY_NAME
+            )
+            .is_empty()
+        );
+    }
 
     #[test]
     fn single_any_overwrite_is_detected_against_original_xml() {

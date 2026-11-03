@@ -12,7 +12,7 @@
 
 | Total files | Round-trip candidates | Open-only | Invalid | Known failures | Last run | Passed | Failed |
 | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: |
-| 682 | 612 | 6 | 64 | 0 | 2026-10-26 | 682 | 0 |
+| 682 | 612 | 6 | 64 | 0 | 2026-11-03 | 682 | 0 |
 
 The current scaffold generates one ignored test per supported Office package
 fixture.
@@ -26,14 +26,15 @@ cargo test -p ooxmlsdk-roundtrip-tests --test apache_poi_roundtrip -- --ignored
 Result:
 
 ```text
-test result: ok. 682 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 22.50s
+test result: ok. 682 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 25.41s
 ```
 
-Rechecked after the MCE field-routing fix in PR #33 on 2026-10-26, using
-ooxmlsdk 0.15.0 and zip 9.0.5: original-package comparison
-and second-save stability both pass, with no new comparison relaxations or
-manifest exceptions. The ZIP dependency enables `unreserved` to preserve
-registered Unix extra fields when raw-copying package entries.
+Rechecked for ooxmlsdk 0.15.0 on 2026-11-03 with zip 9.2.2 and the default
+thread stack. Original-package comparison and second-save stability both pass.
+The comparator now retains significant Unicode whitespace, leading text before
+entities, and inherited `xml:space` content. Existing schema-container formatting
+tolerance and manifest classifications are unchanged. Registered Unix extra
+fields survive raw copying without the former `unreserved` workaround.
 
 `test-data/document/unicode-path.docx` now uses `open_only`: the SDK must eagerly
 parse its main document, without requiring a lossless package save. Its existing

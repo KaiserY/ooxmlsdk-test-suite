@@ -1,7 +1,7 @@
 use std::io::Cursor;
 
 use ooxmlsdk::{
-    schemas::{v::TextPath, w::Text as WordText, x::Text as SpreadsheetText},
+    schemas::{a::Run as DrawingRun, v::TextPath, w::Text as WordText, x::Text as SpreadsheetText},
     sdk::SdkType,
 };
 
@@ -22,6 +22,45 @@ fn attribute_whitespace_survives_generated_node_round_trip() {
         ] {
             assert_eq!(reopened.string.as_deref(), Some(expected));
         }
+    }
+}
+
+#[test]
+fn entity_escapes_and_adjacent_whitespace_survive_without_xml_space() {
+    let source = " &amp;&lt;&gt;&quot;&apos; &amp;#13; &amp;amp; ";
+    let expected = " &<>\"' &#13; &amp; ";
+    let word = format!(
+        r#"<w:t xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">{source}</w:t>"#
+    );
+    assert_text_round_trip::<WordText>(&word, expected, |node| node.xml_content.as_deref());
+
+    let sheet = format!(
+        r#"<t xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">{source}</t>"#
+    );
+    assert_text_round_trip::<SpreadsheetText>(&sheet, expected, |node| {
+        node.0.xml_content.as_deref()
+    });
+
+    let drawing = format!(
+        r#"<a:r xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:t>{source}</a:t></a:r>"#
+    );
+    assert_text_round_trip::<DrawingRun>(&drawing, expected, |node| Some(node.text.as_str()));
+
+    let attribute =
+        format!(r#"<v:textpath xmlns:v="urn:schemas-microsoft-com:vml" string="{source}"/>"#);
+    for node in [
+        TextPath::from_bytes(attribute.as_bytes()).unwrap(),
+        TextPath::from_reader(Cursor::new(attribute.as_bytes())).unwrap(),
+    ] {
+        assert_eq!(node.string.as_deref(), Some(expected));
+        let saved = node.to_xml().unwrap();
+        assert_eq!(
+            TextPath::from_bytes(saved.as_bytes())
+                .unwrap()
+                .string
+                .as_deref(),
+            Some(expected)
+        );
     }
 }
 

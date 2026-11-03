@@ -59,13 +59,53 @@ fn doc_sample(file_name: &str) -> std::path::PathBuf {
     path
 }
 
-#[cfg(feature = "mce")]
 fn corpus_file(relative: &str) -> std::path::PathBuf {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../..")
         .join(relative);
     assert!(path.is_file(), "missing corpus file: {}", path.display());
     path
+}
+
+#[test]
+fn concatenated_zip_recovery_keeps_the_office_first_document() {
+    let path = corpus_file("corpus/LibreOffice/package/qa/cppunit/data/two-zips.docx");
+    let bytes = std::fs::read(&path).unwrap();
+    let assert_text = |package: &WordprocessingDocument| {
+        let part = package.main_document_part().unwrap();
+        let root = part.root_element(package).unwrap();
+        let body = root.body.as_ref().unwrap();
+        let BodyChoice::Paragraph(paragraph) = &body.body_choice[0] else {
+            panic!("expected the source paragraph");
+        };
+        let ParagraphChoice::WRun(run) = &paragraph.paragraph_choice[0] else {
+            panic!("expected the source run");
+        };
+        let RunChoice::Text(text) = &run.run_choice[0] else {
+            panic!("expected the source text");
+        };
+        // The configured Office golden selects this document. The competing
+        // ZIP appended to the same source contains "2" instead.
+        assert_eq!(text.xml_content.as_deref(), Some("1"));
+    };
+    for open_mode in [PackageOpenMode::Lazy, PackageOpenMode::Eager] {
+        let settings = OpenSettings {
+            open_mode,
+            ..Default::default()
+        };
+        let from_file =
+            WordprocessingDocument::new_from_file_with_settings(&path, settings).unwrap();
+        let from_bytes =
+            WordprocessingDocument::new_with_settings(Cursor::new(bytes.as_slice()), settings)
+                .unwrap();
+        for package in [from_file, from_bytes] {
+            assert_text(&package);
+            let saved = package.to_package_bytes().unwrap();
+            let reopened =
+                WordprocessingDocument::new_with_settings(Cursor::new(saved), settings).unwrap();
+            assert_text(&reopened);
+        }
+    }
 }
 
 #[cfg(feature = "mce")]
