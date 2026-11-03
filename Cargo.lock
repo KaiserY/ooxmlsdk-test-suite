@@ -2029,6 +2029,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "ooxmlsdk-visio"
+version = "0.14.0"
+dependencies = [
+ "ooxmlsdk",
+]
+
+[[package]]
+name = "ooxmlsdk-visio-test"
+version = "0.1.0"
+dependencies = [
+ "ooxmlsdk",
+ "ooxmlsdk-visio",
+ "roxmltree 0.21.1",
+ "zip",
+]
+
+[[package]]
 name = "parking_lot"
 version = "0.12.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
